@@ -309,8 +309,8 @@ select {
   flex-shrink: 0;
   width: 100%;
   margin: 0;
+  /* Icons above home indicator; bar background fills the inset zone */
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   backdrop-filter: blur(28px) saturate(1.5);
   background-color: rgba(255, 255, 255, 0.72);
@@ -430,11 +430,10 @@ select {
   overflow: hidden;
 }
 
-/* Installed PWA: WebKit reports 100dvh minus bottom safe area — compensate */
+/* Installed PWA: 100vh includes the full screen in standalone (WebKit workaround) */
 html[data-standalone="true"] .app-shell {
   height: 100vh;
-  height: calc(100dvh + env(safe-area-inset-bottom, 0px));
-  max-height: none;
+  max-height: 100vh;
   max-width: none;
   margin: 0;
   border-radius: 0;
@@ -480,8 +479,7 @@ html[data-standalone="true"] .app-shell {
   html[data-standalone="true"] .app-shell {
     margin: 0;
     height: 100vh;
-    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
-    max-height: none;
+    max-height: 100vh;
     border-radius: 0;
   }
 }

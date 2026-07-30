@@ -7,12 +7,15 @@ type Props = {
   query: string;
   onQueryChange: (value: string) => void;
   showBack?: boolean;
+  /** Disable controls while collapsed / animating out */
+  inert?: boolean;
 };
 
 export function FeedHeader({
   query,
   onQueryChange,
   showBack = false,
+  inert = false,
 }: Props) {
   return (
     <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
@@ -24,6 +27,7 @@ export function FeedHeader({
         {showBack && (
           <Link
             href="/shop"
+            tabIndex={inert ? -1 : 0}
             className="flex h-10 w-10 shrink-0 items-center justify-center text-white"
             aria-label="Back"
           >
@@ -39,11 +43,15 @@ export function FeedHeader({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search toys"
+            tabIndex={inert ? -1 : 0}
+            readOnly={inert}
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
           />
           <button
             type="button"
-            className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95"
+            tabIndex={inert ? -1 : 0}
+            disabled={inert}
+            className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95 disabled:opacity-80"
             aria-label="Voice search"
           >
             <MicIcon />

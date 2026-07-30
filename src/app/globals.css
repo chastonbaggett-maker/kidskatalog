@@ -91,6 +91,61 @@ body {
   opacity: 1;
 }
 
+/* Browse feed: swap full header ↔ product shelf, collapse filters/cats */
+.browse-header-swap {
+  position: relative;
+  transition: height 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.browse-header-panel {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  width: 100%;
+  transition:
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.browse-header-panel.is-shown {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.browse-header-panel.is-hidden {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0) scale(0.98);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.browse-header-panel--shelf.is-hidden {
+  transform: translate3d(0, 12px, 0) scale(0.98);
+}
+
+.browse-filters-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease;
+}
+
+.browse-filters-collapse.is-collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.browse-filters-collapse__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .fab-stack {
   animation: fab-bob 3.2s ease-in-out infinite;
 }

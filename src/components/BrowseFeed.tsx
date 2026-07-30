@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Audience, Toy } from "@/types/toy";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
@@ -8,34 +8,53 @@ import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
 import { ShelfHeader } from "./ShelfHeader";
 
+const COLLAPSE_AT = 48;
+const EXPAND_AT = 10;
+
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [audience, setAudience] = useState<Audience>("all");
   const [showText, setShowText] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [heights, setHeights] = useState({ feed: 0, shelf: 0 });
+  const collapsedRef = useRef(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const chromeRef = useRef<HTMLDivElement>(null);
+  const feedHeaderRef = useRef<HTMLDivElement>(null);
+  const shelfHeaderRef = useRef<HTMLDivElement>(null);
+
+  const syncCollapsed = useCallback((y: number) => {
+    const next = collapsedRef.current ? y > EXPAND_AT : y > COLLAPSE_AT;
+    if (next === collapsedRef.current) return;
+    collapsedRef.current = next;
+    setCollapsed(next);
+  }, []);
 
   useEffect(() => {
-    const scroller = scrollerRef.current;
-    const chrome = chromeRef.current;
-    if (!scroller || !chrome) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onScroll = () => syncCollapsed(el.scrollTop);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [syncCollapsed]);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Collapse once most of the expanded chrome has left the top
-        const next = entry.intersectionRatio < 0.35 || entry.boundingClientRect.top < -24;
-        setCollapsed(next);
-      },
-      {
-        root: scroller,
-        threshold: [0, 0.15, 0.35, 0.5, 0.75, 1],
-        rootMargin: "-8px 0px 0px 0px",
-      },
-    );
+  useLayoutEffect(() => {
+    const feed = feedHeaderRef.current;
+    const shelf = shelfHeaderRef.current;
+    if (!feed || !shelf) return;
 
-    observer.observe(chrome);
-    return () => observer.disconnect();
+    const measure = () => {
+      setHeights({
+        feed: feed.scrollHeight,
+        shelf: shelf.scrollHeight,
+      });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(feed);
+    ro.observe(shelf);
+    return () => ro.disconnect();
   }, []);
 
   const filtered = useMemo(() => {
@@ -54,16 +73,48 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     });
   }, [toys, query, audience]);
 
+  const headerHeight = collapsed
+    ? heights.shelf || undefined
+    : heights.feed || undefined;
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div
-        ref={scrollerRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
-      >
-        {/* Expanded chrome scrolls away with the feed (no sticky height change) */}
-        <div ref={chromeRef} className="relative z-20">
-          <FeedHeader query={query} onQueryChange={setQuery} />
-          <div className="bg-white">
+      <div className="z-30 shrink-0">
+        <div
+          className="browse-header-swap relative overflow-hidden"
+          style={headerHeight ? { height: headerHeight } : undefined}
+        >
+          <div
+            ref={feedHeaderRef}
+            className={`browse-header-panel ${
+              collapsed ? "is-hidden" : "is-shown"
+            }`}
+            aria-hidden={collapsed}
+          >
+            <FeedHeader
+              query={query}
+              onQueryChange={setQuery}
+              inert={collapsed}
+            />
+          </div>
+          <div
+            ref={shelfHeaderRef}
+            className={`browse-header-panel browse-header-panel--shelf ${
+              collapsed ? "is-shown" : "is-hidden"
+            }`}
+            aria-hidden={!collapsed}
+          >
+            <ShelfHeader />
+          </div>
+        </div>
+
+        <div
+          className={`browse-filters-collapse ${
+            collapsed ? "is-collapsed" : ""
+          }`}
+          aria-hidden={collapsed}
+        >
+          <div className="browse-filters-collapse__inner bg-white">
             <FilterRow
               audience={audience}
               onAudienceChange={setAudience}
@@ -73,19 +124,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             <ThumbCarousel />
           </div>
         </div>
+      </div>
 
-        {/* Simple shelf fades in and sticks — overlay, no layout jump */}
-        <div className="sticky top-0 z-30 h-0 overflow-visible">
-          <div
-            className={`browse-shelf-enter absolute inset-x-0 top-0 ${
-              collapsed ? "is-visible pointer-events-auto" : "pointer-events-none"
-            }`}
-            aria-hidden={!collapsed}
-          >
-            <ShelfHeader />
-          </div>
-        </div>
-
+      <div
+        ref={scrollerRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+      >
         <div className="flex flex-col gap-10 pb-28 pt-4">
           {filtered.map((toy, index) => (
             <FeedCard

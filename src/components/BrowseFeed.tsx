@@ -130,7 +130,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         ref={scrollerRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
       >
-        <div className="flex flex-col gap-10 pb-28 pt-4">
+        <div className="toy-feed-grid pb-28 pt-4">
           {filtered.map((toy, index) => (
             <FeedCard
               key={toy.id}
@@ -140,7 +140,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             />
           ))}
           {filtered.length === 0 && (
-            <p className="mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
+            <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
               No toys match. Try another search.
             </p>
           )}

@@ -18,14 +18,14 @@ export function ProductGallery({
 
   return (
     <div className="mb-4">
-      <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-[2rem] bg-white shadow-md">
+      <div className="relative mb-3 aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-white shadow-md lg:aspect-square">
         <Image
           src={current}
           alt={alt}
           fill
           priority
           className="object-cover"
-          sizes="(max-width: 430px) 100vw, 430px"
+          sizes="(max-width: 640px) 100vw, (max-width: 900px) 90vw, 520px"
         />
       </div>
 

@@ -19,7 +19,7 @@ export function FeedCard({
 
   return (
     <article
-      className="feed-card relative mx-10 overflow-visible sm:mx-12"
+      className="feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2"
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
@@ -28,7 +28,7 @@ export function FeedCard({
             src={toy.image}
             alt={toy.imageAlt}
             fill
-            sizes="(max-width: 430px) 100vw, 430px"
+            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 360px"
             className="object-cover"
             priority={index < 2}
           />
@@ -45,11 +45,11 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-0 z-10 flex translate-x-1/2 flex-col gap-3.5">
+      <div className="absolute bottom-4 right-0 z-10 flex translate-x-1/3 flex-col gap-3 sm:translate-x-1/4 lg:translate-x-1/3">
         <button
           type="button"
           onClick={() => toggle(toy.id)}
-          className={`flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full text-4xl font-bold text-white shadow-lg transition active:scale-95 ${
+          className={`flex h-14 w-14 items-center justify-center rounded-full text-3xl font-bold text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl ${
             inKart ? "bg-[var(--purple-deep)]" : "bg-[var(--blue)]"
           }`}
           aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
@@ -59,7 +59,7 @@ export function FeedCard({
         </button>
         <Link
           href={`/toy/${toy.id}`}
-          className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-xl font-bold text-white shadow-lg transition active:scale-95"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-lg font-bold text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem] sm:text-xl"
         >
           Go
         </Link>

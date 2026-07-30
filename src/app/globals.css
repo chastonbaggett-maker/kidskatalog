@@ -151,25 +151,33 @@ body {
 }
 
 .app-shell {
-  max-width: 430px;
+  width: 100%;
+  max-width: 100%;
   margin-inline: auto;
   height: 100dvh;
   max-height: 100dvh;
-  box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.08), 0 24px 80px -40px rgba(80, 60, 140, 0.35);
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Installed PWA / standalone: full-bleed phone frame */
+/* Installed PWA / standalone: full-bleed */
 @media (display-mode: standalone) {
   .app-shell {
     max-width: none;
     margin: 0;
-    height: 100dvh;
-    max-height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+  }
+}
+
+/* Phone-framed shell on larger screens */
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 640px;
+    box-shadow:
+      0 0 0 1px rgba(74, 144, 226, 0.08),
+      0 24px 80px -40px rgba(80, 60, 140, 0.35);
   }
 }
 
@@ -182,10 +190,59 @@ body {
   }
 
   .app-shell {
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-    height: calc(100dvh - 3rem);
-    max-height: calc(100dvh - 3rem);
+    max-width: 980px;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    height: calc(100dvh - 2.5rem);
+    max-height: calc(100dvh - 2.5rem);
     border-radius: 2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    max-width: 1180px;
+  }
+}
+
+.toy-feed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.5rem;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .toy-feed-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .toy-feed-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.25rem 1.5rem;
+  }
+}
+
+.product-detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .product-detail__layout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .product-detail__info {
+    position: sticky;
+    top: 0.5rem;
+    padding-top: 0.25rem;
   }
 }

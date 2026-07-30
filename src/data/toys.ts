@@ -348,3 +348,13 @@ export function getToysByCategory(category: string): Toy[] {
 export function getToysByIds(ids: string[]): Toy[] {
   return ids.map((id) => getToy(id)).filter((t): t is Toy => Boolean(t));
 }
+
+/** Keep-browsing list under a product — same pile first, then the rest. */
+export function getMoreToys(currentId: string): Toy[] {
+  const current = toys.find((t) => t.id === currentId);
+  const rest = toys.filter((t) => t.id !== currentId);
+  if (!current) return rest;
+  const samePile = rest.filter((t) => t.category === current.category);
+  const other = rest.filter((t) => t.category !== current.category);
+  return [...samePile, ...other];
+}

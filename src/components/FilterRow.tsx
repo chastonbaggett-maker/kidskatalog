@@ -16,11 +16,11 @@ export function FilterRow({
   onShowTextChange,
 }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-none">
+    <div className="flex items-center gap-2 px-4 py-2.5">
       <button
         type="button"
         onClick={() => onShowTextChange(!showText)}
-        className="flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
+        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
       >
         Text
         <span
@@ -36,35 +36,37 @@ export function FilterRow({
         </span>
       </button>
 
-      <button
-        type="button"
-        onClick={() =>
-          onAudienceChange(audience === "boys" ? "all" : "boys")
-        }
-        className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
-          audience === "boys" || audience === "all"
-            ? "bg-[var(--blue)]"
-            : "bg-[var(--blue)]/45"
-        } ${audience === "girls" ? "opacity-55" : ""}`}
-      >
-        Boys
-        <PlayIcon />
-      </button>
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            onAudienceChange(audience === "boys" ? "all" : "boys")
+          }
+          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
+            audience === "boys" || audience === "all"
+              ? "bg-[var(--blue)]"
+              : "bg-[var(--blue)]/45"
+          } ${audience === "girls" ? "opacity-55" : ""}`}
+        >
+          Boys
+          <PlayIcon />
+        </button>
 
-      <button
-        type="button"
-        onClick={() =>
-          onAudienceChange(audience === "girls" ? "all" : "girls")
-        }
-        className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
-          audience === "girls" || audience === "all"
-            ? "bg-[var(--pink)]"
-            : "bg-[var(--pink)]/45"
-        } ${audience === "boys" ? "opacity-55" : ""}`}
-      >
-        Girls
-        <HeartIcon />
-      </button>
+        <button
+          type="button"
+          onClick={() =>
+            onAudienceChange(audience === "girls" ? "all" : "girls")
+          }
+          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
+            audience === "girls" || audience === "all"
+              ? "bg-[var(--pink)]"
+              : "bg-[var(--pink)]/45"
+          } ${audience === "boys" ? "opacity-55" : ""}`}
+        >
+          Girls
+          <HeartIcon />
+        </button>
+      </div>
     </div>
   );
 }

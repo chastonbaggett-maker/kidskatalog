@@ -5,6 +5,7 @@ type LogoProps = {
   href?: string | null;
   variant?: "wordmark" | "icon";
   light?: boolean;
+  glow?: boolean;
   className?: string;
   /** Rendered width in px (wordmark) or height in px (icon) */
   size?: number;
@@ -17,6 +18,7 @@ export function Logo({
   href = "/shop",
   variant = "wordmark",
   light = true,
+  glow = false,
   className = "",
   size = 110,
 }: LogoProps) {
@@ -39,7 +41,7 @@ export function Logo({
       width={width}
       height={height}
       priority
-      className={`h-auto ${className}`}
+      className={`h-auto ${glow ? "logo-glow" : ""} ${className}`}
       style={
         isIcon
           ? { height: size, width: "auto" }

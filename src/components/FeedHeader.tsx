@@ -43,7 +43,7 @@ export function FeedHeader({
                 <Chevron />
               </Link>
             ) : null}
-            <Logo variant="icon" light href="/shop" size={44} />
+            <Logo variant="icon" light glow href="/shop" size={44} />
           </div>
         </div>
       </div>

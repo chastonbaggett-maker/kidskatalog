@@ -70,6 +70,13 @@ body {
   animation: pop-in 0.45s ease-out both;
 }
 
+.logo-glow {
+  filter:
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 14px rgba(255, 220, 255, 0.75))
+    drop-shadow(0 0 28px rgba(209, 124, 255, 0.55));
+}
+
 .fab-stack {
   animation: fab-bob 3.2s ease-in-out infinite;
 }

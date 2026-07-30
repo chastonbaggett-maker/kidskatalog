@@ -70,11 +70,19 @@ html[data-accent="both"] {
   --font-display: var(--font-display);
 }
 
+html {
+  height: 100%;
+  /* iOS Safari / PWA: % height alone often leaves a gap under the shell */
+  height: -webkit-fill-available;
+}
+
 body {
   background: var(--bg);
   color: var(--foreground);
   font-family: var(--font-body), ui-rounded, "Segoe UI", sans-serif;
   min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
 }
 
 ::selection {
@@ -296,6 +304,8 @@ body {
     rgba(255, 255, 255, 0.72),
     rgba(255, 255, 255, 0.42)
   );
+  /* Icons clear the home indicator; bar paint still goes to the screen edge */
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
 }
 
 @keyframes voice-mic-pulse {
@@ -394,30 +404,53 @@ body {
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
+  height: 100vh;
   height: 100dvh;
+  max-height: 100vh;
   max-height: 100dvh;
+  min-height: -webkit-fill-available;
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Installed PWA / standalone: full-bleed */
+/* Installed PWA / standalone: pin to the real screen edges (fixes iOS bottom gap) */
 @media (display-mode: standalone) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   .app-shell {
+    position: fixed;
+    inset: 0;
+    width: 100%;
     max-width: none;
+    height: auto;
+    max-height: none;
+    min-height: 0;
     margin: 0;
     border-radius: 0;
     box-shadow: none;
   }
 }
 
-/* Phone-framed shell on larger screens */
+/* Phone-framed shell on larger screens (browser only — not installed PWA) */
 @media (min-width: 640px) {
   .app-shell {
     max-width: 640px;
     box-shadow:
       0 0 0 1px rgba(74, 144, 226, 0.08),
       0 24px 80px -40px rgba(80, 60, 140, 0.35);
+  }
+
+  @media (display-mode: standalone) {
+    .app-shell {
+      max-width: none;
+      box-shadow: none;
+    }
   }
 }
 
@@ -436,6 +469,25 @@ body {
     height: calc(100dvh - 2.5rem);
     max-height: calc(100dvh - 2.5rem);
     border-radius: 2rem;
+  }
+
+  @media (display-mode: standalone) {
+    body {
+      background: var(--bg);
+    }
+
+    .app-shell {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      max-width: none;
+      height: auto;
+      max-height: none;
+      min-height: 0;
+      margin: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
   }
 }
 

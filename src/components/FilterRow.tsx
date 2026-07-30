@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
@@ -23,67 +24,34 @@ export function FilterRow({
   onAgeChange,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (popRef.current?.contains(t) || btnRef.current?.contains(t)) return;
-      setOpen(false);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
     };
   }, [open]);
 
-  return (
-    <div className="relative flex items-center gap-2 px-4 py-2.5">
-      <button
-        type="button"
-        onClick={() => onShowTextChange(!showText)}
-        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
-      >
-        Text
-        <span
-          className={`relative h-5 w-9 rounded-full transition ${
-            showText ? "bg-[var(--blue)]" : "bg-[#d0d4de]"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
-              showText ? "left-[18px]" : "left-0.5"
-            }`}
-          />
-        </span>
-      </button>
-
-      <div className="relative shrink-0">
-        <button
-          ref={btnRef}
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
-            age != null ? "bg-[var(--orange)]" : "bg-[var(--orange)]/70"
-          }`}
-        >
-          Age{age != null ? ` ${age}` : ""}
-          <CakeIcon />
-        </button>
-
-        {open ? (
+  const ageModal =
+    open && mounted
+      ? createPortal(
           <div
-            className="age-pop-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/25 px-4 backdrop-blur-[2px]"
+            className="age-pop-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4 backdrop-blur-[2px]"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) setOpen(false);
             }}
@@ -91,6 +59,7 @@ export function FilterRow({
             <div
               ref={popRef}
               role="dialog"
+              aria-modal="true"
               aria-labelledby={titleId}
               className="age-pop w-[min(18.5rem,calc(100vw-2rem))] rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
             >
@@ -150,8 +119,47 @@ export function FilterRow({
                 Show all ages
               </button>
             </div>
-          </div>
-        ) : null}
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div className="relative flex items-center gap-2 px-4 py-2.5">
+      <button
+        type="button"
+        onClick={() => onShowTextChange(!showText)}
+        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
+      >
+        Text
+        <span
+          className={`relative h-5 w-9 rounded-full transition ${
+            showText ? "bg-[var(--blue)]" : "bg-[#d0d4de]"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+              showText ? "left-[18px]" : "left-0.5"
+            }`}
+          />
+        </span>
+      </button>
+
+      <div className="relative shrink-0">
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+            age != null ? "bg-[var(--orange)]" : "bg-[var(--orange)]/70"
+          }`}
+        >
+          Age{age != null ? ` ${age}` : ""}
+          <CakeIcon />
+        </button>
+        {ageModal}
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">

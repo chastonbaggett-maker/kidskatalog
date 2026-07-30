@@ -176,12 +176,11 @@ export function FilterRow({
           onClick={(e) => {
             const next = audience === "boys" ? "all" : "boys";
             onAudienceChange(next);
-            if (next === "boys") {
-              fireConfetti(
-                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
-                BOYS_CONFETTI,
-              );
-            }
+            const origin = (
+              e.currentTarget as HTMLButtonElement
+            ).getBoundingClientRect();
+            if (next === "boys") fireConfetti(origin, BOYS_CONFETTI);
+            else if (next === "all") fireConfetti(origin, UNISEX_CONFETTI);
           }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "boys" || audience === "all"

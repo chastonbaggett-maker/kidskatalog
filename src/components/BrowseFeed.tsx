@@ -9,7 +9,15 @@ import { FeedCard } from "./FeedCard";
 import { ShelfHeader } from "./ShelfHeader";
 
 /** Scroll distance (px) over which the chrome fully collapses */
-const COLLAPSE_RANGE = 140;
+const COLLAPSE_RANGE = 160;
+
+function clamp01(n: number) {
+  return Math.min(1, Math.max(0, n));
+}
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
 
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -23,64 +31,65 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [collapsed, setCollapsed] = useState(false);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const chromeRef = useRef<HTMLDivElement>(null);
-  const feedHeaderRef = useRef<HTMLDivElement>(null);
-  const shelfHeaderRef = useRef<HTMLDivElement>(null);
-  const filtersRef = useRef<HTMLDivElement>(null);
-  const filtersInnerRef = useRef<HTMLDivElement>(null);
-  const heightsRef = useRef({ feed: 0, shelf: 0, filters: 0 });
+  const stageRef = useRef<HTMLDivElement>(null);
+  const expandedRef = useRef<HTMLDivElement>(null);
+  const shelfWrapRef = useRef<HTMLDivElement>(null);
+  const heightsRef = useRef({ expanded: 0, shelf: 0 });
   const progressRef = useRef(0);
   const rafRef = useRef(0);
 
   const applyProgress = (raw: number) => {
-    const p = easeInOutCubic(Math.min(1, Math.max(0, raw)));
+    const p = clamp01(raw);
     progressRef.current = p;
 
-    const { feed, shelf, filters } = heightsRef.current;
-    const chrome = chromeRef.current;
-    const feedEl = feedHeaderRef.current;
-    const shelfEl = shelfHeaderRef.current;
-    const filtersEl = filtersRef.current;
-    if (!chrome || !feedEl || !shelfEl || !filtersEl) return;
+    const { expanded, shelf } = heightsRef.current;
+    const stage = stageRef.current;
+    const expandedEl = expandedRef.current;
+    const shelfEl = shelfWrapRef.current;
+    if (!stage || !expandedEl || !shelfEl || !expanded || !shelf) return;
 
-    const headerH = feed + (shelf - feed) * p;
-    chrome.style.height = `${headerH}px`;
+    // Expanded pack slides up first; simple header glides down after
+    const exit = easeInOutCubic(clamp01(p / 0.62));
+    const enter = easeOutCubic(clamp01((p - 0.28) / 0.72));
 
-    // Soft crossfade — shelf fades in a bit later than feed fades out
-    const feedOpacity = 1 - Math.min(1, p / 0.72);
-    const shelfOpacity = Math.max(0, (p - 0.28) / 0.72);
-    feedEl.style.opacity = String(feedOpacity);
-    feedEl.style.transform = `translate3d(0, ${-6 * p}px, 0)`;
-    shelfEl.style.opacity = String(shelfOpacity);
-    shelfEl.style.transform = `translate3d(0, ${(1 - p) * 10}px, 0)`;
+    expandedEl.style.transform = `translate3d(0, ${-expanded * exit}px, 0)`;
+    expandedEl.style.opacity = String(1 - exit);
+    expandedEl.style.pointerEvents = exit > 0.85 ? "none" : "auto";
 
-    filtersEl.style.height = `${filters * (1 - p)}px`;
-    filtersEl.style.opacity = String(1 - Math.min(1, p * 1.15));
+    shelfEl.style.transform = `translate3d(0, ${-shelf * (1 - enter)}px, 0)`;
+    shelfEl.style.opacity = String(enter);
+    shelfEl.style.pointerEvents = enter > 0.85 ? "auto" : "none";
 
-    const nextCollapsed = p > 0.92;
+    const stageH = Math.max(
+      shelf * enter,
+      expanded * (1 - exit) + shelf * enter * 0.15,
+    );
+    // Settle cleanly at the ends
+    if (p <= 0.001) stage.style.height = `${expanded}px`;
+    else if (p >= 0.999) stage.style.height = `${shelf}px`;
+    else stage.style.height = `${Math.max(stageH, shelf * 0.35)}px`;
+
+    const nextCollapsed = p > 0.9;
     setCollapsed((prev) => (prev === nextCollapsed ? prev : nextCollapsed));
   };
 
   useLayoutEffect(() => {
-    const feed = feedHeaderRef.current;
-    const shelf = shelfHeaderRef.current;
-    const filtersInner = filtersInnerRef.current;
-    if (!feed || !shelf || !filtersInner) return;
+    const expandedEl = expandedRef.current;
+    const shelfEl = shelfWrapRef.current;
+    if (!expandedEl || !shelfEl) return;
 
     const measure = () => {
       heightsRef.current = {
-        feed: feed.scrollHeight,
-        shelf: shelf.scrollHeight,
-        filters: filtersInner.scrollHeight,
+        expanded: expandedEl.scrollHeight,
+        shelf: shelfEl.scrollHeight,
       };
       applyProgress(progressRef.current);
     };
 
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(feed);
-    ro.observe(shelf);
-    ro.observe(filtersInner);
+    ro.observe(expandedEl);
+    ro.observe(shelfEl);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -117,46 +126,29 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         t.name.toLowerCase().includes(q) ||
         t.blurb.toLowerCase().includes(q) ||
         t.category.includes(q);
-      const ageOk =
-        age == null || (t.ageMin <= age && t.ageMax >= age);
+      const ageOk = age == null || (t.ageMin <= age && t.ageMax >= age);
       return audienceOk && queryOk && ageOk;
     });
   }, [toys, query, audience, age]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="z-30 shrink-0">
+      <div
+        ref={stageRef}
+        className="browse-chrome-stage relative z-30 shrink-0 overflow-hidden"
+      >
+        {/* Full browse nav — slides up together */}
         <div
-          ref={chromeRef}
-          className="browse-header-swap relative overflow-hidden"
-        >
-          <div
-            ref={feedHeaderRef}
-            className="browse-header-panel"
-            aria-hidden={collapsed}
-          >
-            <FeedHeader
-              query={query}
-              onQueryChange={setQuery}
-              inert={collapsed}
-            />
-          </div>
-          <div
-            ref={shelfHeaderRef}
-            className="browse-header-panel browse-header-panel--shelf"
-            aria-hidden={!collapsed}
-          >
-            <ShelfHeader />
-          </div>
-        </div>
-
-        <div
-          ref={filtersRef}
-          className="browse-filters-collapse"
+          ref={expandedRef}
+          className="browse-chrome-expanded absolute inset-x-0 top-0 w-full will-change-transform"
           aria-hidden={collapsed}
-          style={{ pointerEvents: collapsed ? "none" : "auto" }}
         >
-          <div ref={filtersInnerRef} className="browse-filters-collapse__inner bg-white">
+          <FeedHeader
+            query={query}
+            onQueryChange={setQuery}
+            inert={collapsed}
+          />
+          <div className="bg-white">
             <FilterRow
               audience={audience}
               onAudienceChange={setAudience}
@@ -167,6 +159,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             />
             <ThumbCarousel />
           </div>
+        </div>
+
+        {/* Simple product shelf — glides down into place */}
+        <div
+          ref={shelfWrapRef}
+          className="browse-chrome-shelf absolute inset-x-0 top-0 w-full will-change-transform"
+          aria-hidden={!collapsed}
+        >
+          <ShelfHeader />
         </div>
       </div>
 

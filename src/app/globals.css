@@ -92,43 +92,24 @@ body {
   opacity: 1;
 }
 
-/* Browse feed: scroll-linked collapse (heights set in JS) */
-.browse-header-swap {
+/* Browse chrome: expanded pack slides up; simple shelf glides down */
+.browse-chrome-stage {
   position: relative;
   overflow: hidden;
   will-change: height;
 }
 
-.browse-header-panel {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  width: 100%;
-  will-change: opacity, transform;
-  pointer-events: none;
+.browse-chrome-expanded,
+.browse-chrome-shelf {
+  backface-visibility: hidden;
 }
 
-.browse-header-panel:not([aria-hidden="true"]) {
-  pointer-events: auto;
+.browse-chrome-shelf {
+  z-index: 2;
+}
+
+.browse-chrome-expanded {
   z-index: 1;
-}
-
-.browse-header-panel--shelf {
-  z-index: 0;
-}
-
-.browse-header-panel--shelf:not([aria-hidden="true"]) {
-  z-index: 1;
-}
-
-.browse-filters-collapse {
-  overflow: hidden;
-  will-change: height, opacity;
-}
-
-.browse-filters-collapse__inner {
-  min-height: 0;
-  overflow: hidden;
 }
 
 .age-pop {

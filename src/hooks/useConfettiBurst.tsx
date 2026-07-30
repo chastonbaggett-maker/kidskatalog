@@ -85,7 +85,7 @@ export function useConfettiBurst() {
 
       setBursting(true);
       setBits(next);
-      window.setTimeout(() => setBursting(false), 560);
+      window.setTimeout(() => setBursting(false), 680);
     },
     [uid],
   );

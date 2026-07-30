@@ -665,7 +665,7 @@ html[data-standalone="true"] .app-shell {
     transparent 78%
   );
   /* Keyframes own opacity; forwards keeps it off so it doesn't flash back */
-  animation: add-kart-glow-flash 0.55s ease-out forwards;
+  animation: add-kart-glow-flash 0.65s ease-out forwards;
 }
 
 .add-kart-btn--in {

@@ -88,6 +88,13 @@ body {
   overscroll-behavior: none;
 }
 
+/* Installed PWA: body must use 100vh — 100dvh is ~34px short on iPhone (WebKit bug) */
+html[data-standalone="true"] body {
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+}
+
 /* Keep form fields ≥16px so iOS won’t auto-zoom on focus */
 input,
 textarea,
@@ -432,19 +439,17 @@ select {
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100vh;
-  max-height: 100dvh;
+  flex: 1 1 auto;
+  min-height: 0;
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Installed PWA: 100vh includes the full screen in standalone (WebKit workaround) */
+/* Installed PWA: fill the 100vh body exactly */
 html[data-standalone="true"] .app-shell {
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
   max-width: none;
   margin: 0;
   border-radius: 0;
@@ -489,8 +494,8 @@ html[data-standalone="true"] .app-shell {
 
   html[data-standalone="true"] .app-shell {
     margin: 0;
-    height: 100vh;
-    max-height: 100vh;
+    height: 100%;
+    max-height: 100%;
     border-radius: 0;
   }
 }

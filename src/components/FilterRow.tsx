@@ -9,6 +9,7 @@ const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
 
 const BOYS_CONFETTI = ["#4e89ff", "#3a6fe0", "#7aa8ff", "#2f6ae8", "#ffffff", "#5b93ff"];
 const GIRLS_CONFETTI = ["#f5a9c5", "#ef8fb3", "#ffc2d6", "#e078a8", "#ffffff", "#f0a0c0"];
+const UNISEX_CONFETTI = ["#3ecfc0", "#2bb8a8", "#6ee8db", "#45d4c4", "#ffffff", "#1fa896"];
 
 type Props = {
   audience: Audience;
@@ -197,12 +198,11 @@ export function FilterRow({
           onClick={(e) => {
             const next = audience === "girls" ? "all" : "girls";
             onAudienceChange(next);
-            if (next === "girls") {
-              fireConfetti(
-                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
-                GIRLS_CONFETTI,
-              );
-            }
+            const origin = (
+              e.currentTarget as HTMLButtonElement
+            ).getBoundingClientRect();
+            if (next === "girls") fireConfetti(origin, GIRLS_CONFETTI);
+            else if (next === "all") fireConfetti(origin, UNISEX_CONFETTI);
           }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "girls" || audience === "all"

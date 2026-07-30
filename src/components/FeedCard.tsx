@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Toy } from "@/types/toy";
+import { useAccentStore } from "@/lib/accent-store";
 
 export function FeedCard({
   toy,
@@ -13,6 +14,14 @@ export function FeedCard({
   showText: boolean;
   index?: number;
 }) {
+  const audience = useAccentStore((s) => s.audience);
+  const viewBtnClass =
+    audience === "boys"
+      ? "bg-[var(--boys-chip)]"
+      : audience === "girls"
+        ? "bg-[var(--girls-chip)]"
+        : "bg-[var(--mint)]";
+
   return (
     <article
       className="feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2"
@@ -45,7 +54,7 @@ export function FeedCard({
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}
-          className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-[var(--mint)] text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem]"
+          className={`flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem] ${viewBtnClass}`}
         >
           <EyeIcon />
         </Link>

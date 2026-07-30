@@ -20,7 +20,7 @@ export default async function ToyPage({ params }: Props) {
 
   return (
     <AppShell>
-      <header className="flex items-center gap-2 bg-[image:var(--header-grad)] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+      <header className="flex items-center gap-2 rounded-b-[1.75rem] bg-[image:var(--header-grad)] px-3 pb-5 pt-[max(1rem,env(safe-area-inset-top))] text-white shadow-[0_8px_20px_-12px_rgba(80,100,180,0.55)]">
         <Link
           href="/shop"
           className="flex h-10 w-10 items-center justify-center"

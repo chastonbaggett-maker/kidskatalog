@@ -51,10 +51,7 @@ export function FeedHeader({
             placeholder="Search toys"
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
           />
-          <span className="ml-1 flex items-center gap-2 text-[var(--purple-deep)]">
-            <button type="button" className="p-0.5" aria-label="Picture search">
-              <CameraIcon />
-            </button>
+          <span className="ml-1 flex items-center text-[var(--purple-deep)]">
             <button type="button" className="p-0.5" aria-label="Voice search">
               <MicIcon />
             </button>
@@ -70,20 +67,6 @@ function SearchIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2.2" />
       <path d="M16 16l4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CameraIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M4 8.5A2.5 2.5 0 0 1 6.5 6h2l1.2-1.5h4.6L15.5 6H17.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <circle cx="12" cy="12.5" r="3" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M18 5.5l1-1M19.5 7l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

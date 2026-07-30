@@ -46,9 +46,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
             "In Kart — tap to remove"
           ) : (
             <>
-              <span className="add-kart-btn__plus" aria-hidden>
-                +
-              </span>
+              <span className="add-kart-btn__plus">+</span>
               <span>Kart</span>
             </>
           )}

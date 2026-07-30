@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useKartStore } from "@/lib/kart-store";
@@ -108,20 +109,13 @@ function MenuIcon() {
 
 function BrandIcon() {
   return (
-    <span className="relative inline-flex text-[var(--purple-deep)]">
-      <span className="pointer-events-none absolute -right-0.5 -top-1.5 flex gap-px" aria-hidden>
-        <svg width="6" height="6" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.6l1.2-6.5L2.5 9.5l6.6-.9L12 2.5z" />
-        </svg>
-        <svg width="5" height="5" viewBox="0 0 24 24" fill="currentColor" className="-mt-0.5">
-          <path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.6l1.2-6.5L2.5 9.5l6.6-.9L12 2.5z" />
-        </svg>
-      </span>
-      <span
-        className="bg-gradient-to-br from-[var(--blue)] to-[var(--purple)] bg-clip-text font-[family-name:var(--font-display)] text-2xl font-bold leading-none text-transparent"
-      >
-        k
-      </span>
-    </span>
+    <Image
+      src="/logo-color.svg"
+      alt=""
+      width={30}
+      height={26}
+      unoptimized
+      className="h-7 w-auto"
+    />
   );
 }

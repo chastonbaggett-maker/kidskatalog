@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccentStore } from "@/lib/accent-store";
 import { useKartStore } from "@/lib/kart-store";
 import { Logo } from "./Logo";
 
@@ -97,5 +98,19 @@ function MenuIcon({ active }: { active?: boolean }) {
 }
 
 function BrandIcon() {
-  return <Logo variant="icon" light={false} href={null} size={38} />;
+  const audience = useAccentStore((s) => s.audience);
+  const chipClass =
+    audience === "boys"
+      ? "bg-[var(--boys-chip)]"
+      : audience === "girls"
+        ? "bg-[var(--girls-chip)]"
+        : "bg-[var(--mint)]";
+
+  return (
+    <span
+      className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md ${chipClass}`}
+    >
+      <Logo variant="icon" light href={null} size={26} />
+    </span>
+  );
 }

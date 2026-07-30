@@ -4,8 +4,8 @@ import { categories } from "@/data/categories";
 
 export function ThumbCarousel() {
   return (
-    <div className="mx-4 mb-3 overflow-hidden rounded-[1.5rem] bg-white px-3 py-3 shadow-sm ring-1 ring-black/[0.03]">
-      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+    <div className="overflow-hidden rounded-b-[1.5rem] rounded-t-none bg-white px-3 py-3 shadow-[0_8px_18px_-12px_rgba(60,70,120,0.35)]">
+      <div className="flex gap-3 overflow-x-auto pb-0.5 scrollbar-none">
         {categories.map((cat) => (
           <Link
             key={cat.id}

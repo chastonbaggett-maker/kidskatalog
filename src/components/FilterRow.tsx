@@ -16,7 +16,7 @@ export function FilterRow({
   onShowTextChange,
 }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto bg-[var(--lavender)]/70 px-4 py-2.5 scrollbar-none">
+    <div className="flex gap-2 overflow-x-auto px-4 py-2.5 scrollbar-none">
       <button
         type="button"
         onClick={() => onShowTextChange(!showText)}

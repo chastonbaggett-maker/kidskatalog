@@ -32,16 +32,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   return (
     <>
       <FeedHeader query={query} onQueryChange={setQuery} wordmark />
-      <FilterRow
-        audience={audience}
-        onAudienceChange={setAudience}
-        showText={showText}
-        onShowTextChange={setShowText}
-      />
 
-      <div className="flex-1 overflow-y-auto pb-28 pt-3">
+      <div className="z-20 bg-[var(--lavender)]/80">
+        <FilterRow
+          audience={audience}
+          onAudienceChange={setAudience}
+          showText={showText}
+          onShowTextChange={setShowText}
+        />
         <ThumbCarousel />
+      </div>
 
+      <div className="flex-1 overflow-y-auto pb-28 pt-4">
         <div className="flex flex-col gap-5">
           {filtered.map((toy, index) => (
             <FeedCard

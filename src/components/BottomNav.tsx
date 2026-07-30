@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccentStore } from "@/lib/accent-store";
 import { useKartStore } from "@/lib/kart-store";
-import { Logo } from "./Logo";
 
 function useViewAccentClass() {
   const audience = useAccentStore((s) => s.audience);
@@ -116,5 +115,20 @@ function MenuIcon({ active }: { active?: boolean }) {
 }
 
 function BrandIcon() {
-  return <Logo variant="icon" light={false} href={null} size={38} />;
+  return (
+    <span
+      aria-hidden
+      className="block h-[38px] w-[26px] bg-current"
+      style={{
+        WebkitMaskImage: "url(/logo-icon.png)",
+        maskImage: "url(/logo-icon.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+    />
+  );
 }

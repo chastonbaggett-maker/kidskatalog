@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { InstallPrompt } from "./InstallPrompt";
 
+/** Shell layout is protected — see .cursor/rules/pwa-shell-layout.mdc */
 export function AppShell({
   children,
   hideNav = false,

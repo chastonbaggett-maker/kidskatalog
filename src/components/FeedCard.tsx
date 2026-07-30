@@ -41,7 +41,7 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute bottom-3 right-0 z-10 translate-x-1/3 sm:translate-x-1/4 lg:translate-x-1/3">
+      <div className="absolute bottom-3 right-0 z-10 translate-x-[18%] sm:translate-x-[12%] lg:translate-x-[15%]">
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}

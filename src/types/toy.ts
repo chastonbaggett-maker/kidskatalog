@@ -31,4 +31,6 @@ export type Category = {
   id: CategoryId;
   label: string;
   hue: string;
+  image: string;
+  imageAlt: string;
 };

@@ -13,11 +13,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [audience, setAudience] = useState<Audience>("all");
   const [showText, setShowText] = useState(false);
 
-  const featured = useMemo(
-    () => toys.filter((t) => t.featured).slice(0, 8),
-    [toys],
-  );
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return toys.filter((t) => {
@@ -45,7 +40,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       />
 
       <div className="flex-1 overflow-y-auto pb-28 pt-3">
-        <ThumbCarousel toys={featured} />
+        <ThumbCarousel />
 
         <div className="flex flex-col gap-5">
           {filtered.map((toy, index) => (

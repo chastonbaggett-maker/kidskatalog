@@ -36,11 +36,12 @@ export function MoreToysFeed({
     });
   }, [seed]);
 
+  const seedKey = seed.map((t) => t.id).join(",");
+
   useEffect(() => {
-    // Reset when navigating to another product
     setItems(seed.slice(0, PAGE));
     cursorRef.current = Math.min(PAGE, seed.length);
-  }, [seed]);
+  }, [seed, seedKey]);
 
   useEffect(() => {
     const node = sentinelRef.current;

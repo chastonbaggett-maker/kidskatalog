@@ -30,7 +30,7 @@ export function ShelfHeader({
           ? "bg-[image:var(--header-grad-alt)]"
           : "bg-[image:var(--header-grad)]"
       } px-3 pb-5 pt-[max(1rem,env(safe-area-inset-top))] text-white shadow-[0_8px_20px_-12px_rgba(80,100,180,0.55)] ${
-        rounded ? "rounded-b-2xl" : ""
+        rounded ? "rounded-b-[2.5rem]" : ""
       } ${className}`}
     >
       <div className="relative flex min-h-11 items-center justify-center">

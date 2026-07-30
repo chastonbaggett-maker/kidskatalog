@@ -18,14 +18,23 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [showText, setShowText] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const collapsedRef = useRef(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const onScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
-    const y = e.currentTarget.scrollTop;
+    const scroller = e.currentTarget;
+    const y = scroller.scrollTop;
     const next = collapsedRef.current ? y > EXPAND_AT : y > COLLAPSE_AT;
-    if (next !== collapsedRef.current) {
-      collapsedRef.current = next;
-      setCollapsed(next);
-    }
+    if (next === collapsedRef.current) return;
+
+    const before = headerRef.current?.offsetHeight ?? 0;
+    collapsedRef.current = next;
+    setCollapsed(next);
+
+    // Keep the feed from jumping when the chrome height changes
+    requestAnimationFrame(() => {
+      const after = headerRef.current?.offsetHeight ?? 0;
+      scroller.scrollTop = Math.max(0, y - (before - after));
+    });
   }, []);
 
   const filtered = useMemo(() => {
@@ -45,35 +54,35 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [toys, query, audience]);
 
   return (
-    <>
-      <div className="sticky top-0 z-30">
-        {collapsed ? (
-          <ShelfHeader />
-        ) : (
-          <>
-            <FeedHeader
-              query={query}
-              onQueryChange={setQuery}
-              sticky={false}
-            />
-            <div className="z-20 bg-white">
-              <FilterRow
-                audience={audience}
-                onAudienceChange={setAudience}
-                showText={showText}
-                onShowTextChange={setShowText}
-              />
-              <ThumbCarousel />
-            </div>
-          </>
-        )}
-      </div>
-
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <div
-        className="flex-1 overflow-y-auto pb-28 pt-4"
+        className="min-h-0 flex-1 overflow-y-auto"
         onScroll={onScroll}
       >
-        <div className="flex flex-col gap-10">
+        <div ref={headerRef} className="sticky top-0 z-30">
+          {collapsed ? (
+            <ShelfHeader />
+          ) : (
+            <>
+              <FeedHeader
+                query={query}
+                onQueryChange={setQuery}
+                sticky={false}
+              />
+              <div className="bg-white">
+                <FilterRow
+                  audience={audience}
+                  onAudienceChange={setAudience}
+                  showText={showText}
+                  onShowTextChange={setShowText}
+                />
+                <ThumbCarousel />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-10 pb-28 pt-4">
           {filtered.map((toy, index) => (
             <FeedCard
               key={toy.id}
@@ -91,6 +100,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       </div>
 
       <FloatingActions />
-    </>
+    </div>
   );
 }

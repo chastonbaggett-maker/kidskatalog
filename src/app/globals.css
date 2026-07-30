@@ -93,9 +93,27 @@ select {
 }
 
 /*
- * Installed iPhone/Android PWA: lock the document to the real screen.
- * Avoids the white gap under position:fixed / short visualViewport shells.
+ * Phones (browser preview + PWA): lock document to the visible screen
+ * so the bottom nav can sit on the real bottom edge.
  */
+@media (max-width: 639px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    min-height: 0;
+    background: var(--bg);
+  }
+}
+
+/* Installed PWA on any width (iOS navigator.standalone via data-standalone) */
 html[data-standalone="true"],
 html[data-standalone="true"] body {
   width: 100%;
@@ -108,7 +126,6 @@ html[data-standalone="true"] body {
   position: fixed;
   inset: 0;
   min-height: 0;
-  /* Match shell so any residual edge isn’t a white strip */
   background: var(--bg);
 }
 
@@ -329,9 +346,7 @@ html[data-standalone="true"] body {
   right: 0;
   bottom: 0;
   margin: 0;
-  /* Icons clear the home indicator; bar background still paints edge-to-edge */
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: 0;
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   backdrop-filter: blur(28px) saturate(1.5);
   background-color: rgba(255, 255, 255, 0.72);
@@ -340,19 +355,15 @@ html[data-standalone="true"] body {
     rgba(255, 255, 255, 0.88),
     rgba(255, 255, 255, 0.42)
   );
-  overflow: visible;
 }
 
-/* Bleed paint below the bar in case iOS leaves a residual strip */
-.bottom-nav::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 120px;
-  background: rgba(255, 255, 255, 0.92);
-  pointer-events: none;
+/* Safe-area only when the OS reports one (real iPhone), not fake preview gaps */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (display-mode: standalone) {
+    .bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  }
 }
 
 @keyframes voice-mic-pulse {
@@ -458,16 +469,29 @@ html[data-standalone="true"] body {
   overflow: hidden;
 }
 
-/* Phones in browser: fill the screen without the desktop phone frame */
+/* Phones: fill the locked body so the nav’s bottom:0 is the screen bottom */
 @media (max-width: 639px) {
   .app-shell {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     max-width: none;
+    height: auto;
+    max-height: none;
     margin: 0;
     border-radius: 0;
+    box-shadow: none;
+  }
+
+  .bottom-nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 }
 
-/* Installed PWA (data-standalone from StandaloneClass — covers iOS navigator.standalone) */
+/* Installed PWA (data-standalone — covers iOS navigator.standalone) */
 html[data-standalone="true"] .app-shell {
   position: absolute;
   inset: 0;

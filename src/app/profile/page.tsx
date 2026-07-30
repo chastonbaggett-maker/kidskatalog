@@ -10,7 +10,7 @@ export default function ProfilePage() {
         altGradient
         className="pb-8"
       />
-      <div className="star-field flex-1 space-y-3 px-4 py-6 pb-28">
+      <div className="star-field flex-1 space-y-3 px-4 py-6 scroll-pad-bottom">
         <div className="rounded-[1.75rem] bg-white p-5 shadow-sm">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
             How it works

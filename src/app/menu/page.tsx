@@ -9,7 +9,7 @@ export default function MenuPage() {
   return (
     <AppShell>
       <ShelfHeader title="Piles" subtitle="Pick a toy group" />
-      <div className="star-field grid flex-1 grid-cols-2 gap-3 overflow-y-auto px-4 py-5 pb-28 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6">
+      <div className="star-field grid flex-1 grid-cols-2 gap-3 overflow-y-auto px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6">
         {categories.map((cat) => (
           <Link
             key={cat.id}

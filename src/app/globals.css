@@ -23,6 +23,8 @@
   /* Gender filter chips stay fixed even when site accents remap */
   --boys-chip: #4e89ff;
   --girls-chip: #f5a9c5;
+  /* Bottom nav clearance for scroll areas (icons + safe area) */
+  --bottom-nav-offset: calc(4.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* Boys tab — site accents go blue */
@@ -90,43 +92,6 @@ input,
 textarea,
 select {
   font-size: 16px;
-}
-
-/*
- * Phones (browser preview + PWA): lock document to the visible screen
- * so the bottom nav can sit on the real bottom edge.
- */
-@media (max-width: 639px) {
-  html,
-  body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-
-  body {
-    position: fixed;
-    inset: 0;
-    min-height: 0;
-    background: var(--bg);
-  }
-}
-
-/* Installed PWA on any width (iOS navigator.standalone via data-standalone) */
-html[data-standalone="true"],
-html[data-standalone="true"] body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-html[data-standalone="true"] body {
-  position: fixed;
-  inset: 0;
-  min-height: 0;
-  background: var(--bg);
 }
 
 ::selection {
@@ -341,14 +306,11 @@ html[data-standalone="true"] body {
 }
 
 .bottom-nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex-shrink: 0;
+  width: 100%;
   margin: 0;
-  /* Bar stays on the screen edge; icons clear the home indicator / notch chrome */
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   backdrop-filter: blur(28px) saturate(1.5);
   background-color: rgba(255, 255, 255, 0.72);
@@ -357,6 +319,10 @@ html[data-standalone="true"] body {
     rgba(255, 255, 255, 0.88),
     rgba(255, 255, 255, 0.42)
   );
+}
+
+.scroll-pad-bottom {
+  padding-bottom: var(--bottom-nav-offset);
 }
 
 @keyframes voice-mic-pulse {
@@ -455,53 +421,24 @@ html[data-standalone="true"] body {
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
+  height: 100vh;
   height: 100dvh;
+  max-height: 100vh;
   max-height: 100dvh;
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Phones: fill the locked body so the nav’s bottom:0 is the screen bottom */
-@media (max-width: 639px) {
-  .app-shell {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    max-width: none;
-    height: auto;
-    max-height: none;
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .bottom-nav {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
-}
-
-/* Installed PWA (data-standalone — covers iOS navigator.standalone) */
+/* Installed PWA: WebKit reports 100dvh minus bottom safe area — compensate */
 html[data-standalone="true"] .app-shell {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  max-width: none;
-  height: auto;
+  height: 100vh;
+  height: calc(100dvh + env(safe-area-inset-bottom, 0px));
   max-height: none;
+  max-width: none;
   margin: 0;
   border-radius: 0;
   box-shadow: none;
-}
-
-html[data-standalone="true"] .bottom-nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
 /* Phone-framed shell on larger browser screens */
@@ -528,8 +465,6 @@ html[data-standalone="true"] .bottom-nav {
   }
 
   .app-shell {
-    position: relative;
-    inset: auto;
     max-width: 980px;
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
@@ -543,15 +478,11 @@ html[data-standalone="true"] .bottom-nav {
   }
 
   html[data-standalone="true"] .app-shell {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    max-width: none;
-    height: auto;
-    max-height: none;
     margin: 0;
+    height: 100vh;
+    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
+    max-height: none;
     border-radius: 0;
-    box-shadow: none;
   }
 }
 

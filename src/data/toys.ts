@@ -1,0 +1,335 @@
+import type { Toy } from "@/types/toy";
+
+/** Demo catalog — affiliate tag is a placeholder; set NEXT_PUBLIC_AFFILIATE_TAG in env */
+const tag = process.env.NEXT_PUBLIC_AFFILIATE_TAG || "kidskatalog-20";
+
+function amazon(asin: string) {
+  return `https://www.amazon.com/dp/${asin}?tag=${tag}`;
+}
+
+export const toys: Toy[] = [
+  {
+    id: "dino-rex",
+    name: "Roar Rex",
+    category: "dinos",
+    blurb: "Big chomp. Bigger roar.",
+    image:
+      "https://images.unsplash.com/photo-1615486511484-92e172b4d35b?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Green toy dinosaur",
+    affiliateUrl: amazon("B08N5WRWNW"),
+    ageMin: 3,
+    ageMax: 8,
+    color: "#2ECC71",
+  },
+  {
+    id: "dino-long",
+    name: "Long Neck",
+    category: "dinos",
+    blurb: "Tall friend for tall fun.",
+    image:
+      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Bright toy on soft background",
+    affiliateUrl: amazon("B07Q2JZQZQ"),
+    ageMin: 3,
+    ageMax: 7,
+    color: "#27AE60",
+  },
+  {
+    id: "dino-pack",
+    name: "Dino Pack",
+    category: "dinos",
+    blurb: "Five little stompers.",
+    image:
+      "https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful collection of kids toys",
+    affiliateUrl: amazon("B09V3KX2MZ"),
+    ageMin: 3,
+    ageMax: 6,
+    color: "#1E8449",
+  },
+  {
+    id: "bear-hug",
+    name: "Hug Bear",
+    category: "plush",
+    blurb: "Soft. Squishy. Sleepy.",
+    image:
+      "https://images.unsplash.com/photo-1559454403-b8fb88521f11?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Brown teddy bear",
+    affiliateUrl: amazon("B07FZ8S74R"),
+    ageMin: 0,
+    ageMax: 99,
+    color: "#A0522D",
+  },
+  {
+    id: "duck-bath",
+    name: "Splash Duck",
+    category: "plush",
+    blurb: "Quack in the tub.",
+    image:
+      "https://images.unsplash.com/photo-1534188753412-3e26d0d65057?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Yellow rubber duck",
+    affiliateUrl: amazon("B0001IVSFQ"),
+    ageMin: 0,
+    ageMax: 5,
+    color: "#F4D03F",
+  },
+  {
+    id: "bunny-soft",
+    name: "Cloud Bunny",
+    category: "plush",
+    blurb: "Fluffy ears forever.",
+    image:
+      "https://images.unsplash.com/photo-1535930891776-0c0dfb767ff0?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Soft stuffed animal",
+    affiliateUrl: amazon("B08XYZPLUSH"),
+    ageMin: 1,
+    ageMax: 8,
+    color: "#F5B7B1",
+  },
+  {
+    id: "race-red",
+    name: "Zoom Red",
+    category: "cars",
+    blurb: "Fast. Loud. Fun.",
+    image:
+      "https://images.unsplash.com/photo-1558618047-f4b511aab612?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Red toy race car",
+    affiliateUrl: amazon("B07YNLXQ7Z"),
+    ageMin: 3,
+    ageMax: 10,
+    color: "#E74C3C",
+  },
+  {
+    id: "truck-dump",
+    name: "Dump Truck",
+    category: "cars",
+    blurb: "Load it. Dump it.",
+    image:
+      "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Yellow toy dump truck",
+    affiliateUrl: amazon("B00TQIT9QA"),
+    ageMin: 2,
+    ageMax: 7,
+    color: "#F39C12",
+  },
+  {
+    id: "train-set",
+    name: "Choo Set",
+    category: "cars",
+    blurb: "Tracks go click-clack.",
+    image:
+      "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Wooden toy train",
+    affiliateUrl: amazon("B00009V41B"),
+    ageMin: 3,
+    ageMax: 8,
+    color: "#2980B9",
+  },
+  {
+    id: "block-wood",
+    name: "Wood Stack",
+    category: "blocks",
+    blurb: "Stack high. Tip over.",
+    image:
+      "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful wooden building blocks",
+    affiliateUrl: amazon("B00007DW1X"),
+    ageMin: 1,
+    ageMax: 6,
+    color: "#E67E22",
+  },
+  {
+    id: "block-mega",
+    name: "Mega Bricks",
+    category: "blocks",
+    blurb: "Big bricks. Big builds.",
+    image:
+      "https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Large colorful building bricks",
+    affiliateUrl: amazon("B00NHQFA1I"),
+    ageMin: 1,
+    ageMax: 5,
+    color: "#3498DB",
+  },
+  {
+    id: "block-castle",
+    name: "Castle Kit",
+    category: "blocks",
+    blurb: "Build a whole kingdom.",
+    image:
+      "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Toy castle building set",
+    affiliateUrl: amazon("B07CASTLE1"),
+    ageMin: 4,
+    ageMax: 10,
+    color: "#8E44AD",
+  },
+  {
+    id: "ball-kick",
+    name: "Kick Ball",
+    category: "outside",
+    blurb: "Bounce. Kick. Chase.",
+    image:
+      "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful playground ball",
+    affiliateUrl: amazon("B001E95XQE"),
+    ageMin: 3,
+    ageMax: 12,
+    color: "#27AE60",
+  },
+  {
+    id: "bubbles-big",
+    name: "Bubble Wand",
+    category: "outside",
+    blurb: "Giant shiny bubbles.",
+    image:
+      "https://images.unsplash.com/photo-1527482797697-017ee125d50f?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids blowing bubbles outside",
+    affiliateUrl: amazon("B00BUBBLE1"),
+    ageMin: 2,
+    ageMax: 8,
+    color: "#5DADE2",
+  },
+  {
+    id: "scooter-kid",
+    name: "Zip Scooter",
+    category: "outside",
+    blurb: "Three wheels. Full speed.",
+    image:
+      "https://images.unsplash.com/photo-1571333250630-f0230c320b6d?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kid scooter",
+    affiliateUrl: amazon("B07SCOOTER"),
+    ageMin: 3,
+    ageMax: 8,
+    color: "#E74C3C",
+  },
+  {
+    id: "game-memory",
+    name: "Match Up",
+    category: "games",
+    blurb: "Flip. Find. Win.",
+    image:
+      "https://images.unsplash.com/photo-1611996575749-79a3a250f79e?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids board game pieces",
+    affiliateUrl: amazon("B00004TZY8"),
+    ageMin: 3,
+    ageMax: 8,
+    color: "#9B59B6",
+  },
+  {
+    id: "game-puzzle",
+    name: "Floor Puzzle",
+    category: "games",
+    blurb: "Giant pieces. Giant fun.",
+    image:
+      "https://images.unsplash.com/photo-1585504198199-20277593b94f?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful floor puzzle for kids",
+    affiliateUrl: amazon("B07PUZZLE1"),
+    ageMin: 3,
+    ageMax: 6,
+    color: "#E67E22",
+  },
+  {
+    id: "game-dice",
+    name: "Silly Dice",
+    category: "games",
+    blurb: "Roll for silly moves.",
+    image:
+      "https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful game dice",
+    affiliateUrl: amazon("B08DICEGAME"),
+    ageMin: 4,
+    ageMax: 10,
+    color: "#16A085",
+  },
+  {
+    id: "stem-robot",
+    name: "Bot Buddy",
+    category: "stem",
+    blurb: "Beep. Build. Explore.",
+    image:
+      "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Friendly toy robot",
+    affiliateUrl: amazon("B08ROBOT01"),
+    ageMin: 5,
+    ageMax: 12,
+    color: "#7F8C8D",
+  },
+  {
+    id: "stem-magnets",
+    name: "Magnet Tiles",
+    category: "stem",
+    blurb: "Click. Snap. Create.",
+    image:
+      "https://images.unsplash.com/photo-1564429238817-393bd4286b2d?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Colorful magnetic building tiles",
+    affiliateUrl: amazon("B08MAGTILE"),
+    ageMin: 3,
+    ageMax: 10,
+    color: "#3498DB",
+  },
+  {
+    id: "stem-kit",
+    name: "Gear Lab",
+    category: "stem",
+    blurb: "Spinny gears that work.",
+    image:
+      "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids STEM building kit",
+    affiliateUrl: amazon("B07GEARLAB"),
+    ageMin: 6,
+    ageMax: 12,
+    color: "#F39C12",
+  },
+  {
+    id: "pretend-kitchen",
+    name: "Mini Kitchen",
+    category: "pretend",
+    blurb: "Cook pretend pancakes.",
+    image:
+      "https://images.unsplash.com/photo-1503454537195-1dc833f1dcd3?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids pretend play toys",
+    affiliateUrl: amazon("B07KITCHEN"),
+    ageMin: 2,
+    ageMax: 7,
+    color: "#E91E63",
+  },
+  {
+    id: "pretend-doctor",
+    name: "Doc Kit",
+    category: "pretend",
+    blurb: "Check-ups for stuffed pals.",
+    image:
+      "https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids play accessories",
+    affiliateUrl: amazon("B07DOCKIT1"),
+    ageMin: 3,
+    ageMax: 8,
+    color: "#E74C3C",
+  },
+  {
+    id: "pretend-castle",
+    name: "Knight Set",
+    category: "pretend",
+    blurb: "Shields up. Adventure on.",
+    image:
+      "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80",
+    imageAlt: "Kids pretend adventure toys",
+    affiliateUrl: amazon("B08KNIGHT1"),
+    ageMin: 4,
+    ageMax: 9,
+    color: "#5D6D7E",
+  },
+];
+
+export function getToy(id: string): Toy | undefined {
+  return toys.find((t) => t.id === id);
+}
+
+export function getToysByCategory(category: string): Toy[] {
+  return toys.filter((t) => t.category === category);
+}
+
+export function getToysByIds(ids: string[]): Toy[] {
+  return ids.map((id) => getToy(id)).filter((t): t is Toy => Boolean(t));
+}

@@ -347,12 +347,12 @@ body {
 }
 
 .add-kart-btn--burst {
-  animation: add-kart-climax 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: add-kart-climax 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .add-kart-btn--burst .add-kart-btn__glow {
-  opacity: 1;
-  animation: add-kart-glow-flash 0.55s ease-out;
+  /* Keyframes own opacity; forwards keeps it off so it doesn't flash back */
+  animation: add-kart-glow-flash 0.55s ease-out forwards;
 }
 
 .add-kart-btn--in {
@@ -421,14 +421,17 @@ body {
 
 @keyframes add-kart-glow-flash {
   0% {
-    opacity: 1;
-    transform: scale(1.2);
-    filter: blur(2px) brightness(1.4);
+    opacity: 0.95;
+    transform: scale(1.15);
+    filter: blur(2px) brightness(1.35);
+  }
+  55% {
+    opacity: 0.35;
   }
   100% {
     opacity: 0;
-    transform: scale(1.8);
-    filter: blur(14px) brightness(1);
+    transform: scale(1.65);
+    filter: blur(12px) brightness(1);
   }
 }
 

@@ -44,10 +44,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
   useEffect(() => {
     if (bits.length === 0) return;
-    const t = window.setTimeout(() => {
-      setBits([]);
-      setBursting(false);
-    }, 1100);
+    const t = window.setTimeout(() => setBits([]), 1100);
     return () => window.clearTimeout(t);
   }, [bits]);
 
@@ -78,6 +75,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     setBursting(true);
     setBits(next);
+    // Drop burst class as soon as climax ends so the glow can't snap back on.
+    window.setTimeout(() => setBursting(false), 560);
   }, [uid]);
 
   const handlePointerDown = () => {

@@ -236,10 +236,18 @@ function RocketIcon() {
   );
 }
 
-function HeartIcon() {
+function DollIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 21s-7-4.4-9.5-8.2C.5 9.5 2.2 6 5.8 6c1.9 0 3.2 1 4.2 2.3C11 7 12.3 6 14.2 6c3.6 0 5.3 3.5 3.3 6.8C19 16.6 12 21 12 21z" />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      {/* head */}
+      <circle cx="12" cy="6.2" r="3.4" />
+      {/* bow */}
+      <path d="M9.2 3.2c.4-.9 1.3-1.4 2.2-1.1.4.1.7.4.9.8.2-.4.5-.7.9-.8.9-.3 1.8.2 2.2 1.1.2.5 0 1.1-.4 1.5H9.6c-.4-.4-.6-1-.4-1.5z" />
+      {/* dress body */}
+      <path d="M8.2 10.2c1.1-.7 2.4-1.1 3.8-1.1s2.7.4 3.8 1.1l1.7 8.3H6.5l1.7-8.3z" />
+      {/* feet */}
+      <ellipse cx="9.2" cy="21.2" rx="1.6" ry="1.1" />
+      <ellipse cx="14.8" cy="21.2" rx="1.6" ry="1.1" />
     </svg>
   );
 }

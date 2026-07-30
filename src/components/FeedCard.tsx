@@ -44,11 +44,33 @@ export function FeedCard({
       <div className="absolute bottom-4 right-0 z-10 translate-x-1/3 sm:translate-x-1/4 lg:translate-x-1/3">
         <Link
           href={`/toy/${toy.id}`}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-lg font-bold text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem] sm:text-xl"
+          aria-label={`View ${toy.name}`}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem]"
         >
-          Go
+          <EyeIcon />
         </Link>
       </div>
     </article>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="sm:h-8 sm:w-8"
+    >
+      <path
+        d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.75" fill="currentColor" />
+    </svg>
   );
 }

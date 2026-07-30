@@ -152,25 +152,6 @@ export function FilterRow({
           </span>
         </button>
 
-        <div className="relative shrink-0">
-          <button
-            ref={btnRef}
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
-              age != null ? "bg-[var(--mint)]" : "bg-[var(--mint)]/70"
-            }`}
-          >
-            Age{age != null ? ` ${age}` : ""}
-            <CakeIcon />
-          </button>
-          {ageModal}
-        </div>
-
-        <div className="min-w-2 flex-1" aria-hidden />
-
         <button
           type="button"
           onClick={(e) => {
@@ -212,6 +193,25 @@ export function FilterRow({
           Girls
           <DollIcon />
         </button>
+
+        <div className="min-w-2 flex-1" aria-hidden />
+
+        <div className="relative shrink-0">
+          <button
+            ref={btnRef}
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+              age != null ? "bg-[var(--mint)]" : "bg-[var(--mint)]/70"
+            }`}
+          >
+            Age{age != null ? ` ${age}` : ""}
+            <CakeIcon />
+          </button>
+          {ageModal}
+        </div>
       </div>
       {confettiPortal}
     </div>

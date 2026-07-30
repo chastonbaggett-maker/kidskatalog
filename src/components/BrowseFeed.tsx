@@ -18,6 +18,7 @@ function easeInOutCubic(t: number) {
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [audience, setAudience] = useState<Audience>("all");
+  const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -116,9 +117,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         t.name.toLowerCase().includes(q) ||
         t.blurb.toLowerCase().includes(q) ||
         t.category.includes(q);
-      return audienceOk && queryOk;
+      const ageOk =
+        age == null || (t.ageMin <= age && t.ageMax >= age);
+      return audienceOk && queryOk && ageOk;
     });
-  }, [toys, query, audience]);
+  }, [toys, query, audience, age]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -159,6 +162,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onAudienceChange={setAudience}
               showText={showText}
               onShowTextChange={setShowText}
+              age={age}
+              onAgeChange={setAge}
             />
             <ThumbCarousel />
           </div>

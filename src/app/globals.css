@@ -298,6 +298,28 @@ body {
   );
 }
 
+@keyframes voice-mic-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 14px color-mix(in srgb, currentColor 35%, transparent);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 6px color-mix(in srgb, white 35%, transparent);
+  }
+}
+
+.voice-mic-listening {
+  animation: voice-mic-pulse 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-mic-listening {
+    animation: none;
+  }
+}
+
 .app-shell {
   width: 100%;
   max-width: 100%;

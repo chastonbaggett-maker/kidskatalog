@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccentStore } from "@/lib/accent-store";
 import { Logo } from "./Logo";
 
@@ -11,6 +12,36 @@ type Props = {
   /** Disable controls while collapsed / animating out */
   inert?: boolean;
 };
+
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<{
+    isFinal: boolean;
+    0: { transcript: string };
+  }>;
+};
+
+function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as Window & {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 export function FeedHeader({
   query,
@@ -25,6 +56,80 @@ export function FeedHeader({
       : audience === "girls"
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
+
+  const [listening, setListening] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const baseQueryRef = useRef(query);
+
+  useEffect(() => {
+    setSupported(Boolean(getSpeechRecognition()));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  }, []);
+
+  const startListening = useCallback(() => {
+    const Ctor = getSpeechRecognition();
+    if (!Ctor) {
+      setSupported(false);
+      return;
+    }
+
+    recognitionRef.current?.abort();
+    const recognition = new Ctor();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    baseQueryRef.current = query;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      let finalText = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const piece = result[0]?.transcript ?? "";
+        if (result.isFinal) finalText += piece;
+        else interim += piece;
+      }
+      const spoken = (finalText || interim).trim();
+      if (!spoken) return;
+      const base = baseQueryRef.current.trim();
+      onQueryChange(base ? `${base} ${spoken}` : spoken);
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    try {
+      recognition.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+    }
+  }, [onQueryChange, query]);
+
+  const toggleVoice = () => {
+    if (inert) return;
+    if (listening) stopListening();
+    else startListening();
+  };
 
   return (
     <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
@@ -51,7 +156,7 @@ export function FeedHeader({
           <input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search toys"
+            placeholder={listening ? "Listening…" : "Search toys"}
             tabIndex={inert ? -1 : 0}
             readOnly={inert}
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
@@ -59,9 +164,20 @@ export function FeedHeader({
           <button
             type="button"
             tabIndex={inert ? -1 : 0}
-            disabled={inert}
-            className={`-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-80 ${micClass}`}
-            aria-label="Voice search"
+            disabled={inert || !supported}
+            onClick={toggleVoice}
+            className={`-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
+              listening ? "voice-mic-listening ring-4 ring-white/50" : ""
+            }`}
+            aria-label={listening ? "Stop voice search" : "Voice search"}
+            aria-pressed={listening}
+            title={
+              supported
+                ? listening
+                  ? "Tap to stop"
+                  : "Talk to type"
+                : "Voice search isn’t supported in this browser"
+            }
           >
             <MicIcon />
           </button>

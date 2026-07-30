@@ -112,10 +112,10 @@ function BrandIcon() {
     <Image
       src="/logo-color.svg"
       alt=""
-      width={30}
-      height={26}
+      width={72}
+      height={28}
       unoptimized
-      className="h-7 w-auto"
+      className="h-7 w-auto max-w-[4.5rem] object-contain object-center"
     />
   );
 }

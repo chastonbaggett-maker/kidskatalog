@@ -3,46 +3,34 @@ import Link from "next/link";
 
 type LogoProps = {
   href?: string;
+  /** Kept for compatibility; wordmark is baked into the logo file */
   variant?: "mark" | "wordmark";
   light?: boolean;
   className?: string;
+  /** Rendered width in px */
   size?: number;
 };
 
 export function Logo({
   href = "/shop",
-  variant = "mark",
   light = true,
   className = "",
-  size = 56,
+  size = 180,
 }: LogoProps) {
   const src = light ? "/logo.svg" : "/logo-color.svg";
+  const height = Math.round(size * (200 / 520));
 
   const mark = (
-    <span
-      className={`inline-flex items-center gap-2 ${className}`}
-      aria-label="Kids Katalog"
-    >
-      <Image
-        src={src}
-        alt="Kids Katalog"
-        width={size}
-        height={Math.round(size * 0.875)}
-        unoptimized
-        priority
-        className="h-auto w-auto"
-        style={{ width: size, height: "auto" }}
-      />
-      {variant === "wordmark" && (
-        <span
-          className={`font-[family-name:var(--font-body)] text-xl font-semibold lowercase tracking-wide ${
-            light ? "text-white" : "text-[var(--blue)]"
-          }`}
-        >
-          katalog
-        </span>
-      )}
-    </span>
+    <Image
+      src={src}
+      alt="Kids katalog"
+      width={size}
+      height={height}
+      unoptimized
+      priority
+      className={`h-auto ${className}`}
+      style={{ width: size, height: "auto" }}
+    />
   );
 
   if (href === undefined) return mark;
@@ -50,6 +38,7 @@ export function Logo({
     <Link
       href={href}
       className="inline-flex transition-transform active:scale-[0.97]"
+      aria-label="Kids katalog"
     >
       {mark}
     </Link>

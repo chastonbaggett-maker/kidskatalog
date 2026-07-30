@@ -7,24 +7,17 @@ type Props = {
   query: string;
   onQueryChange: (value: string) => void;
   showBack?: boolean;
-  wordmark?: boolean;
 };
 
 export function FeedHeader({
   query,
   onQueryChange,
   showBack = false,
-  wordmark = false,
 }: Props) {
   return (
     <header className="sticky top-0 z-30 bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
       <div className="mb-3 flex items-center justify-center">
-        <Logo
-          variant={wordmark ? "wordmark" : "mark"}
-          light
-          href="/shop"
-          size={64}
-        />
+        <Logo light href="/shop" size={200} />
       </div>
 
       <div className="flex items-center gap-2">

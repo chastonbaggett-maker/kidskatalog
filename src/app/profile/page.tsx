@@ -5,7 +5,7 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <header className="bg-[image:var(--header-grad-alt)] px-4 pb-8 pt-10 text-center text-white">
-        <Logo variant="mark" light href="/shop" />
+        <Logo light href="/shop" size={160} />
         <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-bold">
           My profile
         </h1>

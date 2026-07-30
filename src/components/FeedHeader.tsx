@@ -75,20 +75,20 @@ function SearchIcon() {
 
 function MicIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect
-        x="9"
-        y="3"
-        width="6"
-        height="11"
-        rx="3"
+        x="9.25"
+        y="3.5"
+        width="5.5"
+        height="10.5"
+        rx="2.75"
         stroke="currentColor"
-        strokeWidth="2.4"
+        strokeWidth="1.6"
       />
       <path
-        d="M6.5 11a5.5 5.5 0 0 0 11 0M12 16.5V20M9.5 20h5"
+        d="M6.5 11.25a5.5 5.5 0 0 0 11 0M12 16.75V19.5M10 19.5h4"
         stroke="currentColor"
-        strokeWidth="2.4"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
     </svg>

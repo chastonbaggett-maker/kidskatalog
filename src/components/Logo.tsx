@@ -41,7 +41,8 @@ export function Logo({
       width={width}
       height={height}
       priority
-      className={`h-auto ${glow ? "logo-glow" : ""} ${className}`}
+      className={`h-auto ${glow ? "logo-glow" : ""} ${className}`.trim()}
+      unoptimized={glow}
       style={
         isIcon
           ? { height: size, width: "auto" }

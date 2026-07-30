@@ -32,8 +32,12 @@ export function FeedHeader({
             : "grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="min-h-0 overflow-hidden">
-          <div className="relative flex min-h-11 items-center justify-center">
+        <div
+          className={`min-h-0 ${
+            collapsed ? "overflow-visible" : "overflow-hidden"
+          }`}
+        >
+          <div className="relative flex min-h-11 items-center justify-center py-1">
             {showBack ? (
               <Link
                 href="/shop"

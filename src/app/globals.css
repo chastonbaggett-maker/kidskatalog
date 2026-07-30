@@ -72,9 +72,9 @@ body {
 
 .logo-glow {
   filter:
-    drop-shadow(0 0 6px rgba(255, 255, 255, 0.95))
-    drop-shadow(0 0 14px rgba(255, 220, 255, 0.75))
-    drop-shadow(0 0 28px rgba(209, 124, 255, 0.55));
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
 .fab-stack {

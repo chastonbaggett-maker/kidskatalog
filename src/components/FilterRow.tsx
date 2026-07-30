@@ -23,22 +23,9 @@ export function FilterRow({
   onAgeChange,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
   const popRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
-
-  useEffect(() => {
-    if (!open || !btnRef.current) return;
-    const rect = btnRef.current.getBoundingClientRect();
-    setPos({
-      top: rect.bottom + 10,
-      left: Math.min(
-        Math.max(rect.left + rect.width / 2, 148),
-        window.innerWidth - 148,
-      ),
-    });
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -96,12 +83,17 @@ export function FilterRow({
 
         {open && (
           <div
-            ref={popRef}
-            role="dialog"
-            aria-labelledby={titleId}
-            className="age-pop fixed z-[60] w-[min(18.5rem,calc(100vw-2rem))] -translate-x-1/2 rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
-            style={{ top: pos.top, left: pos.left }}
+            className="age-pop-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/25 px-4 backdrop-blur-[2px]"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setOpen(false);
+            }}
           >
+            <div
+              ref={popRef}
+              role="dialog"
+              aria-labelledby={titleId}
+              className="age-pop w-[min(18.5rem,calc(100vw-2rem))] rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
+            >
             <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <p
@@ -157,6 +149,7 @@ export function FilterRow({
             >
               Show all ages
             </button>
+            </div>
           </div>
         )}
       </div>

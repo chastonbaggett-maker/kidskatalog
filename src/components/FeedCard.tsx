@@ -41,11 +41,11 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-0 z-10 translate-x-1/3 sm:translate-x-1/4 lg:translate-x-1/3">
+      <div className="absolute bottom-3 right-0 z-10 translate-x-1/3 sm:translate-x-1/4 lg:translate-x-1/3">
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem]"
+          className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem]"
         >
           <EyeIcon />
         </Link>
@@ -57,12 +57,10 @@ export function FeedCard({
 function EyeIcon() {
   return (
     <svg
-      width="28"
-      height="28"
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className="sm:h-8 sm:w-8"
+      className="h-9 w-9 sm:h-11 sm:w-11"
     >
       <path
         d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"

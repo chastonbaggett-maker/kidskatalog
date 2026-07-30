@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useAccentStore } from "@/lib/accent-store";
 
 type LogoProps = {
   href?: string | null;
@@ -14,6 +17,18 @@ type LogoProps = {
 const WORDMARK_RATIO = 566 / 1299;
 const ICON_RATIO = 386 / 566;
 
+const COLOR_ICON: Record<"all" | "boys" | "girls", string> = {
+  all: "/logo-icon-teal.png",
+  boys: "/logo-icon-boys.png",
+  girls: "/logo-icon-girls.png",
+};
+
+const COLOR_WORDMARK: Record<"all" | "boys" | "girls", string> = {
+  all: "/logo-color-teal.png",
+  boys: "/logo-color-boys.png",
+  girls: "/logo-color-girls.png",
+};
+
 export function Logo({
   href = "/shop",
   variant = "wordmark",
@@ -22,14 +37,15 @@ export function Logo({
   className = "",
   size = 110,
 }: LogoProps) {
+  const audience = useAccentStore((s) => s.audience);
   const isIcon = variant === "icon";
   const src = isIcon
     ? light
       ? "/logo-icon.png"
-      : "/logo-icon-color.png"
+      : COLOR_ICON[audience]
     : light
       ? "/logo.png"
-      : "/logo-color.png";
+      : COLOR_WORDMARK[audience];
 
   const width = isIcon ? Math.round(size * ICON_RATIO) : size;
   const height = isIcon ? size : Math.round(size * WORDMARK_RATIO);

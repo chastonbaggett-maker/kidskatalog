@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useKartStore } from "@/lib/kart-store";
+import { Logo } from "./Logo";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -97,13 +97,5 @@ function MenuIcon({ active }: { active?: boolean }) {
 }
 
 function BrandIcon() {
-  return (
-    <Image
-      src="/logo-icon-color.png"
-      alt=""
-      width={26}
-      height={38}
-      className="h-8 w-auto object-contain object-center"
-    />
-  );
+  return <Logo variant="icon" light={false} href={null} size={32} />;
 }

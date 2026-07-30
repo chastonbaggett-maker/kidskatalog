@@ -732,7 +732,6 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn--burst,
   .add-kart-btn--charging .add-kart-btn__glow,
   .add-kart-btn--burst .add-kart-btn__glow,
-  .add-kart-btn__plus,
   .add-kart-confetti__bit {
     animation: none !important;
   }

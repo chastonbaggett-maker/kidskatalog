@@ -18,7 +18,7 @@ export function ProductGallery({
 
   return (
     <div className="mb-4">
-      <div className="relative mb-3 aspect-square overflow-hidden rounded-[2rem] bg-white shadow-md">
+      <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-[2rem] bg-white shadow-md">
         <Image
           src={current}
           alt={alt}

@@ -33,7 +33,7 @@ export function BottomNav() {
   ] as const;
 
   return (
-    <nav className="sticky bottom-0 z-40 rounded-t-[2rem] border-t border-black/5 bg-white/95 px-2.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-8px_20px_-12px_rgba(80,100,180,0.35)] backdrop-blur-md">
+    <nav className="absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-black/5 bg-white/95 px-2.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-8px_20px_-12px_rgba(80,100,180,0.35)] backdrop-blur-md">
       <ul className="flex items-end justify-around">
         {items.map((item) => {
           const active =

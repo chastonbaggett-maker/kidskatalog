@@ -27,6 +27,17 @@ const CONFETTI_COLORS = [
   "#b85eef",
 ];
 
+export const GOLD_CONFETTI = [
+  "#ffd700",
+  "#ffb800",
+  "#ffe566",
+  "#f5c842",
+  "#fff4c2",
+  "#e6a800",
+  "#ffdf00",
+  "#ffffff",
+];
+
 export function useConfettiBurst() {
   const uid = useId();
   const [bursting, setBursting] = useState(false);

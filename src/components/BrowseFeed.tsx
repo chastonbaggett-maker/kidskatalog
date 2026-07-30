@@ -1,39 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Audience, Toy } from "@/types/toy";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
-
-const COLLAPSE_AT = 40;
-const EXPAND_AT = 12;
+import { ShelfHeader } from "./ShelfHeader";
 
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [audience, setAudience] = useState<Audience>("all");
   const [showText, setShowText] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const collapsedRef = useRef(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
-
-  const syncCollapsed = useCallback((y: number) => {
-    const next = collapsedRef.current ? y > EXPAND_AT : y > COLLAPSE_AT;
-    if (next === collapsedRef.current) return;
-    collapsedRef.current = next;
-    setCollapsed(next);
-  }, []);
+  const chromeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
+    const scroller = scrollerRef.current;
+    const chrome = chromeRef.current;
+    if (!scroller || !chrome) return;
 
-    const onScroll = () => syncCollapsed(el.scrollTop);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [syncCollapsed]);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Collapse once most of the expanded chrome has left the top
+        const next = entry.intersectionRatio < 0.35 || entry.boundingClientRect.top < -24;
+        setCollapsed(next);
+      },
+      {
+        root: scroller,
+        threshold: [0, 0.15, 0.35, 0.5, 0.75, 1],
+        rootMargin: "-8px 0px 0px 0px",
+      },
+    );
+
+    observer.observe(chrome);
+    return () => observer.disconnect();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -53,31 +56,33 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-        <div className="sticky top-0 z-30">
-          <FeedHeader
-            query={query}
-            onQueryChange={setQuery}
-            collapsed={collapsed}
-          />
+      <div
+        ref={scrollerRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+      >
+        {/* Expanded chrome scrolls away with the feed (no sticky height change) */}
+        <div ref={chromeRef} className="relative z-20">
+          <FeedHeader query={query} onQueryChange={setQuery} />
+          <div className="bg-white">
+            <FilterRow
+              audience={audience}
+              onAudienceChange={setAudience}
+              showText={showText}
+              onShowTextChange={setShowText}
+            />
+            <ThumbCarousel />
+          </div>
+        </div>
 
+        {/* Simple shelf fades in and sticks — overlay, no layout jump */}
+        <div className="sticky top-0 z-30 h-0 overflow-visible">
           <div
-            className={`grid bg-white transition-[grid-template-rows,opacity] duration-300 ease-out ${
-              collapsed
-                ? "pointer-events-none grid-rows-[0fr] opacity-0"
-                : "grid-rows-[1fr] opacity-100"
+            className={`browse-shelf-enter absolute inset-x-0 top-0 ${
+              collapsed ? "is-visible pointer-events-auto" : "pointer-events-none"
             }`}
-            aria-hidden={collapsed}
+            aria-hidden={!collapsed}
           >
-            <div className="min-h-0 overflow-hidden">
-              <FilterRow
-                audience={audience}
-                onAudienceChange={setAudience}
-                showText={showText}
-                onShowTextChange={setShowText}
-              />
-              <ThumbCarousel />
-            </div>
+            <ShelfHeader />
           </div>
         </div>
 

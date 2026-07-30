@@ -7,97 +7,48 @@ type Props = {
   query: string;
   onQueryChange: (value: string) => void;
   showBack?: boolean;
-  collapsed?: boolean;
 };
 
 export function FeedHeader({
   query,
   onQueryChange,
   showBack = false,
-  collapsed = false,
 }: Props) {
   return (
-    <header
-      className={`bg-[image:var(--header-grad)] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)] transition-[padding,border-radius] duration-300 ease-out ${
-        collapsed
-          ? "rounded-b-[2rem] pb-5"
-          : "rounded-b-none pb-3"
-      }`}
-    >
-      {/* Simple icon shelf (collapsed) */}
-      <div
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-          collapsed
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div
-          className={`min-h-0 ${
-            collapsed ? "overflow-visible" : "overflow-hidden"
-          }`}
-        >
-          <div className="relative flex min-h-11 items-center justify-center py-1">
-            {showBack ? (
-              <Link
-                href="/shop"
-                className="absolute left-0 flex h-10 w-10 items-center justify-center"
-                aria-label="Back"
-              >
-                <Chevron />
-              </Link>
-            ) : null}
-            <Logo variant="icon" light glow href="/shop" size={44} />
-          </div>
-        </div>
+    <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
+      <div className="mb-3 flex items-center justify-center">
+        <Logo light href="/shop" size={110} />
       </div>
 
-      {/* Expanded wordmark + search */}
-      <div
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-          collapsed
-            ? "grid-rows-[0fr] opacity-0"
-            : "grid-rows-[1fr] opacity-100"
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div className="mb-3 flex items-center justify-center">
-            <Logo light href="/shop" size={110} />
-          </div>
+      <div className="flex items-center gap-2">
+        {showBack && (
+          <Link
+            href="/shop"
+            className="flex h-10 w-10 shrink-0 items-center justify-center text-white"
+            aria-label="Back"
+          >
+            <Chevron />
+          </Link>
+        )}
 
-          <div className="flex items-center gap-2">
-            {showBack && (
-              <Link
-                href="/shop"
-                className="flex h-10 w-10 shrink-0 items-center justify-center text-white"
-                aria-label="Back"
-              >
-                <Chevron />
-              </Link>
-            )}
-
-            <label className="relative flex min-w-0 flex-1 items-center rounded-full bg-white px-3 py-2.5 shadow-sm">
-              <span className="mr-2 text-[var(--blue)]" aria-hidden>
-                <SearchIcon />
-              </span>
-              <input
-                value={query}
-                onChange={(e) => onQueryChange(e.target.value)}
-                placeholder="Search toys"
-                tabIndex={collapsed ? -1 : 0}
-                className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
-              />
-              <button
-                type="button"
-                tabIndex={collapsed ? -1 : 0}
-                className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95"
-                aria-label="Voice search"
-              >
-                <MicIcon />
-              </button>
-            </label>
-          </div>
-        </div>
+        <label className="relative flex min-w-0 flex-1 items-center rounded-full bg-white px-3 py-2.5 shadow-sm">
+          <span className="mr-2 text-[var(--blue)]" aria-hidden>
+            <SearchIcon />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search toys"
+            className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
+          />
+          <button
+            type="button"
+            className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95"
+            aria-label="Voice search"
+          >
+            <MicIcon />
+          </button>
+        </label>
       </div>
     </header>
   );

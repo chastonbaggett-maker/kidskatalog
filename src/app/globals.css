@@ -77,6 +77,20 @@ body {
     drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
+.browse-shelf-enter {
+  transform: translate3d(0, -12px, 0);
+  opacity: 0;
+  transition:
+    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.browse-shelf-enter.is-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
 .fab-stack {
   animation: fab-bob 3.2s ease-in-out infinite;
 }

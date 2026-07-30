@@ -1,16 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type UIEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Audience, Toy } from "@/types/toy";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
 import { FloatingActions } from "./FloatingActions";
-import { ShelfHeader } from "./ShelfHeader";
 
-const COLLAPSE_AT = 56;
-const EXPAND_AT = 8;
+const COLLAPSE_AT = 40;
+const EXPAND_AT = 12;
 
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
@@ -18,24 +17,24 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [showText, setShowText] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const collapsedRef = useRef(false);
-  const headerRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const onScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
-    const scroller = e.currentTarget;
-    const y = scroller.scrollTop;
+  const syncCollapsed = useCallback((y: number) => {
     const next = collapsedRef.current ? y > EXPAND_AT : y > COLLAPSE_AT;
     if (next === collapsedRef.current) return;
-
-    const before = headerRef.current?.offsetHeight ?? 0;
     collapsedRef.current = next;
     setCollapsed(next);
-
-    // Keep the feed from jumping when the chrome height changes
-    requestAnimationFrame(() => {
-      const after = headerRef.current?.offsetHeight ?? 0;
-      scroller.scrollTop = Math.max(0, y - (before - after));
-    });
   }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const onScroll = () => syncCollapsed(el.scrollTop);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [syncCollapsed]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -55,31 +54,32 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div
-        className="min-h-0 flex-1 overflow-y-auto"
-        onScroll={onScroll}
-      >
-        <div ref={headerRef} className="sticky top-0 z-30">
-          {collapsed ? (
-            <ShelfHeader />
-          ) : (
-            <>
-              <FeedHeader
-                query={query}
-                onQueryChange={setQuery}
-                sticky={false}
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+        <div className="sticky top-0 z-30">
+          <FeedHeader
+            query={query}
+            onQueryChange={setQuery}
+            collapsed={collapsed}
+          />
+
+          <div
+            className={`grid bg-white transition-[grid-template-rows,opacity] duration-300 ease-out ${
+              collapsed
+                ? "pointer-events-none grid-rows-[0fr] opacity-0"
+                : "grid-rows-[1fr] opacity-100"
+            }`}
+            aria-hidden={collapsed}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <FilterRow
+                audience={audience}
+                onAudienceChange={setAudience}
+                showText={showText}
+                onShowTextChange={setShowText}
               />
-              <div className="bg-white">
-                <FilterRow
-                  audience={audience}
-                  onAudienceChange={setAudience}
-                  showText={showText}
-                  onShowTextChange={setShowText}
-                />
-                <ThumbCarousel />
-              </div>
-            </>
-          )}
+              <ThumbCarousel />
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col gap-10 pb-28 pt-4">

@@ -77,7 +77,8 @@ body {
 .app-shell {
   max-width: 430px;
   margin-inline: auto;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.08), 0 24px 80px -40px rgba(80, 60, 140, 0.35);
   background: var(--bg);
   position: relative;
@@ -95,7 +96,8 @@ body {
   .app-shell {
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
-    min-height: calc(100dvh - 3rem);
+    height: calc(100dvh - 3rem);
+    max-height: calc(100dvh - 3rem);
     border-radius: 2rem;
   }
 }

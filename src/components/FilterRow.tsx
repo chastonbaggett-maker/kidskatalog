@@ -153,7 +153,7 @@ export function FilterRow({
           aria-haspopup="dialog"
           aria-expanded={open}
           className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
-            age != null ? "bg-[var(--orange)]" : "bg-[var(--orange)]/70"
+            age != null ? "bg-[var(--mint)]" : "bg-[var(--mint)]/70"
           }`}
         >
           Age{age != null ? ` ${age}` : ""}

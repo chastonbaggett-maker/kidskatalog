@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
-import { useConfettiBurst } from "@/hooks/useConfettiBurst";
+import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
@@ -21,7 +21,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     const wasIn = inKart;
     toggle(toyId);
     clearCharge();
-    if (!wasIn) fire(btnRef.current?.getBoundingClientRect());
+    if (!wasIn) fire(btnRef.current?.getBoundingClientRect(), GOLD_CONFETTI);
   };
 
   return (

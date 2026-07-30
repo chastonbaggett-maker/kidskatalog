@@ -47,7 +47,7 @@ html[data-accent="girls"] {
   --header-grad-alt: linear-gradient(180deg, #ffc2d6 0%, #f5a9c5 45%, #e878a8 100%);
 }
 
-/* Default / both — mixed blue→purple gradient (base :root tokens) */
+/* Default / both — mixed blue→pink gradient (base :root tokens) */
 html[data-accent="both"] {
   /* explicit restore so switching back from boys/girls is reliable */
   --blue: #4e89ff;

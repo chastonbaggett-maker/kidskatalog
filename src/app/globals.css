@@ -71,9 +71,6 @@ html[data-accent="both"] {
 }
 
 html {
-  height: 100%;
-  /* iOS Safari / PWA: % height alone often leaves a gap under the shell */
-  height: -webkit-fill-available;
   touch-action: manipulation;
   -ms-touch-action: manipulation;
 }
@@ -84,7 +81,6 @@ body {
   font-family: var(--font-body), ui-rounded, "Segoe UI", sans-serif;
   min-height: 100%;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
   /* Block pinch-zoom / double-tap zoom where supported */
   touch-action: manipulation;
   overscroll-behavior: none;
@@ -316,8 +312,8 @@ select {
     rgba(255, 255, 255, 0.72),
     rgba(255, 255, 255, 0.42)
   );
-  /* Icons clear the home indicator; bar paint still goes to the screen edge */
-  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+  /* Home-indicator clearance only — bar paint stays edge-to-edge */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @keyframes voice-mic-pulse {
@@ -416,25 +412,31 @@ select {
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  height: 100vh;
   height: 100dvh;
-  max-height: 100vh;
   max-height: 100dvh;
-  min-height: -webkit-fill-available;
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Installed PWA / standalone: pin to the real screen edges (fixes iOS bottom gap) */
-@media (display-mode: standalone) {
-  html,
-  body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
+/*
+ * Phones (browser + PWA): pin shell to the visual viewport.
+ * Avoids short dvh / -webkit-fill-available gaps under the bottom nav.
+ */
+@media (max-width: 639px) {
+  .app-shell {
+    position: fixed;
+    inset: 0;
+    height: auto;
+    max-height: none;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
   }
+}
 
+/* Installed PWA on any size: full-bleed, no desktop phone frame */
+@media (display-mode: standalone) {
   .app-shell {
     position: fixed;
     inset: 0;
@@ -442,27 +444,19 @@ select {
     max-width: none;
     height: auto;
     max-height: none;
-    min-height: 0;
     margin: 0;
     border-radius: 0;
     box-shadow: none;
   }
 }
 
-/* Phone-framed shell on larger screens (browser only — not installed PWA) */
+/* Phone-framed shell on larger browser screens */
 @media (min-width: 640px) {
   .app-shell {
     max-width: 640px;
     box-shadow:
       0 0 0 1px rgba(74, 144, 226, 0.08),
       0 24px 80px -40px rgba(80, 60, 140, 0.35);
-  }
-
-  @media (display-mode: standalone) {
-    .app-shell {
-      max-width: none;
-      box-shadow: none;
-    }
   }
 }
 
@@ -475,6 +469,8 @@ select {
   }
 
   .app-shell {
+    position: relative;
+    inset: auto;
     max-width: 980px;
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
@@ -495,7 +491,6 @@ select {
       max-width: none;
       height: auto;
       max-height: none;
-      min-height: 0;
       margin: 0;
       border-radius: 0;
       box-shadow: none;

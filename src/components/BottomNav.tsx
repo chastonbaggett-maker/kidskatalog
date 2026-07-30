@@ -33,7 +33,7 @@ export function BottomNav() {
   ] as const;
 
   return (
-    <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 bg-white/55 px-2.5 pt-1.5 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)] backdrop-blur-2xl backdrop-saturate-150">
+    <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 bg-white/55 px-2.5 pt-2 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)] backdrop-blur-2xl backdrop-saturate-150">
       <ul className="flex items-center justify-around">
         {items.map((item) => {
           const active =
@@ -45,7 +45,7 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`relative flex h-12 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
                   active ? "opacity-100" : "opacity-80"
                 }`}
                 aria-label={item.label}

@@ -305,6 +305,12 @@ select {
 }
 
 .bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding-bottom: 0;
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   backdrop-filter: blur(28px) saturate(1.5);
   background-image: linear-gradient(
@@ -312,8 +318,23 @@ select {
     rgba(255, 255, 255, 0.72),
     rgba(255, 255, 255, 0.42)
   );
-  /* Home-indicator clearance only — bar paint stays edge-to-edge */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Desktop framed shell: keep nav inside the phone frame */
+@media (min-width: 640px) {
+  .bottom-nav {
+    position: absolute;
+  }
+}
+
+/* PWA / standalone: always viewport-fixed, even on wide tablets */
+@media (display-mode: standalone) {
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
 }
 
 @keyframes voice-mic-pulse {
@@ -409,41 +430,45 @@ select {
 }
 
 .app-shell {
+  --shell-height: var(--vvh, 100dvh);
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: var(--shell-height);
+  max-height: var(--shell-height);
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/*
- * Phones (browser + PWA): pin shell to the visual viewport.
- * Avoids short dvh / -webkit-fill-available gaps under the bottom nav.
- */
+/* Phones: pin shell to the visual viewport (browser + PWA) */
 @media (max-width: 639px) {
   .app-shell {
     position: fixed;
-    inset: 0;
-    height: auto;
-    max-height: none;
+    top: var(--vv-top, 0px);
+    left: 0;
+    right: 0;
+    bottom: auto;
     width: 100%;
+    height: var(--shell-height);
+    max-height: var(--shell-height);
     margin: 0;
     border-radius: 0;
   }
 }
 
-/* Installed PWA on any size: full-bleed, no desktop phone frame */
+/* Installed PWA on any size: full-bleed */
 @media (display-mode: standalone) {
   .app-shell {
     position: fixed;
-    inset: 0;
+    top: var(--vv-top, 0px);
+    left: 0;
+    right: 0;
+    bottom: auto;
     width: 100%;
     max-width: none;
-    height: auto;
-    max-height: none;
+    height: var(--shell-height);
+    max-height: var(--shell-height);
     margin: 0;
     border-radius: 0;
     box-shadow: none;
@@ -470,7 +495,10 @@ select {
 
   .app-shell {
     position: relative;
-    inset: auto;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
     max-width: 980px;
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
@@ -486,11 +514,14 @@ select {
 
     .app-shell {
       position: fixed;
-      inset: 0;
+      top: var(--vv-top, 0px);
+      left: 0;
+      right: 0;
+      bottom: auto;
       width: 100%;
       max-width: none;
-      height: auto;
-      max-height: none;
+      height: var(--shell-height);
+      max-height: var(--shell-height);
       margin: 0;
       border-radius: 0;
       box-shadow: none;

@@ -161,6 +161,18 @@ body {
   overflow: hidden;
 }
 
+/* Installed PWA / standalone: full-bleed phone frame */
+@media (display-mode: standalone) {
+  .app-shell {
+    max-width: none;
+    margin: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 @media (min-width: 900px) {
   body {
     background:

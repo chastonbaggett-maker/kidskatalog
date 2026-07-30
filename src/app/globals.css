@@ -568,14 +568,34 @@ html[data-standalone="true"] .app-shell {
 
 /* Add to Kart — reactive glow → confetti climax */
 .add-kart-btn {
+  --mint-fill: linear-gradient(
+    100deg,
+    #79ebe0 0%,
+    #6ee8db 14%,
+    #58ddd0 28%,
+    #48d4c9 42%,
+    #3ecfc0 56%,
+    #36c7b6 72%,
+    #2fc0ae 86%,
+    #2bb8a8 100%
+  );
+  --mint-burst: linear-gradient(
+    100deg,
+    #e8fffb 0%,
+    #b8fff5 18%,
+    #9ef0e6 36%,
+    #6ee8db 58%,
+    #4fd4c8 78%,
+    #3ecfc0 100%
+  );
   position: relative;
   isolation: isolate;
   overflow: visible;
   transform: scale(1);
   transition:
-    background-color 180ms ease,
+    background 0.5s ease,
     transform 160ms ease,
-    box-shadow 220ms ease;
+    box-shadow 360ms ease;
   box-shadow:
     0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
     0 0 0 0 transparent;
@@ -630,15 +650,10 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--burst {
-  background: linear-gradient(
-    180deg,
-    #b8fff5 0%,
-    #6ee8db 45%,
-    #3ecfc0 100%
-  ) !important;
+  background: var(--mint-burst) !important;
   color: #fff;
   text-shadow: 0 1px 0 rgba(20, 100, 90, 0.22);
-  animation: add-kart-climax 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: add-kart-climax 0.65s cubic-bezier(0.33, 1, 0.42, 1) forwards;
 }
 
 .add-kart-btn--burst .add-kart-btn__glow {
@@ -654,12 +669,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--in {
-  background: linear-gradient(
-    180deg,
-    #6ee8db 0%,
-    #3ecfc0 55%,
-    #2bb8a8 100%
-  );
+  background: var(--mint-fill);
   box-shadow:
     0 4px 16px color-mix(in srgb, var(--mint) 45%, transparent),
     0 0 18px color-mix(in srgb, #2bb8a8 30%, transparent);
@@ -740,9 +750,12 @@ html[data-standalone="true"] .app-shell {
   0% {
     transform: scale(1.08);
     background: linear-gradient(
-      180deg,
-      #e8fffb 0%,
-      #9ef0e6 42%,
+      100deg,
+      #f0fffc 0%,
+      #d4faf4 20%,
+      #b8fff5 40%,
+      #9ef0e6 60%,
+      #6ee8db 80%,
       #3ecfc0 100%
     );
     box-shadow:
@@ -750,21 +763,39 @@ html[data-standalone="true"] .app-shell {
       0 0 64px 28px rgba(110, 232, 219, 0.65),
       0 0 90px 40px rgba(62, 207, 192, 0.45);
   }
-  55% {
-    transform: scale(1.02);
+  40% {
+    transform: scale(1.03);
     background: linear-gradient(
-      180deg,
+      100deg,
+      #b8fff5 0%,
+      #8cebdd 25%,
+      #6ee8db 50%,
+      #4fd4c8 75%,
+      #3ecfc0 100%
+    );
+  }
+  72% {
+    transform: scale(1.01);
+    background: linear-gradient(
+      100deg,
       #6ee8db 0%,
-      #3ecfc0 52%,
-      #2bb8a8 100%
+      #58ddd0 25%,
+      #48d4c9 50%,
+      #3ecfc0 75%,
+      #2fc0ae 100%
     );
   }
   100% {
     transform: scale(1);
     background: linear-gradient(
-      180deg,
-      #6ee8db 0%,
-      #3ecfc0 55%,
+      100deg,
+      #79ebe0 0%,
+      #6ee8db 14%,
+      #58ddd0 28%,
+      #48d4c9 42%,
+      #3ecfc0 56%,
+      #36c7b6 72%,
+      #2fc0ae 86%,
       #2bb8a8 100%
     );
     box-shadow:

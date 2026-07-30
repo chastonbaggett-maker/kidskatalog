@@ -9,16 +9,19 @@ import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
 import { ShelfHeader } from "./ShelfHeader";
 
+type ShelfMode = "hidden" | "shown" | "leaving";
+
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const audience = useAccentStore((s) => s.audience);
   const setAudience = useAccentStore((s) => s.setAudience);
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(false);
-  const [shelfVisible, setShelfVisible] = useState(false);
+  const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  const shelfWantedRef = useRef(false);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -28,8 +31,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry) return;
-        // Show sticky shelf once the expanded nav leaves the top of the scroller
-        setShelfVisible(!entry.isIntersecting || entry.intersectionRatio < 0.08);
+        // Show compact shelf once the expanded nav leaves the top of the scroller
+        const want =
+          !entry.isIntersecting || entry.intersectionRatio < 0.08;
+        shelfWantedRef.current = want;
+        setShelfMode((prev) => {
+          if (want) return "shown";
+          if (prev === "shown") return "leaving";
+          return prev === "leaving" ? "leaving" : "hidden";
+        });
       },
       {
         root: scroller,
@@ -41,6 +51,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     observer.observe(chrome);
     return () => observer.disconnect();
   }, []);
+
+  // Finish leave fade while staying pinned; cancel if chrome leaves again mid-fade
+  useEffect(() => {
+    if (shelfMode !== "leaving") return;
+    const t = window.setTimeout(() => {
+      if (!shelfWantedRef.current) setShelfMode("hidden");
+    }, 320);
+    return () => window.clearTimeout(t);
+  }, [shelfMode]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,8 +78,20 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     });
   }, [toys, query, audience, age]);
 
+  const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* Fixed to the browse viewport — fade in/out at the top, never rides the category nav */}
+      <div
+        className={`browse-shelf-overlay ${
+          shelfMode === "shown" ? "is-visible" : ""
+        } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
+        aria-hidden={!shelfActive || shelfMode === "leaving"}
+      >
+        <ShelfHeader />
+      </div>
+
       <div
         ref={scrollerRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
@@ -78,18 +109,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onAgeChange={setAge}
             />
             <ThumbCarousel />
-          </div>
-        </div>
-
-        {/* Simple header glides in and sticks at the top */}
-        <div className="sticky top-0 z-30 h-0 overflow-visible">
-          <div
-            className={`browse-shelf-sticky ${
-              shelfVisible ? "is-visible" : ""
-            }`}
-            aria-hidden={!shelfVisible}
-          >
-            <ShelfHeader />
           </div>
         </div>
 

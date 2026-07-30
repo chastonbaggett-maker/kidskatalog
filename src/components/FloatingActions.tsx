@@ -9,13 +9,6 @@ export function FloatingActions() {
   return (
     <div className="fab-stack pointer-events-none absolute bottom-24 right-4 z-40 flex flex-col gap-3">
       <Link
-        href="/shop"
-        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--blue)] text-3xl font-bold text-white shadow-[0_10px_24px_-8px_rgba(74,144,226,0.9)] transition active:scale-95"
-        aria-label="Browse more"
-      >
-        +
-      </Link>
-      <Link
         href="/kart"
         className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-lg font-bold text-white shadow-[0_10px_24px_-8px_rgba(177,156,217,0.95)] transition active:scale-95"
       >

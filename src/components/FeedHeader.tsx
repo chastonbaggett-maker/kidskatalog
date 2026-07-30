@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccentStore } from "@/lib/accent-store";
-import { useConfettiBurst } from "@/hooks/useConfettiBurst";
 import { Logo } from "./Logo";
 
 type Props = {
@@ -60,10 +59,9 @@ export function FeedHeader({
 
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
+  const [micPop, setMicPop] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const micRef = useRef<HTMLButtonElement>(null);
   const baseQueryRef = useRef(query);
-  const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
 
   useEffect(() => {
     setSupported(Boolean(getSpeechRecognition()));
@@ -130,13 +128,13 @@ export function FeedHeader({
 
   const toggleVoice = () => {
     if (inert) return;
-    fireConfetti(micRef.current?.getBoundingClientRect());
+    setMicPop(true);
+    window.setTimeout(() => setMicPop(false), 520);
     if (listening) stopListening();
     else startListening();
   };
 
   return (
-    <>
     <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
       <div className="mb-3 flex items-center justify-center">
         <Logo light href="/shop" size={110} />
@@ -167,14 +165,13 @@ export function FeedHeader({
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
           />
           <button
-            ref={micRef}
             type="button"
             tabIndex={inert ? -1 : 0}
             disabled={inert || !supported}
             onClick={toggleVoice}
-            className={`-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
-              listening ? "voice-mic-listening ring-4 ring-white/50" : ""
-            }`}
+            className={`voice-mic relative -mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
+              listening ? "voice-mic-listening" : ""
+            } ${micPop ? "voice-mic-pop" : ""}`}
             aria-label={listening ? "Stop voice search" : "Voice search"}
             aria-pressed={listening}
             title={
@@ -185,13 +182,16 @@ export function FeedHeader({
                 : "Voice search isn’t supported in this browser"
             }
           >
+            <span className="voice-mic__rings" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </span>
             <MicIcon />
           </button>
         </label>
       </div>
     </header>
-    {confettiPortal}
-    </>
   );
 }
 

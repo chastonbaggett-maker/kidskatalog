@@ -19,21 +19,6 @@ export function FilterRow({
     <div className="flex gap-2 overflow-x-auto bg-[var(--lavender)]/70 px-4 py-2.5 scrollbar-none">
       <button
         type="button"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[var(--blue)] shadow-sm"
-        aria-label="Filters"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M4 7h16M7 12h10M10 17h4"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-
-      <button
-        type="button"
         onClick={() => onShowTextChange(!showText)}
         className="flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
       >

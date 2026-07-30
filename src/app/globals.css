@@ -8,6 +8,7 @@
   --purple-deep: #b85eef;
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
+  --orange: #ff9f43;
   --lavender: #ebe4f7;
   --bg: #f5f5f7;
   --card: #ffffff;
@@ -15,6 +16,47 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
+  --header-grad: linear-gradient(90deg, #4e89ff 0%, #8f8bff 50%, #d17cff 100%);
+  --header-grad-alt: linear-gradient(180deg, #d17cff 0%, #8f8bff 45%, #4e89ff 100%);
+  /* Gender filter chips stay fixed even when site accents remap */
+  --boys-chip: #4e89ff;
+  --girls-chip: #f5a9c5;
+}
+
+/* Boys tab — site accents go blue */
+html[data-accent="boys"] {
+  --blue: #4e89ff;
+  --blue-deep: #3a6fe0;
+  --purple: #5b93ff;
+  --purple-deep: #3a6fe0;
+  --lavender: #e4edff;
+  --header-grad: linear-gradient(90deg, #2f6ae8 0%, #4e89ff 50%, #7aa8ff 100%);
+  --header-grad-alt: linear-gradient(180deg, #7aa8ff 0%, #4e89ff 45%, #2f6ae8 100%);
+}
+
+/* Girls tab — site accents go pink */
+html[data-accent="girls"] {
+  --blue: #f5a9c5;
+  --blue-deep: #ef8fb3;
+  --purple: #f0a0c0;
+  --purple-deep: #e078a8;
+  --pink: #f5a9c5;
+  --pink-deep: #ef8fb3;
+  --lavender: #ffe9f2;
+  --header-grad: linear-gradient(90deg, #ef8fb3 0%, #f5a9c5 50%, #ffc2d6 100%);
+  --header-grad-alt: linear-gradient(180deg, #ffc2d6 0%, #f5a9c5 45%, #e878a8 100%);
+}
+
+/* Default / both — mixed blue→purple gradient (base :root tokens) */
+html[data-accent="both"] {
+  /* explicit restore so switching back from boys/girls is reliable */
+  --blue: #4e89ff;
+  --blue-deep: #3a6fe0;
+  --purple: #d17cff;
+  --purple-deep: #b85eef;
+  --pink: #f5a9c5;
+  --pink-deep: #ef8fb3;
+  --lavender: #ebe4f7;
   --header-grad: linear-gradient(90deg, #4e89ff 0%, #8f8bff 50%, #d17cff 100%);
   --header-grad-alt: linear-gradient(180deg, #d17cff 0%, #8f8bff 45%, #4e89ff 100%);
 }
@@ -70,18 +112,203 @@ body {
   animation: pop-in 0.45s ease-out both;
 }
 
+.logo-glow {
+  filter:
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
+}
+
+.browse-shelf-enter {
+  transform: translate3d(0, -12px, 0);
+  opacity: 0;
+  transition:
+    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.browse-shelf-enter.is-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+/* Sticky simple shelf — glides down once expanded nav scrolls away */
+.browse-shelf-sticky {
+  pointer-events: none;
+  transform: translate3d(0, -110%, 0);
+  opacity: 0;
+  transition:
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease;
+  will-change: transform, opacity;
+}
+
+.browse-shelf-sticky.is-visible {
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+/* Compact shelf overlay — pinned to browse viewport top (not in scroll flow) */
+.browse-shelf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, -12px, 0);
+  transition:
+    opacity 300ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.browse-shelf-overlay.is-visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Exit: stay fixed at top and fade only — no slide into category nav */
+.browse-shelf-overlay.is-leaving {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 300ms ease;
+}
+
+.back-fun {
+  animation: back-fun-bob 2.8s ease-in-out infinite;
+}
+
+.back-fun:active {
+  animation: none;
+}
+
+@keyframes back-fun-bob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .browse-shelf-sticky {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  .browse-shelf-overlay,
+  .browse-shelf-overlay.is-visible,
+  .browse-shelf-overlay.is-leaving {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  .back-fun {
+    animation: none;
+  }
+}
+
+.age-pop {
+  animation: age-pop-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center center;
+}
+
+.age-pop-backdrop {
+  animation: age-backdrop-in 200ms ease both;
+}
+
+.age-pop-chip {
+  animation: age-chip-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.age-pop-chip:nth-child(1) { animation-delay: 20ms; }
+.age-pop-chip:nth-child(2) { animation-delay: 40ms; }
+.age-pop-chip:nth-child(3) { animation-delay: 60ms; }
+.age-pop-chip:nth-child(4) { animation-delay: 80ms; }
+.age-pop-chip:nth-child(5) { animation-delay: 100ms; }
+.age-pop-chip:nth-child(6) { animation-delay: 120ms; }
+.age-pop-chip:nth-child(7) { animation-delay: 140ms; }
+.age-pop-chip:nth-child(8) { animation-delay: 160ms; }
+.age-pop-chip:nth-child(9) { animation-delay: 180ms; }
+.age-pop-chip:nth-child(10) { animation-delay: 200ms; }
+.age-pop-chip:nth-child(11) { animation-delay: 220ms; }
+
+@keyframes age-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes age-pop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes age-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .browse-header-swap,
+  .browse-header-panel,
+  .browse-filters-collapse {
+    transition: none !important;
+  }
+}
+
 .fab-stack {
   animation: fab-bob 3.2s ease-in-out infinite;
 }
 
 .app-shell {
-  max-width: 430px;
+  width: 100%;
+  max-width: 100%;
   margin-inline: auto;
-  min-height: 100dvh;
-  box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.08), 0 24px 80px -40px rgba(80, 60, 140, 0.35);
+  height: 100dvh;
+  max-height: 100dvh;
   background: var(--bg);
   position: relative;
   overflow: hidden;
+}
+
+/* Installed PWA / standalone: full-bleed */
+@media (display-mode: standalone) {
+  .app-shell {
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Phone-framed shell on larger screens */
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 640px;
+    box-shadow:
+      0 0 0 1px rgba(74, 144, 226, 0.08),
+      0 24px 80px -40px rgba(80, 60, 140, 0.35);
+  }
 }
 
 @media (min-width: 900px) {
@@ -93,9 +320,252 @@ body {
   }
 
   .app-shell {
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-    min-height: calc(100dvh - 3rem);
+    max-width: 980px;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    height: calc(100dvh - 2.5rem);
+    max-height: calc(100dvh - 2.5rem);
     border-radius: 2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    max-width: 1180px;
+  }
+}
+
+.toy-feed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.5rem;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .toy-feed-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .toy-feed-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.25rem 1.5rem;
+  }
+}
+
+.product-detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .product-detail__layout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .product-detail__info {
+    position: sticky;
+    top: 0.5rem;
+    padding-top: 0.25rem;
+  }
+}
+
+/* Add to Kart — reactive glow → confetti climax */
+.add-kart-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  transform: scale(1);
+  transition:
+    background-color 180ms ease,
+    transform 160ms ease,
+    box-shadow 220ms ease;
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+    0 0 0 0 transparent;
+}
+
+.add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging) {
+  animation: add-kart-idle-glow 1.6s ease-in-out infinite;
+}
+
+.add-kart-btn__glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(78, 137, 255, 0.35) 40%,
+    rgba(209, 124, 255, 0.2) 70%,
+    transparent 78%
+  );
+  filter: blur(6px);
+  transition: opacity 180ms ease;
+  z-index: 0;
+}
+
+.add-kart-btn--charging {
+  transform: scale(1.04);
+  animation: add-kart-charge 0.42s ease-out forwards;
+}
+
+.add-kart-btn--charging .add-kart-btn__glow {
+  opacity: 1;
+  animation: add-kart-glow-pulse 0.42s ease-out forwards;
+}
+
+.add-kart-btn--burst {
+  animation: add-kart-climax 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.add-kart-btn--burst .add-kart-btn__glow {
+  /* Keyframes own opacity; forwards keeps it off so it doesn't flash back */
+  animation: add-kart-glow-flash 0.55s ease-out forwards;
+}
+
+.add-kart-btn--in {
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--purple) 40%, transparent),
+    0 0 18px color-mix(in srgb, var(--purple) 28%, transparent);
+}
+
+@keyframes add-kart-idle-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+      0 0 10px color-mix(in srgb, var(--blue) 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px color-mix(in srgb, var(--blue) 45%, transparent),
+      0 0 22px color-mix(in srgb, var(--purple) 35%, transparent);
+  }
+}
+
+@keyframes add-kart-charge {
+  0% {
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+      0 0 0 0 transparent;
+  }
+  100% {
+    box-shadow:
+      0 0 28px 10px color-mix(in srgb, var(--blue) 65%, transparent),
+      0 0 52px 18px color-mix(in srgb, var(--purple) 45%, transparent),
+      0 0 8px 2px rgba(255, 255, 255, 0.7);
+  }
+}
+
+@keyframes add-kart-glow-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes add-kart-climax {
+  0% {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 36px 16px rgba(255, 255, 255, 0.85),
+      0 0 64px 28px color-mix(in srgb, var(--purple) 70%, transparent),
+      0 0 90px 40px color-mix(in srgb, var(--blue) 45%, transparent);
+  }
+  55% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 16px color-mix(in srgb, var(--purple) 40%, transparent),
+      0 0 18px color-mix(in srgb, var(--purple) 28%, transparent);
+  }
+}
+
+@keyframes add-kart-glow-flash {
+  0% {
+    opacity: 0.95;
+    transform: scale(1.15);
+    filter: blur(2px) brightness(1.35);
+  }
+  55% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
+    filter: blur(12px) brightness(1);
+  }
+}
+
+.add-kart-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: visible;
+}
+
+.add-kart-confetti__bit {
+  position: fixed;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  opacity: 1;
+  animation: add-kart-confetti-fly 0.95s cubic-bezier(0.12, 0.75, 0.28, 1) forwards;
+  box-shadow: 0 0 4px color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.add-kart-confetti__bit:nth-child(3n) {
+  border-radius: 50%;
+}
+
+.add-kart-confetti__bit:nth-child(5n) {
+  width: 5px !important;
+  height: 14px !important;
+  border-radius: 1px;
+}
+
+@keyframes add-kart-confetti-fly {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy))
+      rotate(var(--rot)) scale(0.55);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging),
+  .add-kart-btn--charging,
+  .add-kart-btn--burst,
+  .add-kart-btn--charging .add-kart-btn__glow,
+  .add-kart-btn--burst .add-kart-btn__glow,
+  .add-kart-confetti__bit {
+    animation: none !important;
+  }
+
+  .add-kart-confetti {
+    display: none;
   }
 }

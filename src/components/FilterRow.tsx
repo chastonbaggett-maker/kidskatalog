@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Audience } from "@/types/toy";
+
+const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
 
 type Props = {
   audience: Audience;
   onAudienceChange: (value: Audience) => void;
   showText: boolean;
   onShowTextChange: (value: boolean) => void;
+  age: number | null;
+  onAgeChange: (value: number | null) => void;
 };
 
 export function FilterRow({
@@ -14,9 +20,112 @@ export function FilterRow({
   onAudienceChange,
   showText,
   onShowTextChange,
+  age,
+  onAgeChange,
 }: Props) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const popRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  const ageModal =
+    open && mounted
+      ? createPortal(
+          <div
+            className="age-pop-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4 backdrop-blur-[2px]"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setOpen(false);
+            }}
+          >
+            <div
+              ref={popRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              className="age-pop w-[min(18.5rem,calc(100vw-2rem))] rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
+            >
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <div>
+                  <p
+                    id={titleId}
+                    className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]"
+                  >
+                    How old are you?
+                  </p>
+                  <p className="text-xs font-semibold text-[var(--ink-soft)]">
+                    Pick an age · 3 to 13
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f4f8] text-[var(--ink-soft)]"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {AGES.map((n) => {
+                  const selected = age === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        onAgeChange(selected ? null : n);
+                        setOpen(false);
+                      }}
+                      className={`age-pop-chip flex aspect-square items-center justify-center rounded-2xl text-lg font-extrabold transition active:scale-95 ${
+                        selected
+                          ? "bg-[#ff9f43] text-white shadow-md"
+                          : "bg-[#fff4e6] text-[#c56a12] hover:bg-[#ffe0b8]"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onAgeChange(null);
+                  setOpen(false);
+                }}
+                className="mt-3 w-full rounded-full bg-[#f3f4f8] py-2.5 text-sm font-bold text-[var(--ink-soft)] transition active:scale-[0.98]"
+              >
+                Show all ages
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <div className="flex items-center gap-2 px-4 py-2.5">
+    <div className="relative flex items-center gap-2 px-4 py-2.5">
       <button
         type="button"
         onClick={() => onShowTextChange(!showText)}
@@ -36,6 +145,23 @@ export function FilterRow({
         </span>
       </button>
 
+      <div className="relative shrink-0">
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+            age != null ? "bg-[var(--orange)]" : "bg-[var(--orange)]/70"
+          }`}
+        >
+          Age{age != null ? ` ${age}` : ""}
+          <CakeIcon />
+        </button>
+        {ageModal}
+      </div>
+
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <button
           type="button"
@@ -44,8 +170,8 @@ export function FilterRow({
           }
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "boys" || audience === "all"
-              ? "bg-[var(--blue)]"
-              : "bg-[var(--blue)]/45"
+              ? "bg-[var(--boys-chip)]"
+              : "bg-[var(--boys-chip)]/45"
           } ${audience === "girls" ? "opacity-55" : ""}`}
         >
           Boys
@@ -59,8 +185,8 @@ export function FilterRow({
           }
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "girls" || audience === "all"
-              ? "bg-[var(--pink)]"
-              : "bg-[var(--pink)]/45"
+              ? "bg-[var(--girls-chip)]"
+              : "bg-[var(--girls-chip)]/45"
           } ${audience === "boys" ? "opacity-55" : ""}`}
         >
           Girls
@@ -68,6 +194,15 @@ export function FilterRow({
         </button>
       </div>
     </div>
+  );
+}
+
+function CakeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M8 8.5V7c0-1.1.9-2 2-2 .6 0 1 .4 1 1s-.4 1-1 1-1 .4-1 1 .4 1 1 1 1-.4 1-1c0-1.7 1.3-3 3-3s3 1.3 3 3v1.5c1.2.2 2 1.2 2 2.4V11H6v-.1c0-1.2.8-2.2 2-2.4z" />
+      <path d="M6 12h12v2l-1.2 1.5c-.2.3-.3.6-.3 1V20H7.5v-3.5c0-.4-.1-.7-.3-1L6 14v-2z" />
+    </svg>
   );
 }
 

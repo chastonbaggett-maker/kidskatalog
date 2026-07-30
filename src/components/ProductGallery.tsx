@@ -18,14 +18,16 @@ export function ProductGallery({
 
   return (
     <div className="mb-4">
-      <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-[2rem] bg-white shadow-md">
+      <div className="relative mb-3 w-full overflow-hidden rounded-[2rem] bg-white shadow-md">
         <Image
           src={current}
           alt={alt}
-          fill
+          width={1200}
+          height={1200}
           priority
-          className="object-cover"
-          sizes="(max-width: 430px) 100vw, 430px"
+          unoptimized
+          className="h-auto w-full object-contain"
+          sizes="(max-width: 640px) 100vw, (max-width: 900px) 90vw, 520px"
         />
       </div>
 
@@ -36,7 +38,7 @@ export function ProductGallery({
               key={src}
               type="button"
               onClick={() => setActive(i)}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl ring-2 transition ${
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white ring-2 transition ${
                 i === active
                   ? "ring-[var(--blue)]"
                   : "ring-transparent opacity-80"
@@ -48,7 +50,8 @@ export function ProductGallery({
                 src={src}
                 alt=""
                 fill
-                className="object-cover"
+                unoptimized
+                className="object-contain p-1"
                 sizes="64px"
               />
             </button>

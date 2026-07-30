@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ShelfHeader } from "@/components/ShelfHeader";
+import { MoreToysFeed } from "@/components/MoreToysFeed";
 import { getCategory } from "@/data/categories";
-import { getToy } from "@/data/toys";
+import { getMoreToys, getToy } from "@/data/toys";
 import { AddToKartButton } from "@/components/AddToKartButton";
 
 type Props = {
@@ -17,58 +19,47 @@ export default async function ToyPage({ params }: Props) {
 
   const cat = getCategory(toy.category);
   const gallery = toy.images?.length ? toy.images : [toy.image];
+  const more = getMoreToys(toy.id);
 
   return (
     <AppShell>
-      <header className="flex items-center gap-2 rounded-b-2xl bg-[image:var(--header-grad)] px-3 pb-5 pt-[max(1rem,env(safe-area-inset-top))] text-white shadow-[0_8px_20px_-12px_rgba(80,100,180,0.55)]">
-        <Link
-          href="/shop"
-          className="flex h-10 w-10 items-center justify-center"
-          aria-label="Back"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 5 8 12l7 7"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
-        <h1 className="flex-1 truncate text-center font-[family-name:var(--font-display)] text-xl font-bold">
-          {toy.name}
-        </h1>
-        <span className="w-10" />
-      </header>
+      <ShelfHeader backHref="/shop" />
 
-      <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-8">
-        <ProductGallery images={gallery} alt={toy.imageAlt} />
+      <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-10 sm:px-6 lg:px-8">
+        <div className="product-detail mx-auto w-full max-w-6xl">
+          <div className="product-detail__layout">
+            <ProductGallery images={gallery} alt={toy.imageAlt} />
 
-        <p className="mb-1 text-sm font-bold text-[var(--blue)]">
-          {cat?.label ?? "Toy"}
-        </p>
-        <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--ink)]">
-          {toy.name}
-        </h2>
-        <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>
-        <p className="mt-2 text-sm font-semibold text-[var(--purple-deep)]">
-          Ages {toy.ageMin}–{toy.ageMax}
-        </p>
+            <div className="product-detail__info min-w-0">
+              <p className="mb-1 text-sm font-bold text-[var(--blue)]">
+                {cat?.label ?? "Toy"}
+              </p>
+              <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--ink)] sm:text-4xl">
+                {toy.name}
+              </h2>
+              <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--purple-deep)]">
+                Ages {toy.ageMin}–{toy.ageMax}
+              </p>
 
-        <div className="mt-6 flex flex-col gap-3">
-          <AddToKartButton toyId={toy.id} />
-          <Link
-            href="/kart"
-            className="rounded-full bg-[var(--purple)] px-6 py-3.5 text-center text-base font-bold text-white shadow-md active:scale-[0.98]"
-          >
-            Go to Kart
-          </Link>
+              <div className="mt-6 flex max-w-md flex-col gap-3">
+                <AddToKartButton toyId={toy.id} />
+                <Link
+                  href="/kart"
+                  className="rounded-full bg-[var(--purple)] px-6 py-3.5 text-center text-base font-bold text-white shadow-md active:scale-[0.98]"
+                >
+                  Go to Kart
+                </Link>
+              </div>
+
+              <p className="mt-5 text-center text-sm text-[var(--ink-soft)] sm:text-left">
+                No buying here. Save it, then send the Kart to a grown-up.
+              </p>
+            </div>
+          </div>
+
+          <MoreToysFeed seed={more} showText />
         </div>
-
-        <p className="mt-5 text-center text-sm text-[var(--ink-soft)]">
-          No buying here. Save it, then send the Kart to a grown-up.
-        </p>
       </div>
     </AppShell>
   );

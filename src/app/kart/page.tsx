@@ -16,16 +16,17 @@ export default function KartPage() {
 
   return (
     <AppShell>
-      <ShelfHeader
-        title="My Kart"
-        subtitle={
-          toys.length === 0
-            ? "Empty — go find toys!"
-            : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
-        }
-      />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ShelfHeader
+          title="My Kart"
+          subtitle={
+            toys.length === 0
+              ? "Empty — go find toys!"
+              : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
+          }
+        />
 
-      <div className="star-field flex-1 space-y-4 overflow-y-auto px-4 py-4 scroll-pad-bottom">
+        <div className="page-scroll star-field space-y-4 px-4 py-4">
         {toys.length > 0 && (
           <div className="flex justify-end">
             <button
@@ -92,6 +93,7 @@ export default function KartPage() {
         )}
 
         <SendToParentForm toys={toys} />
+        </div>
       </div>
     </AppShell>
   );

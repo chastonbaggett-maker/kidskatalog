@@ -96,9 +96,9 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
-      className={`${display.variable} ${body.variable} ${script.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex h-dvh min-h-0 flex-col overflow-hidden">
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');}catch(e){}})();`,

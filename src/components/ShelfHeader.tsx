@@ -25,7 +25,7 @@ export function ShelfHeader({
 }: ShelfHeaderProps) {
   return (
     <header
-      className={`${
+      className={`shrink-0 ${
         altGradient
           ? "bg-[image:var(--header-grad-alt)]"
           : "bg-[image:var(--header-grad)]"

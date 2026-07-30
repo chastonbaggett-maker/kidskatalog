@@ -23,9 +23,10 @@ export default async function ToyPage({ params }: Props) {
 
   return (
     <AppShell>
-      <ShelfHeader backHref="/shop" />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ShelfHeader backHref="/shop" />
 
-      <div className="star-field flex-1 overflow-y-auto px-4 py-4 scroll-pad-bottom sm:px-6 lg:px-8">
+        <div className="page-scroll star-field px-4 py-4 sm:px-6 lg:px-8">
         <div className="product-detail mx-auto w-full max-w-6xl">
           <div className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />
@@ -59,6 +60,7 @@ export default async function ToyPage({ params }: Props) {
           </div>
 
           <MoreToysFeed seed={more} showText />
+        </div>
         </div>
       </div>
     </AppShell>

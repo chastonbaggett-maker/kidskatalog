@@ -135,7 +135,7 @@ export function FeedHeader({
   };
 
   return (
-    <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
+    <header className="shrink-0 bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
       <div className="mb-3 flex items-center justify-center">
         <Logo light href="/shop" size={110} />
       </div>

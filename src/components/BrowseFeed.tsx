@@ -33,7 +33,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     <>
       <FeedHeader query={query} onQueryChange={setQuery} wordmark />
 
-      <div className="z-20 bg-[var(--lavender)]/80">
+      <div className="z-20 bg-white">
         <FilterRow
           audience={audience}
           onAudienceChange={setAudience}

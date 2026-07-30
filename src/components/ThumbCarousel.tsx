@@ -4,7 +4,7 @@ import { categories } from "@/data/categories";
 
 export function ThumbCarousel() {
   return (
-    <div className="overflow-hidden rounded-b-[1.5rem] rounded-t-none bg-white px-3 py-3 shadow-[0_8px_18px_-12px_rgba(60,70,120,0.35)]">
+    <div className="overflow-hidden rounded-b-[1.5rem] border-t border-black/[0.04] bg-white px-3 py-3 shadow-[0_8px_18px_-12px_rgba(60,70,120,0.35)]">
       <div className="flex gap-3 overflow-x-auto pb-0.5 scrollbar-none">
         {categories.map((cat) => (
           <Link

@@ -228,10 +228,10 @@ function CakeIcon() {
   );
 }
 
-function PlayIcon() {
+function RocketIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M8 5v14l11-7L8 5z" />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 2c2.8 2.1 4.6 5.4 4.9 9.1.2 2.1-.3 4.1-1.3 5.8l2.9 2.9-1.4 1.4-2.8-2.8c-.5.3-1.1.5-1.7.6V22h-1.2v-3.1c-.7-.1-1.3-.3-1.9-.7l-2.7 2.7-1.4-1.4 2.8-2.8C7.4 15.2 6.9 13.2 7.1 11.1 7.4 7.4 9.2 4.1 12 2zm0 5.2a2.3 2.3 0 1 0 0 4.6 2.3 2.3 0 0 0 0-4.6z" />
     </svg>
   );
 }

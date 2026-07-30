@@ -1,27 +1,52 @@
 "use client";
 
 import { useEffect } from "react";
-import { audienceToAccentAttr, useAccentStore } from "@/lib/accent-store";
+import {
+  audienceToAccentAttr,
+  useAccentStore,
+  type AccentAttr,
+} from "@/lib/accent-store";
+import type { Audience } from "@/types/toy";
 
-/** Keeps <html data-accent> in sync so CSS accent tokens update site-wide. */
+/** Solid status-bar / theme-color matching the left edge of --header-grad */
+const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
+  both: "#4e89ff",
+  boys: "#2f6ae8",
+  girls: "#ef8fb3",
+};
+
+function applyAccent(audience: Audience) {
+  const accent = audienceToAccentAttr(audience);
+  document.documentElement.dataset.accent = accent;
+  setThemeColor(STATUS_BAR_COLOR[accent]);
+}
+
+function setThemeColor(color: string) {
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("name", "theme-color");
+    meta.setAttribute("content", color);
+    document.head.appendChild(meta);
+    return;
+  }
+  metas.forEach((meta) => meta.setAttribute("content", color));
+}
+
+/** Keeps <html data-accent> + PWA theme-color in sync site-wide. */
 export function AccentSync() {
   const audience = useAccentStore((s) => s.audience);
 
   useEffect(() => {
-    document.documentElement.dataset.accent = audienceToAccentAttr(audience);
+    applyAccent(audience);
   }, [audience]);
 
   useEffect(() => {
-    // Re-apply after persist hydration (may lag first paint)
     const unsub = useAccentStore.persist.onFinishHydration((state) => {
-      document.documentElement.dataset.accent = audienceToAccentAttr(
-        state.audience,
-      );
+      applyAccent(state.audience);
     });
     if (useAccentStore.persist.hasHydrated()) {
-      document.documentElement.dataset.accent = audienceToAccentAttr(
-        useAccentStore.getState().audience,
-      );
+      applyAccent(useAccentStore.getState().audience);
     }
     return unsub;
   }, []);

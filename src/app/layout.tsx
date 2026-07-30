@@ -37,7 +37,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    // Transparent status bar so the header gradient shows through in standalone PWA
+    statusBarStyle: "black-translucent",
     title: APP_NAME,
   },
   formatDetection: {

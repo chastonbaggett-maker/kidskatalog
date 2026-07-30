@@ -9,6 +9,8 @@ type AccentState = {
   setAudience: (value: Audience) => void;
 };
 
+export type AccentAttr = "both" | "boys" | "girls";
+
 export const useAccentStore = create<AccentState>()(
   persist(
     (set) => ({
@@ -19,7 +21,7 @@ export const useAccentStore = create<AccentState>()(
   ),
 );
 
-export function audienceToAccentAttr(audience: Audience): "both" | "boys" | "girls" {
+export function audienceToAccentAttr(audience: Audience): AccentAttr {
   if (audience === "boys") return "boys";
   if (audience === "girls") return "girls";
   return "both";

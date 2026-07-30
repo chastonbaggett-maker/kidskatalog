@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
+import { AccentSync } from "@/components/AccentSync";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -90,9 +91,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-accent="both"
       className={`${display.variable} ${body.variable} ${script.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <AccentSync />
+        {children}
+      </body>
     </html>
   );
 }

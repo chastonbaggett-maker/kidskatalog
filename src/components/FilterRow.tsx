@@ -170,8 +170,8 @@ export function FilterRow({
           }
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "boys" || audience === "all"
-              ? "bg-[var(--blue)]"
-              : "bg-[var(--blue)]/45"
+              ? "bg-[var(--boys-chip)]"
+              : "bg-[var(--boys-chip)]/45"
           } ${audience === "girls" ? "opacity-55" : ""}`}
         >
           Boys
@@ -185,8 +185,8 @@ export function FilterRow({
           }
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "girls" || audience === "all"
-              ? "bg-[var(--pink)]"
-              : "bg-[var(--pink)]/45"
+              ? "bg-[var(--girls-chip)]"
+              : "bg-[var(--girls-chip)]/45"
           } ${audience === "boys" ? "opacity-55" : ""}`}
         >
           Girls

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Audience, Toy } from "@/types/toy";
+import type { Toy } from "@/types/toy";
+import { useAccentStore } from "@/lib/accent-store";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
@@ -9,8 +10,9 @@ import { FeedCard } from "./FeedCard";
 import { ShelfHeader } from "./ShelfHeader";
 
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
+  const audience = useAccentStore((s) => s.audience);
+  const setAudience = useAccentStore((s) => s.setAudience);
   const [query, setQuery] = useState("");
-  const [audience, setAudience] = useState<Audience>("all");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(false);
   const [shelfVisible, setShelfVisible] = useState(false);

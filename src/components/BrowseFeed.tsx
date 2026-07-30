@@ -44,7 +44,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-28 pt-4">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-10">
           {filtered.map((toy, index) => (
             <FeedCard
               key={toy.id}

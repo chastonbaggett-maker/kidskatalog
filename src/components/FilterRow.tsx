@@ -31,8 +31,6 @@ export function FilterRow({
   const [mounted, setMounted] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const boysBtnRef = useRef<HTMLButtonElement>(null);
-  const girlsBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
 

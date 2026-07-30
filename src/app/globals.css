@@ -320,13 +320,13 @@ select {
   z-index: 40;
   /* Icons above home indicator; bar background fills the inset zone */
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  backdrop-filter: blur(28px) saturate(1.5);
-  background-color: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+  background-color: rgba(255, 255, 255, 0.45);
   background-image: linear-gradient(
     to top,
-    rgba(255, 255, 255, 0.88),
-    rgba(255, 255, 255, 0.42)
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0.28)
   );
 }
 

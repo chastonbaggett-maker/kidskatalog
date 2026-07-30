@@ -112,7 +112,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           </div>
         </div>
 
-        <div className="toy-feed-grid pb-6 pt-4">
+        <div className="toy-feed-grid scroll-pad-bottom pt-4">
           {filtered.map((toy, index) => (
             <FeedCard
               key={toy.id}

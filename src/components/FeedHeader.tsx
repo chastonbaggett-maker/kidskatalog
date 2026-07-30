@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAccentStore } from "@/lib/accent-store";
 import { Logo } from "./Logo";
 
 type Props = {
@@ -17,6 +18,14 @@ export function FeedHeader({
   showBack = false,
   inert = false,
 }: Props) {
+  const audience = useAccentStore((s) => s.audience);
+  const micClass =
+    audience === "boys"
+      ? "bg-[var(--boys-chip)]"
+      : audience === "girls"
+        ? "bg-[var(--girls-chip)]"
+        : "bg-[var(--mint)]";
+
   return (
     <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
       <div className="mb-3 flex items-center justify-center">
@@ -51,7 +60,7 @@ export function FeedHeader({
             type="button"
             tabIndex={inert ? -1 : 0}
             disabled={inert}
-            className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95 disabled:opacity-80"
+            className={`-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-80 ${micClass}`}
             aria-label="Voice search"
           >
             <MicIcon />

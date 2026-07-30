@@ -45,7 +45,7 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-3 z-10 flex flex-col gap-3.5">
+      <div className="absolute bottom-4 right-0 z-10 flex translate-x-1/2 flex-col gap-3.5">
         <button
           type="button"
           onClick={() => toggle(toy.id)}

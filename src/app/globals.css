@@ -109,10 +109,32 @@ body {
   opacity: 1;
 }
 
+.back-fun {
+  animation: back-fun-bob 2.8s ease-in-out infinite;
+}
+
+.back-fun:active {
+  animation: none;
+}
+
+@keyframes back-fun-bob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .browse-shelf-sticky {
     transition: opacity 160ms ease;
     transform: none;
+  }
+
+  .back-fun {
+    animation: none;
   }
 }
 

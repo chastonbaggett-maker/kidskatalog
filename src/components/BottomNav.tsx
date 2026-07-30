@@ -11,7 +11,6 @@ export function BottomNav() {
 
   const items = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/profile", label: "Profile", icon: ProfileIcon },
     { href: "/kart", label: "Kart", icon: KartIcon, badge: count },
     { href: "/menu", label: "Menu", icon: MenuIcon },
     { href: "/", label: "Brand", icon: BrandIcon, brand: true },
@@ -59,20 +58,6 @@ function HomeIcon({ active }: { active?: boolean }) {
         stroke="currentColor"
         strokeWidth={active ? 2.4 : 2}
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ProfileIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M5 19c1.5-3.5 4-5 7-5s5.5 1.5 7 5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
       />
     </svg>
   );

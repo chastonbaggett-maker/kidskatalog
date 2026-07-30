@@ -42,7 +42,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         aria-pressed={inKart}
       >
         <span className="add-kart-btn__label relative z-[1]">
-          {inKart ? "In Kart — tap to remove" : "+ Add to Kart"}
+          {inKart ? "In Kart — tap to remove" : "+ Kart"}
         </span>
         <span className="add-kart-btn__glow" aria-hidden />
       </button>

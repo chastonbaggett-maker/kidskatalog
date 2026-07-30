@@ -60,14 +60,17 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     shelfEl.style.opacity = String(enter);
     shelfEl.style.pointerEvents = enter > 0.85 ? "auto" : "none";
 
-    const stageH = Math.max(
-      shelf * enter,
-      expanded * (1 - exit) + shelf * enter * 0.15,
-    );
-    // Settle cleanly at the ends
-    if (p <= 0.001) stage.style.height = `${expanded}px`;
-    else if (p >= 0.999) stage.style.height = `${shelf}px`;
-    else stage.style.height = `${Math.max(stageH, shelf * 0.35)}px`;
+    if (p <= 0.001) {
+      stage.style.height = `${expanded}px`;
+    } else if (p >= 0.999) {
+      stage.style.height = `${shelf}px`;
+    } else {
+      // Keep room for whichever layer is still visible
+      stage.style.height = `${Math.max(
+        expanded * (1 - exit),
+        shelf * Math.max(enter, 0.4),
+      )}px`;
+    }
 
     const nextCollapsed = p > 0.9;
     setCollapsed((prev) => (prev === nextCollapsed ? prev : nextCollapsed));

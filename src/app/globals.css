@@ -298,3 +298,193 @@ body {
     padding-top: 0.25rem;
   }
 }
+
+/* Add to Kart — reactive glow → confetti climax */
+.add-kart-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  transform: scale(1);
+  transition:
+    background-color 180ms ease,
+    transform 160ms ease,
+    box-shadow 220ms ease;
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+    0 0 0 0 transparent;
+}
+
+.add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging) {
+  animation: add-kart-idle-glow 1.6s ease-in-out infinite;
+}
+
+.add-kart-btn__glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(78, 137, 255, 0.35) 40%,
+    rgba(209, 124, 255, 0.2) 70%,
+    transparent 78%
+  );
+  filter: blur(6px);
+  transition: opacity 180ms ease;
+  z-index: 0;
+}
+
+.add-kart-btn--charging {
+  transform: scale(1.04);
+  animation: add-kart-charge 0.42s ease-out forwards;
+}
+
+.add-kart-btn--charging .add-kart-btn__glow {
+  opacity: 1;
+  animation: add-kart-glow-pulse 0.42s ease-out forwards;
+}
+
+.add-kart-btn--burst {
+  animation: add-kart-climax 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.add-kart-btn--burst .add-kart-btn__glow {
+  opacity: 1;
+  animation: add-kart-glow-flash 0.55s ease-out;
+}
+
+.add-kart-btn--in {
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--purple) 40%, transparent),
+    0 0 18px color-mix(in srgb, var(--purple) 28%, transparent);
+}
+
+@keyframes add-kart-idle-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+      0 0 10px color-mix(in srgb, var(--blue) 22%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px color-mix(in srgb, var(--blue) 45%, transparent),
+      0 0 22px color-mix(in srgb, var(--purple) 35%, transparent);
+  }
+}
+
+@keyframes add-kart-charge {
+  0% {
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+      0 0 0 0 transparent;
+  }
+  100% {
+    box-shadow:
+      0 0 28px 10px color-mix(in srgb, var(--blue) 65%, transparent),
+      0 0 52px 18px color-mix(in srgb, var(--purple) 45%, transparent),
+      0 0 8px 2px rgba(255, 255, 255, 0.7);
+  }
+}
+
+@keyframes add-kart-glow-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes add-kart-climax {
+  0% {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 36px 16px rgba(255, 255, 255, 0.85),
+      0 0 64px 28px color-mix(in srgb, var(--purple) 70%, transparent),
+      0 0 90px 40px color-mix(in srgb, var(--blue) 45%, transparent);
+  }
+  55% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 16px color-mix(in srgb, var(--purple) 40%, transparent),
+      0 0 18px color-mix(in srgb, var(--purple) 28%, transparent);
+  }
+}
+
+@keyframes add-kart-glow-flash {
+  0% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: blur(2px) brightness(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+    filter: blur(14px) brightness(1);
+  }
+}
+
+.add-kart-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: visible;
+}
+
+.add-kart-confetti__bit {
+  position: fixed;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  opacity: 1;
+  animation: add-kart-confetti-fly 0.95s cubic-bezier(0.12, 0.75, 0.28, 1) forwards;
+  box-shadow: 0 0 4px color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.add-kart-confetti__bit:nth-child(3n) {
+  border-radius: 50%;
+}
+
+.add-kart-confetti__bit:nth-child(5n) {
+  width: 5px !important;
+  height: 14px !important;
+  border-radius: 1px;
+}
+
+@keyframes add-kart-confetti-fly {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy))
+      rotate(var(--rot)) scale(0.55);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging),
+  .add-kart-btn--charging,
+  .add-kart-btn--burst,
+  .add-kart-btn--charging .add-kart-btn__glow,
+  .add-kart-btn--burst .add-kart-btn__glow,
+  .add-kart-confetti__bit {
+    animation: none !important;
+  }
+
+  .add-kart-confetti {
+    display: none;
+  }
+}

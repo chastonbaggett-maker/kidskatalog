@@ -18,6 +18,8 @@ export type Toy = {
   /** Short kid-friendly blurb — keep under ~8 words */
   blurb: string;
   image: string;
+  /** Extra product photos for the detail page gallery */
+  images?: string[];
   imageAlt: string;
   /** Amazon affiliate-ready product URL */
   affiliateUrl: string;

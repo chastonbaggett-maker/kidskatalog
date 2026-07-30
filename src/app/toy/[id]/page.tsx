@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { ProductGallery } from "@/components/ProductGallery";
 import { getCategory } from "@/data/categories";
 import { getToy } from "@/data/toys";
 import { AddToKartButton } from "@/components/AddToKartButton";
@@ -16,6 +16,7 @@ export default async function ToyPage({ params }: Props) {
   if (!toy) notFound();
 
   const cat = getCategory(toy.category);
+  const gallery = toy.images?.length ? toy.images : [toy.image];
 
   return (
     <AppShell>
@@ -42,16 +43,7 @@ export default async function ToyPage({ params }: Props) {
       </header>
 
       <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-8">
-        <div className="relative mb-4 aspect-square overflow-hidden rounded-[2rem] bg-white shadow-md">
-          <Image
-            src={toy.image}
-            alt={toy.imageAlt}
-            fill
-            priority
-            className="object-cover"
-            sizes="(max-width: 430px) 100vw, 430px"
-          />
-        </div>
+        <ProductGallery images={gallery} alt={toy.imageAlt} />
 
         <p className="mb-1 text-sm font-bold text-[var(--blue)]">
           {cat?.label ?? "Toy"}

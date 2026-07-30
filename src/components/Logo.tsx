@@ -2,47 +2,58 @@ import Link from "next/link";
 
 type LogoProps = {
   href?: string;
-  size?: "sm" | "md" | "lg";
+  variant?: "mark" | "wordmark";
   light?: boolean;
+  className?: string;
 };
 
-export function Logo({ href = "/", size = "md", light = false }: LogoProps) {
-  const sizes = {
-    sm: { k: "text-3xl", rest: "text-xl", star: 6 },
-    md: { k: "text-4xl", rest: "text-2xl", star: 8 },
-    lg: { k: "text-7xl sm:text-8xl", rest: "text-4xl sm:text-5xl", star: 14 },
-  }[size];
+export function Logo({
+  href = "/shop",
+  variant = "mark",
+  light = true,
+  className = "",
+}: LogoProps) {
+  const color = light ? "text-white" : "text-[var(--blue)]";
 
-  const color = light ? "text-white" : "text-[var(--forest)]";
-
-  const mark = (
-    <span
-      className={`relative inline-flex items-baseline gap-0.5 font-[family-name:var(--font-display)] ${color}`}
-      aria-label="Kids Katalog"
-    >
-      <span className="relative">
-        <span
-          className="pointer-events-none absolute -top-2 left-1 flex gap-0.5"
-          aria-hidden
-        >
-          <Star size={sizes.star} />
-          <Star size={sizes.star * 0.7} className="-mt-1" />
+  const mark =
+    variant === "mark" ? (
+      <span className={`relative inline-flex ${color} ${className}`} aria-label="Kids Katalog">
+        <span className="pointer-events-none absolute -right-1 -top-2 flex gap-0.5" aria-hidden>
+          <Star size={8} />
+          <Star size={6} className="-mt-1" />
+          <Star size={5} className="mt-1" />
         </span>
-        <span className={`${sizes.k} font-bold leading-none tracking-tight`}>
-          K
+        <span className="font-[family-name:var(--font-display)] text-4xl font-bold leading-none tracking-tight">
+          k
         </span>
       </span>
+    ) : (
       <span
-        className={`${sizes.rest} font-[family-name:var(--font-script)] font-normal leading-none tracking-wide`}
+        className={`relative inline-flex items-baseline gap-1 ${color} ${className}`}
+        aria-label="Kids Katalog"
       >
-        ids Katalog
+        <span className="relative">
+          <span className="pointer-events-none absolute -top-2 left-0 flex gap-0.5" aria-hidden>
+            <Star size={9} />
+            <Star size={7} className="-mt-0.5" />
+            <Star size={6} />
+          </span>
+          <span className="font-[family-name:var(--font-display)] text-3xl font-bold leading-none">
+            Kids
+          </span>
+        </span>
+        <span className="font-[family-name:var(--font-body)] text-xl font-semibold lowercase tracking-wide opacity-95">
+          katalog
+        </span>
       </span>
-    </span>
-  );
+    );
 
-  if (!href) return mark;
+  if (href === undefined) return mark;
   return (
-    <Link href={href} className="inline-flex transition-transform hover:scale-[1.02] active:scale-[0.98]">
+    <Link
+      href={href}
+      className="inline-flex transition-transform active:scale-[0.97]"
+    >
       {mark}
     </Link>
   );

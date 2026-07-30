@@ -61,10 +61,10 @@ export function SendToParentForm({ toys, onSent }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-4 rounded-[2rem] bg-white/80 p-5 ring-1 ring-[var(--forest)]/10 sm:p-6"
+      className="flex flex-col gap-4 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-black/[0.03]"
     >
       <div>
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--forest)]">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
           Send to Mom or Dad
         </h2>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
@@ -73,20 +73,18 @@ export function SendToParentForm({ toys, onSent }: Props) {
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold text-[var(--forest)]">
-          Your name
-        </span>
+        <span className="text-sm font-semibold text-[var(--ink)]">Your name</span>
         <input
           required
           value={kidName}
           onChange={(e) => setKidName(e.target.value)}
           placeholder="Alex"
-          className="rounded-2xl border-0 bg-[var(--mint)] px-4 py-3 text-base text-[var(--forest)] outline-none ring-2 ring-transparent transition focus:ring-[var(--leaf)]"
+          className="rounded-full border-0 bg-[var(--lavender)] px-4 py-3 text-base text-[var(--ink)] outline-none ring-2 ring-transparent transition focus:ring-[var(--purple)]"
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold text-[var(--forest)]">
+        <span className="text-sm font-semibold text-[var(--ink)]">
           Parent email
         </span>
         <input
@@ -97,14 +95,14 @@ export function SendToParentForm({ toys, onSent }: Props) {
           value={parentEmail}
           onChange={(e) => setParentEmail(e.target.value)}
           placeholder="parent@email.com"
-          className="rounded-2xl border-0 bg-[var(--mint)] px-4 py-3 text-base text-[var(--forest)] outline-none ring-2 ring-transparent transition focus:ring-[var(--leaf)]"
+          className="rounded-full border-0 bg-[var(--lavender)] px-4 py-3 text-base text-[var(--ink)] outline-none ring-2 ring-transparent transition focus:ring-[var(--purple)]"
         />
       </label>
 
       <button
         type="submit"
         disabled={status === "sending" || toys.length === 0}
-        className="rounded-2xl bg-[var(--forest)] px-5 py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[var(--forest-deep)] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+        className="rounded-full bg-[image:var(--header-grad-alt)] px-5 py-3.5 text-base font-bold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
       >
         {status === "sending" ? "Sending…" : "Send Kart PDF"}
       </button>
@@ -112,7 +110,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
       {message && (
         <p
           className={`text-sm font-medium ${
-            status === "error" ? "text-red-700" : "text-[var(--forest)]"
+            status === "error" ? "text-red-600" : "text-[var(--blue-deep)]"
           }`}
           role="status"
         >

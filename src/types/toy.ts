@@ -8,10 +8,13 @@ export type CategoryId =
   | "stem"
   | "pretend";
 
+export type Audience = "all" | "boys" | "girls";
+
 export type Toy = {
   id: string;
   name: string;
   category: CategoryId;
+  audience: Audience;
   /** Short kid-friendly blurb — keep under ~8 words */
   blurb: string;
   image: string;
@@ -21,6 +24,7 @@ export type Toy = {
   ageMin: number;
   ageMax: number;
   color: string;
+  featured?: boolean;
 };
 
 export type Category = {

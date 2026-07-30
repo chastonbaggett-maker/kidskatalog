@@ -10,8 +10,10 @@ function amazon(asin: string) {
 export const toys: Toy[] = [
   {
     id: "dino-rex",
+    featured: true,
     name: "Roar Rex",
     category: "dinos",
+    audience: "boys",
     blurb: "Big chomp. Bigger roar.",
     image:
       "https://images.unsplash.com/photo-1615486511484-92e172b4d35b?auto=format&fit=crop&w=800&q=80",
@@ -25,6 +27,7 @@ export const toys: Toy[] = [
     id: "dino-long",
     name: "Long Neck",
     category: "dinos",
+    audience: "boys",
     blurb: "Tall friend for tall fun.",
     image:
       "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=800&q=80",
@@ -38,6 +41,7 @@ export const toys: Toy[] = [
     id: "dino-pack",
     name: "Dino Pack",
     category: "dinos",
+    audience: "boys",
     blurb: "Five little stompers.",
     image:
       "https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=800&q=80",
@@ -49,8 +53,10 @@ export const toys: Toy[] = [
   },
   {
     id: "bear-hug",
+    featured: true,
     name: "Hug Bear",
     category: "plush",
+    audience: "girls",
     blurb: "Soft. Squishy. Sleepy.",
     image:
       "https://images.unsplash.com/photo-1559454403-b8fb88521f11?auto=format&fit=crop&w=800&q=80",
@@ -64,6 +70,7 @@ export const toys: Toy[] = [
     id: "duck-bath",
     name: "Splash Duck",
     category: "plush",
+    audience: "girls",
     blurb: "Quack in the tub.",
     image:
       "https://images.unsplash.com/photo-1534188753412-3e26d0d65057?auto=format&fit=crop&w=800&q=80",
@@ -77,6 +84,7 @@ export const toys: Toy[] = [
     id: "bunny-soft",
     name: "Cloud Bunny",
     category: "plush",
+    audience: "girls",
     blurb: "Fluffy ears forever.",
     image:
       "https://images.unsplash.com/photo-1535930891776-0c0dfb767ff0?auto=format&fit=crop&w=800&q=80",
@@ -88,8 +96,10 @@ export const toys: Toy[] = [
   },
   {
     id: "race-red",
+    featured: true,
     name: "Zoom Red",
     category: "cars",
+    audience: "boys",
     blurb: "Fast. Loud. Fun.",
     image:
       "https://images.unsplash.com/photo-1558618047-f4b511aab612?auto=format&fit=crop&w=800&q=80",
@@ -103,6 +113,7 @@ export const toys: Toy[] = [
     id: "truck-dump",
     name: "Dump Truck",
     category: "cars",
+    audience: "boys",
     blurb: "Load it. Dump it.",
     image:
       "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80",
@@ -116,6 +127,7 @@ export const toys: Toy[] = [
     id: "train-set",
     name: "Choo Set",
     category: "cars",
+    audience: "boys",
     blurb: "Tracks go click-clack.",
     image:
       "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=800&q=80",
@@ -127,8 +139,10 @@ export const toys: Toy[] = [
   },
   {
     id: "block-wood",
+    featured: true,
     name: "Wood Stack",
     category: "blocks",
+    audience: "all",
     blurb: "Stack high. Tip over.",
     image:
       "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=800&q=80",
@@ -142,6 +156,7 @@ export const toys: Toy[] = [
     id: "block-mega",
     name: "Mega Bricks",
     category: "blocks",
+    audience: "all",
     blurb: "Big bricks. Big builds.",
     image:
       "https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&w=800&q=80",
@@ -155,6 +170,7 @@ export const toys: Toy[] = [
     id: "block-castle",
     name: "Castle Kit",
     category: "blocks",
+    audience: "all",
     blurb: "Build a whole kingdom.",
     image:
       "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=80",
@@ -168,6 +184,7 @@ export const toys: Toy[] = [
     id: "ball-kick",
     name: "Kick Ball",
     category: "outside",
+    audience: "boys",
     blurb: "Bounce. Kick. Chase.",
     image:
       "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?auto=format&fit=crop&w=800&q=80",
@@ -179,8 +196,10 @@ export const toys: Toy[] = [
   },
   {
     id: "bubbles-big",
+    featured: true,
     name: "Bubble Wand",
     category: "outside",
+    audience: "boys",
     blurb: "Giant shiny bubbles.",
     image:
       "https://images.unsplash.com/photo-1527482797697-017ee125d50f?auto=format&fit=crop&w=800&q=80",
@@ -194,6 +213,7 @@ export const toys: Toy[] = [
     id: "scooter-kid",
     name: "Zip Scooter",
     category: "outside",
+    audience: "boys",
     blurb: "Three wheels. Full speed.",
     image:
       "https://images.unsplash.com/photo-1571333250630-f0230c320b6d?auto=format&fit=crop&w=800&q=80",
@@ -207,6 +227,7 @@ export const toys: Toy[] = [
     id: "game-memory",
     name: "Match Up",
     category: "games",
+    audience: "all",
     blurb: "Flip. Find. Win.",
     image:
       "https://images.unsplash.com/photo-1611996575749-79a3a250f79e?auto=format&fit=crop&w=800&q=80",
@@ -220,6 +241,7 @@ export const toys: Toy[] = [
     id: "game-puzzle",
     name: "Floor Puzzle",
     category: "games",
+    audience: "all",
     blurb: "Giant pieces. Giant fun.",
     image:
       "https://images.unsplash.com/photo-1585504198199-20277593b94f?auto=format&fit=crop&w=800&q=80",
@@ -233,6 +255,7 @@ export const toys: Toy[] = [
     id: "game-dice",
     name: "Silly Dice",
     category: "games",
+    audience: "all",
     blurb: "Roll for silly moves.",
     image:
       "https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&w=800&q=80",
@@ -244,8 +267,10 @@ export const toys: Toy[] = [
   },
   {
     id: "stem-robot",
+    featured: true,
     name: "Bot Buddy",
     category: "stem",
+    audience: "boys",
     blurb: "Beep. Build. Explore.",
     image:
       "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
@@ -259,6 +284,7 @@ export const toys: Toy[] = [
     id: "stem-magnets",
     name: "Magnet Tiles",
     category: "stem",
+    audience: "boys",
     blurb: "Click. Snap. Create.",
     image:
       "https://images.unsplash.com/photo-1564429238817-393bd4286b2d?auto=format&fit=crop&w=800&q=80",
@@ -272,6 +298,7 @@ export const toys: Toy[] = [
     id: "stem-kit",
     name: "Gear Lab",
     category: "stem",
+    audience: "boys",
     blurb: "Spinny gears that work.",
     image:
       "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80",
@@ -283,8 +310,10 @@ export const toys: Toy[] = [
   },
   {
     id: "pretend-kitchen",
+    featured: true,
     name: "Mini Kitchen",
     category: "pretend",
+    audience: "girls",
     blurb: "Cook pretend pancakes.",
     image:
       "https://images.unsplash.com/photo-1503454537195-1dc833f1dcd3?auto=format&fit=crop&w=800&q=80",
@@ -298,6 +327,7 @@ export const toys: Toy[] = [
     id: "pretend-doctor",
     name: "Doc Kit",
     category: "pretend",
+    audience: "girls",
     blurb: "Check-ups for stuffed pals.",
     image:
       "https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?auto=format&fit=crop&w=800&q=80",
@@ -311,6 +341,7 @@ export const toys: Toy[] = [
     id: "pretend-castle",
     name: "Knight Set",
     category: "pretend",
+    audience: "girls",
     blurb: "Shields up. Adventure on.",
     image:
       "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80",

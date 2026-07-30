@@ -51,11 +51,13 @@ export function FeedHeader({
             placeholder="Search toys"
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
           />
-          <span className="ml-1 flex items-center text-[var(--purple-deep)]">
-            <button type="button" className="p-0.5" aria-label="Voice search">
-              <MicIcon />
-            </button>
-          </span>
+          <button
+            type="button"
+            className="-mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-95"
+            aria-label="Voice search"
+          >
+            <MicIcon />
+          </button>
         </label>
       </div>
     </header>
@@ -73,12 +75,20 @@ function SearchIcon() {
 
 function MicIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M6.5 11a5.5 5.5 0 0 0 11 0M12 16.5V20"
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="9"
+        y="3"
+        width="6"
+        height="11"
+        rx="3"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="2.4"
+      />
+      <path
+        d="M6.5 11a5.5 5.5 0 0 0 11 0M12 16.5V20M9.5 20h5"
+        stroke="currentColor"
+        strokeWidth="2.4"
         strokeLinecap="round"
       />
     </svg>

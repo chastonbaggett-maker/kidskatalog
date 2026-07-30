@@ -18,13 +18,15 @@ export function ProductGallery({
 
   return (
     <div className="mb-4">
-      <div className="relative mb-3 aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-white shadow-md lg:aspect-square">
+      <div className="relative mb-3 w-full overflow-hidden rounded-[2rem] bg-white shadow-md">
         <Image
           src={current}
           alt={alt}
-          fill
+          width={1200}
+          height={1200}
           priority
-          className="object-contain p-3 sm:p-4"
+          unoptimized
+          className="h-auto w-full object-contain"
           sizes="(max-width: 640px) 100vw, (max-width: 900px) 90vw, 520px"
         />
       </div>
@@ -48,6 +50,7 @@ export function ProductGallery({
                 src={src}
                 alt=""
                 fill
+                unoptimized
                 className="object-contain p-1"
                 sizes="64px"
               />

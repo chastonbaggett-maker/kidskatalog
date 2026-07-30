@@ -211,7 +211,7 @@ export function FilterRow({
           } ${audience === "boys" ? "opacity-55" : ""}`}
         >
           Girls
-          <HeartIcon />
+          <DollIcon />
         </button>
       </div>
       {confettiPortal}

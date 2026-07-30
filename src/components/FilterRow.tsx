@@ -125,44 +125,46 @@ export function FilterRow({
       : null;
 
   return (
-    <div className="relative flex items-center gap-2.5 px-4 py-3.5">
-      <button
-        type="button"
-        onClick={() => onShowTextChange(!showText)}
-        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3.5 py-2.5 text-sm font-bold text-[var(--blue)] shadow-sm"
-      >
-        Text
-        <span
-          className={`relative h-6 w-10 rounded-full transition ${
-            showText ? "bg-[var(--blue)]" : "bg-[#d0d4de]"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-              showText ? "left-[18px]" : "left-0.5"
-            }`}
-          />
-        </span>
-      </button>
-
-      <div className="relative shrink-0">
+    <div className="filter-row-scroll relative overflow-x-auto overscroll-x-contain">
+      <div className="flex w-max min-w-full items-center gap-2.5 px-4 py-3.5">
         <button
-          ref={btnRef}
           type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
-            age != null ? "bg-[var(--mint)]" : "bg-[var(--mint)]/70"
-          }`}
+          onClick={() => onShowTextChange(!showText)}
+          className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3.5 py-2.5 text-sm font-bold text-[var(--blue)] shadow-sm"
         >
-          Age{age != null ? ` ${age}` : ""}
-          <CakeIcon />
+          Text
+          <span
+            className={`relative h-6 w-10 rounded-full transition ${
+              showText ? "bg-[var(--blue)]" : "bg-[#d0d4de]"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                showText ? "left-[18px]" : "left-0.5"
+              }`}
+            />
+          </span>
         </button>
-        {ageModal}
-      </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2.5">
+        <div className="relative shrink-0">
+          <button
+            ref={btnRef}
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+              age != null ? "bg-[var(--mint)]" : "bg-[var(--mint)]/70"
+            }`}
+          >
+            Age{age != null ? ` ${age}` : ""}
+            <CakeIcon />
+          </button>
+          {ageModal}
+        </div>
+
+        <div className="min-w-2 flex-1" aria-hidden />
+
         <button
           type="button"
           onClick={() =>

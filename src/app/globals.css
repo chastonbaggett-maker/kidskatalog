@@ -217,6 +217,16 @@ body {
   }
 }
 
+/* Filter chips — swipe when they overflow the viewport */
+.filter-row-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.filter-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .age-pop {
   animation: age-pop-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: center center;

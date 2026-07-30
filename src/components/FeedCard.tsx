@@ -45,11 +45,11 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute -right-1 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-3">
+      <div className="absolute bottom-4 right-3 z-10 flex flex-col gap-3.5">
         <button
           type="button"
           onClick={() => toggle(toy.id)}
-          className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl font-bold text-white shadow-lg transition active:scale-95 ${
+          className={`flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full text-4xl font-bold text-white shadow-lg transition active:scale-95 ${
             inKart ? "bg-[var(--purple-deep)]" : "bg-[var(--blue)]"
           }`}
           aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
@@ -59,7 +59,7 @@ export function FeedCard({
         </button>
         <Link
           href={`/toy/${toy.id}`}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-sm font-bold text-white shadow-lg transition active:scale-95"
+          className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-xl font-bold text-white shadow-lg transition active:scale-95"
         >
           Go
         </Link>

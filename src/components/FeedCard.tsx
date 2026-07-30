@@ -19,7 +19,7 @@ export function FeedCard({
 
   return (
     <article
-      className="feed-card relative mx-4 overflow-visible"
+      className="feed-card relative mx-7 overflow-visible sm:mx-8"
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">

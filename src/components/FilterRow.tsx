@@ -81,7 +81,7 @@ export function FilterRow({
           <CakeIcon />
         </button>
 
-        {open && (
+        {open ? (
           <div
             className="age-pop-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-black/25 px-4 backdrop-blur-[2px]"
             onMouseDown={(e) => {
@@ -94,64 +94,64 @@ export function FilterRow({
               aria-labelledby={titleId}
               className="age-pop w-[min(18.5rem,calc(100vw-2rem))] rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
             >
-            <div className="mb-3 flex items-start justify-between gap-2">
-              <div>
-                <p
-                  id={titleId}
-                  className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]"
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <div>
+                  <p
+                    id={titleId}
+                    className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]"
+                  >
+                    How old are you?
+                  </p>
+                  <p className="text-xs font-semibold text-[var(--ink-soft)]">
+                    Pick an age · 3 to 13
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f4f8] text-[var(--ink-soft)]"
+                  aria-label="Close"
                 >
-                  How old are you?
-                </p>
-                <p className="text-xs font-semibold text-[var(--ink-soft)]">
-                  Pick an age · 3 to 13
-                </p>
+                  ×
+                </button>
               </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {AGES.map((n) => {
+                  const selected = age === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        onAgeChange(selected ? null : n);
+                        setOpen(false);
+                      }}
+                      className={`age-pop-chip flex aspect-square items-center justify-center rounded-2xl text-lg font-extrabold transition active:scale-95 ${
+                        selected
+                          ? "bg-[#ff9f43] text-white shadow-md"
+                          : "bg-[#fff4e6] text-[#c56a12] hover:bg-[#ffe0b8]"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f4f8] text-[var(--ink-soft)]"
-                aria-label="Close"
+                onClick={() => {
+                  onAgeChange(null);
+                  setOpen(false);
+                }}
+                className="mt-3 w-full rounded-full bg-[#f3f4f8] py-2.5 text-sm font-bold text-[var(--ink-soft)] transition active:scale-[0.98]"
               >
-                ×
+                Show all ages
               </button>
             </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {AGES.map((n) => {
-                const selected = age === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => {
-                      onAgeChange(selected ? null : n);
-                      setOpen(false);
-                    }}
-                    className={`age-pop-chip flex aspect-square items-center justify-center rounded-2xl text-lg font-extrabold transition active:scale-95 ${
-                      selected
-                        ? "bg-[#ff9f43] text-white shadow-md"
-                        : "bg-[#fff4e6] text-[#c56a12] hover:bg-[#ffe0b8]"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                onAgeChange(null);
-                setOpen(false);
-              }}
-              className="mt-3 w-full rounded-full bg-[#f3f4f8] py-2.5 text-sm font-bold text-[var(--ink-soft)] transition active:scale-[0.98]"
-            >
-              Show all ages
-            </button>
-            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -192,8 +192,8 @@ export function FilterRow({
 function CakeIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 2c.8 0 1.4.7 1.2 1.5-.2.7-.7 1.2-.7 2 0 .6.5 1 1 1s1-.4 1-1c0-.8-.5-1.3-.7-2C13.6 2.7 14.2 2 15 2c1.1 0 2 .9 2 2 0 1.2-.8 1.8-1.2 2.8-.3.7.1 1.5.9 1.7V10H7.3V8.5c.8-.2 1.2-1 0.9-1.7C7.8 5.8 7 5.2 7 4c0-1.1.9-2 2-2 .8 0 1.4.7 1.2 1.5-.2.7-.7 1.2-.7 2 0 .6.5 1 1 1s1-.4 1-1c0-.8-.5-1.3-.7-2C11.6 2.7 12.2 2 13 2h-1z" />
-      <path d="M5 11h14v2.2c0 .4-.2.8-.5 1L17 16v4H7v-4l-1.5-1.8c-.3-.2-.5-.6-.5-1V11z" />
+      <path d="M8 8.5V7c0-1.1.9-2 2-2 .6 0 1 .4 1 1s-.4 1-1 1-1 .4-1 1 .4 1 1 1 1-.4 1-1c0-1.7 1.3-3 3-3s3 1.3 3 3v1.5c1.2.2 2 1.2 2 2.4V11H6v-.1c0-1.2.8-2.2 2-2.4z" />
+      <path d="M6 12h12v2l-1.2 1.5c-.2.3-.3.6-.3 1V20H7.5v-3.5c0-.4-.1-.7-.3-1L6 14v-2z" />
     </svg>
   );
 }

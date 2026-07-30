@@ -79,14 +79,18 @@ function KartIcon() {
   );
 }
 
-function MenuIcon() {
+function MenuIcon({ active }: { active?: boolean }) {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M5 7h14M5 12h14M5 17h14"
-        stroke="var(--purple-deep)"
-        strokeWidth="2.4"
-        strokeLinecap="round"
+      <rect
+        x="4.5"
+        y="4.5"
+        width="15"
+        height="15"
+        rx="4"
+        ry="4"
+        stroke="currentColor"
+        strokeWidth={active ? 2.4 : 2}
       />
     </svg>
   );

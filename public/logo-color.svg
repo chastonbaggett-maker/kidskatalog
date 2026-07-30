@@ -1,28 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200" role="img" aria-label="Kids katalog">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 220" role="img" aria-label="kids katalog">
   <defs>
-    <linearGradient id="logoGrad" x1="40" y1="20" x2="480" y2="180" gradientUnits="userSpaceOnUse">
+    <linearGradient id="logoGrad" x1="40" y1="20" x2="520" y2="200" gradientUnits="userSpaceOnUse">
       <stop stop-color="#4A90E2"/>
       <stop offset="1" stop-color="#B19CD9"/>
     </linearGradient>
   </defs>
   <g fill="url(#logoGrad)">
-    <path d="M118 28l6.2 12.8 14.1 2-10.2 9.9 2.4 14-12.5-6.6-12.5 6.6 2.4-14-10.2-9.9 14.1-2L118 28z"/>
-    <path d="M152 18l4.4 9.1 10 1.5-7.3 7.1 1.7 10L152 40.5l-8.8 4.6 1.7-10-7.3-7.1 10-1.5L152 18z"/>
-    <path d="M248 72l3.6 7.4 8.2 1.2-5.9 5.8 1.4 8.1L248 90.4l-7.3 3.8 1.4-8.1-5.9-5.8 8.2-1.2L248 72z"/>
+    <path d="M78 34l7.2 14.8 16.3 2.4-11.8 11.5 2.8 16.2L78 71.3 63.5 79l2.8-16.2-11.8-11.5 16.3-2.4L78 34z"/>
+    <path d="M118 22l5.2 10.7 11.8 1.7-8.5 8.3 2 11.7L118 48.6l-10.5 5.5 2-11.7-8.5-8.3 11.8-1.7L118 22z"/>
+    <path d="M268 78l4.2 8.6 9.5 1.4-6.9 6.7 1.6 9.4L268 99.4l-8.4 4.4 1.6-9.4-6.9-6.7 9.5-1.4L268 78z"/>
     <text
-      x="28"
-      y="158"
+      x="24"
+      y="178"
       font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, Arial, sans-serif"
-      font-size="148"
+      font-size="168"
       font-weight="700"
-      letter-spacing="-6"
-    >K</text>
+      letter-spacing="-4"
+    >k</text>
     <text
-      x="148"
-      y="148"
-      font-family="Caveat, 'Segoe Print', 'Comic Sans MS', cursive"
-      font-size="78"
-      font-weight="600"
+      x="168"
+      y="128"
+      font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, Arial, sans-serif"
+      font-size="64"
+      font-weight="500"
     >ıds katalog</text>
   </g>
 </svg>

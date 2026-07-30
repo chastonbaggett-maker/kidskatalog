@@ -18,7 +18,7 @@ export function Logo({
   size = 180,
 }: LogoProps) {
   const src = light ? "/logo.svg" : "/logo-color.svg";
-  const height = Math.round(size * (200 / 520));
+  const height = Math.round(size * (220 / 560));
 
   const mark = (
     <Image

@@ -45,7 +45,7 @@ export function FeedCard({
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}
-          className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem]"
+          className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-[var(--orange)] text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem]"
         >
           <EyeIcon />
         </Link>

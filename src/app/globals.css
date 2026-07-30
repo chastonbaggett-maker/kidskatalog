@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --blue: #4a90e2;
-  --blue-deep: #2a5fa8;
-  --purple: #b19cd9;
-  --purple-deep: #7a5fb0;
+  /* Sampled from mockup header / action buttons */
+  --blue: #4e89ff;
+  --blue-deep: #3a6fe0;
+  --purple: #d17cff;
+  --purple-deep: #b85eef;
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ebe4f7;
@@ -14,8 +15,8 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
-  --header-grad: linear-gradient(105deg, #1e4f8c 0%, #2a5fa8 30%, #5b3d9e 70%, #6b4590 100%);
-  --header-grad-alt: linear-gradient(180deg, #7a2d8a 0%, #3d3a9e 45%, #1e5a9c 100%);
+  --header-grad: linear-gradient(90deg, #4e89ff 0%, #8f8bff 50%, #d17cff 100%);
+  --header-grad-alt: linear-gradient(180deg, #d17cff 0%, #8f8bff 45%, #4e89ff 100%);
 }
 
 @theme inline {

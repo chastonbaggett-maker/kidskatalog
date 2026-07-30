@@ -2,9 +2,9 @@
 
 :root {
   --blue: #4a90e2;
-  --blue-deep: #3a7bc8;
+  --blue-deep: #2a5fa8;
   --purple: #b19cd9;
-  --purple-deep: #9b7fd1;
+  --purple-deep: #7a5fb0;
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ebe4f7;
@@ -14,8 +14,8 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
-  --header-grad: linear-gradient(105deg, #5ba3f0 0%, #8ec5f5 35%, #c4a8e8 70%, #d4b5ef 100%);
-  --header-grad-alt: linear-gradient(180deg, #c44fd0 0%, #7b6dff 45%, #4aa3f0 100%);
+  --header-grad: linear-gradient(105deg, #1e4f8c 0%, #2a5fa8 30%, #5b3d9e 70%, #6b4590 100%);
+  --header-grad-alt: linear-gradient(180deg, #7a2d8a 0%, #3d3a9e 45%, #1e5a9c 100%);
 }
 
 @theme inline {

@@ -41,15 +41,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         } ${charging ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""}`}
         aria-pressed={inKart}
       >
-        <span className="add-kart-btn__label relative z-[1] inline-flex items-center">
-          {inKart ? (
-            "In Kart — tap to remove"
-          ) : (
-            <>
-              <span className="add-kart-btn__plus">+</span>
-              <span>Kart</span>
-            </>
-          )}
+        <span className="add-kart-btn__label relative z-[1]">
+          {inKart ? "In Kart — tap to remove" : "+ Add to Kart"}
         </span>
         <span className="add-kart-btn__glow" aria-hidden />
       </button>

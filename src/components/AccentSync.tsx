@@ -10,7 +10,7 @@ import type { Audience } from "@/types/toy";
 
 /** Solid status-bar / theme-color matching the left edge of --header-grad */
 const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
-  both: "#4e89ff",
+  both: "#2bb8a8",
   boys: "#2f6ae8",
   girls: "#ef8fb3",
 };

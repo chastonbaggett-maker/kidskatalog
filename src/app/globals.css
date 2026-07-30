@@ -17,8 +17,9 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
-  --header-grad: linear-gradient(90deg, #4e89ff 0%, #c9a8e8 50%, #f5a9c5 100%);
-  --header-grad-alt: linear-gradient(180deg, #f5a9c5 0%, #c9a8e8 45%, #4e89ff 100%);
+  /* Unisex header — mint teal with a soft depth shift */
+  --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
+  --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
   /* Gender filter chips stay fixed even when site accents remap */
   --boys-chip: #4e89ff;
   --girls-chip: #f5a9c5;

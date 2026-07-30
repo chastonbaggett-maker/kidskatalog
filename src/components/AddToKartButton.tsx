@@ -47,7 +47,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
           ) : (
             <>
               <span className="add-kart-btn__plus">+</span>
-              <span> Add to Kart</span>
+              <span>Add to Kart</span>
             </>
           )}
         </span>

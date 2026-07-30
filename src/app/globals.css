@@ -88,7 +88,8 @@ body {
   overscroll-behavior: none;
 }
 
-/* Installed PWA: body must use 100vh — 100dvh is ~34px short on iPhone (WebKit bug) */
+/* Installed PWA: body must use 100vh — 100dvh is ~34px short on iPhone (WebKit bug).
+   Protected — see .cursor/rules/pwa-shell-layout.mdc and npm run check:shell */
 html[data-standalone="true"] body {
   height: 100vh;
   min-height: 100vh;

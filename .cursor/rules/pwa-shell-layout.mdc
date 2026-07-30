@@ -1,0 +1,72 @@
+---
+description: Protected PWA shell, scroll, and bottom-nav layout — warn before breaking
+globs:
+  - src/components/AppShell.tsx
+  - src/components/BottomNav.tsx
+  - src/components/BrowseFeed.tsx
+  - src/components/StandaloneClass.tsx
+  - src/app/layout.tsx
+  - src/app/globals.css
+  - src/app/**/page.tsx
+alwaysApply: true
+---
+
+# PWA shell layout — DO NOT BREAK without explicit user approval
+
+This app has a **verified iPhone PWA layout** (pinned frosted bottom nav + scrollable content). The user has marked it as perfect. Treat these files and patterns as protected.
+
+## Before editing protected layout code
+
+1. **STOP** and tell the user which file/pattern you are about to change and **what will break** (scroll, nav gap, blur, header behavior).
+2. **Do not proceed** unless the user explicitly confirms they accept the risk, or the change is clearly cosmetic (colors, copy, icons) with zero layout/class/structure impact.
+3. After any approved layout change, run `npm run check:shell` and verify on iPhone PWA if possible.
+
+## Protected files (highest risk)
+
+| File | Why |
+|------|-----|
+| `src/app/globals.css` | `100vh` standalone body, `.app-shell`, `.page-scroll`, `.bottom-nav`, `--bottom-nav-offset` |
+| `src/app/layout.tsx` | `overflow-hidden` on html/body, `viewportFit: cover`, standalone inline script |
+| `src/components/AppShell.tsx` | Flex shell; `overflow-hidden` + `min-h-0` chain |
+| `src/components/BottomNav.tsx` | Must stay `absolute inset-x-0 bottom-0` for frosted blur over scrolling content |
+| `src/components/StandaloneClass.tsx` | Sets `data-standalone` for iOS PWA CSS |
+| `src/components/BrowseFeed.tsx` | Home feed scroll + compact shelf overlay (different but equally fragile) |
+
+## Canonical page pattern (Kart, Piles, Profile, Toy detail)
+
+Shelf-header pages **must** use this structure:
+
+```tsx
+<AppShell>
+  <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <ShelfHeader ... />
+    <div className="page-scroll star-field min-h-0 flex-1 ... scroll-pad-bottom">
+      {/* scrollable content */}
+    </div>
+  </div>
+</AppShell>
+```
+
+Required classes on the scroll region: `page-scroll`, `min-h-0`, `flex-1`, `scroll-pad-bottom`.
+
+## Home / Browse feed (different pattern — also protected)
+
+- Outer: `relative flex min-h-0 flex-1 flex-col` (no `overflow-hidden` on outer — shelf overlay needs it)
+- Scroller: `page-scroll star-field min-h-0 flex-1`
+- Bottom padding: `scroll-pad-bottom` on the feed grid, not the scroller root
+- Do not pin the expanded header/filters; they scroll with the feed
+
+## iPhone PWA rules (do not revert)
+
+- **Standalone body height: `100vh`**, not `100dvh` — WebKit PWA bug leaves ~34px gap below nav with `100dvh`
+- **Never** `calc(100dvh + env(safe-area-inset-bottom))` on body/shell — double-counts safe area
+- Bottom nav: absolute overlay + `padding-bottom: env(safe-area-inset-bottom)` in CSS
+- Body/html: `overflow: hidden`; only `.page-scroll` regions scroll
+
+## Safe changes (no warning needed)
+
+Copy, colors, toy data, icons, filter logic, kart store — anything that does not touch flex/overflow/height/positioning/safe-area/viewport.
+
+## Validation
+
+Run `npm run check:shell` before finishing any task that touches layout files. Fix failures or revert.

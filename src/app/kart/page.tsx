@@ -16,7 +16,7 @@ export default function KartPage() {
 
   return (
     <AppShell>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ShelfHeader
           title="My Kart"
           subtitle={
@@ -26,7 +26,7 @@ export default function KartPage() {
           }
         />
 
-        <div className="page-scroll star-field space-y-4 px-4 py-4">
+        <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
         {toys.length > 0 && (
           <div className="flex justify-end">
             <button

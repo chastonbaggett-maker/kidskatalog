@@ -23,10 +23,10 @@ export default async function ToyPage({ params }: Props) {
 
   return (
     <AppShell>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ShelfHeader backHref="/shop" />
 
-        <div className="page-scroll star-field px-4 py-4 sm:px-6 lg:px-8">
+        <div className="page-scroll star-field min-h-0 flex-1 px-4 py-4 scroll-pad-bottom sm:px-6 lg:px-8">
         <div className="product-detail mx-auto w-full max-w-6xl">
           <div className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />

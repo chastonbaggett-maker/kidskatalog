@@ -20,7 +20,7 @@ export function FeedHeader({
     <header
       className={`bg-[image:var(--header-grad)] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)] transition-[padding,border-radius] duration-300 ease-out ${
         collapsed
-          ? "rounded-b-[2.5rem] pb-5"
+          ? "rounded-b-[2rem] pb-5"
           : "rounded-b-none pb-3"
       }`}
     >

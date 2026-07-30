@@ -16,7 +16,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const setAudience = useAccentStore((s) => s.setAudience);
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
-  const [showText, setShowText] = useState(false);
+  const [showText, setShowText] = useState(true);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);

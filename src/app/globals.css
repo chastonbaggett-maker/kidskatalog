@@ -586,7 +586,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn__label {
-  gap: 0;
+  gap: 0.4em;
 }
 
 .add-kart-btn__plus {
@@ -798,6 +798,7 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn--burst,
   .add-kart-btn--charging .add-kart-btn__glow,
   .add-kart-btn--burst .add-kart-btn__glow,
+  .add-kart-btn__plus,
   .add-kart-confetti__bit {
     animation: none !important;
   }

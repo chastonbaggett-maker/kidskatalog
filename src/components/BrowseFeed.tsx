@@ -31,7 +31,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   return (
     <>
-      <FeedHeader query={query} onQueryChange={setQuery} wordmark />
+      <FeedHeader query={query} onQueryChange={setQuery} />
 
       <div className="z-20 bg-white">
         <FilterRow

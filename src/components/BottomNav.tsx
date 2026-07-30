@@ -17,7 +17,7 @@ export function BottomNav() {
   ] as const;
 
   return (
-    <nav className="sticky bottom-0 z-40 rounded-t-[2rem] border-t border-black/5 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_20px_-12px_rgba(80,100,180,0.35)] backdrop-blur-md">
+    <nav className="sticky bottom-0 z-40 rounded-t-[2rem] border-t border-black/5 bg-white/95 px-2.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-8px_20px_-12px_rgba(80,100,180,0.35)] backdrop-blur-md">
       <ul className="flex items-end justify-around">
         {items.map((item) => {
           const active =
@@ -29,7 +29,7 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`relative flex h-12 w-14 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${
+                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${
                   active ? "text-[var(--blue)]" : "text-[var(--blue)]/80"
                 }`}
                 aria-label={item.label}
@@ -37,7 +37,7 @@ export function BottomNav() {
               >
                 <Icon active={active} />
                 {"badge" in item && item.badge > 0 && (
-                  <span className="absolute right-2 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--purple)] px-1 text-[10px] font-bold text-white">
+                  <span className="absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--purple)] px-1 text-[12px] font-bold text-white">
                     {item.badge}
                   </span>
                 )}
@@ -52,7 +52,7 @@ export function BottomNav() {
 
 function HomeIcon({ active }: { active?: boolean }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
         stroke="currentColor"
@@ -65,7 +65,7 @@ function HomeIcon({ active }: { active?: boolean }) {
 
 function KartIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
         stroke="currentColor"
@@ -81,7 +81,7 @@ function KartIcon() {
 
 function MenuIcon({ active }: { active?: boolean }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect
         x="4.5"
         y="4.5"
@@ -97,5 +97,5 @@ function MenuIcon({ active }: { active?: boolean }) {
 }
 
 function BrandIcon() {
-  return <Logo variant="icon" light={false} href={null} size={32} />;
+  return <Logo variant="icon" light={false} href={null} size={38} />;
 }

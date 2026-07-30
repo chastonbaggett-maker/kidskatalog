@@ -6,7 +6,6 @@ import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
-import { FloatingActions } from "./FloatingActions";
 
 const COLLAPSE_AT = 40;
 const EXPAND_AT = 12;
@@ -98,8 +97,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           )}
         </div>
       </div>
-
-      <FloatingActions />
     </div>
   );
 }

@@ -44,8 +44,12 @@ export function useConfettiBurst() {
   }, [bits]);
 
   const fire = useCallback(
-    (origin: DOMRect | null | undefined) => {
+    (
+      origin: DOMRect | null | undefined,
+      colors: string[] = CONFETTI_COLORS,
+    ) => {
       if (!origin) return;
+      const palette = colors.length > 0 ? colors : CONFETTI_COLORS;
 
       const cx = origin.left + origin.width / 2;
       const cy = origin.top + origin.height / 2;
@@ -58,7 +62,7 @@ export function useConfettiBurst() {
           id: `${uid}-${i}-${Math.random().toString(36).slice(2, 7)}`,
           left: cx,
           top: cy,
-          color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+          color: palette[i % palette.length],
           dx: Math.cos(angle) * speed,
           dy: Math.sin(angle) * speed * 0.85 + upwardBias,
           rot: (Math.random() > 0.5 ? 1 : -1) * (220 + Math.random() * 520),

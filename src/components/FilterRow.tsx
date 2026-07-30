@@ -2,9 +2,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useConfettiBurst } from "@/hooks/useConfettiBurst";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
+
+const BOYS_CONFETTI = ["#4e89ff", "#3a6fe0", "#7aa8ff", "#2f6ae8", "#ffffff", "#5b93ff"];
+const GIRLS_CONFETTI = ["#f5a9c5", "#ef8fb3", "#ffc2d6", "#e078a8", "#ffffff", "#f0a0c0"];
 
 type Props = {
   audience: Audience;
@@ -27,7 +31,10 @@ export function FilterRow({
   const [mounted, setMounted] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const boysBtnRef = useRef<HTMLButtonElement>(null);
+  const girlsBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
 
   useEffect(() => {
     setMounted(true);
@@ -166,10 +173,18 @@ export function FilterRow({
         <div className="min-w-2 flex-1" aria-hidden />
 
         <button
+          ref={boysBtnRef}
           type="button"
-          onClick={() =>
-            onAudienceChange(audience === "boys" ? "all" : "boys")
-          }
+          onClick={(e) => {
+            const next = audience === "boys" ? "all" : "boys";
+            onAudienceChange(next);
+            if (next === "boys") {
+              fireConfetti(
+                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                BOYS_CONFETTI,
+              );
+            }
+          }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "boys" || audience === "all"
               ? "bg-[var(--boys-chip)]"
@@ -181,10 +196,18 @@ export function FilterRow({
         </button>
 
         <button
+          ref={girlsBtnRef}
           type="button"
-          onClick={() =>
-            onAudienceChange(audience === "girls" ? "all" : "girls")
-          }
+          onClick={(e) => {
+            const next = audience === "girls" ? "all" : "girls";
+            onAudienceChange(next);
+            if (next === "girls") {
+              fireConfetti(
+                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                GIRLS_CONFETTI,
+              );
+            }
+          }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "girls" || audience === "all"
               ? "bg-[var(--girls-chip)]"
@@ -195,6 +218,7 @@ export function FilterRow({
           <HeartIcon />
         </button>
       </div>
+      {confettiPortal}
     </div>
   );
 }

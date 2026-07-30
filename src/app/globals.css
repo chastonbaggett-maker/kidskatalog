@@ -215,6 +215,10 @@ select {
   animation: none;
 }
 
+.kart-go-arrow {
+  animation: kart-go-bob 2.8s ease-in-out infinite;
+}
+
 @keyframes back-fun-bob {
   0%,
   100% {
@@ -222,6 +226,16 @@ select {
   }
   50% {
     transform: translateX(-3px);
+  }
+}
+
+@keyframes kart-go-bob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
   }
 }
 
@@ -239,6 +253,10 @@ select {
   }
 
   .back-fun {
+    animation: none;
+  }
+
+  .kart-go-arrow {
     animation: none;
   }
 }
@@ -567,6 +585,22 @@ html[data-standalone="true"] .app-shell {
   animation: add-kart-idle-glow 1.6s ease-in-out infinite;
 }
 
+.add-kart-btn__label {
+  gap: 0;
+}
+
+.add-kart-btn__plus {
+  display: inline-block;
+  font-size: 1.15em;
+  line-height: 1;
+  transform-origin: center center;
+  animation: add-kart-plus-fun 2.4s ease-in-out infinite;
+}
+
+.add-kart-btn--charging .add-kart-btn__plus {
+  animation: add-kart-plus-charge 0.35s ease-in-out infinite;
+}
+
 .add-kart-btn__glow {
   position: absolute;
   inset: -2px;
@@ -621,6 +655,38 @@ html[data-standalone="true"] .app-shell {
     box-shadow:
       0 6px 18px color-mix(in srgb, var(--blue) 45%, transparent),
       0 0 22px color-mix(in srgb, var(--purple) 35%, transparent);
+  }
+}
+
+@keyframes add-kart-plus-fun {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  18% {
+    transform: scale(1.28) rotate(-14deg);
+  }
+  36% {
+    transform: scale(1.08) rotate(10deg);
+  }
+  54% {
+    transform: scale(1.32) rotate(-8deg);
+  }
+  72% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  88% {
+    transform: scale(1.22) rotate(-4deg);
+  }
+}
+
+@keyframes add-kart-plus-charge {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.45) rotate(90deg);
   }
 }
 

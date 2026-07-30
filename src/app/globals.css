@@ -288,8 +288,14 @@ body {
   }
 }
 
-.fab-stack {
-  animation: fab-bob 3.2s ease-in-out infinite;
+.bottom-nav {
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(28px) saturate(1.5);
+  background-image: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.72),
+    rgba(255, 255, 255, 0.42)
+  );
 }
 
 .app-shell {

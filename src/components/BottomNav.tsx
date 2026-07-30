@@ -1,41 +1,30 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccentStore } from "@/lib/accent-store";
 import { useKartStore } from "@/lib/kart-store";
 import { Logo } from "./Logo";
 
-function useViewChipClass() {
+function useViewAccentClass() {
+  const audience = useAccentStore((s) => s.audience);
+  if (audience === "boys") return "text-[var(--boys-chip)]";
+  if (audience === "girls") return "text-[var(--girls-chip)]";
+  return "text-[var(--mint)]";
+}
+
+function useViewBadgeClass() {
   const audience = useAccentStore((s) => s.audience);
   if (audience === "boys") return "bg-[var(--boys-chip)]";
   if (audience === "girls") return "bg-[var(--girls-chip)]";
   return "bg-[var(--mint)]";
 }
 
-function NavChip({
-  active,
-  children,
-}: {
-  active?: boolean;
-  children: ReactNode;
-}) {
-  const chipClass = useViewChipClass();
-  return (
-    <span
-      className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md transition ${chipClass} ${
-        active ? "ring-2 ring-black/10 scale-105" : "opacity-90"
-      }`}
-    >
-      {children}
-    </span>
-  );
-}
-
 export function BottomNav() {
   const pathname = usePathname();
   const count = useKartStore((s) => s.ids.length);
+  const accentClass = useViewAccentClass();
+  const badgeClass = useViewBadgeClass();
 
   const items = [
     { href: "/shop", label: "Home", icon: HomeIcon },
@@ -57,13 +46,17 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95"
+                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                  active ? "opacity-100" : "opacity-80"
+                }`}
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon active={active} />
                 {"badge" in item && item.badge > 0 && (
-                  <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[12px] font-bold text-[var(--ink)] shadow-sm ring-2 ring-black/5">
+                  <span
+                    className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -78,60 +71,50 @@ export function BottomNav() {
 
 function HomeIcon({ active }: { active?: boolean }) {
   return (
-    <NavChip active={active}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path
-          d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
-          stroke="currentColor"
-          strokeWidth={active ? 2.4 : 2}
-          strokeLinejoin="round"
-        />
-      </svg>
-    </NavChip>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
+        stroke="currentColor"
+        strokeWidth={active ? 2.4 : 2}
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
-function KartIcon({ active }: { active?: boolean }) {
+function KartIcon() {
   return (
-    <NavChip active={active}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path
-          d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="10" cy="20" r="1.4" fill="currentColor" />
-        <circle cx="18" cy="20" r="1.4" fill="currentColor" />
-      </svg>
-    </NavChip>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="10" cy="20" r="1.4" fill="currentColor" />
+      <circle cx="18" cy="20" r="1.4" fill="currentColor" />
+    </svg>
   );
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
   return (
-    <NavChip active={active}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <rect
-          x="4.5"
-          y="4.5"
-          width="15"
-          height="15"
-          rx="4"
-          ry="4"
-          stroke="currentColor"
-          strokeWidth={active ? 2.4 : 2}
-        />
-      </svg>
-    </NavChip>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="4.5"
+        y="4.5"
+        width="15"
+        height="15"
+        rx="4"
+        ry="4"
+        stroke="currentColor"
+        strokeWidth={active ? 2.4 : 2}
+      />
+    </svg>
   );
 }
 
-function BrandIcon({ active }: { active?: boolean }) {
-  return (
-    <NavChip active={active}>
-      <Logo variant="icon" light href={null} size={22} />
-    </NavChip>
-  );
+function BrandIcon() {
+  return <Logo variant="icon" light={false} href={null} size={38} />;
 }

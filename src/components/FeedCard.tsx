@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Toy } from "@/types/toy";
-import { useKartStore } from "@/lib/kart-store";
 
 export function FeedCard({
   toy,
@@ -14,9 +13,6 @@ export function FeedCard({
   showText: boolean;
   index?: number;
 }) {
-  const inKart = useKartStore((s) => s.ids.includes(toy.id));
-  const toggle = useKartStore((s) => s.toggle);
-
   return (
     <article
       className="feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2"
@@ -45,18 +41,7 @@ export function FeedCard({
         )}
       </div>
 
-      <div className="absolute bottom-4 right-0 z-10 flex translate-x-1/3 flex-col gap-3 sm:translate-x-1/4 lg:translate-x-1/3">
-        <button
-          type="button"
-          onClick={() => toggle(toy.id)}
-          className={`flex h-14 w-14 items-center justify-center rounded-full text-3xl font-bold text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl ${
-            inKart ? "bg-[var(--purple-deep)]" : "bg-[var(--blue)]"
-          }`}
-          aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
-          aria-pressed={inKart}
-        >
-          {inKart ? "✓" : "+"}
-        </button>
+      <div className="absolute bottom-4 right-0 z-10 translate-x-1/3 sm:translate-x-1/4 lg:translate-x-1/3">
         <Link
           href={`/toy/${toy.id}`}
           className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--purple)] font-[family-name:var(--font-display)] text-lg font-bold text-white shadow-lg transition active:scale-95 sm:h-[4.5rem] sm:w-[4.5rem] sm:text-xl"

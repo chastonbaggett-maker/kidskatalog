@@ -14,7 +14,7 @@ export function Logo({
   href = "/shop",
   light = true,
   className = "",
-  size = 200,
+  size = 110,
 }: LogoProps) {
   const src = light ? "/logo.png" : "/logo-color.png";
   const height = Math.round(size * (566 / 1299));

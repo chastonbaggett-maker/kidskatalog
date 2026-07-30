@@ -23,7 +23,7 @@ export function FeedCard({
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
-        <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/3]">
+        <Link href={`/toy/${toy.id}`} className="relative block aspect-[3/4]">
           <Image
             src={toy.image}
             alt={toy.imageAlt}

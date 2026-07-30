@@ -81,7 +81,6 @@ body {
   font-family: var(--font-body), ui-rounded, "Segoe UI", sans-serif;
   min-height: 100%;
   min-height: 100dvh;
-  /* Block pinch-zoom / double-tap zoom where supported */
   touch-action: manipulation;
   overscroll-behavior: none;
 }
@@ -91,6 +90,26 @@ input,
 textarea,
 select {
   font-size: 16px;
+}
+
+/*
+ * Installed iPhone/Android PWA: lock the document to the real screen.
+ * Avoids the white gap under position:fixed / short visualViewport shells.
+ */
+html[data-standalone="true"],
+html[data-standalone="true"] body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-standalone="true"] body {
+  position: fixed;
+  inset: 0;
+  min-height: 0;
+  /* Match shell so any residual edge isn’t a white strip */
+  background: var(--bg);
 }
 
 ::selection {
@@ -305,36 +324,35 @@ select {
 }
 
 .bottom-nav {
-  position: fixed;
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   margin: 0;
-  padding-bottom: 0;
+  /* Icons clear the home indicator; bar background still paints edge-to-edge */
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   backdrop-filter: blur(28px) saturate(1.5);
+  background-color: rgba(255, 255, 255, 0.72);
   background-image: linear-gradient(
     to top,
-    rgba(255, 255, 255, 0.72),
+    rgba(255, 255, 255, 0.88),
     rgba(255, 255, 255, 0.42)
   );
+  overflow: visible;
 }
 
-/* Desktop framed shell: keep nav inside the phone frame */
-@media (min-width: 640px) {
-  .bottom-nav {
-    position: absolute;
-  }
-}
-
-/* PWA / standalone: always viewport-fixed, even on wide tablets */
-@media (display-mode: standalone) {
-  .bottom-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
+/* Bleed paint below the bar in case iOS leaves a residual strip */
+.bottom-nav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.92);
+  pointer-events: none;
 }
 
 @keyframes voice-mic-pulse {
@@ -430,49 +448,43 @@ select {
 }
 
 .app-shell {
-  --shell-height: var(--vvh, 100dvh);
   width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  height: var(--shell-height);
-  max-height: var(--shell-height);
+  height: 100dvh;
+  max-height: 100dvh;
   background: var(--bg);
   position: relative;
   overflow: hidden;
 }
 
-/* Phones: pin shell to the visual viewport (browser + PWA) */
+/* Phones in browser: fill the screen without the desktop phone frame */
 @media (max-width: 639px) {
   .app-shell {
-    position: fixed;
-    top: var(--vv-top, 0px);
-    left: 0;
-    right: 0;
-    bottom: auto;
-    width: 100%;
-    height: var(--shell-height);
-    max-height: var(--shell-height);
+    max-width: none;
     margin: 0;
     border-radius: 0;
   }
 }
 
-/* Installed PWA on any size: full-bleed */
-@media (display-mode: standalone) {
-  .app-shell {
-    position: fixed;
-    top: var(--vv-top, 0px);
-    left: 0;
-    right: 0;
-    bottom: auto;
-    width: 100%;
-    max-width: none;
-    height: var(--shell-height);
-    max-height: var(--shell-height);
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
+/* Installed PWA (data-standalone from StandaloneClass — covers iOS navigator.standalone) */
+html[data-standalone="true"] .app-shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-standalone="true"] .bottom-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 /* Phone-framed shell on larger browser screens */
@@ -482,6 +494,11 @@ select {
     box-shadow:
       0 0 0 1px rgba(74, 144, 226, 0.08),
       0 24px 80px -40px rgba(80, 60, 140, 0.35);
+  }
+
+  html[data-standalone="true"] .app-shell {
+    max-width: none;
+    box-shadow: none;
   }
 }
 
@@ -495,10 +512,7 @@ select {
 
   .app-shell {
     position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
+    inset: auto;
     max-width: 980px;
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
@@ -507,25 +521,20 @@ select {
     border-radius: 2rem;
   }
 
-  @media (display-mode: standalone) {
-    body {
-      background: var(--bg);
-    }
+  html[data-standalone="true"] body {
+    background: var(--bg);
+  }
 
-    .app-shell {
-      position: fixed;
-      top: var(--vv-top, 0px);
-      left: 0;
-      right: 0;
-      bottom: auto;
-      width: 100%;
-      max-width: none;
-      height: var(--shell-height);
-      max-height: var(--shell-height);
-      margin: 0;
-      border-radius: 0;
-      box-shadow: none;
-    }
+  html[data-standalone="true"] .app-shell {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
+import { StandaloneClass } from "@/components/StandaloneClass";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -98,6 +99,12 @@ export default function RootLayout({
       className={`${display.variable} ${body.variable} ${script.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');}catch(e){}})();`,
+          }}
+        />
+        <StandaloneClass />
         <AccentSync />
         {children}
       </body>

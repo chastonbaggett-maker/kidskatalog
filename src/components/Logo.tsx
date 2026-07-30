@@ -2,36 +2,53 @@ import Image from "next/image";
 import Link from "next/link";
 
 type LogoProps = {
-  href?: string;
-  variant?: "mark" | "wordmark";
+  href?: string | null;
+  variant?: "wordmark" | "icon";
   light?: boolean;
   className?: string;
-  /** Rendered width in px */
+  /** Rendered width in px (wordmark) or height in px (icon) */
   size?: number;
 };
 
+const WORDMARK_RATIO = 566 / 1299;
+const ICON_RATIO = 386 / 566;
+
 export function Logo({
   href = "/shop",
+  variant = "wordmark",
   light = true,
   className = "",
   size = 110,
 }: LogoProps) {
-  const src = light ? "/logo.png" : "/logo-color.png";
-  const height = Math.round(size * (566 / 1299));
+  const isIcon = variant === "icon";
+  const src = isIcon
+    ? light
+      ? "/logo-icon.png"
+      : "/logo-icon-color.png"
+    : light
+      ? "/logo.png"
+      : "/logo-color.png";
+
+  const width = isIcon ? Math.round(size * ICON_RATIO) : size;
+  const height = isIcon ? size : Math.round(size * WORDMARK_RATIO);
 
   const mark = (
     <Image
       src={src}
       alt="kids katalog"
-      width={size}
+      width={width}
       height={height}
       priority
       className={`h-auto ${className}`}
-      style={{ width: size, height: "auto" }}
+      style={
+        isIcon
+          ? { height: size, width: "auto" }
+          : { width: size, height: "auto" }
+      }
     />
   );
 
-  if (href === undefined) return mark;
+  if (href === null || href === undefined) return mark;
   return (
     <Link
       href={href}

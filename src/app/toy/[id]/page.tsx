@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ShelfHeader } from "@/components/ShelfHeader";
 import { getCategory } from "@/data/categories";
 import { getToy } from "@/data/toys";
 import { AddToKartButton } from "@/components/AddToKartButton";
@@ -20,27 +21,7 @@ export default async function ToyPage({ params }: Props) {
 
   return (
     <AppShell>
-      <header className="flex items-center gap-2 rounded-b-2xl bg-[image:var(--header-grad)] px-3 pb-5 pt-[max(1rem,env(safe-area-inset-top))] text-white shadow-[0_8px_20px_-12px_rgba(80,100,180,0.55)]">
-        <Link
-          href="/shop"
-          className="flex h-10 w-10 items-center justify-center"
-          aria-label="Back"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 5 8 12l7 7"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
-        <h1 className="flex-1 truncate text-center font-[family-name:var(--font-display)] text-xl font-bold">
-          {toy.name}
-        </h1>
-        <span className="w-10" />
-      </header>
+      <ShelfHeader backHref="/shop" />
 
       <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-8">
         <ProductGallery images={gallery} alt={toy.imageAlt} />

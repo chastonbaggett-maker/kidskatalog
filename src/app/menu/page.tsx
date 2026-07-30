@@ -2,17 +2,13 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { categories } from "@/data/categories";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { ShelfHeader } from "@/components/ShelfHeader";
 import type { CategoryId } from "@/types/toy";
 
 export default function MenuPage() {
   return (
     <AppShell>
-      <header className="bg-[image:var(--header-grad)] px-4 pb-5 pt-10 text-center text-white">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold">
-          Piles
-        </h1>
-        <p className="text-white/85">Pick a toy group</p>
-      </header>
+      <ShelfHeader title="Piles" subtitle="Pick a toy group" />
       <div className="star-field grid flex-1 grid-cols-2 gap-3 px-4 py-5 pb-8">
         {categories.map((cat) => (
           <Link

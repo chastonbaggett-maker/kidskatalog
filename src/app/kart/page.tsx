@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { SendToParentForm } from "@/components/SendToParentForm";
+import { ShelfHeader } from "@/components/ShelfHeader";
 import { getToysByIds } from "@/data/toys";
 import { useKartStore } from "@/lib/kart-store";
 
@@ -15,16 +16,14 @@ export default function KartPage() {
 
   return (
     <AppShell>
-      <header className="bg-[image:var(--header-grad)] px-4 pb-5 pt-10 text-center text-white">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold">
-          My Kart
-        </h1>
-        <p className="text-white/85">
-          {toys.length === 0
+      <ShelfHeader
+        title="My Kart"
+        subtitle={
+          toys.length === 0
             ? "Empty — go find toys!"
-            : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`}
-        </p>
-      </header>
+            : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
+        }
+      />
 
       <div className="star-field flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-8">
         {toys.length > 0 && (

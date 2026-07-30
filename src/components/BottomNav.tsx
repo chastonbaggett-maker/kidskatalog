@@ -110,11 +110,11 @@ function MenuIcon() {
 function BrandIcon() {
   return (
     <Image
-      src="/logo-color.png"
+      src="/logo-icon-color.png"
       alt=""
-      width={72}
-      height={31}
-      className="h-7 w-auto max-w-[4.5rem] object-contain object-center"
+      width={26}
+      height={38}
+      className="h-8 w-auto object-contain object-center"
     />
   );
 }

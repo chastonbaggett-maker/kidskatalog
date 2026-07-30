@@ -47,7 +47,7 @@ export default async function ToyPage({ params }: Props) {
                 <AddToKartButton toyId={toy.id} />
                 <Link
                   href="/kart"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-6 py-3.5 font-[family-name:var(--font-display)] text-lg font-bold text-white shadow-md transition active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-6 py-3.5 text-lg font-bold text-white shadow-md transition active:scale-[0.98]"
                 >
                   Kart
                   <svg

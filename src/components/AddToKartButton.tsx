@@ -34,7 +34,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerUp={clearCharge}
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
-        className={`add-kart-btn rounded-full px-6 py-3.5 font-[family-name:var(--font-display)] text-base font-bold shadow-md transition active:scale-[0.98] ${
+        className={`add-kart-btn rounded-full px-6 py-3.5 text-base font-bold shadow-md transition active:scale-[0.98] ${
           inKart
             ? "add-kart-btn--in bg-[var(--purple-deep)] text-white"
             : "bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"

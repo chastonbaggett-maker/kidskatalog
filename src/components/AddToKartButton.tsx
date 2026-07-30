@@ -21,7 +21,7 @@ const CONFETTI_COLORS = [
   "#4e89ff",
   "#d17cff",
   "#f5a9c5",
-  "#ffc107",
+  "#3ecfc0",
   "#8f8bff",
   "#ffffff",
   "#3a6fe0",

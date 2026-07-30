@@ -98,8 +98,8 @@ export function FilterRow({
                       }}
                       className={`age-pop-chip flex aspect-square items-center justify-center rounded-2xl text-lg font-extrabold transition active:scale-95 ${
                         selected
-                          ? "bg-[var(--orange)] text-white shadow-md"
-                          : "bg-[#fff8e0] text-[#b8860b] hover:bg-[#ffe9a8]"
+                          ? "bg-[var(--mint)] text-white shadow-md"
+                          : "bg-[#e7faf7] text-[#1a8f82] hover:bg-[#c8f2eb]"
                       }`}
                     >
                       {n}

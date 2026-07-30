@@ -47,9 +47,31 @@ export default async function ToyPage({ params }: Props) {
                 <AddToKartButton toyId={toy.id} />
                 <Link
                   href="/kart"
-                  className="rounded-full bg-[var(--purple)] px-6 py-3.5 text-center text-base font-bold text-white shadow-md active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-6 py-3.5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
                 >
-                  Go to Kart
+                  Kart
+                  <svg
+                    className="kart-go-arrow shrink-0"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M9.5 5.5 16 12l-6.5 6.5"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M15 12H6"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </Link>
               </div>
 

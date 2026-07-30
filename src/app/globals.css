@@ -215,6 +215,10 @@ select {
   animation: none;
 }
 
+.kart-go-arrow {
+  animation: kart-go-bob 2.8s ease-in-out infinite;
+}
+
 @keyframes back-fun-bob {
   0%,
   100% {
@@ -222,6 +226,16 @@ select {
   }
   50% {
     transform: translateX(-3px);
+  }
+}
+
+@keyframes kart-go-bob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
   }
 }
 
@@ -239,6 +253,10 @@ select {
   }
 
   .back-fun {
+    animation: none;
+  }
+
+  .kart-go-arrow {
     animation: none;
   }
 }

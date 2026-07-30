@@ -125,20 +125,20 @@ export function FilterRow({
       : null;
 
   return (
-    <div className="relative flex items-center gap-2 px-4 py-2.5">
+    <div className="relative flex items-center gap-2.5 px-4 py-3.5">
       <button
         type="button"
         onClick={() => onShowTextChange(!showText)}
-        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3 py-1.5 text-sm font-bold text-[var(--blue)] shadow-sm"
+        className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3.5 py-2.5 text-sm font-bold text-[var(--blue)] shadow-sm"
       >
         Text
         <span
-          className={`relative h-5 w-9 rounded-full transition ${
+          className={`relative h-6 w-10 rounded-full transition ${
             showText ? "bg-[var(--blue)]" : "bg-[#d0d4de]"
           }`}
         >
           <span
-            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
               showText ? "left-[18px]" : "left-0.5"
             }`}
           />
@@ -152,7 +152,7 @@ export function FilterRow({
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="dialog"
           aria-expanded={open}
-          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+          className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
             age != null ? "bg-[var(--orange)]" : "bg-[var(--orange)]/70"
           }`}
         >
@@ -162,13 +162,13 @@ export function FilterRow({
         {ageModal}
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2.5">
         <button
           type="button"
           onClick={() =>
             onAudienceChange(audience === "boys" ? "all" : "boys")
           }
-          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
+          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "boys" || audience === "all"
               ? "bg-[var(--boys-chip)]"
               : "bg-[var(--boys-chip)]/45"
@@ -183,7 +183,7 @@ export function FilterRow({
           onClick={() =>
             onAudienceChange(audience === "girls" ? "all" : "girls")
           }
-          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-sm transition ${
+          className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
             audience === "girls" || audience === "all"
               ? "bg-[var(--girls-chip)]"
               : "bg-[var(--girls-chip)]/45"

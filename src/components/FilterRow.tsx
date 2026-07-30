@@ -171,7 +171,6 @@ export function FilterRow({
         <div className="min-w-2 flex-1" aria-hidden />
 
         <button
-          ref={boysBtnRef}
           type="button"
           onClick={(e) => {
             const next = audience === "boys" ? "all" : "boys";
@@ -190,11 +189,10 @@ export function FilterRow({
           } ${audience === "girls" ? "opacity-55" : ""}`}
         >
           Boys
-          <PlayIcon />
+          <RocketIcon />
         </button>
 
         <button
-          ref={girlsBtnRef}
           type="button"
           onClick={(e) => {
             const next = audience === "girls" ? "all" : "girls";

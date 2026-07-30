@@ -1,10 +1,37 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccentStore } from "@/lib/accent-store";
 import { useKartStore } from "@/lib/kart-store";
 import { Logo } from "./Logo";
+
+function useViewChipClass() {
+  const audience = useAccentStore((s) => s.audience);
+  if (audience === "boys") return "bg-[var(--boys-chip)]";
+  if (audience === "girls") return "bg-[var(--girls-chip)]";
+  return "bg-[var(--mint)]";
+}
+
+function NavChip({
+  active,
+  children,
+}: {
+  active?: boolean;
+  children: ReactNode;
+}) {
+  const chipClass = useViewChipClass();
+  return (
+    <span
+      className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md transition ${chipClass} ${
+        active ? "ring-2 ring-black/10 scale-105" : "opacity-90"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -30,15 +57,13 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${
-                  active ? "text-[var(--blue)]" : "text-[var(--blue)]/80"
-                }`}
+                className="relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95"
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon active={active} />
                 {"badge" in item && item.badge > 0 && (
-                  <span className="absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--purple)] px-1 text-[12px] font-bold text-white">
+                  <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[12px] font-bold text-[var(--ink)] shadow-sm ring-2 ring-black/5">
                     {item.badge}
                   </span>
                 )}
@@ -53,64 +78,60 @@ export function BottomNav() {
 
 function HomeIcon({ active }: { active?: boolean }) {
   return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
-        stroke="currentColor"
-        strokeWidth={active ? 2.4 : 2}
-        strokeLinejoin="round"
-      />
-    </svg>
+    <NavChip active={active}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
+          stroke="currentColor"
+          strokeWidth={active ? 2.4 : 2}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </NavChip>
   );
 }
 
-function KartIcon() {
+function KartIcon({ active }: { active?: boolean }) {
   return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="20" r="1.4" fill="currentColor" />
-      <circle cx="18" cy="20" r="1.4" fill="currentColor" />
-    </svg>
+    <NavChip active={active}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="10" cy="20" r="1.4" fill="currentColor" />
+        <circle cx="18" cy="20" r="1.4" fill="currentColor" />
+      </svg>
+    </NavChip>
   );
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
   return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect
-        x="4.5"
-        y="4.5"
-        width="15"
-        height="15"
-        rx="4"
-        ry="4"
-        stroke="currentColor"
-        strokeWidth={active ? 2.4 : 2}
-      />
-    </svg>
+    <NavChip active={active}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect
+          x="4.5"
+          y="4.5"
+          width="15"
+          height="15"
+          rx="4"
+          ry="4"
+          stroke="currentColor"
+          strokeWidth={active ? 2.4 : 2}
+        />
+      </svg>
+    </NavChip>
   );
 }
 
-function BrandIcon() {
-  const audience = useAccentStore((s) => s.audience);
-  const chipClass =
-    audience === "boys"
-      ? "bg-[var(--boys-chip)]"
-      : audience === "girls"
-        ? "bg-[var(--girls-chip)]"
-        : "bg-[var(--mint)]";
-
+function BrandIcon({ active }: { active?: boolean }) {
   return (
-    <span
-      className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md ${chipClass}`}
-    >
-      <Logo variant="icon" light href={null} size={26} />
-    </span>
+    <NavChip active={active}>
+      <Logo variant="icon" light href={null} size={22} />
+    </NavChip>
   );
 }

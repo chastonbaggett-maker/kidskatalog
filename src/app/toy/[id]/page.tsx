@@ -25,7 +25,7 @@ export default async function ToyPage({ params }: Props) {
     <AppShell>
       <ShelfHeader backHref="/shop" />
 
-      <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-10 sm:px-6 lg:px-8">
+      <div className="star-field flex-1 overflow-y-auto px-4 py-4 pb-28 sm:px-6 lg:px-8">
         <div className="product-detail mx-auto w-full max-w-6xl">
           <div className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />

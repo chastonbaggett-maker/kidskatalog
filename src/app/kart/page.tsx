@@ -25,7 +25,7 @@ export default function KartPage() {
         }
       />
 
-      <div className="star-field flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-8">
+      <div className="star-field flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-28">
         {toys.length > 0 && (
           <div className="flex justify-end">
             <button

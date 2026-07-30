@@ -92,24 +92,28 @@ body {
   opacity: 1;
 }
 
-/* Browse chrome: expanded pack slides up; simple shelf glides down */
-.browse-chrome-stage {
-  position: relative;
-  overflow: hidden;
-  will-change: height;
+/* Sticky simple shelf — glides down once expanded nav scrolls away */
+.browse-shelf-sticky {
+  pointer-events: none;
+  transform: translate3d(0, -110%, 0);
+  opacity: 0;
+  transition:
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease;
+  will-change: transform, opacity;
 }
 
-.browse-chrome-expanded,
-.browse-chrome-shelf {
-  backface-visibility: hidden;
+.browse-shelf-sticky.is-visible {
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
 }
 
-.browse-chrome-shelf {
-  z-index: 2;
-}
-
-.browse-chrome-expanded {
-  z-index: 1;
+@media (prefers-reduced-motion: reduce) {
+  .browse-shelf-sticky {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
 }
 
 .age-pop {

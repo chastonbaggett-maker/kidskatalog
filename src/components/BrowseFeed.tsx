@@ -156,6 +156,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               toy={toy}
               showText={showText}
               index={index}
+              randomizeActive={randomizeActive}
             />
           ))}
           {displayed.length === 0 && (

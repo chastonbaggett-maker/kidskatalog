@@ -9,10 +9,12 @@ export function FeedCard({
   toy,
   showText,
   index = 0,
+  randomizeActive = false,
 }: {
   toy: Toy;
   showText: boolean;
   index?: number;
+  randomizeActive?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -27,7 +29,13 @@ export function FeedCard({
       className="feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2"
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
-      <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
+      <div
+        className={`overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ${
+          randomizeActive
+            ? "feed-card__surface--random"
+            : "ring-1 ring-black/[0.03]"
+        }`}
+      >
         <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
           <Image
             src={toy.image}

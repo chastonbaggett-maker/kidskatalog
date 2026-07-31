@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 
 type ConfettiBit = {
   id: string;
@@ -56,14 +57,14 @@ export function useConfettiBurst() {
 
   const fire = useCallback(
     (
-      origin: DOMRect | null | undefined,
+      origin: BurstPoint | DOMRect | null | undefined,
       colors: string[] = CONFETTI_COLORS,
     ) => {
-      if (!origin) return;
+      const point = resolveBurstPoint(origin);
+      if (!point) return;
       const palette = colors.length > 0 ? colors : CONFETTI_COLORS;
 
-      const cx = origin.left + origin.width / 2;
-      const cy = origin.top + origin.height / 2;
+      const { x: cx, y: cy } = point;
       const count = 56;
       const next: ConfettiBit[] = Array.from({ length: count }, (_, i) => {
         const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.55;

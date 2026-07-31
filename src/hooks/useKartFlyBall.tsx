@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { getKartNavRect } from "@/lib/kart-nav-target";
+import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 import { useKartStore } from "@/lib/kart-store";
 
 /** Screen-space gravity (px/s²) — tuned for a natural toss arc. */
@@ -61,12 +62,13 @@ export function useKartFlyBall() {
     [],
   );
 
-  const fire = useCallback((origin: DOMRect | null | undefined) => {
+  const fire = useCallback((origin: BurstPoint | DOMRect | null | undefined) => {
+    const point = resolveBurstPoint(origin);
     const toRect = getKartNavRect();
-    if (!origin || !toRect) return;
+    if (!point || !toRect) return;
 
-    const fromX = origin.left + origin.width / 2;
-    const fromY = origin.top + 10;
+    const fromX = point.x;
+    const fromY = point.y;
     const toX = toRect.left + toRect.width / 2;
     const toY = toRect.top + toRect.height * 0.36;
 

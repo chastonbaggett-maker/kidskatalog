@@ -40,7 +40,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
   const clearCharge = () => setCharging(false);
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (removing) return;
 
     if (inKart) {
@@ -62,9 +62,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     toggle(toyId);
     clearCharge();
     if (!wasIn) {
-      const rect = btnRef.current?.getBoundingClientRect();
-      fireFlyBall(rect);
-      fire(rect, GOLD_CONFETTI);
+      const point = { x: e.clientX, y: e.clientY };
+      fireFlyBall(point);
+      fire(point, GOLD_CONFETTI);
     }
   };
 

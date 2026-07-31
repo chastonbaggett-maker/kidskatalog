@@ -601,7 +601,9 @@ html[data-standalone="true"] .app-shell {
     0 0 0 0 transparent;
 }
 
-.add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging) {
+.add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging):not(
+    .add-kart-btn--playful
+  ) {
   animation: add-kart-idle-glow 1.6s ease-in-out infinite;
 }
 
@@ -609,6 +611,106 @@ html[data-standalone="true"] .app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Aaron Iker–style playful hover: rising fill + letter bounce */
+.add-kart-btn--playful {
+  overflow: hidden;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+}
+
+.add-kart-btn--playful:not(.add-kart-btn--in) {
+  --playful-back: color-mix(in srgb, white 18%, var(--blue));
+  --playful-front: color-mix(in srgb, white 34%, var(--blue));
+}
+
+.add-kart-btn--playful.add-kart-btn--in {
+  --playful-back: color-mix(in srgb, white 16%, var(--mint));
+  --playful-front: color-mix(in srgb, white 30%, var(--mint));
+}
+
+.add-kart-btn--playful::before,
+.add-kart-btn--playful::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200%;
+  border-radius: inherit;
+  transform: translateY(var(--playful-y, 50%));
+  transition: transform var(--playful-d, 0.4s) ease-in var(--playful-d-d, 0s);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.add-kart-btn--playful::before {
+  background: var(--playful-back);
+}
+
+.add-kart-btn--playful::after {
+  background: var(--playful-front);
+  --playful-d: 0.44s;
+}
+
+.add-kart-btn--playful.is-playful-in::before,
+.add-kart-btn--playful.is-playful-in::after {
+  --playful-y: 0;
+}
+
+.add-kart-btn--playful.is-playful-in::after {
+  --playful-d-d: 0.02s;
+}
+
+.add-kart-btn--playful.is-playful-out::before {
+  --playful-d-d: 0.06s;
+}
+
+.add-kart-btn__letter {
+  display: inline-block;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.add-kart-btn--playful.is-playful-in .add-kart-btn__letter {
+  animation: add-kart-letter-in 0.7s linear forwards 0.18s;
+}
+
+.add-kart-btn--playful.is-playful-out .add-kart-btn__letter {
+  animation: add-kart-letter-out 0.7s linear forwards 0.18s;
+}
+
+@keyframes add-kart-letter-in {
+  30%,
+  36% {
+    transform: translateY(calc(-6px * var(--move))) translateZ(0)
+      rotate(calc(-13deg * var(--rotate) * var(--part)));
+  }
+  50% {
+    transform: translateY(calc(3px * var(--move))) translateZ(0)
+      rotate(calc(6deg * var(--rotate) * var(--part)));
+  }
+  70% {
+    transform: translateY(calc(-2px * var(--move))) translateZ(0)
+      rotate(calc(-3deg * var(--rotate) * var(--part)));
+  }
+}
+
+@keyframes add-kart-letter-out {
+  30%,
+  36% {
+    transform: translateY(calc(6px * var(--move))) translateZ(0)
+      rotate(calc(13deg * var(--rotate) * var(--part)));
+  }
+  50% {
+    transform: translateY(calc(-3px * var(--move))) translateZ(0)
+      rotate(calc(-6deg * var(--rotate) * var(--part)));
+  }
+  70% {
+    transform: translateY(calc(2px * var(--move))) translateZ(0)
+      rotate(calc(3deg * var(--rotate) * var(--part)));
+  }
 }
 
 .add-kart-btn--circle {
@@ -854,9 +956,16 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn--burst,
   .add-kart-btn--charging .add-kart-btn__glow,
   .add-kart-btn--burst .add-kart-btn__glow,
+  .add-kart-btn--playful.is-playful-in .add-kart-btn__letter,
+  .add-kart-btn--playful.is-playful-out .add-kart-btn__letter,
   .add-kart-btn__plus,
   .add-kart-confetti__bit {
     animation: none !important;
+  }
+
+  .add-kart-btn--playful::before,
+  .add-kart-btn--playful::after {
+    transition: none;
   }
 
   .add-kart-confetti {

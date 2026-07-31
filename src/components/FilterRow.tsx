@@ -10,6 +10,15 @@ const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
 const BOYS_CONFETTI = ["#4e89ff", "#3a6fe0", "#7aa8ff", "#2f6ae8", "#ffffff", "#5b93ff"];
 const GIRLS_CONFETTI = ["#f5a9c5", "#ef8fb3", "#ffc2d6", "#e078a8", "#ffffff", "#f0a0c0"];
 const UNISEX_CONFETTI = ["#3ecfc0", "#2bb8a8", "#6ee8db", "#45d4c4", "#ffffff", "#1fa896"];
+const RAINBOW_CONFETTI = [
+  "#ff6b6b",
+  "#ffd93d",
+  "#6bcb77",
+  "#4d96ff",
+  "#9b59b6",
+  "#ff8fab",
+  "#ffffff",
+];
 
 type Props = {
   audience: Audience;
@@ -18,6 +27,7 @@ type Props = {
   onShowTextChange: (value: boolean) => void;
   age: number | null;
   onAgeChange: (value: number | null) => void;
+  onRandomize: () => void;
 };
 
 export function FilterRow({
@@ -27,6 +37,7 @@ export function FilterRow({
   onShowTextChange,
   age,
   onAgeChange,
+  onRandomize,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -212,6 +223,21 @@ export function FilterRow({
           </button>
           {ageModal}
         </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            onRandomize();
+            fireConfetti(
+              (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+              RAINBOW_CONFETTI,
+            );
+          }}
+          className="filter-randomize-btn flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95"
+        >
+          Randomize
+          <ShuffleIcon />
+        </button>
       </div>
       {confettiPortal}
     </div>
@@ -247,6 +273,20 @@ function DollIcon() {
       {/* feet */}
       <ellipse cx="9.2" cy="21.2" rx="1.6" ry="1.1" />
       <ellipse cx="14.8" cy="21.2" rx="1.6" ry="1.1" />
+    </svg>
+  );
+}
+
+function ShuffleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M16 4h4v4M20 4l-6 6M8 20H4v-4M4 20l6-6M14 14l-2.5 2.5a3 3 0 0 1-4.24 0L4 15M10 10l2.5-2.5a3 3 0 0 1 4.24 0L20 9"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

@@ -17,6 +17,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
+  const [shuffleKey, setShuffleKey] = useState(0);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
+  useEffect(() => {
+    setShuffleKey(0);
+  }, [query, audience, age]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return toys.filter((t) => {
@@ -77,6 +82,24 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       return audienceOk && queryOk && ageOk;
     });
   }, [toys, query, audience, age]);
+
+  const displayed = useMemo(() => {
+    if (shuffleKey === 0) return filtered;
+
+    const shuffled = [...filtered];
+    let seed = shuffleKey;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0xffffffff;
+    };
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
+  }, [filtered, shuffleKey]);
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
@@ -107,13 +130,14 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onShowTextChange={setShowText}
               age={age}
               onAgeChange={setAge}
+              onRandomize={() => setShuffleKey((k) => k + 1)}
             />
             <ThumbCarousel />
           </div>
         </div>
 
         <div className="toy-feed-grid scroll-pad-bottom pt-4">
-          {filtered.map((toy, index) => (
+          {displayed.map((toy, index) => (
             <FeedCard
               key={toy.id}
               toy={toy}
@@ -121,7 +145,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               index={index}
             />
           ))}
-          {filtered.length === 0 && (
+          {displayed.length === 0 && (
             <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
               No toys match. Try another search.
             </p>

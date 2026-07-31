@@ -427,32 +427,6 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 }
 
-.page-scroll--crazy {
-  position: relative;
-  background-color: #0a0c16;
-  background-image: none;
-  transition: background-color 320ms ease;
-}
-
-.page-scroll--crazy::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: rgba(4, 6, 14, 0.62);
-  transition: opacity 320ms ease;
-}
-
-.page-scroll--crazy > * {
-  position: relative;
-  z-index: 1;
-}
-
-.page-scroll--crazy .feed-card > div:first-child {
-  background: #fff;
-}
-
 .toy-feed-grid--crazy .feed-card {
   animation: none;
   opacity: 1;

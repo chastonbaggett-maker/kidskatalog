@@ -233,9 +233,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 ${
-          crazyMode ? "page-scroll--crazy" : ""
-        }`}
+        className="page-scroll star-field min-h-0 flex-1"
       >
         {/* Header, filters, and categories scroll with the feed */}
         <div ref={chromeRef} className="relative z-20">

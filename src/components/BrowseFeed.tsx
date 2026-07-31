@@ -14,6 +14,35 @@ type ShelfMode = "hidden" | "shown" | "leaving";
 /** Synced with `.filter-crazy-btn--active` lightning flash cycle. */
 const CRAZY_FLASH_MS = 2200;
 
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const arr = [...items];
+  let s = seed;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function shuffleAlternatingGroup(ids: string[], evenGroup: boolean, seed: number) {
+  const next = [...ids];
+  const slots = ids
+    .map((_, i) => i)
+    .filter((i) => (evenGroup ? i % 2 === 0 : i % 2 === 1));
+  const shuffled = shuffleWithSeed(
+    slots.map((slot) => ids[slot]),
+    seed,
+  );
+  slots.forEach((slot, i) => {
+    next[slot] = shuffled[i];
+  });
+  return next;
+}
+
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const audience = useAccentStore((s) => s.audience);
   const setAudience = useAccentStore((s) => s.setAudience);
@@ -21,13 +50,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
   const [shuffleKey, setShuffleKey] = useState(0);
+  const [displayIds, setDisplayIds] = useState<string[]>([]);
   const [crazyMode, setCrazyMode] = useState(false);
   const [crazyFlash, setCrazyFlash] = useState(false);
+  const [crazyFlashGroup, setCrazyFlashGroup] = useState<"even" | "odd" | null>(
+    null,
+  );
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const shelfWantedRef = useRef(false);
+  const crazyFlashCountRef = useRef(0);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -67,34 +101,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
-  useEffect(() => {
-    setShuffleKey(0);
-    setCrazyMode(false);
-  }, [query, audience, age, toys]);
-
-  useEffect(() => {
-    if (!crazyMode) return;
-
-    let flashTimer: number | undefined;
-
-    const flash = () => {
-      setShuffleKey((k) => k + 1);
-      setCrazyFlash(true);
-      flashTimer = window.setTimeout(() => setCrazyFlash(false), 380);
-    };
-
-    flash();
-    const id = window.setInterval(flash, CRAZY_FLASH_MS);
-    return () => {
-      window.clearInterval(id);
-      if (flashTimer) window.clearTimeout(flashTimer);
-    };
-  }, [crazyMode]);
-
-  useEffect(() => {
-    if (!crazyMode) setCrazyFlash(false);
-  }, [crazyMode]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return toys.filter((t) => {
@@ -112,23 +118,71 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     });
   }, [toys, query, audience, age]);
 
-  const displayed = useMemo(() => {
-    if (shuffleKey === 0) return filtered;
+  const filteredIds = useMemo(() => filtered.map((t) => t.id), [filtered]);
 
-    const shuffled = [...filtered];
-    let seed = shuffleKey;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 0xffffffff;
+  useEffect(() => {
+    setDisplayIds(filteredIds);
+    setShuffleKey(0);
+    setCrazyMode(false);
+    setCrazyFlashGroup(null);
+  }, [filteredIds]);
+
+  useEffect(() => {
+    if (!crazyMode) return;
+
+    let flashTimer: number | undefined;
+
+    const flash = () => {
+      crazyFlashCountRef.current += 1;
+      const nextKey = crazyFlashCountRef.current;
+      const shuffleEvens = nextKey % 2 === 1;
+
+      setShuffleKey(nextKey);
+      setDisplayIds((prev) => {
+        const order =
+          prev.length === filteredIds.length &&
+          prev.every((id) => filteredIds.includes(id))
+            ? prev
+            : filteredIds;
+        return shuffleAlternatingGroup(order, shuffleEvens, nextKey);
+      });
+
+      setCrazyFlashGroup(shuffleEvens ? "even" : "odd");
+      setCrazyFlash(true);
+      flashTimer = window.setTimeout(() => {
+        setCrazyFlash(false);
+        setCrazyFlashGroup(null);
+      }, 380);
     };
 
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
+    crazyFlashCountRef.current = 0;
+    flash();
+    const id = window.setInterval(flash, CRAZY_FLASH_MS);
+    return () => {
+      window.clearInterval(id);
+      if (flashTimer) window.clearTimeout(flashTimer);
+    };
+  }, [crazyMode, filteredIds]);
 
-    return shuffled;
-  }, [filtered, shuffleKey]);
+  useEffect(() => {
+    if (!crazyMode) {
+      setCrazyFlash(false);
+      setCrazyFlashGroup(null);
+    }
+  }, [crazyMode]);
+
+  const displayed = useMemo(() => {
+    const byId = new Map(filtered.map((t) => [t.id, t]));
+    const ids =
+      shuffleKey === 0 && !crazyMode
+        ? filteredIds
+        : displayIds.length === filteredIds.length
+          ? displayIds
+          : filteredIds;
+    return ids
+      .map((id) => byId.get(id))
+      .filter((t): t is Toy => t != null);
+  }, [filtered, filteredIds, displayIds, shuffleKey, crazyMode]);
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
@@ -159,7 +213,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onShowTextChange={setShowText}
               age={age}
               onAgeChange={setAge}
-              onRandomize={() => setShuffleKey((k) => k + 1)}
+              onRandomize={() => {
+                setShuffleKey((k) => {
+                  const next = k + 1;
+                  setDisplayIds((prev) =>
+                    shuffleWithSeed(
+                      prev.length === filteredIds.length ? prev : filteredIds,
+                      next,
+                    ),
+                  );
+                  return next;
+                });
+              }}
               crazyMode={crazyMode}
               onCrazyModeToggle={() => setCrazyMode((v) => !v)}
               crazyFlash={crazyFlash}
@@ -171,7 +236,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         <div
           className={`toy-feed-grid scroll-pad-bottom pt-4 ${
             crazyMode ? "toy-feed-grid--crazy" : ""
-          } ${crazyFlash ? "toy-feed-grid--crazy-flash" : ""}`}
+          } ${
+            crazyFlash && crazyFlashGroup === "even"
+              ? "toy-feed-grid--crazy-flash-even"
+              : ""
+          } ${
+            crazyFlash && crazyFlashGroup === "odd"
+              ? "toy-feed-grid--crazy-flash-odd"
+              : ""
+          }`}
         >
           {displayed.map((toy, index) => (
             <FeedCard

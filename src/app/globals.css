@@ -433,7 +433,11 @@ html[data-accent="both"] .kart-go-btn:hover {
   transform: none;
 }
 
-.toy-feed-grid--crazy-flash .feed-card > div:first-child {
+.toy-feed-grid--crazy-flash-even .feed-card:nth-child(odd) > div:first-child {
+  animation: crazy-card-flash 0.38s ease-out forwards;
+}
+
+.toy-feed-grid--crazy-flash-odd .feed-card:nth-child(even) > div:first-child {
   animation: crazy-card-flash 0.38s ease-out forwards;
 }
 
@@ -1263,7 +1267,8 @@ html[data-standalone="true"] .app-shell {
     opacity: 0;
   }
 
-  .toy-feed-grid--crazy-flash .feed-card > div:first-child {
+  .toy-feed-grid--crazy-flash-even .feed-card:nth-child(odd) > div:first-child,
+  .toy-feed-grid--crazy-flash-odd .feed-card:nth-child(even) > div:first-child {
     animation: none;
   }
 }

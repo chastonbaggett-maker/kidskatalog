@@ -13,14 +13,14 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const [removing, setRemoving] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
 
-  useEffect(() => () => clearRemoveTimer(), []);
-
   const clearRemoveTimer = () => {
     if (removeTimerRef.current != null) {
       window.clearTimeout(removeTimerRef.current);
       removeTimerRef.current = null;
     }
   };
+
+  useEffect(() => () => clearRemoveTimer(), []);
 
   const handlePointerDown = () => {
     if (!inKart && !removing) setCharging(true);

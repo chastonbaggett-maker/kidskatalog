@@ -43,11 +43,10 @@ export default async function ToyPage({ params }: Props) {
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>
 
-              <div className="mt-6 flex max-w-md flex-col gap-3">
-                <AddToKartButton toyId={toy.id} />
+              <div className="mt-6 flex max-w-md items-stretch gap-3">
                 <Link
                   href="/kart"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-6 py-3.5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
+                  className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-5 py-3.5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
                 >
                   Go to Kart
                   <svg
@@ -73,6 +72,7 @@ export default async function ToyPage({ params }: Props) {
                     />
                   </svg>
                 </Link>
+                <AddToKartButton toyId={toy.id} />
               </div>
 
               <p className="mt-5 text-center text-sm text-[var(--ink-soft)] sm:text-left">

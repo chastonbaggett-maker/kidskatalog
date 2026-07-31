@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
+import { FeedAutoLoadMore } from "./FeedAutoLoadMore";
 import { ShelfHeader } from "./ShelfHeader";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
 /** Synced with `.filter-crazy-btn--active` lightning flash cycle. */
 const CRAZY_FLASH_MS = 2200;
+const FEED_PAGE_SIZE = 20;
 
 function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   const arr = [...items];
@@ -56,6 +58,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [crazyFlashGroup, setCrazyFlashGroup] = useState<"even" | "odd" | null>(
     null,
   );
+  const [loadedPages, setLoadedPages] = useState(1);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -125,6 +128,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     setShuffleKey(0);
     setCrazyMode(false);
     setCrazyFlashGroup(null);
+    setLoadedPages(1);
   }, [filteredIds]);
 
   useEffect(() => {
@@ -184,6 +188,35 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       .filter((t): t is Toy => t != null);
   }, [filtered, filteredIds, displayIds, shuffleKey, crazyMode]);
 
+  const totalPages = Math.max(1, Math.ceil(displayed.length / FEED_PAGE_SIZE));
+  const visiblePages = Math.min(loadedPages, totalPages);
+  const hasMore = visiblePages < totalPages;
+
+  const loadNextPage = useCallback(() => {
+    setLoadedPages((pages) => Math.min(pages + 1, totalPages));
+  }, [totalPages]);
+
+  const visibleChunks = useMemo(() => {
+    const chunks: Toy[][] = [];
+    const end = visiblePages * FEED_PAGE_SIZE;
+    const visible = displayed.slice(0, end);
+    for (let i = 0; i < visible.length; i += FEED_PAGE_SIZE) {
+      chunks.push(visible.slice(i, i + FEED_PAGE_SIZE));
+    }
+    return chunks;
+  }, [displayed, visiblePages]);
+
+  const gridClassName = [
+    "toy-feed-grid",
+    crazyMode ? "toy-feed-grid--crazy" : "",
+    crazyFlash && crazyFlashGroup === "even"
+      ? "toy-feed-grid--crazy-flash-even"
+      : "",
+    crazyFlash && crazyFlashGroup === "odd" ? "toy-feed-grid--crazy-flash-odd" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
@@ -233,26 +266,27 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           </div>
         </div>
 
-        <div
-          className={`toy-feed-grid scroll-pad-bottom pt-4 ${
-            crazyMode ? "toy-feed-grid--crazy" : ""
-          } ${
-            crazyFlash && crazyFlashGroup === "even"
-              ? "toy-feed-grid--crazy-flash-even"
-              : ""
-          } ${
-            crazyFlash && crazyFlashGroup === "odd"
-              ? "toy-feed-grid--crazy-flash-odd"
-              : ""
-          }`}
-        >
-          {displayed.map((toy, index) => (
-            <FeedCard
-              key={toy.id}
-              toy={toy}
-              showText={showText}
-              index={index}
-            />
+        <div className="scroll-pad-bottom space-y-6 pt-4">
+          {visibleChunks.map((chunk, chunkIndex) => (
+            <Fragment key={`feed-chunk-${chunkIndex}`}>
+              <div className={gridClassName}>
+                {chunk.map((toy, indexInChunk) => (
+                  <FeedCard
+                    key={toy.id}
+                    toy={toy}
+                    showText={showText}
+                    index={chunkIndex * FEED_PAGE_SIZE + indexInChunk}
+                  />
+                ))}
+              </div>
+              {chunkIndex === visibleChunks.length - 1 && hasMore && (
+                <FeedAutoLoadMore
+                  scrollerRef={scrollerRef}
+                  active={hasMore}
+                  onLoad={loadNextPage}
+                />
+              )}
+            </Fragment>
           ))}
           {displayed.length === 0 && (
             <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">

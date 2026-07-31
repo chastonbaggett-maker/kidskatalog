@@ -934,18 +934,11 @@ html[data-standalone="true"] .app-shell {
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
 .kart-fly-ball {
   position: fixed;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 9999px;
-  background: radial-gradient(
-    circle at 35% 30%,
-    #e8fffb 0%,
-    var(--mint) 52%,
-    #2bb8a8 100%
-  );
-  box-shadow:
-    0 0 14px color-mix(in srgb, var(--mint) 70%, transparent),
-    inset 0 -2px 4px rgba(20, 120, 110, 0.2);
+  background: var(--mint);
+  box-shadow: 0 2px 8px rgba(30, 130, 118, 0.4);
   pointer-events: none;
   z-index: 150;
   will-change: left, top, transform, opacity;

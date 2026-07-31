@@ -11,20 +11,38 @@ import { createPortal } from "react-dom";
 import { getKartNavRect } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 
-const FLY_MS = 640;
+/** Screen-space gravity (px/s²) — tuned for a natural toss arc. */
+const GRAVITY = 1050;
+const POP_MS = 110;
+/** Minimum height the ball rises above the button before falling. */
+const APEX_LIFT_PX = 76;
 
 type Flight = {
   fromX: number;
   fromY: number;
+  vx: number;
+  vy: number;
   toX: number;
   toY: number;
-  ctrlX: number;
-  ctrlY: number;
+  duration: number;
 };
 
-function quadBezier(t: number, p0: number, p1: number, p2: number) {
-  const u = 1 - t;
-  return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+function computeFlight(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): Flight | null {
+  const vy0 = -Math.sqrt(2 * GRAVITY * APEX_LIFT_PX);
+  const c = fromY - toY;
+  const discriminant = vy0 * vy0 - 2 * GRAVITY * c;
+
+  if (discriminant <= 0) return null;
+
+  const duration = (-vy0 + Math.sqrt(discriminant)) / GRAVITY;
+  const vx = (toX - fromX) / duration;
+
+  return { fromX, fromY, vx, vy: vy0, toX, toY, duration };
 }
 
 export function useKartFlyBall() {
@@ -48,13 +66,12 @@ export function useKartFlyBall() {
     if (!origin || !toRect) return;
 
     const fromX = origin.left + origin.width / 2;
-    const fromY = origin.top + origin.height / 2;
+    const fromY = origin.top + 10;
     const toX = toRect.left + toRect.width / 2;
-    const toY = toRect.top + toRect.height / 2;
-    const ctrlX = (fromX + toX) / 2 + (Math.random() - 0.5) * 48;
-    const ctrlY = Math.min(fromY, toY) - 80 - Math.random() * 40;
+    const toY = toRect.top + toRect.height * 0.36;
 
-    setFlight({ fromX, fromY, toX, toY, ctrlX, ctrlY });
+    const path = computeFlight(fromX, fromY, toX, toY);
+    if (path) setFlight(path);
   }, []);
 
   useLayoutEffect(() => {
@@ -69,35 +86,48 @@ export function useKartFlyBall() {
         return;
       }
 
-      const { fromX, fromY, toX, toY, ctrlX, ctrlY } = flight;
+      const { fromX, fromY, vx, vy, toX, toY, duration } = flight;
       el.style.left = `${fromX}px`;
       el.style.top = `${fromY}px`;
-      el.style.transform = "translate(-50%, -50%) scale(1)";
+      el.style.transform = "translate(-50%, -50%) scale(0.65)";
       el.style.opacity = "1";
 
       const start = performance.now();
+      const durationMs = duration * 1000;
 
       const tick = (now: number) => {
         if (cancelled) return;
 
-        const raw = Math.min((now - start) / FLY_MS, 1);
-        const t = 1 - Math.pow(1 - raw, 2.15);
-        const x = quadBezier(t, fromX, ctrlX, toX);
-        const y = quadBezier(t, fromY, ctrlY, toY);
-        const wobble = Math.sin(raw * Math.PI * 3.5) * (1 - raw) * 3;
-        const scale = 1 - raw * 0.58;
+        const elapsedMs = now - start;
+        const elapsed = elapsedMs / 1000;
 
-        el.style.left = `${x + wobble}px`;
-        el.style.top = `${y}px`;
-        el.style.transform = `translate(-50%, -50%) scale(${scale})`;
-        el.style.opacity = raw > 0.9 ? `${1 - (raw - 0.9) / 0.1}` : "1";
-
-        if (raw < 1) {
-          rafRef.current = requestAnimationFrame(tick);
-        } else {
+        if (elapsedMs >= durationMs) {
+          el.style.left = `${toX}px`;
+          el.style.top = `${toY}px`;
+          el.style.transform = "translate(-50%, -50%) scale(0.7)";
+          el.style.opacity = "0";
           pulseKartNav();
-          window.setTimeout(() => setFlight(null), 60);
+          window.setTimeout(() => setFlight(null), 70);
+          return;
         }
+
+        const x = fromX + vx * elapsed;
+        const y = fromY + vy * elapsed + 0.5 * GRAVITY * elapsed * elapsed;
+        const vyNow = vy + GRAVITY * elapsed;
+        const tilt = Math.max(-62, Math.min(62, (vyNow / 380) * 32));
+
+        const popT = Math.min(elapsedMs / POP_MS, 1);
+        const popBoost = popT < 1 ? Math.sin(popT * Math.PI) * 0.14 : 0;
+        const fallT = elapsedMs / durationMs;
+        const scale = 0.82 + popBoost - fallT * 0.14;
+
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${tilt}deg)`;
+        el.style.opacity =
+          elapsedMs > durationMs - 50 ? `${(durationMs - elapsedMs) / 50}` : "1";
+
+        rafRef.current = requestAnimationFrame(tick);
       };
 
       rafRef.current = requestAnimationFrame(tick);

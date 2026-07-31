@@ -11,6 +11,9 @@ import { ShelfHeader } from "./ShelfHeader";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
+/** Synced with `.filter-crazy-btn--active` lightning flash cycle. */
+const CRAZY_FLASH_MS = 2200;
+
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const audience = useAccentStore((s) => s.audience);
   const setAudience = useAccentStore((s) => s.setAudience);
@@ -19,6 +22,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [showText, setShowText] = useState(true);
   const [shuffleKey, setShuffleKey] = useState(0);
   const [crazyMode, setCrazyMode] = useState(false);
+  const [crazyFlash, setCrazyFlash] = useState(false);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -71,12 +75,24 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   useEffect(() => {
     if (!crazyMode) return;
 
-    setShuffleKey((k) => k + 1);
-    const id = window.setInterval(() => {
-      setShuffleKey((k) => k + 1);
-    }, 2500);
+    let flashTimer: number | undefined;
 
-    return () => window.clearInterval(id);
+    const flash = () => {
+      setShuffleKey((k) => k + 1);
+      setCrazyFlash(true);
+      flashTimer = window.setTimeout(() => setCrazyFlash(false), 380);
+    };
+
+    flash();
+    const id = window.setInterval(flash, CRAZY_FLASH_MS);
+    return () => {
+      window.clearInterval(id);
+      if (flashTimer) window.clearTimeout(flashTimer);
+    };
+  }, [crazyMode]);
+
+  useEffect(() => {
+    if (!crazyMode) setCrazyFlash(false);
   }, [crazyMode]);
 
   const filtered = useMemo(() => {
@@ -151,7 +167,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           </div>
         </div>
 
-        <div className="toy-feed-grid scroll-pad-bottom pt-4">
+        <div
+          className={`toy-feed-grid scroll-pad-bottom pt-4 ${
+            crazyFlash ? "toy-feed-grid--crazy-flash" : ""
+          }`}
+        >
           {displayed.map((toy, index) => (
             <FeedCard
               key={toy.id}

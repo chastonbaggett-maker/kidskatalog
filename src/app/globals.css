@@ -346,23 +346,45 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .filter-crazy-btn--active {
-  background: linear-gradient(
-    120deg,
-    #ff6b6b,
-    #ffd93d,
-    #6bcb77,
-    #4d96ff,
-    #b86bff,
-    #ff8fab,
-    #ff6b6b
-  );
-  background-size: 320% 320%;
-  animation: filter-rainbow-shift 1.4s ease-in-out infinite;
-  color: #fff;
-  text-shadow: 0 1px 0 rgba(80, 40, 120, 0.35);
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.9),
-    0 4px 16px rgba(120, 80, 200, 0.4);
+  animation: crazy-lightning-flash 2.2s ease-out infinite;
+}
+
+@keyframes crazy-lightning-flash {
+  0% {
+    background: #ffe566;
+    color: var(--ink);
+    box-shadow:
+      0 0 22px rgba(255, 229, 102, 0.9),
+      0 0 6px rgba(255, 255, 255, 0.95);
+    text-shadow: none;
+  }
+  7% {
+    background: var(--ink);
+    color: #ffe566;
+    box-shadow: none;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    background: var(--ink);
+    color: #ffe566;
+    box-shadow: none;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  }
+}
+
+.toy-feed-grid--crazy-flash .feed-card {
+  animation: crazy-card-flash 0.38s ease-out;
+}
+
+@keyframes crazy-card-flash {
+  0% {
+    filter: brightness(1.14);
+    transform: scale(1.012);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
 }
 
 .age-pop {
@@ -1175,6 +1197,11 @@ html[data-standalone="true"] .app-shell {
 
   .filter-crazy-btn--active {
     animation: none;
-    background-position: 50% 50%;
+    background: var(--ink);
+    color: #ffe566;
+  }
+
+  .toy-feed-grid--crazy-flash .feed-card {
+    animation: none;
   }
 }

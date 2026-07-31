@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAccentStore } from "@/lib/accent-store";
+import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 
 function useViewAccentClass() {
@@ -22,8 +24,17 @@ function useViewBadgeClass() {
 export function BottomNav() {
   const pathname = usePathname();
   const count = useKartStore((s) => s.ids.length);
+  const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
+  const [landing, setLanding] = useState(false);
+
+  useEffect(() => {
+    if (kartBounceToken === 0) return;
+    setLanding(true);
+    const t = window.setTimeout(() => setLanding(false), 520);
+    return () => window.clearTimeout(t);
+  }, [kartBounceToken]);
 
   const items = [
     { href: "/shop", label: "Home", icon: HomeIcon },
@@ -41,20 +52,30 @@ export function BottomNav() {
               ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const isKart = item.href === "/kart";
           return (
             <li key={item.href}>
               <Link
+                ref={isKart ? registerKartNavEl : undefined}
                 href={item.href}
                 className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
                   active ? "opacity-100" : "opacity-80"
-                }`}
+                } ${isKart && landing ? "bottom-nav__kart--land" : ""}`}
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon active={active} />
+                {isKart ? (
+                  <span className="bottom-nav__kart-icon">
+                    <Icon active={active} />
+                  </span>
+                ) : (
+                  <Icon active={active} />
+                )}
                 {"badge" in item && item.badge > 0 && (
                   <span
-                    className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
+                    className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
+                      isKart && landing ? "bottom-nav__kart-badge--pop" : ""
+                    }`}
                   >
                     {item.badge}
                   </span>

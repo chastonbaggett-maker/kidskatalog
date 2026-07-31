@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
+import { useKartFlyBall } from "@/hooks/useKartFlyBall";
 
 /** Fill 480ms, pop starts at 480ms (320ms); label swaps at pop peak (~42%). */
 const REMOVE_FILL_MS = 480;
@@ -21,6 +22,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   /** Label stays "In Kart" until pop peak, then flips before animation ends. */
   const [showInKartLabel, setShowInKartLabel] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
+  const { fire: fireFlyBall, portal: flyPortal } = useKartFlyBall();
 
   const clearRemoveTimers = () => {
     for (const id of removeTimersRef.current) {
@@ -69,7 +71,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     const wasIn = inKart;
     toggle(toyId);
     clearCharge();
-    if (!wasIn) fire(btnRef.current?.getBoundingClientRect(), GOLD_CONFETTI);
+    if (!wasIn) {
+      const rect = btnRef.current?.getBoundingClientRect();
+      fireFlyBall(rect);
+      fire(rect, GOLD_CONFETTI);
+    }
   };
 
   return (
@@ -107,6 +113,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         <span className="add-kart-btn__glow" aria-hidden />
       </button>
       {portal}
+      {flyPortal}
     </>
   );
 }

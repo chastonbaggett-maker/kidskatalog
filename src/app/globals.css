@@ -931,6 +931,87 @@ html[data-standalone="true"] .app-shell {
   }
 }
 
+/* Mint ball flies from Add to Kart → bottom nav Kart tab */
+.kart-fly-ball {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #e8fffb 0%,
+    var(--mint) 52%,
+    #2bb8a8 100%
+  );
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--mint) 70%, transparent),
+    inset 0 -2px 4px rgba(20, 120, 110, 0.2);
+  pointer-events: none;
+  z-index: 150;
+  will-change: left, top, transform, opacity;
+}
+
+.bottom-nav__kart-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav__kart--land {
+  animation: kart-nav-land 0.52s cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+.bottom-nav__kart--land .bottom-nav__kart-icon {
+  animation: kart-nav-icon-mint 0.52s ease forwards;
+}
+
+.bottom-nav__kart-badge--pop {
+  animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+@keyframes kart-nav-land {
+  0% {
+    transform: scale(1);
+  }
+  32% {
+    transform: scale(1.34);
+  }
+  58% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes kart-nav-icon-mint {
+  0% {
+    color: inherit;
+    filter: none;
+  }
+  28% {
+    color: var(--mint);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--mint) 75%, transparent));
+  }
+  100% {
+    color: inherit;
+    filter: none;
+  }
+}
+
+@keyframes kart-nav-badge-pop {
+  0% {
+    transform: scale(0.55);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging),
   .add-kart-btn--charging,
@@ -941,6 +1022,16 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn--burst .add-kart-btn__glow,
   .add-kart-btn__plus,
   .add-kart-confetti__bit {
+    animation: none !important;
+  }
+
+  .kart-fly-ball {
+    display: none;
+  }
+
+  .bottom-nav__kart--land,
+  .bottom-nav__kart--land .bottom-nav__kart-icon,
+  .bottom-nav__kart-badge--pop {
     animation: none !important;
   }
 

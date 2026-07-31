@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 
+/** Fill 480ms, pop starts at 480ms (320ms); label swaps at pop peak (~42%). */
+const REMOVE_FILL_MS = 480;
+const REMOVE_POP_MS = 320;
+const REMOVE_POP_PEAK_MS =
+  REMOVE_FILL_MS + Math.round(REMOVE_POP_MS * 0.42);
+const REMOVE_TOTAL_MS = REMOVE_FILL_MS + REMOVE_POP_MS + 40;
+
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const toggle = useKartStore((s) => s.toggle);
@@ -11,6 +18,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const removeTimersRef = useRef<number[]>([]);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
+  /** Label stays "In Kart" until pop peak, then flips before animation ends. */
+  const [showInKartLabel, setShowInKartLabel] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
 
   const clearRemoveTimers = () => {
@@ -27,6 +36,10 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
   useEffect(() => () => clearRemoveTimers(), []);
 
+  useEffect(() => {
+    if (!removing) setShowInKartLabel(inKart);
+  }, [inKart, removing]);
+
   const handlePointerDown = () => {
     if (!inKart && !removing) setCharging(true);
   };
@@ -38,13 +51,18 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     if (inKart) {
       setRemoving(true);
+      setShowInKartLabel(true);
       clearRemoveTimers();
+
       scheduleRemoveTimer(() => {
+        setShowInKartLabel(false);
         toggle(toyId);
-        scheduleRemoveTimer(() => {
-          setRemoving(false);
-        }, 100);
-      }, 720);
+      }, REMOVE_POP_PEAK_MS);
+
+      scheduleRemoveTimer(() => {
+        setRemoving(false);
+      }, REMOVE_TOTAL_MS);
+
       return;
     }
 
@@ -65,9 +83,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          inKart && !removing
+          inKart
             ? "add-kart-btn--in text-white"
-            : "bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
+            : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
         } ${charging ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""} ${
           removing ? "add-kart-btn--removing" : ""
         }`}
@@ -76,8 +94,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         aria-busy={removing}
       >
         <span className="add-kart-btn__fill" aria-hidden />
-        <span className="add-kart-btn__label relative z-[1] inline-flex items-center justify-center">
-          {inKart ? (
+        <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
+          {showInKartLabel ? (
             "In Kart — tap to remove"
           ) : (
             <>

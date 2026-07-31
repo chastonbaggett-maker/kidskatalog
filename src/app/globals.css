@@ -219,6 +219,38 @@ select {
   animation: kart-go-bob 2.8s ease-in-out infinite;
 }
 
+.kart-go-btn {
+  background: var(--girls-chip);
+}
+
+.kart-go-btn:hover {
+  background: var(--pink-deep);
+}
+
+html[data-accent="boys"] .kart-go-btn {
+  background: var(--boys-chip);
+}
+
+html[data-accent="boys"] .kart-go-btn:hover {
+  background: var(--blue-deep);
+}
+
+html[data-accent="girls"] .kart-go-btn {
+  background: var(--girls-chip);
+}
+
+html[data-accent="girls"] .kart-go-btn:hover {
+  background: var(--pink-deep);
+}
+
+html[data-accent="both"] .kart-go-btn {
+  background: var(--girls-chip);
+}
+
+html[data-accent="both"] .kart-go-btn:hover {
+  background: var(--pink-deep);
+}
+
 @keyframes back-fun-bob {
   0%,
   100% {

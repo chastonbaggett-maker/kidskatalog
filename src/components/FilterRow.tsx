@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useConfettiBurst } from "@/hooks/useConfettiBurst";
+import { useCrazyLightning } from "@/hooks/useCrazyLightning";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
@@ -51,10 +52,19 @@ export function FilterRow({
   const btnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
+  const {
+    btnRef: crazyBtnRef,
+    strike: strikeLightning,
+    portal: lightningPortal,
+  } = useCrazyLightning();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (crazyFlash && crazyMode) strikeLightning();
+  }, [crazyFlash, crazyMode, strikeLightning]);
 
   useEffect(() => {
     if (!open) return;
@@ -251,6 +261,7 @@ export function FilterRow({
           } ${crazyFlash ? "filter-crazy-btn-wrap--striking" : ""}`}
         >
           <button
+            ref={crazyBtnRef}
             type="button"
             onClick={(e) => {
               const turningOn = !crazyMode;
@@ -270,16 +281,10 @@ export function FilterRow({
             Crazy Mode
             <CrazyIcon />
           </button>
-          {crazyMode && crazyFlash && (
-            <>
-              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--1" aria-hidden />
-              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--2" aria-hidden />
-              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--3" aria-hidden />
-            </>
-          )}
         </div>
       </div>
       {confettiPortal}
+      {lightningPortal}
     </div>
   );
 }

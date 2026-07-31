@@ -689,7 +689,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--in {
-  background: var(--mint-fill);
+  background: var(--mint);
   box-shadow:
     0 4px 16px color-mix(in srgb, var(--mint) 45%, transparent),
     0 0 18px color-mix(in srgb, #2bb8a8 30%, transparent);
@@ -807,17 +807,7 @@ html[data-standalone="true"] .app-shell {
   }
   100% {
     transform: scale(1);
-    background: linear-gradient(
-      100deg,
-      #79ebe0 0%,
-      #6ee8db 14%,
-      #58ddd0 28%,
-      #48d4c9 42%,
-      #3ecfc0 56%,
-      #36c7b6 72%,
-      #2fc0ae 86%,
-      #2bb8a8 100%
-    );
+    background: var(--mint);
     box-shadow:
       0 4px 16px color-mix(in srgb, var(--mint) 45%, transparent),
       0 0 18px color-mix(in srgb, #2bb8a8 30%, transparent);

@@ -12,10 +12,12 @@ const GIRLS_CONFETTI = ["#f5a9c5", "#ef8fb3", "#ffc2d6", "#e078a8", "#ffffff", "
 const UNISEX_CONFETTI = ["#3ecfc0", "#2bb8a8", "#6ee8db", "#45d4c4", "#ffffff", "#1fa896"];
 const RAINBOW_CONFETTI = [
   "#4e89ff",
-  "#7aa8ff",
   "#8f8bff",
   "#d17cff",
-  "#c98ef0",
+  "#3ecfc0",
+  "#6ee8db",
+  "#ffe9a8",
+  "#ffc2d6",
   "#f5a9c5",
   "#ffffff",
 ];

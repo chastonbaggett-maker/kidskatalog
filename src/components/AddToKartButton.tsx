@@ -8,19 +8,24 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const toggle = useKartStore((s) => s.toggle);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const removeTimerRef = useRef<number | null>(null);
+  const removeTimersRef = useRef<number[]>([]);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
 
-  const clearRemoveTimer = () => {
-    if (removeTimerRef.current != null) {
-      window.clearTimeout(removeTimerRef.current);
-      removeTimerRef.current = null;
+  const clearRemoveTimers = () => {
+    for (const id of removeTimersRef.current) {
+      window.clearTimeout(id);
     }
+    removeTimersRef.current = [];
   };
 
-  useEffect(() => () => clearRemoveTimer(), []);
+  const scheduleRemoveTimer = (fn: () => void, delay: number) => {
+    const id = window.setTimeout(fn, delay);
+    removeTimersRef.current.push(id);
+  };
+
+  useEffect(() => () => clearRemoveTimers(), []);
 
   const handlePointerDown = () => {
     if (!inKart && !removing) setCharging(true);
@@ -33,11 +38,12 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     if (inKart) {
       setRemoving(true);
-      clearRemoveTimer();
-      removeTimerRef.current = window.setTimeout(() => {
+      clearRemoveTimers();
+      scheduleRemoveTimer(() => {
         toggle(toyId);
-        setRemoving(false);
-        removeTimerRef.current = null;
+        scheduleRemoveTimer(() => {
+          setRemoving(false);
+        }, 100);
       }, 720);
       return;
     }
@@ -59,7 +65,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          inKart || removing
+          inKart && !removing
             ? "add-kart-btn--in text-white"
             : "bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
         } ${charging ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""} ${
@@ -71,7 +77,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       >
         <span className="add-kart-btn__fill" aria-hidden />
         <span className="add-kart-btn__label relative z-[1] inline-flex items-center justify-center">
-          {inKart || removing ? (
+          {inKart ? (
             "In Kart — tap to remove"
           ) : (
             <>

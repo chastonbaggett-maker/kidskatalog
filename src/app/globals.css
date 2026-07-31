@@ -593,7 +593,6 @@ html[data-standalone="true"] .app-shell {
   overflow: visible;
   transform: scale(1);
   transition:
-    background 0.45s ease,
     transform 0.35s cubic-bezier(0.25, 0.9, 0.35, 1),
     box-shadow 0.45s ease;
   box-shadow:
@@ -632,6 +631,11 @@ html[data-standalone="true"] .app-shell {
 .add-kart-btn--removing .add-kart-btn__fill {
   opacity: 1;
   animation: add-kart-remove-fill 0.48s cubic-bezier(0.33, 1, 0.38, 1) forwards;
+}
+
+.add-kart-btn--removing:not(.add-kart-btn--in) .add-kart-btn__fill {
+  transform: scaleX(1);
+  animation: none;
 }
 
 @keyframes add-kart-remove-fill {

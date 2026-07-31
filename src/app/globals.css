@@ -605,6 +605,12 @@ html[data-standalone="true"] .app-shell {
   animation: add-kart-idle-glow 1.6s ease-in-out infinite;
 }
 
+.add-kart-btn--pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .add-kart-btn--circle {
   flex-shrink: 0;
   width: 3.9rem;

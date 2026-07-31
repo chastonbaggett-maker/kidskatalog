@@ -34,7 +34,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerUp={clearCharge}
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
-        className={`add-kart-btn add-kart-btn--circle rounded-full text-base font-bold shadow-md transition active:scale-[0.98] ${
+        className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
           inKart
             ? "add-kart-btn--in text-white"
             : "bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
@@ -43,7 +43,14 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
       >
         <span className="add-kart-btn__label relative z-[1] inline-flex items-center justify-center">
-          <span className="add-kart-btn__plus">+</span>
+          {inKart ? (
+            "In Kart — tap to remove"
+          ) : (
+            <>
+              <span className="add-kart-btn__plus">+</span>
+              <span>Add to Kart</span>
+            </>
+          )}
         </span>
         <span className="add-kart-btn__glow" aria-hidden />
       </button>

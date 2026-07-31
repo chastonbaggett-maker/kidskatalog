@@ -44,15 +44,16 @@ export default async function ToyPage({ params }: Props) {
               </p>
 
               <div className="mt-6 flex max-w-md items-stretch gap-3">
+                <AddToKartButton toyId={toy.id} />
                 <Link
                   href="/kart"
-                  className="inline-flex h-[3.9rem] min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
+                  aria-label="Go to Kart"
+                  className="kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-[0.98]"
                 >
-                  Go to Kart
                   <svg
                     className="kart-go-arrow shrink-0"
-                    width="22"
-                    height="22"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     aria-hidden
@@ -72,7 +73,6 @@ export default async function ToyPage({ params }: Props) {
                     />
                   </svg>
                 </Link>
-                <AddToKartButton toyId={toy.id} />
               </div>
 
               <p className="mt-5 text-center text-sm text-[var(--ink-soft)] sm:text-left">

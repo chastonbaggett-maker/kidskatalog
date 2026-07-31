@@ -220,7 +220,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      className={`relative flex min-h-0 flex-1 flex-col ${
+        crazyMode ? "browse-feed--crazy" : ""
+      }`}
+    >
       {/* Compact shelf — glides down when expanded header scrolls away */}
       <div
         className={`browse-shelf-overlay ${
@@ -233,12 +237,14 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
       <div
         ref={scrollerRef}
-        className="page-scroll star-field min-h-0 flex-1"
+        className={`page-scroll star-field min-h-0 flex-1 ${
+          crazyMode ? "page-scroll--crazy" : ""
+        }`}
       >
         {/* Header, filters, and categories scroll with the feed */}
         <div ref={chromeRef} className="relative z-20">
           <FeedHeader query={query} onQueryChange={setQuery} />
-          <div className="bg-white">
+          <div className={crazyMode ? "browse-controls" : "bg-white"}>
             <FilterRow
               audience={audience}
               onAudienceChange={setAudience}

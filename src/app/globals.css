@@ -362,6 +362,29 @@ html[data-accent="both"] .kart-go-btn:hover {
   animation: crazy-btn-strike-pulse 0.38s ease-out;
 }
 
+.browse-feed--crazy {
+  --header-grad: linear-gradient(90deg, #f0b800 0%, #ffe566 50%, #fff176 100%);
+  --header-grad-alt: linear-gradient(180deg, #fff176 0%, #ffe566 45%, #f0b800 100%);
+}
+
+.browse-feed--crazy .browse-controls {
+  background: #fff9d4;
+}
+
+.browse-feed--crazy .browse-controls > div {
+  background: #fff9d4;
+}
+
+.page-scroll--crazy {
+  background-color: #ffe566;
+  background-image: none;
+  transition: background-color 320ms ease;
+}
+
+.page-scroll--crazy .feed-card > div:first-child {
+  background: #fff;
+}
+
 .crazy-lightning-layer {
   position: fixed;
   inset: 0;

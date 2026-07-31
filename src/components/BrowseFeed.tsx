@@ -9,6 +9,8 @@ import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
 import { FeedAutoLoadMore } from "./FeedAutoLoadMore";
 import { ShelfHeader } from "./ShelfHeader";
+import { CrazyModeButton } from "./CrazyModeButton";
+import { useCrazyLightning } from "@/hooks/useCrazyLightning";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
@@ -63,8 +65,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
+  const filterCrazyBtnRef = useRef<HTMLButtonElement>(null);
+  const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
   const shelfWantedRef = useRef(false);
   const crazyFlashCountRef = useRef(0);
+
+  const { strike: strikeLightning, portal: lightningPortal } = useCrazyLightning(
+    filterCrazyBtnRef,
+    shelfCrazyBtnRef,
+  );
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -175,6 +184,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
   }, [crazyMode]);
 
+  useEffect(() => {
+    if (crazyFlash && crazyMode) strikeLightning();
+  }, [crazyFlash, crazyMode, strikeLightning]);
+
   const displayed = useMemo(() => {
     const byId = new Map(filtered.map((t) => [t.id, t]));
     const ids =
@@ -232,7 +245,20 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
         aria-hidden={!shelfActive || shelfMode === "leaving"}
       >
-        <ShelfHeader />
+        <ShelfHeader
+          trailing={
+            crazyMode ? (
+              <CrazyModeButton
+                ref={shelfCrazyBtnRef}
+                className="absolute right-0"
+                variant="shelf"
+                crazyMode
+                crazyFlash={crazyFlash}
+                onClick={() => setCrazyMode(false)}
+              />
+            ) : undefined
+          }
+        />
       </div>
 
       <div
@@ -267,6 +293,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               crazyMode={crazyMode}
               onCrazyModeToggle={() => setCrazyMode((v) => !v)}
               crazyFlash={crazyFlash}
+              crazyBtnRef={filterCrazyBtnRef}
             />
             <ThumbCarousel />
           </div>
@@ -301,6 +328,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           )}
         </div>
       </div>
+      {lightningPortal}
     </div>
   );
 }

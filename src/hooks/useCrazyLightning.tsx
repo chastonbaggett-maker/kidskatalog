@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useState,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 
 type LightningBolt = {
@@ -15,16 +21,34 @@ type LightningBolt = {
 
 const BOLT_MS = 1150;
 
-export function useCrazyLightning() {
+function pickStrikeOrigin(...candidates: (HTMLElement | null | undefined)[]) {
+  for (const el of candidates) {
+    if (!el) continue;
+    const rect = el.getBoundingClientRect();
+    if (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.bottom > 0 &&
+      rect.top < window.innerHeight
+    ) {
+      return el;
+    }
+  }
+  return candidates.find(Boolean) ?? null;
+}
+
+export function useCrazyLightning(
+  primaryRef: RefObject<HTMLElement | null>,
+  altRef?: RefObject<HTMLElement | null>,
+) {
   const uid = useId();
-  const btnRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
   const [bolts, setBolts] = useState<LightningBolt[]>([]);
 
   useEffect(() => setMounted(true), []);
 
   const strike = useCallback(() => {
-    const el = btnRef.current;
+    const el = pickStrikeOrigin(primaryRef.current, altRef?.current ?? null);
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
@@ -67,7 +91,7 @@ export function useCrazyLightning() {
     window.setTimeout(() => {
       setBolts((prev) => prev.filter((b) => !batch.some((n) => n.id === b.id)));
     }, BOLT_MS + 120);
-  }, [uid]);
+  }, [uid, primaryRef, altRef]);
 
   const portal =
     mounted && bolts.length > 0
@@ -92,5 +116,5 @@ export function useCrazyLightning() {
         )
       : null;
 
-  return { btnRef, strike, portal };
+  return { strike, portal };
 }

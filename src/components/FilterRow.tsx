@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useConfettiBurst } from "@/hooks/useConfettiBurst";
-import { useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { CrazyModeButton } from "@/components/CrazyModeButton";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
@@ -32,6 +32,7 @@ type Props = {
   crazyMode: boolean;
   onCrazyModeToggle: () => void;
   crazyFlash: boolean;
+  crazyBtnRef: RefObject<HTMLButtonElement | null>;
 };
 
 export function FilterRow({
@@ -45,6 +46,7 @@ export function FilterRow({
   crazyMode,
   onCrazyModeToggle,
   crazyFlash,
+  crazyBtnRef,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -52,19 +54,10 @@ export function FilterRow({
   const btnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
-  const {
-    btnRef: crazyBtnRef,
-    strike: strikeLightning,
-    portal: lightningPortal,
-  } = useCrazyLightning();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (crazyFlash && crazyMode) strikeLightning();
-  }, [crazyFlash, crazyMode, strikeLightning]);
 
   useEffect(() => {
     if (!open) return;
@@ -255,36 +248,23 @@ export function FilterRow({
           <ShuffleIcon />
         </button>
 
-        <div
-          className={`filter-crazy-btn-wrap shrink-0 ${
-            crazyMode ? "filter-crazy-btn-wrap--active" : ""
-          } ${crazyFlash ? "filter-crazy-btn-wrap--striking" : ""}`}
-        >
-          <button
-            ref={crazyBtnRef}
-            type="button"
-            onClick={(e) => {
-              const turningOn = !crazyMode;
-              onCrazyModeToggle();
-              if (turningOn) {
-                fireConfetti(
-                  (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
-                  RAINBOW_CONFETTI,
-                );
-              }
-            }}
-            aria-pressed={crazyMode}
-            className={`filter-crazy-btn flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition active:scale-95 ${
-              crazyMode ? "filter-crazy-btn--active" : ""
-            }`}
-          >
-            Crazy Mode
-            <CrazyIcon />
-          </button>
-        </div>
+        <CrazyModeButton
+          ref={crazyBtnRef}
+          crazyMode={crazyMode}
+          crazyFlash={crazyFlash}
+          onClick={(e) => {
+            const turningOn = !crazyMode;
+            onCrazyModeToggle();
+            if (turningOn) {
+              fireConfetti(
+                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                RAINBOW_CONFETTI,
+              );
+            }
+          }}
+        />
       </div>
       {confettiPortal}
-      {lightningPortal}
     </div>
   );
 }

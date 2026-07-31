@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Logo } from "./Logo";
 
@@ -13,6 +14,8 @@ type ShelfHeaderProps = {
   /** Use alternate gradient (profile) */
   altGradient?: boolean;
   className?: string;
+  /** Right-side action, e.g. crazy mode toggle in browse shelf */
+  trailing?: ReactNode;
 };
 
 export function ShelfHeader({
@@ -22,6 +25,7 @@ export function ShelfHeader({
   rounded = true,
   altGradient = false,
   className = "",
+  trailing,
 }: ShelfHeaderProps) {
   return (
     <header
@@ -59,6 +63,7 @@ export function ShelfHeader({
         ) : null}
 
         <Logo variant="icon" light glow href="/shop" size={44} />
+        {trailing}
       </div>
 
       {title ? (

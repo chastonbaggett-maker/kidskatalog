@@ -5,11 +5,9 @@ import { useKartStore } from "@/lib/kart-store";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { useKartFlyBall } from "@/hooks/useKartFlyBall";
 
-/** Fill 480ms, pop starts at 480ms (320ms); label swaps at pop peak (~42%). */
+/** Fill + label wipe 480ms; pop starts at 480ms (320ms); toggle when fill completes. */
 const REMOVE_FILL_MS = 480;
 const REMOVE_POP_MS = 320;
-const REMOVE_POP_PEAK_MS =
-  REMOVE_FILL_MS + Math.round(REMOVE_POP_MS * 0.42);
 const REMOVE_TOTAL_MS = REMOVE_FILL_MS + REMOVE_POP_MS + 40;
 
 export function AddToKartButton({ toyId }: { toyId: string }) {
@@ -19,8 +17,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const removeTimersRef = useRef<number[]>([]);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
-  /** Label stays "In Kart" until pop peak, then flips before animation ends. */
-  const [showInKartLabel, setShowInKartLabel] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
   const { fire: fireFlyBall, portal: flyPortal } = useKartFlyBall();
 
@@ -38,10 +34,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
   useEffect(() => () => clearRemoveTimers(), []);
 
-  useEffect(() => {
-    if (!removing) setShowInKartLabel(inKart);
-  }, [inKart, removing]);
-
   const handlePointerDown = () => {
     if (!inKart && !removing) setCharging(true);
   };
@@ -53,13 +45,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     if (inKart) {
       setRemoving(true);
-      setShowInKartLabel(true);
       clearRemoveTimers();
 
       scheduleRemoveTimer(() => {
-        setShowInKartLabel(false);
         toggle(toyId);
-      }, REMOVE_POP_PEAK_MS);
+      }, REMOVE_FILL_MS);
 
       scheduleRemoveTimer(() => {
         setRemoving(false);
@@ -100,8 +90,22 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         aria-busy={removing}
       >
         <span className="add-kart-btn__fill" aria-hidden />
-        <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
-          {showInKartLabel ? (
+        <span
+          className={`add-kart-btn__label relative z-[2] inline-flex items-center justify-center ${
+            removing ? "add-kart-btn__label--wipe" : ""
+          }`}
+        >
+          {removing ? (
+            <>
+              <span className="add-kart-btn__label-wipe add-kart-btn__label-wipe--add">
+                <span className="add-kart-btn__plus">+</span>
+                <span>Add to Kart</span>
+              </span>
+              <span className="add-kart-btn__label-wipe add-kart-btn__label-wipe--out">
+                In Kart — tap to remove
+              </span>
+            </>
+          ) : inKart ? (
             "In Kart — tap to remove"
           ) : (
             <>

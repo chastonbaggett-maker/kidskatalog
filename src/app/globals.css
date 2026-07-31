@@ -712,6 +712,46 @@ html[data-standalone="true"] .app-shell {
   gap: 0.4em;
 }
 
+.add-kart-btn__label--wipe {
+  display: grid;
+  place-items: center;
+}
+
+.add-kart-btn__label-wipe {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  white-space: nowrap;
+}
+
+.add-kart-btn--removing .add-kart-btn__label-wipe--out {
+  clip-path: inset(0 0 0 0);
+  animation: add-kart-label-wipe-out 0.48s cubic-bezier(0.33, 1, 0.38, 1) forwards;
+}
+
+.add-kart-btn--removing .add-kart-btn__label-wipe--add {
+  clip-path: inset(0 0 0 100%);
+  animation: add-kart-label-wipe-in 0.48s cubic-bezier(0.33, 1, 0.38, 1) forwards;
+}
+
+.add-kart-btn--removing .add-kart-btn__label-wipe--add .add-kart-btn__plus {
+  animation: none;
+}
+
+@keyframes add-kart-label-wipe-out {
+  to {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@keyframes add-kart-label-wipe-in {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 .add-kart-btn__plus {
   display: inline-block;
   font-size: 1.15em;
@@ -1011,6 +1051,8 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn--burst,
   .add-kart-btn--removing,
   .add-kart-btn--removing .add-kart-btn__fill,
+  .add-kart-btn--removing .add-kart-btn__label-wipe--out,
+  .add-kart-btn--removing .add-kart-btn__label-wipe--add,
   .add-kart-btn--charging .add-kart-btn__glow,
   .add-kart-btn--burst .add-kart-btn__glow,
   .add-kart-btn__plus,

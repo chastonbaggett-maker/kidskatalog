@@ -305,41 +305,37 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .filter-randomize-btn {
   background: linear-gradient(
-    115deg,
-    var(--boys-chip) 0%,
-    #7aa8ff 9%,
-    #8f8bff 17%,
-    var(--purple) 26%,
-    #c4a8ff 34%,
-    var(--mint) 43%,
-    #6ee8db 51%,
-    #b8fff5 58%,
-    #ffe9a8 66%,
-    #ffc2d6 74%,
-    var(--girls-chip) 83%,
-    var(--pink-deep) 91%,
-    #7aa8ff 100%
+    120deg,
+    #ff6b6b,
+    #ffd93d,
+    #6bcb77,
+    #4d96ff,
+    #b86bff,
+    #ff8fab,
+    #ff6b6b
   );
   background-size: 320% 320%;
-  animation: filter-randomize-bob 4s ease-in-out infinite;
-  text-shadow: 0 1px 0 rgba(58, 70, 130, 0.28);
+  animation: filter-rainbow-shift 3.2s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(80, 40, 120, 0.22);
 }
 
 .filter-randomize-btn:hover {
-  animation-duration: 2.4s;
+  animation-duration: 1.8s;
 }
 
 .filter-randomize-btn:active {
-  animation-duration: 1.4s;
+  animation-duration: 1.1s;
 }
 
-@keyframes filter-randomize-bob {
-  0%,
-  100% {
+@keyframes filter-rainbow-shift {
+  0% {
     background-position: 0% 50%;
   }
   50% {
     background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 

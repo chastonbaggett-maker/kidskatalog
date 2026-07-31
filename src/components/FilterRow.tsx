@@ -30,6 +30,7 @@ type Props = {
   onRandomize: () => void;
   crazyMode: boolean;
   onCrazyModeToggle: () => void;
+  crazyFlash: boolean;
 };
 
 export function FilterRow({
@@ -42,6 +43,7 @@ export function FilterRow({
   onRandomize,
   crazyMode,
   onCrazyModeToggle,
+  crazyFlash,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -243,26 +245,39 @@ export function FilterRow({
           <ShuffleIcon />
         </button>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            const turningOn = !crazyMode;
-            onCrazyModeToggle();
-            if (turningOn) {
-              fireConfetti(
-                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
-                RAINBOW_CONFETTI,
-              );
-            }
-          }}
-          aria-pressed={crazyMode}
-          className={`filter-crazy-btn flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition active:scale-95 ${
-            crazyMode ? "filter-crazy-btn--active" : ""
-          }`}
+        <div
+          className={`filter-crazy-btn-wrap shrink-0 ${
+            crazyMode ? "filter-crazy-btn-wrap--active" : ""
+          } ${crazyFlash ? "filter-crazy-btn-wrap--striking" : ""}`}
         >
-          Crazy Mode
-          <CrazyIcon />
-        </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              const turningOn = !crazyMode;
+              onCrazyModeToggle();
+              if (turningOn) {
+                fireConfetti(
+                  (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                  RAINBOW_CONFETTI,
+                );
+              }
+            }}
+            aria-pressed={crazyMode}
+            className={`filter-crazy-btn flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition active:scale-95 ${
+              crazyMode ? "filter-crazy-btn--active" : ""
+            }`}
+          >
+            Crazy Mode
+            <CrazyIcon />
+          </button>
+          {crazyMode && crazyFlash && (
+            <>
+              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--1" aria-hidden />
+              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--2" aria-hidden />
+              <span className="filter-crazy-btn__bolt filter-crazy-btn__bolt--3" aria-hidden />
+            </>
+          )}
+        </div>
       </div>
       {confettiPortal}
     </div>

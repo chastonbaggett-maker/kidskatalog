@@ -162,6 +162,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onRandomize={() => setShuffleKey((k) => k + 1)}
               crazyMode={crazyMode}
               onCrazyModeToggle={() => setCrazyMode((v) => !v)}
+              crazyFlash={crazyFlash}
             />
             <ThumbCarousel />
           </div>

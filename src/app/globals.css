@@ -299,6 +299,10 @@ html[data-accent="both"] .kart-go-btn:hover {
   scrollbar-width: none;
 }
 
+.filter-row-scroll:has(.filter-crazy-btn-wrap--active) {
+  padding-bottom: 4.25rem;
+}
+
 .filter-row-scroll::-webkit-scrollbar {
   display: none;
 }
@@ -345,30 +349,94 @@ html[data-accent="both"] .kart-go-btn:hover {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
-.filter-crazy-btn--active {
-  animation: crazy-lightning-flash 2.2s ease-out infinite;
+.filter-crazy-btn-wrap {
+  position: relative;
+  overflow: visible;
 }
 
-@keyframes crazy-lightning-flash {
+.filter-crazy-btn--active {
+  background: #ffe566;
+  color: var(--ink);
+  text-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-crazy-btn-wrap--active.filter-crazy-btn-wrap--striking .filter-crazy-btn--active {
+  animation: crazy-btn-strike-pulse 0.38s ease-out;
+}
+
+.filter-crazy-btn__bolt {
+  position: absolute;
+  top: calc(100% - 5px);
+  width: 11px;
+  height: 58px;
+  background: linear-gradient(to bottom, #fff6b8 0%, #ffe566 35%, #ffd700 100%);
+  clip-path: polygon(
+    50% 0%,
+    68% 22%,
+    48% 22%,
+    74% 46%,
+    42% 46%,
+    64% 100%,
+    36% 54%,
+    58% 54%,
+    30% 24%,
+    50% 24%
+  );
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(255, 229, 102, 0.95));
+  z-index: 0;
+  animation: crazy-bolt-strike 0.42s ease-out forwards;
+}
+
+.filter-crazy-btn__bolt--1 {
+  left: 24%;
+  --bolt-rot: -16deg;
+}
+
+.filter-crazy-btn__bolt--2 {
+  left: 50%;
+  margin-left: -5px;
+  --bolt-rot: 2deg;
+  animation-delay: 0.04s;
+}
+
+.filter-crazy-btn__bolt--3 {
+  left: 68%;
+  --bolt-rot: 14deg;
+  animation-delay: 0.07s;
+}
+
+@keyframes crazy-btn-strike-pulse {
   0% {
-    background: #ffe566;
-    color: var(--ink);
     box-shadow:
-      0 0 22px rgba(255, 229, 102, 0.9),
-      0 0 6px rgba(255, 255, 255, 0.95);
-    text-shadow: none;
-  }
-  7% {
-    background: var(--ink);
-    color: #ffe566;
-    box-shadow: none;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+      0 0 22px rgba(255, 229, 102, 0.95),
+      0 0 8px rgba(255, 255, 255, 0.9);
+    filter: brightness(1.1);
   }
   100% {
-    background: var(--ink);
-    color: #ffe566;
-    box-shadow: none;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(60, 70, 120, 0.18);
+    filter: brightness(1);
+  }
+}
+
+@keyframes crazy-bolt-strike {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scaleY(0.15) rotate(var(--bolt-rot, 0deg));
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(10px) scaleY(1) rotate(var(--bolt-rot, 0deg));
+  }
+  55% {
+    opacity: 0.75;
+    transform: translateY(42px) scaleY(1.12) rotate(var(--bolt-rot, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(72px) scaleY(0.55) rotate(var(--bolt-rot, 0deg));
   }
 }
 
@@ -1197,8 +1265,11 @@ html[data-standalone="true"] .app-shell {
 
   .filter-crazy-btn--active {
     animation: none;
-    background: var(--ink);
-    color: #ffe566;
+  }
+
+  .filter-crazy-btn-wrap--striking .filter-crazy-btn__bolt {
+    animation: none;
+    opacity: 0;
   }
 
   .toy-feed-grid--crazy-flash .feed-card {

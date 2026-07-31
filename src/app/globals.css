@@ -307,16 +307,21 @@ html[data-accent="both"] .kart-go-btn:hover {
   background: linear-gradient(
     115deg,
     var(--boys-chip) 0%,
-    #7aa8ff 12%,
-    #8f8bff 24%,
-    var(--purple) 40%,
-    #c98ef0 52%,
-    #e0a0c8 68%,
-    var(--girls-chip) 84%,
-    var(--pink-deep) 100%
+    #7aa8ff 9%,
+    #8f8bff 17%,
+    var(--purple) 26%,
+    #c4a8ff 34%,
+    var(--mint) 43%,
+    #6ee8db 51%,
+    #b8fff5 58%,
+    #ffe9a8 66%,
+    #ffc2d6 74%,
+    var(--girls-chip) 83%,
+    var(--pink-deep) 91%,
+    #7aa8ff 100%
   );
-  background-size: 260% 260%;
-  animation: filter-randomize-bob 3.6s ease-in-out infinite;
+  background-size: 320% 320%;
+  animation: filter-randomize-bob 4s ease-in-out infinite;
   text-shadow: 0 1px 0 rgba(58, 70, 130, 0.28);
 }
 

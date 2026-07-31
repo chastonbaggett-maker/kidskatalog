@@ -18,6 +18,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
   const [shuffleKey, setShuffleKey] = useState(0);
+  const [crazyMode, setCrazyMode] = useState(false);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,19 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   useEffect(() => {
     setShuffleKey(0);
+    setCrazyMode(false);
   }, [query, audience, age, toys]);
+
+  useEffect(() => {
+    if (!crazyMode) return;
+
+    setShuffleKey((k) => k + 1);
+    const id = window.setInterval(() => {
+      setShuffleKey((k) => k + 1);
+    }, 2500);
+
+    return () => window.clearInterval(id);
+  }, [crazyMode]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -131,6 +144,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               age={age}
               onAgeChange={setAge}
               onRandomize={() => setShuffleKey((k) => k + 1)}
+              crazyMode={crazyMode}
+              onCrazyModeToggle={() => setCrazyMode((v) => !v)}
             />
             <ThumbCarousel />
           </div>

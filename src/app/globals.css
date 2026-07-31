@@ -339,6 +339,32 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 }
 
+.filter-crazy-btn {
+  background: var(--ink);
+  color: #ffe566;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.filter-crazy-btn--active {
+  background: linear-gradient(
+    120deg,
+    #ff6b6b,
+    #ffd93d,
+    #6bcb77,
+    #4d96ff,
+    #b86bff,
+    #ff8fab,
+    #ff6b6b
+  );
+  background-size: 320% 320%;
+  animation: filter-rainbow-shift 1.4s ease-in-out infinite;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(80, 40, 120, 0.35);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 4px 16px rgba(120, 80, 200, 0.4);
+}
+
 .age-pop {
   animation: age-pop-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: center center;
@@ -1143,6 +1169,11 @@ html[data-standalone="true"] .app-shell {
   }
 
   .filter-randomize-btn {
+    animation: none;
+    background-position: 50% 50%;
+  }
+
+  .filter-crazy-btn--active {
     animation: none;
     background-position: 50% 50%;
   }

@@ -28,6 +28,8 @@ type Props = {
   age: number | null;
   onAgeChange: (value: number | null) => void;
   onRandomize: () => void;
+  crazyMode: boolean;
+  onCrazyModeToggle: () => void;
 };
 
 export function FilterRow({
@@ -38,6 +40,8 @@ export function FilterRow({
   age,
   onAgeChange,
   onRandomize,
+  crazyMode,
+  onCrazyModeToggle,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -238,6 +242,27 @@ export function FilterRow({
           Randomize
           <ShuffleIcon />
         </button>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            const turningOn = !crazyMode;
+            onCrazyModeToggle();
+            if (turningOn) {
+              fireConfetti(
+                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                RAINBOW_CONFETTI,
+              );
+            }
+          }}
+          aria-pressed={crazyMode}
+          className={`filter-crazy-btn flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition active:scale-95 ${
+            crazyMode ? "filter-crazy-btn--active" : ""
+          }`}
+        >
+          Crazy Mode
+          <CrazyIcon />
+        </button>
       </div>
       {confettiPortal}
     </div>
@@ -287,6 +312,14 @@ function ShuffleIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function CrazyIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
     </svg>
   );
 }

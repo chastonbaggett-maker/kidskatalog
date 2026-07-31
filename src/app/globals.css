@@ -1452,4 +1452,9 @@ html[data-standalone="true"] .app-shell {
   .feed-load-more__spark {
     animation: none;
   }
+
+  .page-scroll--crazy::before,
+  .page-scroll--crazy::after {
+    animation: none;
+  }
 }

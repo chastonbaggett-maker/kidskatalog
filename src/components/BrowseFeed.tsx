@@ -170,8 +170,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
         <div
           className={`toy-feed-grid scroll-pad-bottom pt-4 ${
-            crazyFlash ? "toy-feed-grid--crazy-flash" : ""
-          }`}
+            crazyMode ? "toy-feed-grid--crazy" : ""
+          } ${crazyFlash ? "toy-feed-grid--crazy-flash" : ""}`}
         >
           {displayed.map((toy, index) => (
             <FeedCard

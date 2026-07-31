@@ -427,18 +427,22 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 }
 
-.toy-feed-grid--crazy-flash .feed-card {
-  animation: crazy-card-flash 0.38s ease-out;
+.toy-feed-grid--crazy .feed-card {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.toy-feed-grid--crazy-flash .feed-card > div:first-child {
+  animation: crazy-card-flash 0.38s ease-out forwards;
 }
 
 @keyframes crazy-card-flash {
   0% {
-    filter: brightness(1.14);
-    transform: scale(1.012);
+    filter: brightness(1.1);
   }
   100% {
     filter: brightness(1);
-    transform: scale(1);
   }
 }
 
@@ -1259,7 +1263,7 @@ html[data-standalone="true"] .app-shell {
     opacity: 0;
   }
 
-  .toy-feed-grid--crazy-flash .feed-card {
+  .toy-feed-grid--crazy-flash .feed-card > div:first-child {
     animation: none;
   }
 }

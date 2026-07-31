@@ -250,8 +250,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             crazyMode ? (
               <CrazyModeButton
                 ref={shelfCrazyBtnRef}
-                className="absolute right-0"
-                variant="shelf"
+                className="shelf-crazy-btn"
                 crazyMode
                 crazyFlash={crazyFlash}
                 onClick={() => setCrazyMode(false)}

@@ -383,6 +383,40 @@ html[data-accent="both"] .kart-go-btn:hover {
     0 1px 0 rgba(255, 229, 102, 0.08);
 }
 
+.browse-feed--crazy .logo-glow {
+  filter:
+    drop-shadow(0 0 3px rgba(255, 241, 118, 0.95))
+    drop-shadow(0 0 10px rgba(255, 229, 102, 0.85))
+    drop-shadow(0 0 20px rgba(255, 214, 0, 0.65))
+    drop-shadow(0 0 32px rgba(255, 193, 7, 0.4));
+}
+
+/* Align shelf crazy toggle with feed-card outer edge (header uses px-3). */
+.shelf-crazy-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+}
+
+@media (min-width: 640px) {
+  .shelf-crazy-btn {
+    right: 0.25rem;
+  }
+}
+
+@media (min-width: 720px) {
+  .shelf-crazy-btn {
+    right: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shelf-crazy-btn {
+    right: 0.25rem;
+  }
+}
+
 .browse-feed--crazy .browse-controls {
   background: #25252e;
   box-shadow:

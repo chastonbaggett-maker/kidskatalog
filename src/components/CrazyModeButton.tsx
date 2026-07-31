@@ -6,17 +6,14 @@ type Props = {
   crazyMode: boolean;
   crazyFlash?: boolean;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  variant?: "filter" | "shelf";
   className?: string;
 };
 
 export const CrazyModeButton = forwardRef<HTMLButtonElement, Props>(
   function CrazyModeButton(
-    { crazyMode, crazyFlash = false, onClick, variant = "filter", className = "" },
+    { crazyMode, crazyFlash = false, onClick, className = "" },
     ref,
   ) {
-    const isShelf = variant === "shelf";
-
     return (
       <div
         className={`filter-crazy-btn-wrap shrink-0 ${
@@ -28,30 +25,21 @@ export const CrazyModeButton = forwardRef<HTMLButtonElement, Props>(
           type="button"
           onClick={onClick}
           aria-pressed={crazyMode}
-          aria-label="Crazy Mode"
-          className={`filter-crazy-btn flex items-center justify-center font-bold shadow-sm transition active:scale-95 ${
-            isShelf
-              ? "h-11 w-11 rounded-full"
-              : "gap-1.5 rounded-full px-4 py-2.5 text-sm"
-          } ${crazyMode ? "filter-crazy-btn--active" : ""}`}
+          className={`filter-crazy-btn flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition active:scale-95 ${
+            crazyMode ? "filter-crazy-btn--active" : ""
+          }`}
         >
-          {!isShelf ? (
-            <>
-              Crazy Mode
-              <CrazyIcon />
-            </>
-          ) : (
-            <CrazyIcon size={18} />
-          )}
+          Crazy Mode
+          <CrazyIcon />
         </button>
       </div>
     );
   },
 );
 
-function CrazyIcon({ size = 12 }: { size?: number }) {
+function CrazyIcon() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
     </svg>
   );

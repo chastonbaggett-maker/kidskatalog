@@ -139,40 +139,6 @@ select {
   animation: pop-in 0.45s ease-out both;
 }
 
-.feed-card__surface--random {
-  position: relative;
-}
-
-.feed-card__surface--random::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 3px;
-  background: linear-gradient(
-    120deg,
-    #ff6b6b,
-    #ffd93d,
-    #6bcb77,
-    #4d96ff,
-    #b86bff,
-    #ff8fab,
-    #ff6b6b
-  );
-  background-size: 320% 320%;
-  animation: filter-rainbow-shift 3.2s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 3;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-}
-
 .logo-glow {
   filter:
     drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))
@@ -1177,11 +1143,6 @@ html[data-standalone="true"] .app-shell {
   }
 
   .filter-randomize-btn {
-    animation: none;
-    background-position: 50% 50%;
-  }
-
-  .feed-card__surface--random::before {
     animation: none;
     background-position: 50% 50%;
   }

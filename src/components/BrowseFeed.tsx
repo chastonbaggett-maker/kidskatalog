@@ -101,8 +101,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return shuffled;
   }, [filtered, shuffleKey]);
 
-  const shuffled = shuffleKey > 0;
-
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
@@ -145,7 +143,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               toy={toy}
               showText={showText}
               index={index}
-              randomizeActive={shuffled}
             />
           ))}
           {displayed.length === 0 && (

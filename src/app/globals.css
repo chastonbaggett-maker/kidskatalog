@@ -593,9 +593,9 @@ html[data-standalone="true"] .app-shell {
   overflow: visible;
   transform: scale(1);
   transition:
-    background 0.5s ease,
-    transform 160ms ease,
-    box-shadow 360ms ease;
+    background 0.45s ease,
+    transform 0.35s cubic-bezier(0.25, 0.9, 0.35, 1),
+    box-shadow 0.45s ease;
   box-shadow:
     0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
     0 0 0 0 transparent;
@@ -670,22 +670,21 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--burst {
-  background: var(--mint-burst) !important;
   color: #fff;
-  text-shadow: 0 1px 0 rgba(20, 100, 90, 0.22);
-  animation: add-kart-climax 0.65s cubic-bezier(0.33, 1, 0.42, 1) forwards;
+  text-shadow: 0 1px 0 rgba(20, 100, 90, 0.18);
+  transition: none;
+  animation: add-kart-climax 0.75s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
 }
 
 .add-kart-btn--burst .add-kart-btn__glow {
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(110, 232, 219, 0.55) 35%,
-    rgba(62, 207, 192, 0.35) 65%,
-    transparent 78%
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(110, 232, 219, 0.35) 40%,
+    rgba(62, 207, 192, 0.2) 70%,
+    transparent 82%
   );
-  /* Keyframes own opacity; forwards keeps it off so it doesn't flash back */
-  animation: add-kart-glow-flash 0.65s ease-out forwards;
+  animation: add-kart-glow-flash 0.75s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
 }
 
 .add-kart-btn--in {
@@ -768,42 +767,18 @@ html[data-standalone="true"] .app-shell {
 
 @keyframes add-kart-climax {
   0% {
-    transform: scale(1.08);
-    background: linear-gradient(
-      100deg,
-      #f0fffc 0%,
-      #d4faf4 20%,
-      #b8fff5 40%,
-      #9ef0e6 60%,
-      #6ee8db 80%,
-      #3ecfc0 100%
-    );
+    transform: scale(1.04);
+    background: #c8f7f0;
     box-shadow:
-      0 0 36px 16px rgba(184, 255, 245, 0.9),
-      0 0 64px 28px rgba(110, 232, 219, 0.65),
-      0 0 90px 40px rgba(62, 207, 192, 0.45);
+      0 0 24px 10px rgba(184, 255, 245, 0.55),
+      0 0 40px 16px rgba(110, 232, 219, 0.35);
   }
-  40% {
-    transform: scale(1.03);
-    background: linear-gradient(
-      100deg,
-      #b8fff5 0%,
-      #8cebdd 25%,
-      #6ee8db 50%,
-      #4fd4c8 75%,
-      #3ecfc0 100%
-    );
-  }
-  72% {
-    transform: scale(1.01);
-    background: linear-gradient(
-      100deg,
-      #6ee8db 0%,
-      #58ddd0 25%,
-      #48d4c9 50%,
-      #3ecfc0 75%,
-      #2fc0ae 100%
-    );
+  28% {
+    transform: scale(1.02);
+    background: #6ee8db;
+    box-shadow:
+      0 0 20px 8px rgba(110, 232, 219, 0.4),
+      0 0 32px 12px rgba(62, 207, 192, 0.25);
   }
   100% {
     transform: scale(1);
@@ -816,17 +791,18 @@ html[data-standalone="true"] .app-shell {
 
 @keyframes add-kart-glow-flash {
   0% {
-    opacity: 0.95;
-    transform: scale(1.15);
-    filter: blur(2px) brightness(1.35) saturate(1.15);
+    opacity: 0.45;
+    transform: scale(1.04);
+    filter: blur(3px) brightness(1.12);
   }
-  55% {
-    opacity: 0.35;
+  35% {
+    opacity: 0.2;
+    transform: scale(1.1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.65);
-    filter: blur(12px) brightness(1);
+    transform: scale(1.18);
+    filter: blur(8px) brightness(1);
   }
 }
 

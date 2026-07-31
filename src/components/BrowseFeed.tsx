@@ -17,6 +17,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
+  const [randomizeActive, setRandomizeActive] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
@@ -63,8 +64,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [shelfMode]);
 
   useEffect(() => {
+    setRandomizeActive(false);
     setShuffleKey(0);
-  }, [query, audience, age]);
+  }, [query, audience, age, toys]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -84,7 +86,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [toys, query, audience, age]);
 
   const displayed = useMemo(() => {
-    if (shuffleKey === 0) return filtered;
+    if (!randomizeActive) return filtered;
 
     const shuffled = [...filtered];
     let seed = shuffleKey;
@@ -99,7 +101,17 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
 
     return shuffled;
-  }, [filtered, shuffleKey]);
+  }, [filtered, randomizeActive, shuffleKey]);
+
+  const handleRandomizeToggle = () => {
+    if (randomizeActive) {
+      setRandomizeActive(false);
+      return;
+    }
+
+    setShuffleKey((k) => k + 1);
+    setRandomizeActive(true);
+  };
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
@@ -130,7 +142,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onShowTextChange={setShowText}
               age={age}
               onAgeChange={setAge}
-              onRandomize={() => setShuffleKey((k) => k + 1)}
+              randomizeActive={randomizeActive}
+              onRandomizeToggle={handleRandomizeToggle}
             />
             <ThumbCarousel />
           </div>

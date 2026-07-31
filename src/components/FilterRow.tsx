@@ -27,7 +27,8 @@ type Props = {
   onShowTextChange: (value: boolean) => void;
   age: number | null;
   onAgeChange: (value: number | null) => void;
-  onRandomize: () => void;
+  randomizeActive: boolean;
+  onRandomizeToggle: () => void;
 };
 
 export function FilterRow({
@@ -37,7 +38,8 @@ export function FilterRow({
   onShowTextChange,
   age,
   onAgeChange,
-  onRandomize,
+  randomizeActive,
+  onRandomizeToggle,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -227,13 +229,19 @@ export function FilterRow({
         <button
           type="button"
           onClick={(e) => {
-            onRandomize();
-            fireConfetti(
-              (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
-              RAINBOW_CONFETTI,
-            );
+            const turningOn = !randomizeActive;
+            onRandomizeToggle();
+            if (turningOn) {
+              fireConfetti(
+                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                RAINBOW_CONFETTI,
+              );
+            }
           }}
-          className="filter-randomize-btn flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95"
+          aria-pressed={randomizeActive}
+          className={`filter-randomize-btn flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
+            randomizeActive ? "filter-randomize-btn--active" : ""
+          }`}
         >
           Randomize
           <ShuffleIcon />

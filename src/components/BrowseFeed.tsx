@@ -17,7 +17,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
-  const [randomizeActive, setRandomizeActive] = useState(false);
   const [shuffleKey, setShuffleKey] = useState(0);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
@@ -64,7 +63,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [shelfMode]);
 
   useEffect(() => {
-    setRandomizeActive(false);
     setShuffleKey(0);
   }, [query, audience, age, toys]);
 
@@ -86,7 +84,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [toys, query, audience, age]);
 
   const displayed = useMemo(() => {
-    if (!randomizeActive) return filtered;
+    if (shuffleKey === 0) return filtered;
 
     const shuffled = [...filtered];
     let seed = shuffleKey;
@@ -101,17 +99,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
 
     return shuffled;
-  }, [filtered, randomizeActive, shuffleKey]);
+  }, [filtered, shuffleKey]);
 
-  const handleRandomizeToggle = () => {
-    if (randomizeActive) {
-      setRandomizeActive(false);
-      return;
-    }
-
-    setShuffleKey((k) => k + 1);
-    setRandomizeActive(true);
-  };
+  const shuffled = shuffleKey > 0;
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
@@ -142,8 +132,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onShowTextChange={setShowText}
               age={age}
               onAgeChange={setAge}
-              randomizeActive={randomizeActive}
-              onRandomizeToggle={handleRandomizeToggle}
+              onRandomize={() => setShuffleKey((k) => k + 1)}
             />
             <ThumbCarousel />
           </div>
@@ -156,7 +145,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               toy={toy}
               showText={showText}
               index={index}
-              randomizeActive={randomizeActive}
+              randomizeActive={shuffled}
             />
           ))}
           {displayed.length === 0 && (

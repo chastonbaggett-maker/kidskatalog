@@ -48,7 +48,7 @@ export default async function ToyPage({ params }: Props) {
                 <Link
                   href="/kart"
                   aria-label="Go to Kart"
-                  className="kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full bg-[var(--purple)] text-white shadow-md transition active:scale-[0.98]"
+                  className="kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full bg-[var(--girls-chip)] text-white shadow-md transition active:scale-[0.98] hover:bg-[var(--pink-deep)]"
                 >
                   <svg
                     className="kart-go-arrow shrink-0"

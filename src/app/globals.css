@@ -607,8 +607,8 @@ html[data-standalone="true"] .app-shell {
 
 .add-kart-btn--circle {
   flex-shrink: 0;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.9rem;
+  height: 3.9rem;
   padding: 0;
   display: inline-flex;
   align-items: center;

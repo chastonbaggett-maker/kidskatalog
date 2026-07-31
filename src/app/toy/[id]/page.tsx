@@ -46,7 +46,7 @@ export default async function ToyPage({ params }: Props) {
               <div className="mt-6 flex max-w-md items-stretch gap-3">
                 <Link
                   href="/kart"
-                  className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-5 py-3.5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
+                  className="inline-flex h-[3.9rem] min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--purple)] px-5 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
                 >
                   Go to Kart
                   <svg

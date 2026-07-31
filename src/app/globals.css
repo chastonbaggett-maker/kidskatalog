@@ -611,6 +611,59 @@ html[data-standalone="true"] .app-shell {
   justify-content: center;
 }
 
+.add-kart-btn__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--blue);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+}
+
+.add-kart-btn--removing {
+  overflow: hidden;
+  transition: none;
+  animation: add-kart-remove-pop 0.32s cubic-bezier(0.34, 1.35, 0.64, 1) 0.48s forwards;
+}
+
+.add-kart-btn--removing .add-kart-btn__fill {
+  opacity: 1;
+  animation: add-kart-remove-fill 0.48s cubic-bezier(0.33, 1, 0.38, 1) forwards;
+}
+
+@keyframes add-kart-remove-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes add-kart-remove-pop {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 16px color-mix(in srgb, var(--mint) 45%, transparent),
+      0 0 18px color-mix(in srgb, #2bb8a8 30%, transparent);
+  }
+  42% {
+    transform: scale(1.06);
+    box-shadow:
+      0 6px 20px color-mix(in srgb, var(--blue) 50%, transparent),
+      0 0 24px color-mix(in srgb, var(--blue) 35%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
+      0 0 10px color-mix(in srgb, var(--blue) 22%, transparent);
+  }
+}
+
 .add-kart-btn--circle {
   flex-shrink: 0;
   width: 3.9rem;
@@ -852,6 +905,8 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging),
   .add-kart-btn--charging,
   .add-kart-btn--burst,
+  .add-kart-btn--removing,
+  .add-kart-btn--removing .add-kart-btn__fill,
   .add-kart-btn--charging .add-kart-btn__glow,
   .add-kart-btn--burst .add-kart-btn__glow,
   .add-kart-btn__plus,

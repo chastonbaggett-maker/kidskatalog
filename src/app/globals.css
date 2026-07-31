@@ -617,7 +617,7 @@ html[data-standalone="true"] .app-shell {
   border-radius: inherit;
   background: var(--blue);
   transform: scaleX(0);
-  transform-origin: left center;
+  transform-origin: right center;
   pointer-events: none;
   z-index: 0;
   opacity: 0;

@@ -125,7 +125,31 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     setPileHeaderVisible(toyPileMode);
   }, [enterPhase, toyPileMode]);
 
+  const [crazyFlash, setCrazyFlash] = useState(false);
+  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
+  const [loadedPages, setLoadedPages] = useState(1);
+  const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
+  const [compactShelfBlocked, setCompactShelfBlocked] = useState(false);
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const filterCrazyBtnRef = useRef<HTMLButtonElement>(null);
+  const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
+  const shelfWantedRef = useRef(false);
+  const blockCompactShelfRef = useRef(false);
+  const crazyFlashCountRef = useRef(0);
+  const displayIdsRef = useRef<string[]>([]);
+
+  const blockCompactShelf = useCallback(() => {
+    blockCompactShelfRef.current = true;
+    setCompactShelfBlocked(true);
+    shelfWantedRef.current = false;
+    setShelfMode("hidden");
+  }, []);
+
   const exitPileMode = useCallback(() => {
+    blockCompactShelfRef.current = false;
+    setCompactShelfBlocked(false);
     setToyPileMode(false);
     resetTransition();
   }, [setToyPileMode, resetTransition]);
@@ -138,6 +162,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     if (enterPhase !== "idle") return;
 
     setCrazyMode(false);
+    blockCompactShelf();
 
     if (prefersReducedMotion()) {
       skipToPileResting();
@@ -157,6 +182,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     enterPhase,
     setCrazyMode,
     exitPileMode,
+    blockCompactShelf,
     skipToPileResting,
     startEnterTransition,
   ]);
@@ -174,27 +200,13 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     toggleCrazyMode();
   }, [crazyMode, toggleCrazyMode, exitPileMode]);
 
-  const [crazyFlash, setCrazyFlash] = useState(false);
-  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
-  const [loadedPages, setLoadedPages] = useState(1);
-  const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
-
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const chromeRef = useRef<HTMLDivElement>(null);
-  const filterCrazyBtnRef = useRef<HTMLButtonElement>(null);
-  const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
-  const shelfWantedRef = useRef(false);
-  const crazyFlashCountRef = useRef(0);
-  const displayIdsRef = useRef<string[]>([]);
-
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
     if (isEntering || toyPileMode) {
-      setShelfMode("hidden");
-      shelfWantedRef.current = false;
+      blockCompactShelf();
     }
-  }, [isEntering, toyPileMode]);
+  }, [isEntering, toyPileMode, blockCompactShelf]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -204,6 +216,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry) return;
+        if (blockCompactShelfRef.current) return;
+        if (useToyPileModeStore.getState().enterPhase !== "idle") return;
+        if (useToyPileModeStore.getState().toyPileMode) return;
+
         const want =
           !entry.isIntersecting || entry.intersectionRatio < 0.08;
         shelfWantedRef.current = want;
@@ -225,12 +241,20 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [isEntering, toyPileMode]);
 
   useEffect(() => {
-    if (shelfMode !== "leaving") return;
+    if (shelfMode !== "leaving" || blockCompactShelfRef.current) return;
     const t = window.setTimeout(() => {
-      if (!shelfWantedRef.current) setShelfMode("hidden");
+      if (!shelfWantedRef.current && !blockCompactShelfRef.current) {
+        setShelfMode("hidden");
+      }
     }, 320);
     return () => window.clearTimeout(t);
   }, [shelfMode]);
+
+  const showCompactShelf =
+    !compactShelfBlocked &&
+    enterPhase === "idle" &&
+    !toyPileMode &&
+    !isEntering;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -481,7 +505,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         </div>
       )}
 
-      {!isEntering && !toyPileMode && (
+      {showCompactShelf && (
         <div
           className={`browse-shelf-overlay ${
             shelfMode === "shown" ? "is-visible" : ""

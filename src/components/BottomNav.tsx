@@ -51,7 +51,10 @@ export function BottomNav() {
     onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
   const pileShelfRaised =
     pileShelfActive &&
-    (toyPileMode || enterPhase === "chrome" || enterPhase === "zoom");
+    (toyPileMode ||
+      enterPhase === "chrome" ||
+      enterPhase === "center" ||
+      enterPhase === "zoom");
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);

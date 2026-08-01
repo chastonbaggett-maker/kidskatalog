@@ -104,14 +104,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [enterPhase]);
 
   useEffect(() => {
-    if (enterPhase === "zoom") {
-      setGridVisible(false);
-      setFeedExiting(false);
-      const id = requestAnimationFrame(() => {
-        setGridVisible(true);
-        setFeedExiting(true);
-      });
-      return () => cancelAnimationFrame(id);
+    if (enterPhase === "center" || enterPhase === "zoom") {
+      setGridVisible(true);
+      setFeedExiting(true);
+      return;
     }
     setGridVisible(toyPileMode && enterPhase === "idle");
     setFeedExiting(false);
@@ -186,6 +182,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     skipToPileResting,
     startEnterTransition,
   ]);
+
+  const handleCenterComplete = useCallback(() => {
+    advanceEnterPhase("zoom");
+  }, [advanceEnterPhase]);
 
   const handleEntryZoomComplete = useCallback(() => {
     advanceEnterPhase("done");
@@ -448,10 +448,19 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     />
   );
 
-  const showFeedLayer = !toyPileMode || enterPhase === "zoom";
-  const showBrowseChrome = !toyPileMode && enterPhase !== "zoom";
-  const feedExitClass = feedExiting ? "pile-feed-layer--exit" : "";
-  const gridEnterClass = gridVisible ? "pile-grid-layer--enter" : "";
+  const showFeedLayer = !toyPileMode || enterPhase === "center" || enterPhase === "zoom";
+  const showBrowseChrome = !toyPileMode && enterPhase !== "center" && enterPhase !== "zoom";
+  const pileExploreEnabled = toyPileMode && enterPhase === "idle";
+  const feedExitClass =
+    enterPhase === "center" || enterPhase === "zoom"
+      ? "pile-feed-layer--handoff-hidden"
+      : feedExiting
+        ? "pile-feed-layer--exit"
+        : "";
+  const gridEnterClass =
+    gridVisible || enterPhase === "center" || enterPhase === "zoom"
+      ? "pile-grid-layer--enter"
+      : "";
 
   const feedCards = (
     <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4 ${feedExitClass}`}>
@@ -540,17 +549,20 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       >
         {toyPileMode && (
           <div
-            className={`pile-grid-layer toy-pile-grid-host star-field absolute inset-0 flex min-h-0 flex-col ${gridEnterClass}`}
+            className={`pile-grid-layer toy-pile-grid-host star-field absolute inset-0 z-[1] flex min-h-0 flex-col ${gridEnterClass}`}
           >
             <ToyPileGrid
               toys={displayed}
               showText={showText}
+              interactive={pileExploreEnabled}
               entryAnimation={
-                enterPhase === "zoom" && anchor
+                (enterPhase === "center" || enterPhase === "zoom") && anchor
                   ? {
+                      phase: enterPhase,
                       anchorToyId: anchor.toyId,
                       fromRect: anchor.rect,
-                      viewCenter: anchor.viewCenter,
+                      feedScrollerRef: scrollerRef,
+                      onCenterComplete: handleCenterComplete,
                       onComplete: handleEntryZoomComplete,
                     }
                   : undefined

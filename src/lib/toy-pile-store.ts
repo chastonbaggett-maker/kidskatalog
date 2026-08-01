@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type PileEnterPhase = "idle" | "chrome" | "zoom" | "done";
+export type PileEnterPhase = "idle" | "chrome" | "center" | "zoom" | "done";
 
 export type PileAnchorRect = {
   left: number;
@@ -34,6 +34,8 @@ type ToyPileModeState = {
 
 export const PILE_CHROME_MS = 680;
 export const PILE_CHROME_EASE = "ease-in-out";
+export const PILE_CENTER_MS = 560;
+export const PILE_CENTER_EASE = "ease-in-out";
 export const PILE_ZOOM_MS = 780;
 export const PILE_ZOOM_EASE = "ease-in-out";
 
@@ -64,7 +66,7 @@ export function toyPileRootClass(active: boolean) {
 }
 
 export function isPileEntering(phase: PileEnterPhase) {
-  return phase === "chrome" || phase === "zoom";
+  return phase === "chrome" || phase === "center" || phase === "zoom";
 }
 
 export const PILE_FILTER_PORTAL_ID = "pile-filter-portal";

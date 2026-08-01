@@ -61,6 +61,18 @@ export function findMostVisibleFeedCard(
   };
 }
 
+/** Live feed-card rect after chrome collapse — for center-phase handoff. */
+export function measureLiveFeedAnchorRect(
+  scroller: HTMLElement,
+  anchorToyId: string,
+): PileAnchorRect | null {
+  const el = scroller.querySelector(
+    `.feed-card[data-toy-id="${CSS.escape(anchorToyId)}"]`,
+  );
+  if (!el) return null;
+  return snapshotRect(el.getBoundingClientRect());
+}
+
 /** Hash-based toy slot for infinite pile coordinates (matches ToyPileGrid). */
 export function pileToyIndexForCell(col: number, row: number, poolLength: number) {
   const hash = ((col * 73856093) ^ (row * 19349663)) >>> 0;

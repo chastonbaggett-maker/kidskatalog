@@ -18,7 +18,7 @@ export function usePileEnterTransition() {
 
     chromeTimerRef.current = window.setTimeout(() => {
       setToyPileMode(true);
-      advanceEnterPhase("zoom");
+      advanceEnterPhase("center");
     }, PILE_CHROME_MS);
 
     return () => {

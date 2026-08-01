@@ -13,9 +13,14 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import { getCenteredPileGridOrigin, getPileEntryTargetZoom } from "@/lib/pile-transition-utils";
-import type { PileAnchorRect } from "@/lib/toy-pile-store";
-import { PILE_ZOOM_MS } from "@/lib/toy-pile-store";
+import type { RefObject } from "react";
+import {
+  getCenteredPileGridOrigin,
+  getPileEntryTargetZoom,
+  measureLiveFeedAnchorRect,
+} from "@/lib/pile-transition-utils";
+import type { PileAnchorRect, PileEnterPhase } from "@/lib/toy-pile-store";
+import { PILE_CENTER_MS, PILE_ZOOM_MS } from "@/lib/toy-pile-store";
 
 const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
@@ -29,10 +34,13 @@ const FEED_CARD_SIDE_INSET_PX = 48;
 type Props = {
   toys: Toy[];
   showText: boolean;
+  interactive?: boolean;
   entryAnimation?: {
+    phase: Extract<PileEnterPhase, "center" | "zoom">;
     anchorToyId: string;
     fromRect: PileAnchorRect;
-    viewCenter: { x: number; y: number };
+    feedScrollerRef?: RefObject<HTMLElement | null>;
+    onCenterComplete?: () => void;
     onComplete?: () => void;
   };
 };
@@ -218,7 +226,12 @@ function getInitialGridOrigin(
   return getCenteredPileGridOrigin(entryAnimation.anchorToyId, toys, gridSize);
 }
 
-export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
+export function ToyPileGrid({
+  toys,
+  showText,
+  interactive = true,
+  entryAnimation,
+}: Props) {
   const initialGridSize = MIN_CHUNK * 3;
   const initialGridRef = useRef(getInitialGridOrigin(entryAnimation, toys, initialGridSize));
   const [colMin, setColMin] = useState(initialGridRef.current.colMin);
@@ -242,10 +255,11 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
   const wheelLockTimerRef = useRef<number | null>(null);
   const snapAnimRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
-  const centeredRef = useRef(false);
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
-  const entryStartedRef = useRef(false);
+  const centerStartedRef = useRef(false);
+  const zoomStartedRef = useRef(false);
+  const coldStartDoneRef = useRef(false);
 
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
@@ -422,6 +436,52 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
     }, EXPAND_COOLDOWN_MS);
   }, [colCount, rowCount, pool.length, shiftPan]);
 
+  const animatePanTo = useCallback(
+    (
+      targetPan: Pan,
+      zoom: number,
+      duration: number,
+      onComplete?: () => void,
+      ease: (t: number) => number = easeInOutCubic,
+    ) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      cancelSnap();
+
+      const startPan = { ...panRef.current };
+      const delta = Math.hypot(targetPan.x - startPan.x, targetPan.y - startPan.y);
+      if (delta < 2) {
+        applyTransformImmediate(targetPan, zoom);
+        onComplete?.();
+        return;
+      }
+
+      const startTime = performance.now();
+
+      const tick = (now: number) => {
+        const t = ease(Math.min(1, (now - startTime) / duration));
+        applyTransformImmediate(
+          {
+            x: startPan.x + (targetPan.x - startPan.x) * t,
+            y: startPan.y + (targetPan.y - startPan.y) * t,
+          },
+          zoom,
+        );
+
+        if (t < 1) {
+          snapAnimRef.current = requestAnimationFrame(tick);
+        } else {
+          snapAnimRef.current = null;
+          onComplete?.();
+        }
+      };
+
+      snapAnimRef.current = requestAnimationFrame(tick);
+    },
+    [applyTransformImmediate, cancelSnap],
+  );
+
   const animateZoomOut = useCallback(
     (
       fromZoom: number,
@@ -468,38 +528,66 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport || centeredRef.current) return;
+    if (!viewport) return;
 
-    if (entryAnimation && !entryStartedRef.current) {
+    if (entryAnimation?.phase === "center" && !centerStartedRef.current) {
+      const { anchorCol, anchorRow } = initialGridRef.current;
+      const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
+      const bounds = getZoomBounds(viewport);
+      const { maxZoom } = bounds;
+      const viewportRect = viewport.getBoundingClientRect();
+      const scroller = entryAnimation.feedScrollerRef?.current;
+      const liveRect =
+        scroller && measureLiveFeedAnchorRect(scroller, entryAnimation.anchorToyId);
+      const fromRect = liveRect ?? entryAnimation.fromRect;
+      const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
+      const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
+      const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
+      const targetPan = panForScreenPoint(
+        viewport.clientWidth / 2,
+        viewport.clientHeight / 2,
+        stageCenter,
+        maxZoom,
+      );
+
+      centerStartedRef.current = true;
+      applyTransformImmediate(initialPan, maxZoom);
+
+      requestAnimationFrame(() => {
+        animatePanTo(
+          targetPan,
+          maxZoom,
+          PILE_CENTER_MS,
+          entryAnimation.onCenterComplete,
+          easeInOutCubic,
+        );
+      });
+      return;
+    }
+
+    if (entryAnimation?.phase === "zoom" && !zoomStartedRef.current) {
       const { anchorCol, anchorRow } = initialGridRef.current;
       const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
       const metrics = getMetrics(viewport);
       const bounds = getZoomBounds(viewport);
       const { maxZoom } = bounds;
       const toZoom = getPileEntryTargetZoom(viewport, metrics, bounds);
-      const viewportRect = viewport.getBoundingClientRect();
-      const fromRect = entryAnimation.fromRect;
-      const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
-      const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
-      const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
-      const viewScreenX = entryAnimation.viewCenter.x - viewportRect.left;
-      const viewScreenY = entryAnimation.viewCenter.y - viewportRect.top;
-      const viewLock: StagePoint = {
-        x: (viewScreenX - initialPan.x) / maxZoom,
-        y: (viewScreenY - initialPan.y) / maxZoom,
-      };
+      const viewportCenterX = viewport.clientWidth / 2;
+      const viewportCenterY = viewport.clientHeight / 2;
 
-      entryStartedRef.current = true;
-      centeredRef.current = true;
-      applyTransformImmediate(initialPan, maxZoom);
+      zoomStartedRef.current = true;
+      applyTransformImmediate(
+        panForScreenPoint(viewportCenterX, viewportCenterY, stageCenter, maxZoom),
+        maxZoom,
+      );
 
       requestAnimationFrame(() => {
         animateZoomOut(
           maxZoom,
           toZoom,
-          viewLock,
+          stageCenter,
           entryAnimation.onComplete,
-          { x: viewScreenX, y: viewScreenY },
+          { x: viewportCenterX, y: viewportCenterY },
           easeInOutCubic,
         );
       });
@@ -507,6 +595,8 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
     }
 
     if (entryAnimation) return;
+
+    if (coldStartDoneRef.current) return;
 
     const { stride } = getMetrics(viewport);
     const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
@@ -518,7 +608,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       y: (viewport.clientHeight - gridH * initialZoom) / 2,
     };
     commitTransform(centered, initialZoom);
-    centeredRef.current = true;
+    coldStartDoneRef.current = true;
   }, [
     colCount,
     rowCount,
@@ -527,6 +617,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
     commitTransform,
     entryAnimation,
     applyTransformImmediate,
+    animatePanTo,
     animateZoomOut,
   ]);
 
@@ -594,6 +685,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!interactive) return;
       const target = e.target as HTMLElement;
       if (target.closest("a, button")) return;
 
@@ -624,11 +716,12 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
         moved: 0,
       };
     },
-    [cancelSnap, syncPinch],
+    [cancelSnap, syncPinch, interactive],
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!interactive) return;
       if (!pointersRef.current.has(e.pointerId)) return;
 
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -653,11 +746,12 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
         zoomRef.current,
       );
     },
-    [commitTransform, syncPinch],
+    [commitTransform, syncPinch, interactive],
   );
 
   const endPointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!interactive) return;
       pointersRef.current.delete(e.pointerId);
 
       if (pointersRef.current.size < 2) {
@@ -690,11 +784,12 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
         }
       }
     },
-    [maybeExpand, snapToMostVisible],
+    [maybeExpand, snapToMostVisible, interactive],
   );
 
   const onWheel = useCallback(
     (e: WheelEvent) => {
+      if (!interactive) return;
       e.preventDefault();
       const viewport = viewportRef.current;
       if (!viewport) return;
@@ -727,7 +822,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
         zoomRef.current,
       );
     },
-    [cancelSnap, commitTransform, resolveStageLock, zoomToLockedCard],
+    [cancelSnap, commitTransform, resolveStageLock, zoomToLockedCard, interactive],
   );
 
   useEffect(() => {
@@ -736,6 +831,10 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
+
+  const { anchorCol, anchorRow } = initialGridRef.current;
+  const entryPhase = entryAnimation?.phase;
+  const showLoadingCells = entryPhase === "zoom";
 
   if (pool.length === 0) {
     return (
@@ -750,8 +849,14 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
   return (
     <div
       ref={viewportRef}
-      className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
-      aria-label="Toy grid — drag to explore, pinch to zoom toward a card"
+      className={`toy-pile-viewport scroll-pad-bottom min-h-0 flex-1${
+        interactive ? "" : " toy-pile-viewport--entry"
+      }`}
+      aria-label={
+        interactive
+          ? "Toy grid — drag to explore, pinch to zoom toward a card"
+          : "Toy pile loading"
+      }
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
@@ -770,6 +875,21 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
           {Array.from({ length: slots }).map((_, index) => {
             const col = colMin + (index % colCount);
             const row = rowMin + Math.floor(index / colCount);
+            const isAnchor = col === anchorCol && row === anchorRow;
+            if (showLoadingCells && !isAnchor) {
+              return (
+                <PileLoadingCard key={`pile-loading-${col}-${row}`} col={col} row={row} />
+              );
+            }
+            if (entryPhase === "center" && !isAnchor) {
+              return (
+                <div
+                  key={`pile-spacer-${col}-${row}`}
+                  className="toy-pile-card toy-pile-card--spacer"
+                  aria-hidden
+                />
+              );
+            }
             const toy = pool[toyIndexForCell(col, row, pool.length)]!;
             return (
               <ToyPileCard
@@ -778,6 +898,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
                 row={row}
                 toy={toy}
                 showText={showText}
+                interactive={interactive}
               />
             );
           })}
@@ -787,16 +908,37 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
   );
 }
 
+const PileLoadingCard = memo(function PileLoadingCard({
+  col,
+  row,
+}: {
+  col: number;
+  row: number;
+}) {
+  return (
+    <article
+      className="toy-pile-card toy-pile-card--loading"
+      data-pile-col={col}
+      data-pile-row={row}
+      aria-hidden
+    >
+      <div className="toy-pile-card__body toy-pile-card__body--loading aspect-[4/5] rounded-[1.35rem] bg-white ring-1 ring-black/[0.04]" />
+    </article>
+  );
+});
+
 const ToyPileCard = memo(function ToyPileCard({
   col,
   row,
   toy,
   showText,
+  interactive = true,
 }: {
   col: number;
   row: number;
   toy: Toy;
   showText: boolean;
+  interactive?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -814,7 +956,12 @@ const ToyPileCard = memo(function ToyPileCard({
       data-toy-id={toy.id}
     >
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
-        <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
+        <Link
+          href={`/toy/${toy.id}`}
+          tabIndex={interactive ? undefined : -1}
+          className="relative block aspect-[4/5] bg-white"
+          aria-hidden={!interactive}
+        >
           <Image
             src={toy.image}
             alt={toy.imageAlt}
@@ -825,7 +972,7 @@ const ToyPileCard = memo(function ToyPileCard({
         </Link>
         {showText ? (
           <div className="px-2.5 pb-2.5 pt-1 pr-11 sm:px-3 sm:pb-3 sm:pt-2 sm:pr-12">
-            <Link href={`/toy/${toy.id}`}>
+            <Link href={`/toy/${toy.id}`} tabIndex={interactive ? undefined : -1}>
               <h2 className="truncate font-[family-name:var(--font-display)] text-sm font-bold text-[var(--ink)] sm:text-base">
                 {toy.name}
               </h2>
@@ -835,6 +982,7 @@ const ToyPileCard = memo(function ToyPileCard({
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}
+          tabIndex={interactive ? undefined : -1}
           className={`toy-pile-card__eye absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 sm:h-10 sm:w-10 ${viewBtnClass}`}
         >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 sm:h-5 sm:w-5">

@@ -518,6 +518,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 .browse-feed--pile-entering {
   --pile-chrome-duration: 680ms;
   --pile-chrome-ease: ease-in-out;
+  --pile-center-duration: 560ms;
+  --pile-center-ease: ease-in-out;
   --pile-zoom-duration: 780ms;
   --pile-zoom-ease: ease-in-out;
 }
@@ -567,6 +569,39 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .pile-grid-layer--enter {
   opacity: 1;
+}
+
+.pile-feed-layer--handoff-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.toy-pile-viewport--entry {
+  cursor: default;
+}
+
+.toy-pile-viewport--entry:active {
+  cursor: default;
+}
+
+.toy-pile-card--spacer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.toy-pile-card__body--loading {
+  box-shadow: 0 10px 28px -14px rgba(60, 70, 120, 0.22);
+  animation: pile-loading-pulse 1.35s ease-in-out infinite;
+}
+
+@keyframes pile-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.82;
+  }
 }
 
 .browse-feed--pile-entering .page-scroll {

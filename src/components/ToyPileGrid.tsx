@@ -31,8 +31,11 @@ const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
 /** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
 const MIN_ZOOM_OUT_ROWS = 6;
-const REFERENCE_BAND_WIDTH_PX = 390;
-const REFERENCE_BAND_HEIGHT_PX = 560;
+/** Tablet max zoom-out reference — ~6 columns × ~4.5 rows in the visible band. */
+const TABLET_MIN_ZOOM_OUT_COLUMNS = 6;
+const TABLET_MIN_ZOOM_OUT_ROWS = 4.5;
+const TABLET_MIN_WIDTH_PX = 640;
+const DESKTOP_MIN_WIDTH_PX = 1024;
 const CRAZY_MIN_VISIBLE_PX = 8;
 
 type Props = {
@@ -63,23 +66,35 @@ function getMetrics(viewport: HTMLElement) {
   return { cell, gap, stride: cell + gap };
 }
 
+function getPileFormFactor(viewport: HTMLElement) {
+  const width = viewport.clientWidth;
+  if (width >= DESKTOP_MIN_WIDTH_PX) return "desktop";
+  if (width >= TABLET_MIN_WIDTH_PX) return "tablet";
+  return "mobile";
+}
+
+function isPileZoomEnabled(viewport: HTMLElement) {
+  return getPileFormFactor(viewport) !== "desktop";
+}
+
 function getMaxPileZoom(viewport: HTMLElement) {
   const { cell } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
   return (band.width * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
 }
 
-function getMinZoomOutCounts(band: { width: number; height: number }) {
-  const columns = Math.max(
-    MIN_ZOOM_OUT_COLUMNS,
-    Math.round((band.width / REFERENCE_BAND_WIDTH_PX) * MIN_ZOOM_OUT_COLUMNS),
-  );
-  const rows = Math.max(
-    MIN_ZOOM_OUT_ROWS,
-    Math.round((band.height / REFERENCE_BAND_HEIGHT_PX) * MIN_ZOOM_OUT_ROWS),
-  );
+function getMinZoomOutCounts(viewport: HTMLElement) {
+  if (getPileFormFactor(viewport) === "tablet") {
+    return {
+      columns: TABLET_MIN_ZOOM_OUT_COLUMNS,
+      rows: TABLET_MIN_ZOOM_OUT_ROWS,
+    };
+  }
 
-  return { columns, rows };
+  return {
+    columns: MIN_ZOOM_OUT_COLUMNS,
+    rows: MIN_ZOOM_OUT_ROWS,
+  };
 }
 
 function getPileVisibleBand(viewport: HTMLElement) {
@@ -126,7 +141,7 @@ function getPileVisibleBand(viewport: HTMLElement) {
 function getMinPileZoom(viewport: HTMLElement) {
   const { stride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
-  const { columns, rows } = getMinZoomOutCounts(band);
+  const { columns, rows } = getMinZoomOutCounts(viewport);
   return Math.max(
     band.width / (columns * stride),
     band.height / (rows * stride),
@@ -134,8 +149,12 @@ function getMinPileZoom(viewport: HTMLElement) {
 }
 
 function getZoomBounds(viewport: HTMLElement) {
-  const minZoom = getMinPileZoom(viewport);
   const maxZoom = getMaxPileZoom(viewport);
+  if (!isPileZoomEnabled(viewport)) {
+    return { minZoom: maxZoom, maxZoom };
+  }
+
+  const minZoom = getMinPileZoom(viewport);
   return {
     minZoom: Math.min(minZoom, maxZoom),
     maxZoom: Math.max(maxZoom, minZoom),
@@ -404,6 +423,7 @@ export function ToyPileGrid({
   const [rowCount, setRowCount] = useState(MIN_CHUNK * 3);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [zoomEnabled, setZoomEnabled] = useState(true);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -590,6 +610,8 @@ export function ToyPileGrid({
     if (!viewport) return;
 
     const onResize = () => {
+      setZoomEnabled(isPileZoomEnabled(viewport));
+
       const clamped = clampZoom(viewport, zoomRef.current);
       if (clamped !== zoomRef.current) {
         const lock = {
@@ -615,7 +637,7 @@ export function ToyPileGrid({
 
   const syncPinch = useCallback(() => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    if (!viewport || !isPileZoomEnabled(viewport)) return;
 
     const pointers = [...pointersRef.current.values()];
     if (pointers.length !== 2) {
@@ -758,6 +780,8 @@ export function ToyPileGrid({
       if (!viewport) return;
 
       if (e.ctrlKey || e.metaKey) {
+        if (!isPileZoomEnabled(viewport)) return;
+
         if (!wheelLockRef.current) {
           wheelLockRef.current = resolveStageLock(viewport, e.clientX, e.clientY);
         }
@@ -875,7 +899,11 @@ export function ToyPileGrid({
       <div
         ref={viewportRef}
         className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
-        aria-label="Toy grid — drag to explore, pinch to zoom out"
+        aria-label={
+          zoomEnabled
+            ? "Toy grid — drag to explore, pinch to zoom"
+            : "Toy grid — drag to explore"
+        }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}

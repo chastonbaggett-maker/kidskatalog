@@ -29,6 +29,7 @@ export function FeedCard({
   return (
     <article
       data-feed-slot={slotIndex}
+      data-toy-id={toy.id}
       className={`feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2 ${
         crazyStrike ? "feed-card--crazy-strike" : ""
       }`}

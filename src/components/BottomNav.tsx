@@ -9,6 +9,11 @@ import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
+import {
+  isPileEntering,
+  PILE_FILTER_PORTAL_ID,
+  useToyPileModeStore,
+} from "@/lib/toy-pile-store";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
@@ -36,6 +41,17 @@ export function BottomNav() {
   const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
+  const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
+  const enterPhase = useToyPileModeStore((s) => s.enterPhase);
+  const onShopBrowse =
+    pathname === "/" ||
+    pathname.startsWith("/shop") ||
+    pathname.startsWith("/toy");
+  const pileShelfActive =
+    onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
+  const pileShelfRaised =
+    pileShelfActive &&
+    (toyPileMode || enterPhase === "chrome" || enterPhase === "zoom");
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -114,8 +130,20 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 px-2.5 pt-2 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)]">
-        <ul className="flex items-center justify-around">
+      <nav
+        className={`bottom-nav absolute inset-x-0 bottom-0 z-40 ${
+          pileShelfActive ? "bottom-nav--pile" : ""
+        }`}
+      >
+        <div
+          className={`bottom-nav__pile-shelf ${
+            pileShelfRaised ? "is-raised" : ""
+          } ${enterPhase === "chrome" || toyPileMode ? "is-visible" : ""}`}
+          aria-hidden={!pileShelfActive}
+        >
+          <div id={PILE_FILTER_PORTAL_ID} className="bottom-nav__pile-filter" />
+        </div>
+        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
           {items.map((item) => {
             const active =
               item.href === "/shop"

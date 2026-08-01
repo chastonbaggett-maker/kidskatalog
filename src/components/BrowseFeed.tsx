@@ -1,10 +1,21 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
-import { useToyPileModeStore, toyPileRootClass } from "@/lib/toy-pile-store";
+import {
+  isPileEntering,
+  PILE_FILTER_PORTAL_ID,
+  useToyPileModeStore,
+  toyPileRootClass,
+} from "@/lib/toy-pile-store";
+import {
+  findMostVisibleFeedCard,
+  prefersReducedMotion,
+} from "@/lib/pile-transition-utils";
+import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -44,20 +55,125 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
-  const toggleToyPileMode = useToyPileModeStore((s) => s.toggleToyPileMode);
+  const enterPhase = useToyPileModeStore((s) => s.enterPhase);
+  const anchor = useToyPileModeStore((s) => s.anchor);
+  const startEnterTransition = useToyPileModeStore((s) => s.startEnterTransition);
+  const advanceEnterPhase = useToyPileModeStore((s) => s.advanceEnterPhase);
+  const resetTransition = useToyPileModeStore((s) => s.resetTransition);
+  const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
+
+  const isEntering = isPileEntering(enterPhase);
+  const filterInShelf = toyPileMode || isEntering;
+
+  usePileEnterTransition();
+
+  const [portalMounted, setPortalMounted] = useState(false);
+  const [pileHeaderVisible, setPileHeaderVisible] = useState(false);
+  const [chromeExiting, setChromeExiting] = useState(false);
+  const [gridVisible, setGridVisible] = useState(false);
+  const [feedExiting, setFeedExiting] = useState(false);
+  const [filterPortalTarget, setFilterPortalTarget] = useState<HTMLElement | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setPortalMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!filterInShelf) {
+      setFilterPortalTarget(null);
+      return;
+    }
+    const syncTarget = () => {
+      const node = document.getElementById(PILE_FILTER_PORTAL_ID);
+      if (node) setFilterPortalTarget(node);
+    };
+    syncTarget();
+    const id = window.requestAnimationFrame(syncTarget);
+    return () => window.cancelAnimationFrame(id);
+  }, [filterInShelf, enterPhase, toyPileMode]);
+
+  useEffect(() => {
+    if (enterPhase === "chrome") {
+      setChromeExiting(false);
+      const id = requestAnimationFrame(() => setChromeExiting(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setChromeExiting(false);
+  }, [enterPhase]);
+
+  useEffect(() => {
+    if (enterPhase === "zoom") {
+      setGridVisible(false);
+      setFeedExiting(false);
+      const id = requestAnimationFrame(() => {
+        setGridVisible(true);
+        setFeedExiting(true);
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    setGridVisible(toyPileMode && enterPhase === "idle");
+    setFeedExiting(false);
+  }, [enterPhase, toyPileMode]);
+
+  useEffect(() => {
+    if (enterPhase === "chrome") {
+      const id = requestAnimationFrame(() => setPileHeaderVisible(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setPileHeaderVisible(toyPileMode);
+  }, [enterPhase, toyPileMode]);
+
+  const exitPileMode = useCallback(() => {
+    setToyPileMode(false);
+    resetTransition();
+  }, [setToyPileMode, resetTransition]);
+
+  const handleToyPileModeToggle = useCallback(() => {
+    if (toyPileMode) {
+      exitPileMode();
+      return;
+    }
+    if (enterPhase !== "idle") return;
+
+    setCrazyMode(false);
+
+    if (prefersReducedMotion()) {
+      skipToPileResting();
+      return;
+    }
+
+    const scroller = scrollerRef.current;
+    const captured = scroller ? findMostVisibleFeedCard(scroller) : null;
+    if (!captured) {
+      skipToPileResting();
+      return;
+    }
+
+    startEnterTransition(captured);
+  }, [
+    toyPileMode,
+    enterPhase,
+    setCrazyMode,
+    exitPileMode,
+    skipToPileResting,
+    startEnterTransition,
+  ]);
+
+  const handleEntryZoomComplete = useCallback(() => {
+    advanceEnterPhase("done");
+    resetTransition();
+  }, [advanceEnterPhase, resetTransition]);
 
   const handleCrazyModeToggle = useCallback(() => {
     if (!crazyMode) {
-      setToyPileMode(false);
+      exitPileMode();
       pingMetrics("crazy_mode");
     }
     toggleCrazyMode();
-  }, [crazyMode, toggleCrazyMode, setToyPileMode]);
+  }, [crazyMode, toggleCrazyMode, exitPileMode]);
 
-  const handleToyPileModeToggle = useCallback(() => {
-    if (!toyPileMode) setCrazyMode(false);
-    toggleToyPileMode();
-  }, [toyPileMode, toggleToyPileMode, setCrazyMode]);
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [loadedPages, setLoadedPages] = useState(1);
@@ -277,10 +393,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       onCrazyModeToggle={handleCrazyModeToggle}
       crazyFlash={crazyFlash}
       crazyBtnRef={filterCrazyBtnRef}
-      toyPileMode={toyPileMode}
+      toyPileMode={filterInShelf}
       onToyPileModeToggle={handleToyPileModeToggle}
     />
   );
+
+  const portaledFilter =
+    filterInShelf && portalMounted && filterPortalTarget
+      ? createPortal(filterRow, filterPortalTarget)
+      : null;
 
   const pileShelfHeader = (
     <ShelfHeader
@@ -290,21 +411,74 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         <ToyPileModeButton
           active
           className="shelf-crazy-btn"
-          onClick={() => setToyPileMode(false)}
+          onClick={exitPileMode}
         />
       }
     />
   );
 
+  const showFeedLayer = !toyPileMode || enterPhase === "zoom";
+  const showBrowseChrome = !toyPileMode && enterPhase !== "zoom";
+  const feedExitClass = feedExiting ? "pile-feed-layer--exit" : "";
+  const gridEnterClass = gridVisible ? "pile-grid-layer--enter" : "";
+
+  const feedCards = (
+    <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4 ${feedExitClass}`}>
+      {visibleChunks.map((chunk, chunkIndex) => (
+        <Fragment key={`feed-chunk-${chunkIndex}`}>
+          <div className={gridClassName}>
+            {chunk.map((toy, indexInChunk) => {
+              const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
+              return (
+                <FeedCard
+                  key={`feed-slot-${slotIndex}`}
+                  toy={toy}
+                  showText={showText}
+                  index={slotIndex}
+                  slotIndex={slotIndex}
+                  crazyStrike={crazyFlashSlots.includes(slotIndex)}
+                />
+              );
+            })}
+          </div>
+          {chunkIndex === visibleChunks.length - 1 && hasMore && (
+            <FeedAutoLoadMore
+              scrollerRef={scrollerRef}
+              active={hasMore}
+              onLoad={loadNextPage}
+            />
+          )}
+        </Fragment>
+      ))}
+      {displayed.length === 0 && (
+        <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
+          No toys match. Try another search.
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div
-      className={`relative shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
+      className={`relative shelf-page flex min-h-0 flex-1 flex-col ${
+        isEntering ? "browse-feed--pile-entering" : ""
+      } ${toyPileMode ? "" : "star-field"} ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
     >
+      {(isEntering || toyPileMode) && (
+        <div
+          className={`pile-header-enter pointer-events-none absolute inset-x-0 top-0 z-30 ${
+            pileHeaderVisible ? "is-visible" : ""
+          }`}
+        >
+          <div className="pointer-events-auto">{pileShelfHeader}</div>
+        </div>
+      )}
+
       <div
         className={`browse-shelf-overlay ${
           shelfMode === "shown" ? "is-visible" : ""
         } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
-        aria-hidden={!shelfActive || shelfMode === "leaving"}
+        aria-hidden={!shelfActive || shelfMode === "leaving" || isEntering}
       >
         <ShelfHeader
           trailing={
@@ -320,7 +494,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               <ToyPileModeButton
                 active
                 className="shelf-crazy-btn"
-                onClick={() => setToyPileMode(false)}
+                onClick={exitPileMode}
               />
             ) : undefined
           }
@@ -331,71 +505,57 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         ref={scrollerRef}
         className={`min-h-0 flex-1 ${
           toyPileMode
-            ? "toy-pile-shell star-field flex flex-col overflow-hidden"
-            : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}`
+            ? "toy-pile-shell relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}${
+                isEntering ? " overflow-hidden" : ""
+              }`
         }`}
       >
-        <div ref={chromeRef} className="relative z-20 shrink-0">
-          {toyPileMode ? (
-            <>
-              {pileShelfHeader}
-              <div className="browse-chrome-panel--pile">
-                <div className="toy-pile-filter-clip">{filterRow}</div>
-              </div>
-            </>
-          ) : (
-            <>
-              <FeedHeader query={query} onQueryChange={setQuery} />
-              <div
-                className={
-                  crazyMode ? "browse-controls" : "browse-chrome-panel"
-                }
-              >
-                {filterRow}
-                <ThumbCarousel />
-              </div>
-            </>
-          )}
-        </div>
+        {toyPileMode && (
+          <div
+            className={`pile-grid-layer toy-pile-grid-host star-field absolute inset-0 flex min-h-0 flex-col ${gridEnterClass}`}
+          >
+            <ToyPileGrid
+              toys={displayed}
+              showText={showText}
+              entryAnimation={
+                enterPhase === "zoom" && anchor
+                  ? {
+                      anchorToyId: anchor.toyId,
+                      fromRect: anchor.rect,
+                      onComplete: handleEntryZoomComplete,
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        )}
 
-        {toyPileMode ? (
-          <ToyPileGrid toys={displayed} showText={showText} />
-        ) : (
-        <div className="scroll-pad-bottom space-y-6 pt-4">
-          {visibleChunks.map((chunk, chunkIndex) => (
-            <Fragment key={`feed-chunk-${chunkIndex}`}>
-              <div className={gridClassName}>
-                {chunk.map((toy, indexInChunk) => {
-                  const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
-                  return (
-                    <FeedCard
-                      key={`feed-slot-${slotIndex}`}
-                      toy={toy}
-                      showText={showText}
-                      index={slotIndex}
-                      slotIndex={slotIndex}
-                      crazyStrike={crazyFlashSlots.includes(slotIndex)}
-                    />
-                  );
-                })}
+        {showFeedLayer && (
+          <>
+            {showBrowseChrome && (
+              <div
+                ref={chromeRef}
+                className={`pile-chrome-exit-host relative z-20 shrink-0 ${
+                  chromeExiting ? "is-exiting" : ""
+                }`}
+              >
+                <FeedHeader query={query} onQueryChange={setQuery} />
+                <div
+                  className={
+                    crazyMode ? "browse-controls" : "browse-chrome-panel"
+                  }
+                >
+                  {!filterInShelf && filterRow}
+                  <ThumbCarousel />
+                </div>
               </div>
-              {chunkIndex === visibleChunks.length - 1 && hasMore && (
-                <FeedAutoLoadMore
-                  scrollerRef={scrollerRef}
-                  active={hasMore}
-                  onLoad={loadNextPage}
-                />
-              )}
-            </Fragment>
-          ))}
-          {displayed.length === 0 && (
-            <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
-              No toys match. Try another search.
-            </p>
-          )}
-        </div>
+            )}
+            {feedCards}
+          </>
         )}
       </div>
+      {portaledFilter}
       {flashPortal}
     </div>
   );

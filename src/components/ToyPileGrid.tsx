@@ -13,6 +13,8 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import type { PileAnchorRect } from "@/lib/toy-pile-store";
+import { PILE_ZOOM_MS } from "@/lib/toy-pile-store";
 
 const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
@@ -27,6 +29,11 @@ const FEED_CARD_SIDE_INSET_PX = 48;
 type Props = {
   toys: Toy[];
   showText: boolean;
+  entryAnimation?: {
+    anchorToyId: string;
+    fromRect: PileAnchorRect;
+    onComplete?: () => void;
+  };
 };
 
 type Pan = { x: number; y: number };
@@ -120,6 +127,36 @@ function getCardStageCenter(
   };
 }
 
+function getCellStageCenter(
+  col: number,
+  row: number,
+  colMin: number,
+  rowMin: number,
+  viewport: HTMLElement,
+): StagePoint {
+  const { stride, cell } = getMetrics(viewport);
+  const padL = 16;
+  const padT = 24;
+  const relCol = col - colMin;
+  const relRow = row - rowMin;
+  return {
+    x: padL + relCol * stride + cell / 2,
+    y: padT + relRow * stride + cell / 2,
+  };
+}
+
+function panForScreenPoint(
+  screenX: number,
+  screenY: number,
+  stage: StagePoint,
+  zoom: number,
+): Pan {
+  return {
+    x: screenX - stage.x * zoom,
+    y: screenY - stage.y * zoom,
+  };
+}
+
 function findCardAtClientPoint(viewport: HTMLElement, clientX: number, clientY: number) {
   const target = document.elementFromPoint(clientX, clientY);
   return target?.closest(".toy-pile-card") ?? null;
@@ -165,7 +202,7 @@ function findMostVisibleCard(viewport: HTMLElement) {
   return bestEl;
 }
 
-export function ToyPileGrid({ toys, showText }: Props) {
+export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
   const [colMin, setColMin] = useState(0);
   const [rowMin, setRowMin] = useState(0);
   const [colCount, setColCount] = useState(MIN_CHUNK * 3);
@@ -190,6 +227,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const centeredRef = useRef(false);
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
+  const entryStartedRef = useRef(false);
 
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
@@ -366,9 +404,77 @@ export function ToyPileGrid({ toys, showText }: Props) {
     }, EXPAND_COOLDOWN_MS);
   }, [colCount, rowCount, pool.length, shiftPan]);
 
+  const animateZoomOut = useCallback(
+    (
+      fromZoom: number,
+      toZoom: number,
+      lock: StagePoint,
+      onComplete?: () => void,
+    ) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      cancelSnap();
+
+      const startPan = { ...panRef.current };
+      const targetPan = panToCenterStagePoint(viewport, lock, toZoom);
+      const startTime = performance.now();
+
+      const tick = (now: number) => {
+        const t = easeOutCubic(Math.min(1, (now - startTime) / PILE_ZOOM_MS));
+        const zoom = fromZoom + (toZoom - fromZoom) * t;
+        applyTransformImmediate(
+          {
+            x: startPan.x + (targetPan.x - startPan.x) * t,
+            y: startPan.y + (targetPan.y - startPan.y) * t,
+          },
+          zoom,
+        );
+
+        if (t < 1) {
+          snapAnimRef.current = requestAnimationFrame(tick);
+        } else {
+          snapAnimRef.current = null;
+          onComplete?.();
+        }
+      };
+
+      snapAnimRef.current = requestAnimationFrame(tick);
+    },
+    [applyTransformImmediate, cancelSnap],
+  );
+
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || centeredRef.current) return;
+
+    if (entryAnimation && !entryStartedRef.current) {
+      const anchorEl = viewport.querySelector(
+        `.toy-pile-card[data-toy-id="${entryAnimation.anchorToyId}"]`,
+      );
+      if (!anchorEl) return;
+
+      const col = Number(anchorEl.getAttribute("data-pile-col") ?? "0");
+      const row = Number(anchorEl.getAttribute("data-pile-row") ?? "0");
+      const stageCenter = getCellStageCenter(col, row, colMin, rowMin, viewport);
+      const { maxZoom, minZoom } = getZoomBounds(viewport);
+      const viewportRect = viewport.getBoundingClientRect();
+      const fromRect = entryAnimation.fromRect;
+      const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
+      const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
+      const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
+
+      entryStartedRef.current = true;
+      centeredRef.current = true;
+      applyTransformImmediate(initialPan, maxZoom);
+
+      requestAnimationFrame(() => {
+        animateZoomOut(maxZoom, minZoom, stageCenter, entryAnimation.onComplete);
+      });
+      return;
+    }
+
+    if (entryAnimation) return;
 
     const { stride } = getMetrics(viewport);
     const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
@@ -381,7 +487,16 @@ export function ToyPileGrid({ toys, showText }: Props) {
     };
     commitTransform(centered, initialZoom);
     centeredRef.current = true;
-  }, [colCount, rowCount, commitTransform]);
+  }, [
+    colCount,
+    rowCount,
+    colMin,
+    rowMin,
+    commitTransform,
+    entryAnimation,
+    applyTransformImmediate,
+    animateZoomOut,
+  ]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -660,7 +775,12 @@ const ToyPileCard = memo(function ToyPileCard({
         : "bg-[var(--mint)]";
 
   return (
-    <article className="toy-pile-card" data-pile-col={col} data-pile-row={row}>
+    <article
+      className="toy-pile-card"
+      data-pile-col={col}
+      data-pile-row={row}
+      data-toy-id={toy.id}
+    >
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
         <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
           <Image

@@ -130,24 +130,10 @@ function getStrikeCandidates(scroller: HTMLElement, viewport: DOMRect) {
   return candidates;
 }
 
-function shuffleWithSeed<T>(items: T[], seed: number): T[] {
-  const arr = [...items];
-  let s = seed;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function pickRandomHalf(slots: number[], seed: number): number[] {
+function pickRandomVisibleSlot(slots: number[], seed: number): number[] {
   if (slots.length === 0) return [];
-  const pickCount = Math.max(1, Math.floor(slots.length / 2));
-  return shuffleWithSeed(slots, seed).slice(0, pickCount);
+  let s = (seed * 1664525 + 1013904223) >>> 0;
+  return [slots[s % slots.length]!];
 }
 
 export function planCrazyFlash(
@@ -157,7 +143,6 @@ export function planCrazyFlash(
   seed: number,
 ): {
   slotIndices: number[];
-  visibleSlots: number[];
   flashX: number;
   flashY: number;
 } | null {
@@ -171,12 +156,11 @@ export function planCrazyFlash(
   if (candidates.length === 0) return null;
 
   const visibleSlots = candidates.map((c) => c.slotIndex);
-  const slotIndices = pickRandomHalf(visibleSlots, seed);
+  const slotIndices = pickRandomVisibleSlot(visibleSlots, seed);
   const btnRect = button.getBoundingClientRect();
 
   return {
     slotIndices,
-    visibleSlots,
     flashX: btnRect.left + btnRect.width / 2,
     flashY: btnRect.top + btnRect.height / 2,
   };

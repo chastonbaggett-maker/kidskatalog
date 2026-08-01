@@ -70,7 +70,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [portalMounted, setPortalMounted] = useState(false);
   const [pileHeaderVisible, setPileHeaderVisible] = useState(false);
   const [chromeExiting, setChromeExiting] = useState(false);
-  const [feedHandoffDone, setFeedHandoffDone] = useState(false);
+  const [gridVisible, setGridVisible] = useState(false);
+  const [feedExiting, setFeedExiting] = useState(false);
   const [filterPortalTarget, setFilterPortalTarget] = useState<HTMLElement | null>(
     null,
   );
@@ -104,9 +105,17 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   useEffect(() => {
     if (enterPhase === "zoom") {
-      setFeedHandoffDone(false);
+      setGridVisible(false);
+      setFeedExiting(false);
+      const id = requestAnimationFrame(() => {
+        setGridVisible(true);
+        setFeedExiting(true);
+      });
+      return () => cancelAnimationFrame(id);
     }
-  }, [enterPhase]);
+    setGridVisible(toyPileMode && enterPhase === "idle");
+    setFeedExiting(false);
+  }, [enterPhase, toyPileMode]);
 
   useEffect(() => {
     if (enterPhase === "chrome") {
@@ -141,7 +150,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const exitPileMode = useCallback(() => {
     blockCompactShelfRef.current = false;
     setCompactShelfBlocked(false);
-    setFeedHandoffDone(false);
     setToyPileMode(false);
     resetTransition();
   }, [setToyPileMode, resetTransition]);
@@ -178,10 +186,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     skipToPileResting,
     startEnterTransition,
   ]);
-
-  const handleGridAligned = useCallback(() => {
-    setFeedHandoffDone(true);
-  }, []);
 
   const handleEntryZoomComplete = useCallback(() => {
     advanceEnterPhase("done");
@@ -446,14 +450,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const showFeedLayer = !toyPileMode || enterPhase === "zoom";
   const showBrowseChrome = !toyPileMode && enterPhase !== "zoom";
-  const pileHandoffActive = enterPhase === "zoom";
-  const pileScrollerLayout = toyPileMode && enterPhase !== "zoom";
-  const feedHandoffClass = feedHandoffDone ? "pile-feed-layer--handoff-done" : "";
+  const feedExitClass = feedExiting ? "pile-feed-layer--exit" : "";
+  const gridEnterClass = gridVisible ? "pile-grid-layer--enter" : "";
 
   const feedCards = (
-    <div
-      className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4 ${feedHandoffClass}`}
-    >
+    <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4 ${feedExitClass}`}>
       {visibleChunks.map((chunk, chunkIndex) => (
         <Fragment key={`feed-chunk-${chunkIndex}`}>
           <div className={gridClassName}>
@@ -492,9 +493,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     <div
       className={`relative shelf-page flex min-h-0 flex-1 flex-col ${
         isEntering ? "browse-feed--pile-entering" : ""
-      } ${pileHandoffActive ? "browse-feed--pile-handoff" : ""} ${
-        toyPileMode ? "" : "star-field"
-      } ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(pileScrollerLayout)}`}
+      } ${toyPileMode ? "" : "star-field"} ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
     >
       {(isEntering || toyPileMode) && (
         <div
@@ -532,15 +531,17 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       <div
         ref={scrollerRef}
         className={`min-h-0 flex-1 ${
-          pileScrollerLayout
+          toyPileMode
             ? "toy-pile-shell relative flex min-h-0 flex-1 flex-col overflow-hidden"
             : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}${
-                isEntering ? " relative overflow-hidden" : ""
+                isEntering ? " overflow-hidden" : ""
               }`
         }`}
       >
         {toyPileMode && (
-          <div className="pile-grid-layer toy-pile-grid-host star-field absolute inset-0 z-[1] flex min-h-0 flex-col">
+          <div
+            className={`pile-grid-layer toy-pile-grid-host star-field absolute inset-0 flex min-h-0 flex-col ${gridEnterClass}`}
+          >
             <ToyPileGrid
               toys={displayed}
               showText={showText}
@@ -550,8 +551,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                       anchorToyId: anchor.toyId,
                       fromRect: anchor.rect,
                       viewCenter: anchor.viewCenter,
-                      feedScrollerRef: scrollerRef,
-                      onAligned: handleGridAligned,
                       onComplete: handleEntryZoomComplete,
                     }
                   : undefined
@@ -561,7 +560,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         )}
 
         {showFeedLayer && (
-          <div className="relative z-[2]">
+          <>
             {showBrowseChrome && (
               <div
                 ref={chromeRef}
@@ -581,7 +580,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               </div>
             )}
             {feedCards}
-          </div>
+          </>
         )}
       </div>
       {portaledFilter}

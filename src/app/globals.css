@@ -619,7 +619,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   width: var(--pile-cell);
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-cell);
-  margin-top: calc((var(--pile-cell) + var(--pile-gap)) * var(--pile-col-shift, 0));
+  transform: translateY(calc((var(--pile-cell) + var(--pile-gap)) * var(--pile-col-shift, 0)));
 }
 
 .toy-pile-card__body {

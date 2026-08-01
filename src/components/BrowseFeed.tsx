@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
+import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
   CRAZY_FLASH_INTERVAL_MS,
@@ -38,6 +39,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
+
+  const handleCrazyModeToggle = useCallback(() => {
+    if (!crazyMode) pingMetrics("crazy_mode");
+    toggleCrazyMode();
+  }, [crazyMode, toggleCrazyMode]);
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [loadedPages, setLoadedPages] = useState(1);
@@ -273,7 +279,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                 });
               }}
               crazyMode={crazyMode}
-              onCrazyModeToggle={toggleCrazyMode}
+              onCrazyModeToggle={handleCrazyModeToggle}
               crazyFlash={crazyFlash}
               crazyBtnRef={filterCrazyBtnRef}
             />

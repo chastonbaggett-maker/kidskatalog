@@ -2,17 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
-import { getToysByIds } from "@/data/toys";
 import { useKartStore } from "@/lib/kart-store";
+import type { Toy } from "@/types/toy";
 
 export default function KartPage() {
   const ids = useKartStore((s) => s.ids);
   const remove = useKartStore((s) => s.remove);
   const clear = useKartStore((s) => s.clear);
-  const toys = getToysByIds(ids);
+  const [toys, setToys] = useState<Toy[]>([]);
+
+  useEffect(() => {
+    if (ids.length === 0) {
+      setToys([]);
+      return;
+    }
+    const query = encodeURIComponent(ids.join(","));
+    void fetch(`/api/catalog?ids=${query}`)
+      .then((r) => r.json())
+      .then((data: { toys?: Toy[] }) => {
+        const byId = new Map((data.toys ?? []).map((t) => [t.id, t]));
+        setToys(ids.map((id) => byId.get(id)).filter((t): t is Toy => Boolean(t)));
+      })
+      .catch(() => setToys([]));
+  }, [ids]);
 
   return (
     <AppShell>

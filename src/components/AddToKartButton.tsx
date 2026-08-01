@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
+import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { useKartFlyBall } from "@/hooks/useKartFlyBall";
 
@@ -65,6 +66,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       const point = { x: e.clientX, y: e.clientY };
       fireFlyBall(point);
       fire(point, GOLD_CONFETTI);
+      pingMetrics("kart_add");
     }
   };
 

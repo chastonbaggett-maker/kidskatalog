@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { Toy } from "@/types/toy";
 import { downloadKartPdf } from "@/lib/pdf";
+import { pingMetrics } from "@/lib/metrics-client";
 
 type Props = {
   toys: Toy[];
@@ -45,6 +46,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
       }
 
       downloadKartPdf(toys, kidName);
+      pingMetrics("kart_email");
       setStatus("ok");
       setMessage(
         data.demo

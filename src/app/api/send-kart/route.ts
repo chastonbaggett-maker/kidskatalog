@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { getToysByIds } from "@/data/toys";
+import { getCatalogToysByIds } from "@/lib/catalog-store";
+import { incrementMetric } from "@/lib/metrics-store";
 import { buildKartPdf, pdfToBase64 } from "@/lib/pdf";
 
 export const runtime = "nodejs";
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const toys = getToysByIds(toyIds);
+  const toys = await getCatalogToysByIds(toyIds);
   if (toys.length === 0) {
     return NextResponse.json(
       { ok: false, error: "No toys found in Kart" },
@@ -95,6 +96,8 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await incrementMetric("kartEmailsSent");
 
   return NextResponse.json({ ok: true });
 }

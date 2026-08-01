@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { AdminPanel } from "@/components/admin/AdminPanel";
+import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
+
+const BRAND_TAP_TARGET = 10;
+const BRAND_TAP_WINDOW_MS = 2500;
 
 function useViewAccentClass() {
   const audience = useAccentStore((s) => s.audience);
@@ -23,11 +29,16 @@ function useViewBadgeClass() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const count = useKartStore((s) => s.ids.length);
   const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
   const [landing, setLanding] = useState(false);
+  const [pinGateOpen, setPinGateOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const brandTapCount = useRef(0);
+  const brandTapTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (kartBounceToken === 0) return;
@@ -36,56 +47,109 @@ export function BottomNav() {
     return () => window.clearTimeout(t);
   }, [kartBounceToken]);
 
+  function resetBrandTaps() {
+    brandTapCount.current = 0;
+    if (brandTapTimer.current !== null) {
+      window.clearTimeout(brandTapTimer.current);
+      brandTapTimer.current = null;
+    }
+  }
+
+  function handleBrandTap(e: React.MouseEvent) {
+    e.preventDefault();
+    brandTapCount.current += 1;
+
+    if (brandTapTimer.current === null) {
+      brandTapTimer.current = window.setTimeout(() => {
+        resetBrandTaps();
+      }, BRAND_TAP_WINDOW_MS);
+    }
+
+    if (brandTapCount.current >= BRAND_TAP_TARGET) {
+      resetBrandTaps();
+      setPinGateOpen(true);
+      return;
+    }
+
+    router.push("/");
+  }
+
   const items = [
     { href: "/shop", label: "Home", icon: HomeIcon },
     { href: "/kart", label: "Kart", icon: KartIcon, badge: count },
     { href: "/menu", label: "Menu", icon: MenuIcon },
-    { href: "/", label: "Brand", icon: BrandIcon, brand: true },
   ] as const;
 
+  const brandActive =
+    pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
+
   return (
-    <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 px-2.5 pt-2 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)]">
-      <ul className="flex items-center justify-around">
-        {items.map((item) => {
-          const active =
-            item.href === "/shop"
-              ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          const isKart = item.href === "/kart";
-          return (
-            <li key={item.href}>
-              <Link
-                ref={isKart ? registerKartNavEl : undefined}
-                href={item.href}
-                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                  active ? "opacity-100" : "opacity-80"
-                } ${isKart && landing ? "bottom-nav__kart--land" : ""}`}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-              >
-                {isKart ? (
-                  <span className="bottom-nav__kart-icon">
+    <>
+      <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 px-2.5 pt-2 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)]">
+        <ul className="flex items-center justify-around">
+          {items.map((item) => {
+            const active =
+              item.href === "/shop"
+                ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            const isKart = item.href === "/kart";
+            return (
+              <li key={item.href}>
+                <Link
+                  ref={isKart ? registerKartNavEl : undefined}
+                  href={item.href}
+                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                    active ? "opacity-100" : "opacity-80"
+                  } ${isKart && landing ? "bottom-nav__kart--land" : ""}`}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {isKart ? (
+                    <span className="bottom-nav__kart-icon">
+                      <Icon active={active} />
+                    </span>
+                  ) : (
                     <Icon active={active} />
-                  </span>
-                ) : (
-                  <Icon active={active} />
-                )}
-                {"badge" in item && item.badge > 0 && (
-                  <span
-                    className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
-                      isKart && landing ? "bottom-nav__kart-badge--pop" : ""
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                  )}
+                  {"badge" in item && item.badge > 0 && (
+                    <span
+                      className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
+                        isKart && landing ? "bottom-nav__kart-badge--pop" : ""
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              onClick={handleBrandTap}
+              className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                brandActive ? "opacity-100" : "opacity-80"
+              }`}
+              aria-label="Brand"
+            >
+              <BrandIcon />
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <AdminPinGate
+        open={pinGateOpen}
+        onClose={() => setPinGateOpen(false)}
+        onUnlocked={() => {
+          setPinGateOpen(false);
+          setAdminOpen(true);
+        }}
+      />
+      <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
+    </>
   );
 }
 

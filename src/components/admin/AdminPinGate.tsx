@@ -16,6 +16,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("unlock");
   const [pinsExist, setPinsExist] = useState(true);
+  const [ready, setReady] = useState(false);
   const [entry, setEntry] = useState("");
   const [firstPin, setFirstPin] = useState("");
   const [error, setError] = useState("");
@@ -25,10 +26,17 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setReady(false);
+      return;
+    }
+
     setEntry("");
     setFirstPin("");
     setError("");
+    setShake(false);
+    setMode("unlock");
+    setReady(false);
 
     void (async () => {
       // Always require a fresh PIN — clear any existing admin session first.
@@ -43,7 +51,11 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
       const exists = Boolean(data.pinsExist);
       setPinsExist(exists);
       setMode(exists ? "unlock" : "setup");
-    })().catch(() => setMode("unlock"));
+      setReady(true);
+    })().catch(() => {
+      setMode("unlock");
+      setReady(true);
+    });
   }, [open]);
 
   const startSetup = useCallback(() => {
@@ -109,10 +121,9 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   );
 
   useEffect(() => {
-    if (entry.length === 4 && !busy) {
-      void submitPin(entry);
-    }
-  }, [entry, busy, submitPin]);
+    if (!ready || entry.length !== 4 || busy) return;
+    void submitPin(entry);
+  }, [entry, busy, ready, submitPin]);
 
   if (!open || !mounted) return null;
 
@@ -157,7 +168,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         </div>
 
         <PinKeypad
-          disabled={busy}
+          disabled={busy || !ready}
           onDigit={(digit) => setEntry((prev) => (prev.length >= 4 ? prev : prev + digit))}
           onDelete={() => setEntry((prev) => prev.slice(0, -1))}
         />
@@ -165,7 +176,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         <button
           type="button"
           onClick={startSetup}
-          disabled={busy || (!pinsExist && mode === "setup")}
+          disabled={busy || pinsExist || (!pinsExist && mode === "setup")}
           className="admin-gate__setup mt-8 text-base font-medium transition active:opacity-70 disabled:opacity-40"
         >
           Setup Admin

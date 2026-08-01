@@ -25,7 +25,16 @@ const LOCKOUT_AFTER = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
 async function loadAdmin(): Promise<AdminData> {
-  return readStore("admin", DEFAULT_ADMIN);
+  const data = await readStore("admin", DEFAULT_ADMIN);
+  return {
+    ...DEFAULT_ADMIN,
+    ...data,
+    pins: data.pins ?? [],
+    failedAttempts: {
+      ...DEFAULT_ADMIN.failedAttempts,
+      ...data.failedAttempts,
+    },
+  };
 }
 
 async function saveAdmin(data: AdminData): Promise<void> {

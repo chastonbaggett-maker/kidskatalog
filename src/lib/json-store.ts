@@ -71,7 +71,18 @@ async function writeBlob<T>(key: StoreKey, data: T): Promise<void> {
 export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
   if (useBlob()) {
     const blob = await readBlob<T>(key);
-    if (blob) return blob;
+    if (blob) {
+      // Prefer local admin pins when blob was seeded empty but dev setup saved locally.
+      if (key === "admin") {
+        const blobPins = (blob as { pins?: unknown[] }).pins;
+        if (!blobPins?.length) {
+          const local = await readLocal<T>(key);
+          const localPins = local ? (local as { pins?: unknown[] }).pins : undefined;
+          if (localPins?.length && local) return local;
+        }
+      }
+      return blob;
+    }
   }
   const local = await readLocal<T>(key);
   if (local) return local;
@@ -81,6 +92,7 @@ export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
 export async function writeStore<T>(key: StoreKey, data: T): Promise<void> {
   if (useBlob()) {
     await writeBlob(key, data);
+    await writeLocal(key, data);
     return;
   }
   await writeLocal(key, data);

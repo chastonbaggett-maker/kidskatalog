@@ -8,5 +8,9 @@
       "pin": "2114",
       "createdAt": "2026-08-01T02:15:08.106Z"
     }
-  ]
+  ],
+  "failedAttempts": {
+    "count": 0,
+    "lockedUntil": null
+  }
 }

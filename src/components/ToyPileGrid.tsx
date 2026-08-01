@@ -28,8 +28,8 @@ const EXPAND_COOLDOWN_MS = 450;
 const SNAP_DURATION_MS = 420;
 const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
-/** Bias initial pile zoom between min (full grid) and max (single card). */
-const INITIAL_PILE_ZOOM_BLEND = 0.36;
+/** Focus card width as a fraction of the pile viewport (reference mobile layout). */
+const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.7;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
 const CRAZY_MIN_VISIBLE_PX = 8;
@@ -104,6 +104,75 @@ function intersectionArea(a: DOMRect, b: DOMRect) {
   return (right - left) * (bottom - top);
 }
 
+function getPileFocusCenter(viewport: HTMLElement) {
+  const viewportRect = viewport.getBoundingClientRect();
+  let top = 0;
+  let bottom = viewport.clientHeight;
+
+  const header = document.querySelector<HTMLElement>(".pile-header-enter");
+  if (header) {
+    const headerRect = header.getBoundingClientRect();
+    if (headerRect.height > 0) {
+      top = Math.max(top, headerRect.bottom - viewportRect.top);
+    }
+  }
+
+  const nav = document.querySelector<HTMLElement>(".bottom-nav.bottom-nav--pile");
+  if (nav) {
+    const navRect = nav.getBoundingClientRect();
+    if (navRect.height > 0) {
+      bottom = Math.min(bottom, navRect.top - viewportRect.top);
+    }
+  } else {
+    const feedRoot = viewport.closest(".browse-feed--toy-pile");
+    if (feedRoot) {
+      const stackHeight = parseFloat(
+        getComputedStyle(feedRoot).getPropertyValue("--pile-nav-stack-height"),
+      );
+      if (stackHeight > 0) {
+        bottom = viewport.clientHeight - stackHeight;
+      }
+    }
+  }
+
+  if (bottom <= top) {
+    return {
+      x: viewport.clientWidth / 2,
+      y: viewport.clientHeight / 2,
+    };
+  }
+
+  return {
+    x: viewport.clientWidth / 2,
+    y: top + (bottom - top) / 2,
+  };
+}
+
+function getCardStageCenterFromLayout(viewport: HTMLElement, card: Element): StagePoint | null {
+  const stage = viewport.querySelector<HTMLElement>(".toy-pile-stage");
+  if (!stage) return null;
+
+  const cardRect = card.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+
+  return {
+    x: cardRect.left + cardRect.width / 2 - stageRect.left,
+    y: cardRect.top + cardRect.height / 2 - stageRect.top,
+  };
+}
+
+function panToFocusPoint(
+  viewport: HTMLElement,
+  stage: StagePoint,
+  zoom: number,
+  focus = getPileFocusCenter(viewport),
+): Pan {
+  return {
+    x: focus.x - stage.x * zoom,
+    y: focus.y - stage.y * zoom,
+  };
+}
+
 function panToCenterStagePoint(
   viewport: HTMLElement,
   stage: StagePoint,
@@ -153,24 +222,23 @@ function getInitialPileView(
   colMin: number,
   rowMin: number,
 ) {
-  const { minZoom, maxZoom } = getZoomBounds(viewport);
+  const { cell } = getMetrics(viewport);
   const zoom = clampZoom(
     viewport,
-    minZoom + (maxZoom - minZoom) * INITIAL_PILE_ZOOM_BLEND,
+    (viewport.clientWidth * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell,
   );
   const centerCol = colMin + Math.floor(colCount / 2);
   const centerRow = rowMin + Math.floor(rowCount / 2);
-  const lock = getCellStageCenter(
-    viewport,
-    centerCol,
-    centerRow,
-    colMin,
-    rowMin,
+  const centerCard = viewport.querySelector(
+    `[data-pile-col="${centerCol}"][data-pile-row="${centerRow}"]`,
   );
+  const lock =
+    (centerCard && getCardStageCenterFromLayout(viewport, centerCard)) ||
+    getCellStageCenter(viewport, centerCol, centerRow, colMin, rowMin);
 
   return {
     zoom,
-    pan: panToCenterStagePoint(viewport, lock, zoom),
+    pan: panToFocusPoint(viewport, lock, zoom),
   };
 }
 

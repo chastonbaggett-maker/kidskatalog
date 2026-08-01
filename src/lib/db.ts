@@ -1,3 +1,4 @@
+import "server-only";
 import { createClient, type Client } from "@libsql/client";
 
 let client: Client | null = null;

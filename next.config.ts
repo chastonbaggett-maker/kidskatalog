@@ -22,6 +22,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   // next-pwa uses webpack; keep an empty turbopack config for Next 16
   turbopack: {},
+  serverExternalPackages: ["@libsql/client", "libsql"],
   images: {
     remotePatterns: [
       {

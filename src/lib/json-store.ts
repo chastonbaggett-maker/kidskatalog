@@ -1,8 +1,16 @@
+import "server-only";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { ensureSchema, getDb, tursoConfigured } from "@/lib/db";
 
 const DATA_DIR = path.join(process.cwd(), "data");
+
+function tursoConfigured(): boolean {
+  return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+}
+
+async function getDbModule() {
+  return import("@/lib/db");
+}
 
 export type StoreKey = "catalog" | "admin" | "metrics";
 
@@ -31,6 +39,7 @@ async function writeLocal<T>(key: StoreKey, data: T): Promise<void> {
 }
 
 async function readTurso<T>(key: StoreKey): Promise<T | null> {
+  const { ensureSchema, getDb } = await getDbModule();
   await ensureSchema();
   const db = getDb();
   const result = await db.execute({
@@ -43,6 +52,7 @@ async function readTurso<T>(key: StoreKey): Promise<T | null> {
 }
 
 async function writeTurso<T>(key: StoreKey, data: T): Promise<void> {
+  const { ensureSchema, getDb } = await getDbModule();
   await ensureSchema();
   const db = getDb();
   const body = JSON.stringify(data);

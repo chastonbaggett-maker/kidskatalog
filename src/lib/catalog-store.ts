@@ -1,3 +1,4 @@
+import "server-only";
 import type { Toy } from "@/types/toy";
 import { toys as seedToys } from "@/data/toys";
 import { readStore, writeStore } from "@/lib/json-store";

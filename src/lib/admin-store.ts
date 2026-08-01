@@ -1,3 +1,4 @@
+import "server-only";
 import { readStore, writeStore } from "@/lib/json-store";
 import { hashPin, verifyPin } from "@/lib/admin-auth";
 

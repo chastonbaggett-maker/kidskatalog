@@ -53,7 +53,9 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
               >
                 {toy.name}
               </h2>
-              <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>
+              <p
+                className={`mt-2 text-lg ${crazyMode ? "text-white" : "text-[var(--ink-soft)]"}`}
+              >
               <p className="mt-2 text-sm font-semibold text-[var(--purple-deep)]">
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>

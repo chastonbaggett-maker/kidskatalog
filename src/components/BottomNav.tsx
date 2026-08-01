@@ -9,11 +9,7 @@ import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
-import {
-  isPileEntering,
-  PILE_FILTER_PORTAL_ID,
-  useToyPileModeStore,
-} from "@/lib/toy-pile-store";
+import { isPileEntering, useToyPileModeStore } from "@/lib/toy-pile-store";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
@@ -47,10 +43,8 @@ export function BottomNav() {
     pathname === "/" ||
     pathname.startsWith("/shop") ||
     pathname.startsWith("/toy");
-  const pileShelfActive =
+  const pileNavActive =
     onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
-  const pileShelfRaised =
-    pileShelfActive && (toyPileMode || enterPhase === "chrome");
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -131,25 +125,10 @@ export function BottomNav() {
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileShelfActive ? " bottom-nav--pile" : ""
-        }${pileShelfRaised ? " is-shelf-raised" : ""}`}
+          pileNavActive ? " bottom-nav--pile" : ""
+        }`}
       >
-        <div
-          className={`bottom-nav__pile-shelf ${
-            pileShelfRaised ? "is-raised" : ""
-          } ${enterPhase === "chrome" || toyPileMode ? "is-visible" : ""}`}
-          aria-hidden={!pileShelfActive}
-        >
-          <div id={PILE_FILTER_PORTAL_ID} className="bottom-nav__pile-filter" />
-        </div>
-        {pileShelfActive && (
-          <div className="bottom-nav__icons-base" aria-hidden="true" />
-        )}
-        <ul
-          className={`bottom-nav__icons flex items-center justify-around px-2.5 pt-2${
-            pileShelfRaised ? " is-raised" : ""
-          }`}
-        >
+        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
           {items.map((item) => {
             const active =
               item.href === "/shop"

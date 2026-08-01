@@ -1,13 +1,11 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
   isPileEntering,
-  PILE_FILTER_PORTAL_ID,
   useToyPileModeStore,
   toyPileRootClass,
 } from "@/lib/toy-pile-store";
@@ -60,34 +58,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
 
   const isEntering = isPileEntering(enterPhase);
-  const filterInShelf = toyPileMode || isEntering;
+  const showFilterChrome = !toyPileMode && !isEntering;
 
   usePileEnterTransition();
 
-  const [portalMounted, setPortalMounted] = useState(false);
   const [pileHeaderVisible, setPileHeaderVisible] = useState(false);
   const [chromeExiting, setChromeExiting] = useState(false);
-  const [filterPortalTarget, setFilterPortalTarget] = useState<HTMLElement | null>(
-    null,
-  );
-
-  useEffect(() => {
-    setPortalMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!filterInShelf) {
-      setFilterPortalTarget(null);
-      return;
-    }
-    const syncTarget = () => {
-      const node = document.getElementById(PILE_FILTER_PORTAL_ID);
-      if (node) setFilterPortalTarget(node);
-    };
-    syncTarget();
-    const id = window.requestAnimationFrame(syncTarget);
-    return () => window.cancelAnimationFrame(id);
-  }, [filterInShelf, enterPhase, toyPileMode]);
 
   useEffect(() => {
     if (enterPhase === "chrome") {
@@ -393,15 +369,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       onCrazyModeToggle={handleCrazyModeToggle}
       crazyFlash={crazyFlash}
       crazyBtnRef={filterCrazyBtnRef}
-      toyPileMode={filterInShelf}
+      toyPileMode={false}
       onToyPileModeToggle={handleToyPileModeToggle}
     />
   );
-
-  const portaledFilter =
-    filterInShelf && portalMounted && filterPortalTarget
-      ? createPortal(filterRow, filterPortalTarget)
-      : null;
 
   const pileShelfHeader = (
     <ShelfHeader
@@ -526,7 +497,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                     crazyMode ? "browse-controls" : "browse-chrome-panel"
                   }
                 >
-                  {!filterInShelf && filterRow}
+                  {showFilterChrome && filterRow}
                   <ThumbCarousel />
                 </div>
               </div>
@@ -535,7 +506,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           </>
         )}
       </div>
-      {portaledFilter}
       {flashPortal}
     </div>
   );

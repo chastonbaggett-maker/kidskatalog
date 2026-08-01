@@ -44,5 +44,3 @@ export function toyPileRootClass(active: boolean) {
 export function isPileEntering(phase: PileEnterPhase) {
   return phase === "chrome";
 }
-
-export const PILE_FILTER_PORTAL_ID = "pile-filter-portal";

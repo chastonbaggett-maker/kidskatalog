@@ -1048,6 +1048,13 @@ html[data-accent="both"] .kart-go-btn:hover {
   -webkit-backdrop-filter: none;
   border-top-color: transparent;
   box-shadow: none;
+  border-radius: 0;
+}
+
+.bottom-nav--pile .bottom-nav__pile-shelf,
+.bottom-nav--pile .bottom-nav__icons-base,
+.bottom-nav--pile .bottom-nav__icons {
+  border-radius: 0;
 }
 
 .bottom-nav__pile-shelf {

@@ -13,7 +13,7 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import { getPileEntryTargetZoom } from "@/lib/pile-transition-utils";
+import { getCenteredPileGridOrigin, getPileEntryTargetZoom } from "@/lib/pile-transition-utils";
 import type { PileAnchorRect } from "@/lib/toy-pile-store";
 import { PILE_ZOOM_MS } from "@/lib/toy-pile-store";
 
@@ -207,11 +207,24 @@ function findMostVisibleCard(viewport: HTMLElement) {
   return bestEl;
 }
 
+function getInitialGridOrigin(
+  entryAnimation: Props["entryAnimation"],
+  toys: Toy[],
+  gridSize: number,
+) {
+  if (!entryAnimation || toys.length === 0) {
+    return { colMin: 0, rowMin: 0, anchorCol: 0, anchorRow: 0 };
+  }
+  return getCenteredPileGridOrigin(entryAnimation.anchorToyId, toys, gridSize);
+}
+
 export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
-  const [colMin, setColMin] = useState(0);
-  const [rowMin, setRowMin] = useState(0);
-  const [colCount, setColCount] = useState(MIN_CHUNK * 3);
-  const [rowCount, setRowCount] = useState(MIN_CHUNK * 3);
+  const initialGridSize = MIN_CHUNK * 3;
+  const initialGridRef = useRef(getInitialGridOrigin(entryAnimation, toys, initialGridSize));
+  const [colMin, setColMin] = useState(initialGridRef.current.colMin);
+  const [rowMin, setRowMin] = useState(initialGridRef.current.rowMin);
+  const [colCount, setColCount] = useState(initialGridSize);
+  const [rowCount, setRowCount] = useState(initialGridSize);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
 
@@ -458,14 +471,8 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
     if (!viewport || centeredRef.current) return;
 
     if (entryAnimation && !entryStartedRef.current) {
-      const anchorEl = viewport.querySelector(
-        `.toy-pile-card[data-toy-id="${entryAnimation.anchorToyId}"]`,
-      );
-      if (!anchorEl) return;
-
-      const col = Number(anchorEl.getAttribute("data-pile-col") ?? "0");
-      const row = Number(anchorEl.getAttribute("data-pile-row") ?? "0");
-      const stageCenter = getCellStageCenter(col, row, colMin, rowMin, viewport);
+      const { anchorCol, anchorRow } = initialGridRef.current;
+      const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
       const metrics = getMetrics(viewport);
       const bounds = getZoomBounds(viewport);
       const { maxZoom } = bounds;

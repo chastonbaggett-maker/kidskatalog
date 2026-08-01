@@ -61,6 +61,65 @@ export function findMostVisibleFeedCard(
   };
 }
 
+/** Hash-based toy slot for infinite pile coordinates (matches ToyPileGrid). */
+export function pileToyIndexForCell(col: number, row: number, poolLength: number) {
+  const hash = ((col * 73856093) ^ (row * 19349663)) >>> 0;
+  return hash % poolLength;
+}
+
+/** Nearest pile cell to `prefer` that shows `toyIndex`. */
+export function findPileCellForToyIndex(
+  toyIndex: number,
+  poolLength: number,
+  preferCol = 0,
+  preferRow = 0,
+): { col: number; row: number } {
+  if (pileToyIndexForCell(preferCol, preferRow, poolLength) === toyIndex) {
+    return { col: preferCol, row: preferRow };
+  }
+
+  for (let radius = 1; radius < 512; radius++) {
+    for (let dc = -radius; dc <= radius; dc++) {
+      for (let dr = -radius; dr <= radius; dr++) {
+        if (Math.abs(dc) !== radius && Math.abs(dr) !== radius) continue;
+        const col = preferCol + dc;
+        const row = preferRow + dr;
+        if (pileToyIndexForCell(col, row, poolLength) === toyIndex) {
+          return { col, row };
+        }
+      }
+    }
+  }
+
+  return { col: preferCol, row: preferRow };
+}
+
+/** Offset grid origin so the anchor toy sits at the center of the initial chunk. */
+export function getCenteredPileGridOrigin(
+  anchorToyId: string,
+  pool: { id: string }[],
+  gridSize: number,
+): { colMin: number; rowMin: number; anchorCol: number; anchorRow: number } {
+  const centerOffset = Math.floor(gridSize / 2);
+  const toyIndex = pool.findIndex((t) => t.id === anchorToyId);
+  if (toyIndex < 0) {
+    return {
+      colMin: -centerOffset,
+      rowMin: -centerOffset,
+      anchorCol: 0,
+      anchorRow: 0,
+    };
+  }
+
+  const { col, row } = findPileCellForToyIndex(toyIndex, pool.length);
+  return {
+    colMin: col - centerOffset,
+    rowMin: row - centerOffset,
+    anchorCol: col,
+    anchorRow: row,
+  };
+}
+
 export function prefersReducedMotion() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

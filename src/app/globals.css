@@ -518,24 +518,29 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 2;
 }
 
-/* Pile mode bar — clipped white shell; radius on scroll row too for Safari */
+/* Pile mode bar — single clipped shell (no stacked child bg/shadow/radius) */
 .browse-chrome-panel--pile {
   position: relative;
   z-index: 1;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 0 0 2rem 2rem;
+  margin-top: -0.75rem;
+  padding-top: 0.75rem;
+  border-radius: 2rem;
   background-color: #fff;
-  transform: translateZ(0);
-  box-shadow:
-    0 10px 28px -10px rgba(255, 120, 80, 0.22),
-    0 4px 10px -6px rgba(60, 70, 120, 0.1);
+  box-shadow: 0 10px 28px -10px rgba(255, 120, 80, 0.22);
+}
+
+.browse-chrome-panel--pile .toy-pile-filter-clip {
+  overflow: hidden;
+  border-radius: inherit;
 }
 
 .browse-chrome-panel--pile .filter-row-scroll {
-  background-color: #fff;
-  border-bottom: none;
-  border-radius: 0 0 2rem 2rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .browse-feed--crazy {

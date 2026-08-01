@@ -339,8 +339,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           {toyPileMode ? (
             <>
               {pileShelfHeader}
-              <div className="browse-chrome-panel browse-chrome-panel--pile">
-                {filterRow}
+              <div className="browse-chrome-panel--pile">
+                <div className="toy-pile-filter-clip">{filterRow}</div>
               </div>
             </>
           ) : (

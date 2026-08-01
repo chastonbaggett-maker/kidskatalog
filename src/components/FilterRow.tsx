@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useConfettiBurst } from "@/hooks/useConfettiBurst";
 import { CrazyModeButton } from "@/components/CrazyModeButton";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
+
+function scrollCrazyButtonIntoFilterRow(
+  container: HTMLElement,
+  button: HTMLElement,
+  padding = 8,
+) {
+  const containerRect = container.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+
+  if (buttonRect.right > containerRect.right - padding) {
+    container.scrollLeft += buttonRect.right - containerRect.right + padding;
+  } else if (buttonRect.left < containerRect.left + padding) {
+    container.scrollLeft -= containerRect.left + padding - buttonRect.left;
+  }
+}
 
 const BOYS_CONFETTI = ["#4e89ff", "#3a6fe0", "#7aa8ff", "#2f6ae8", "#ffffff", "#5b93ff"];
 const GIRLS_CONFETTI = ["#f5a9c5", "#ef8fb3", "#ffc2d6", "#e078a8", "#ffffff", "#f0a0c0"];
@@ -52,8 +67,17 @@ export function FilterRow({
   const [mounted, setMounted] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
+
+  useLayoutEffect(() => {
+    if (!crazyMode) return;
+    const container = scrollRef.current;
+    const button = crazyBtnRef.current;
+    if (!container || !button) return;
+    scrollCrazyButtonIntoFilterRow(container, button);
+  }, [crazyMode, crazyBtnRef]);
 
   useEffect(() => {
     setMounted(true);
@@ -151,7 +175,10 @@ export function FilterRow({
       : null;
 
   return (
-    <div className="filter-row-scroll relative overflow-x-auto overscroll-x-contain">
+    <div
+      ref={scrollRef}
+      className="filter-row-scroll relative overflow-x-auto overscroll-x-contain"
+    >
       <div className="flex w-max min-w-full items-center gap-2.5 px-4 py-3.5">
         <button
           type="button"

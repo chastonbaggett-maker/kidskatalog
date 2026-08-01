@@ -462,7 +462,10 @@ html[data-accent="both"] .kart-go-btn:hover {
   border-radius: 0;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1rem;
-  box-shadow: 0 10px 28px -12px rgba(255, 107, 107, 0.42);
+}
+
+.toy-pile-chrome .shelf-header--pile.shelf-header--rounded {
+  box-shadow: none;
 }
 
 .browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded::before {
@@ -522,11 +525,29 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 2;
 }
 
-.browse-chrome-panel--pile {
+/* Pile chrome — one clipped shell so rounded bottom corners don't bleed */
+.toy-pile-chrome {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  overflow: hidden;
   border-radius: 0 0 2rem 2rem;
   box-shadow:
     0 10px 28px -10px rgba(255, 120, 80, 0.22),
     0 4px 10px -6px rgba(60, 70, 120, 0.1);
+}
+
+.toy-pile-mode-bar {
+  background-color: #fff;
+}
+
+.toy-pile-chrome .shelf-header--pile.shelf-header--rounded {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.toy-pile-chrome .toy-pile-mode-bar .filter-row-scroll {
+  border-bottom: none;
 }
 
 .browse-feed--crazy {

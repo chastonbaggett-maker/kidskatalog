@@ -18,6 +18,7 @@ import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
+import { usePileNavSettled } from "@/hooks/usePileNavSettled";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -72,7 +73,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const pileHeaderActive =
     toyPileMode && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
-  const pileShelfRaised = pileHeaderActive && pileHeaderVisible;
+  const pileShelfMounted = pileHeaderActive;
+  const pileNavSettled = usePileNavSettled(pileHeaderVisible);
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
   const [feedExiting, setFeedExiting] = useState(false);
@@ -490,7 +492,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             <ToyPileGrid
               toys={displayed}
               showText={showText}
-              crazyMode={crazyMode}
+              crazyMode={crazyMode && pileNavSettled}
               crazyBtnRef={filterCrazyBtnRef}
               onCrazyFlash={setCrazyFlash}
             />
@@ -522,7 +524,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         )}
       </div>
       {flashPortal}
-      {pileShelfRaised &&
+      {pileShelfMounted &&
         pileModeRowTarget &&
         createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>

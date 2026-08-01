@@ -762,7 +762,6 @@ export function ToyPileGrid({
     };
 
     crazyFlashCountRef.current = 0;
-    flash();
     const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
     return () => {
       window.clearInterval(id);

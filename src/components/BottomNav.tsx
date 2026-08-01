@@ -50,7 +50,7 @@ export function BottomNav() {
   const pileNavActive =
     onShopBrowse && toyPileMode && enterPhase !== "chrome" && revealGateOpen;
   const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
-  const pileShelfRaised = pileNavActive && pileNavEnterVisible;
+  const pileShelfMounted = pileNavActive;
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -127,14 +127,14 @@ export function BottomNav() {
   const brandActive =
     pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
 
-  const showFrostFill = !pileNavActive || pileShelfRaised;
+  const showFrostFill = !pileNavActive || pileShelfMounted;
 
   return (
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
           pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
-        }${pileShelfRaised ? " is-shelf-raised" : ""}${
+        }${pileShelfMounted ? " is-shelf-raised" : ""}${
           pileNavEnterVisible ? " is-enter-visible" : ""
         }`}
       >
@@ -193,7 +193,7 @@ export function BottomNav() {
             </button>
           </li>
         </ul>
-        {pileShelfRaised && (
+        {pileShelfMounted && (
           <div
             ref={registerPileNavModeRow}
             className="bottom-nav__mode-row"

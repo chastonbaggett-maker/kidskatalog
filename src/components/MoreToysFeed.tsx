@@ -10,6 +10,12 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import {
+  CRAZY_CARD_FLASH_MS,
+  CRAZY_FLASH_INTERVAL_MS,
+  preloadImages,
+  urlsForSwappedSlots,
+} from "@/lib/crazy-mode-timing";
+import {
   planCrazyFlash,
   swapCardsAt,
   useCrazyLightning,
@@ -17,8 +23,6 @@ import {
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
-const CRAZY_FLASH_MS = 2200;
-const CRAZY_SWAP_MS = 280;
 const emptyBtnRef = { current: null } as RefObject<HTMLButtonElement | null>;
 
 export function MoreToysFeed({
@@ -49,12 +53,21 @@ export function MoreToysFeed({
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const crazyFlashCountRef = useRef(0);
+  const displayIdsRef = useRef<string[]>([]);
   const localSectionRef = useRef<HTMLElement>(null);
   const mergedSectionRef = sectionRef ?? localSectionRef;
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   const seedKey = seed.map((t) => t.id).join(",");
+  const toyImageById = useMemo(
+    () => new Map(seed.map((t) => [t.id, t.image])),
+    [seed],
+  );
+
+  useEffect(() => {
+    displayIdsRef.current = displayIds;
+  }, [displayIds]);
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || seed.length === 0) return;
@@ -109,7 +122,6 @@ export function MoreToysFeed({
     if (!scroller) return;
 
     let flashTimer: number | undefined;
-    let swapTimer: number | undefined;
 
     const flash = () => {
       crazyFlashCountRef.current += 1;
@@ -124,27 +136,27 @@ export function MoreToysFeed({
       if (!plan) return;
 
       const { slotIndices, flashX, flashY } = plan;
+      const nextOrder = swapCardsAt(displayIdsRef.current, slotIndices, nextKey);
+
+      preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
 
       flashScreen(flashX, flashY);
       onCrazyFlash?.(true);
+      setDisplayIds(nextOrder);
+      setCrazyFlashSlots(slotIndices);
 
-      swapTimer = window.setTimeout(() => {
-        setDisplayIds((prev) => swapCardsAt(prev, slotIndices, nextKey));
-        setCrazyFlashSlots(slotIndices);
-        flashTimer = window.setTimeout(() => {
-          onCrazyFlash?.(false);
-          setCrazyFlashSlots([]);
-        }, 380);
-      }, CRAZY_SWAP_MS);
+      flashTimer = window.setTimeout(() => {
+        onCrazyFlash?.(false);
+        setCrazyFlashSlots([]);
+      }, CRAZY_CARD_FLASH_MS);
     };
 
     crazyFlashCountRef.current = 0;
     flash();
-    const id = window.setInterval(flash, CRAZY_FLASH_MS);
+    const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
     return () => {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
-      if (swapTimer) window.clearTimeout(swapTimer);
       onCrazyFlash?.(false);
       setCrazyFlashSlots([]);
     };
@@ -155,6 +167,7 @@ export function MoreToysFeed({
     crazyBtnRef,
     flashScreen,
     onCrazyFlash,
+    toyImageById,
   ]);
 
   const displayed = useMemo(() => {

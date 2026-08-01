@@ -5,6 +5,12 @@ import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
+  CRAZY_CARD_FLASH_MS,
+  CRAZY_FLASH_INTERVAL_MS,
+  preloadImages,
+  urlsForSwappedSlots,
+} from "@/lib/crazy-mode-timing";
+import {
   planCrazyFlash,
   swapCardsAt,
   useCrazyLightning,
@@ -19,9 +25,6 @@ import { CrazyModeButton } from "./CrazyModeButton";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
-/** Synced with `.filter-crazy-btn--active` lightning flash cycle. */
-const CRAZY_FLASH_MS = 2200;
-const CRAZY_SWAP_MS = 280;
 const FEED_PAGE_SIZE = 20;
 
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
@@ -46,6 +49,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
   const shelfWantedRef = useRef(false);
   const crazyFlashCountRef = useRef(0);
+  const displayIdsRef = useRef<string[]>([]);
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
@@ -103,6 +107,14 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [toys, query, audience, age]);
 
   const filteredIds = useMemo(() => filtered.map((t) => t.id), [filtered]);
+  const toyImageById = useMemo(
+    () => new Map(filtered.map((t) => [t.id, t.image])),
+    [filtered],
+  );
+
+  useEffect(() => {
+    displayIdsRef.current = displayIds;
+  }, [displayIds]);
 
   useEffect(() => {
     setDisplayIds(filteredIds);
@@ -115,7 +127,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     if (!crazyMode) return;
 
     let flashTimer: number | undefined;
-    let swapTimer: number | undefined;
 
     const flash = () => {
       const scroller = scrollerRef.current;
@@ -133,37 +144,35 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       if (!plan) return;
 
       const { slotIndices, flashX, flashY } = plan;
+      const prevOrder =
+        displayIdsRef.current.length === filteredIds.length &&
+        displayIdsRef.current.every((id) => filteredIds.includes(id))
+          ? displayIdsRef.current
+          : filteredIds;
+      const nextOrder = swapCardsAt(prevOrder, slotIndices, nextKey);
+
+      preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
 
       flashScreen(flashX, flashY);
       setCrazyFlash(true);
+      setShuffleKey(nextKey);
+      setDisplayIds(nextOrder);
+      setCrazyFlashSlots(slotIndices);
 
-      swapTimer = window.setTimeout(() => {
-        setShuffleKey(nextKey);
-        setDisplayIds((prev) => {
-          const order =
-            prev.length === filteredIds.length &&
-            prev.every((id) => filteredIds.includes(id))
-              ? prev
-              : filteredIds;
-          return swapCardsAt(order, slotIndices, nextKey);
-        });
-        setCrazyFlashSlots(slotIndices);
-        flashTimer = window.setTimeout(() => {
-          setCrazyFlash(false);
-          setCrazyFlashSlots([]);
-        }, 380);
-      }, CRAZY_SWAP_MS);
+      flashTimer = window.setTimeout(() => {
+        setCrazyFlash(false);
+        setCrazyFlashSlots([]);
+      }, CRAZY_CARD_FLASH_MS);
     };
 
     crazyFlashCountRef.current = 0;
     flash();
-    const id = window.setInterval(flash, CRAZY_FLASH_MS);
+    const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
     return () => {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
-      if (swapTimer) window.clearTimeout(swapTimer);
     };
-  }, [crazyMode, filteredIds, flashScreen]);
+  }, [crazyMode, filteredIds, flashScreen, toyImageById]);
 
   useEffect(() => {
     if (!crazyMode) {

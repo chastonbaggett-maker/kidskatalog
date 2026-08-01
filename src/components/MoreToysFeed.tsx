@@ -166,7 +166,7 @@ export function MoreToysFeed({
 
   const gridClassName = [
     "toy-feed-grid",
-    crazyMode && crazyEffectsActive ? "toy-feed-grid--crazy" : "",
+    crazyMode ? "toy-feed-grid--crazy" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -180,7 +180,7 @@ export function MoreToysFeed({
         className="more-toys-feed mt-10 border-t border-black/5 pt-8"
         aria-label="More toys"
       >
-        <h3 className="mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:text-3xl">
+        <h3 className="mb-5 px-4 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:px-6 lg:px-8 sm:text-3xl">
           More toys
         </h3>
         <div className={gridClassName}>

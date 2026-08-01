@@ -91,10 +91,10 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 px-4 py-4 sm:px-6 lg:px-8 ${crazyModeScrollClass(crazyMode)}`}
+        className={`page-scroll star-field min-h-0 flex-1 py-4 ${crazyModeScrollClass(crazyMode)}`}
       >
         <div
-          className={`product-detail mx-auto w-full max-w-6xl${crazyMode ? " product-detail--crazy" : ""}`}
+          className={`product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8${crazyMode ? " product-detail--crazy" : ""}`}
         >
           <div ref={productAreaRef} className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />
@@ -152,7 +152,9 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
               </p>
             </div>
           </div>
+        </div>
 
+        <div className="scroll-pad-bottom pt-4">
           <MoreToysFeed
             seed={more}
             showText

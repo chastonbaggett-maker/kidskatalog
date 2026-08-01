@@ -3,29 +3,35 @@
 import { useEffect, useRef } from "react";
 import {
   PILE_CHROME_MS,
+  isPileChromePhase,
+  isPileRevealPhase,
   useToyPileModeStore,
 } from "@/lib/toy-pile-store";
 
-/** After chrome animation, switch to pile grid with drag explore. */
+/** Chrome exit → load pile grid → reveal pile header + nav shelf. */
 export function usePileEnterTransition() {
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
-  const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
+  const advanceToRevealPhase = useToyPileModeStore((s) => s.advanceToRevealPhase);
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
-  const chromeTimerRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (enterPhase !== "chrome") return;
+    if (!isPileChromePhase(enterPhase) && !isPileRevealPhase(enterPhase)) return;
 
-    chromeTimerRef.current = window.setTimeout(() => {
-      setToyPileMode(true);
+    const ms = PILE_CHROME_MS;
+    timerRef.current = window.setTimeout(() => {
+      if (isPileChromePhase(useToyPileModeStore.getState().enterPhase)) {
+        advanceToRevealPhase();
+        return;
+      }
       resetTransition();
-    }, PILE_CHROME_MS);
+    }, ms);
 
     return () => {
-      if (chromeTimerRef.current !== null) {
-        window.clearTimeout(chromeTimerRef.current);
-        chromeTimerRef.current = null;
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [enterPhase, resetTransition, setToyPileMode]);
+  }, [enterPhase, advanceToRevealPhase, resetTransition]);
 }

@@ -539,6 +539,17 @@ html[data-accent="both"] .kart-go-btn:hover {
   pointer-events: none;
 }
 
+.pile-feed-layer {
+  transition:
+    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+  will-change: opacity;
+}
+
+.pile-feed-layer.is-exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .pile-header-enter {
   background: transparent;
   transform: translate3d(0, -100%, 0);
@@ -565,6 +576,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .pile-chrome-exit-host,
+  .pile-feed-layer,
   .pile-header-enter,
   .bottom-nav--pile.bottom-nav-enter {
     transition: none !important;
@@ -572,6 +584,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
   .pile-chrome-exit-host.is-exiting {
     transform: none;
+    opacity: 0;
+  }
+
+  .pile-feed-layer.is-exiting {
     opacity: 0;
   }
 

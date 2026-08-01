@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "@/lib/pile-transition-utils";
-import { useToyPileModeStore } from "@/lib/toy-pile-store";
+import {
+  isPileRevealPhase,
+  useToyPileModeStore,
+} from "@/lib/toy-pile-store";
 
 function scheduleReveal(setVisible: (value: boolean) => void, playedRef: { current: boolean }) {
   setVisible(false);
@@ -45,7 +48,7 @@ export function usePileEnterReveal(active: boolean) {
       return;
     }
 
-    if (enterPhase === "chrome") {
+    if (isPileRevealPhase(enterPhase)) {
       return scheduleReveal(setVisible, playedRef);
     }
 

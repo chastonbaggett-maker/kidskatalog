@@ -9,8 +9,9 @@ import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
-import { isPileEntering, useToyPileModeStore } from "@/lib/toy-pile-store";
+import { useToyPileModeStore } from "@/lib/toy-pile-store";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
+import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
@@ -44,10 +45,10 @@ export function BottomNav() {
     pathname === "/" ||
     pathname.startsWith("/shop") ||
     pathname.startsWith("/toy");
+  const revealGateOpen = usePileRevealGate();
   const pileNavActive =
-    onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
-  const pileShelfRaised =
-    pileNavActive && (toyPileMode || enterPhase === "chrome");
+    onShopBrowse && toyPileMode && enterPhase !== "chrome" && revealGateOpen;
+  const pileShelfRaised = pileNavActive;
   const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);

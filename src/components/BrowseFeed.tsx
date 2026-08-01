@@ -5,7 +5,8 @@ import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
-  isPileEntering,
+  isPileChromePhase,
+  isPileTransitioning,
   useToyPileModeStore,
   toyPileRootClass,
 } from "@/lib/toy-pile-store";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/pile-transition-utils";
 import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
+import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -58,23 +60,32 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
 
-  const isEntering = isPileEntering(enterPhase);
-  const showFilterChrome = !toyPileMode && !isEntering;
+  const isChromePhase = isPileChromePhase(enterPhase);
+  const isTransitioning = isPileTransitioning(enterPhase);
+  const showFilterChrome = !toyPileMode && !isChromePhase;
 
   usePileEnterTransition();
 
-  const pileHeaderActive = isEntering || toyPileMode;
+  const revealGateOpen = usePileRevealGate();
+  const pileHeaderActive =
+    toyPileMode && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const [chromeExiting, setChromeExiting] = useState(false);
+  const [feedExiting, setFeedExiting] = useState(false);
 
   useEffect(() => {
-    if (enterPhase === "chrome") {
+    if (isChromePhase) {
       setChromeExiting(false);
-      const id = requestAnimationFrame(() => setChromeExiting(true));
+      setFeedExiting(false);
+      const id = requestAnimationFrame(() => {
+        setChromeExiting(true);
+        setFeedExiting(true);
+      });
       return () => cancelAnimationFrame(id);
     }
     setChromeExiting(false);
-  }, [enterPhase]);
+    setFeedExiting(false);
+  }, [isChromePhase]);
 
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
@@ -142,15 +153,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
-    if (isEntering || toyPileMode) {
+    if (isChromePhase || toyPileMode) {
       blockCompactShelf();
     }
-  }, [isEntering, toyPileMode, blockCompactShelf]);
+  }, [isChromePhase, toyPileMode, blockCompactShelf]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
     const chrome = chromeRef.current;
-    if (!scroller || !chrome || isEntering || toyPileMode) return;
+    if (!scroller || !chrome || isChromePhase || toyPileMode) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -177,7 +188,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
     observer.observe(chrome);
     return () => observer.disconnect();
-  }, [isEntering, toyPileMode]);
+  }, [isChromePhase, toyPileMode]);
 
   useEffect(() => {
     if (shelfMode !== "leaving" || blockCompactShelfRef.current) return;
@@ -193,7 +204,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     !compactShelfBlocked &&
     enterPhase === "idle" &&
     !toyPileMode &&
-    !isEntering;
+    !isChromePhase;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -386,7 +397,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const showBrowseChrome = !toyPileMode;
 
   const feedCards = (
-    <div className="pile-feed-layer scroll-pad-bottom space-y-6 pt-4">
+    <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4${
+      feedExiting ? " is-exiting" : ""
+    }`}>
       {visibleChunks.map((chunk, chunkIndex) => (
         <Fragment key={`feed-chunk-${chunkIndex}`}>
           <div className={gridClassName}>
@@ -424,10 +437,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   return (
     <div
       className={`relative shelf-page flex min-h-0 flex-1 flex-col ${
-        isEntering ? "browse-feed--pile-entering" : ""
+        isTransitioning ? "browse-feed--pile-entering" : ""
       } ${toyPileMode ? "" : "star-field"} ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
     >
-      {(isEntering || toyPileMode) && (
+      {pileHeaderActive && (
         <div
           className={`pile-header-enter pointer-events-none absolute inset-x-0 top-0 z-50 ${
             pileHeaderVisible ? "is-visible" : ""
@@ -466,7 +479,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           toyPileMode
             ? "toy-pile-shell relative flex min-h-0 flex-1 flex-col overflow-hidden"
             : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}${
-                isEntering ? " overflow-hidden" : ""
+                isChromePhase ? " overflow-hidden" : ""
               }`
         }`}
       >

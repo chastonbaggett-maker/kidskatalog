@@ -10,9 +10,16 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import {
+  CRAZY_CARD_FLASH_MS,
+  CRAZY_FLASH_INTERVAL_MS,
+  preloadImages,
+} from "@/lib/crazy-mode-timing";
+import { useCrazyLightning } from "@/hooks/useCrazyLightning";
 
 const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
@@ -23,10 +30,14 @@ const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
+const CRAZY_MIN_VISIBLE_PX = 8;
 
 type Props = {
   toys: Toy[];
   showText: boolean;
+  crazyMode?: boolean;
+  crazyBtnRef?: RefObject<HTMLButtonElement | null>;
+  onCrazyFlash?: (active: boolean) => void;
 };
 
 type Pan = { x: number; y: number };
@@ -164,7 +175,76 @@ function findMostVisibleCard(viewport: HTMLElement) {
   return bestEl;
 }
 
-export function ToyPileGrid({ toys, showText }: Props) {
+function pileCellKey(col: number, row: number) {
+  return `${col},${row}`;
+}
+
+function isPileCardVisible(card: Element, viewportRect: DOMRect) {
+  const surface =
+    card.querySelector<HTMLElement>(".toy-pile-card__body") ?? card;
+  const rect = surface.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+
+  const left = Math.max(rect.left, viewportRect.left);
+  const top = Math.max(rect.top, viewportRect.top);
+  const right = Math.min(rect.right, viewportRect.right);
+  const bottom = Math.min(rect.bottom, viewportRect.bottom);
+  const width = Math.max(0, right - left);
+  const height = Math.max(0, bottom - top);
+
+  return width >= CRAZY_MIN_VISIBLE_PX && height >= CRAZY_MIN_VISIBLE_PX;
+}
+
+function getVisiblePileCells(viewport: HTMLElement) {
+  const viewportRect = viewport.getBoundingClientRect();
+  const cells: { key: string; toyId: string }[] = [];
+
+  viewport.querySelectorAll(".toy-pile-card").forEach((card) => {
+    if (!isPileCardVisible(card, viewportRect)) return;
+
+    const col = card.getAttribute("data-pile-col");
+    const row = card.getAttribute("data-pile-row");
+    const toyId = card.getAttribute("data-toy-id");
+    if (col == null || row == null || toyId == null) return;
+
+    cells.push({ key: pileCellKey(Number(col), Number(row)), toyId });
+  });
+
+  return cells;
+}
+
+function pickRandomToyId(poolIds: string[], currentId: string, seed: number) {
+  if (poolIds.length === 0) return currentId;
+
+  let candidates = poolIds.filter((id) => id !== currentId);
+  if (candidates.length === 0) candidates = poolIds;
+
+  const s = (seed * 1664525 + 1013904223) >>> 0;
+  return candidates[s % candidates.length]!;
+}
+
+function toyForCell(
+  col: number,
+  row: number,
+  pool: Toy[],
+  overrides: Map<string, string>,
+) {
+  const key = pileCellKey(col, row);
+  const overrideId = overrides.get(key);
+  if (overrideId) {
+    const found = pool.find((toy) => toy.id === overrideId);
+    if (found) return found;
+  }
+  return pool[toyIndexForCell(col, row, pool.length)]!;
+}
+
+export function ToyPileGrid({
+  toys,
+  showText,
+  crazyMode = false,
+  crazyBtnRef,
+  onCrazyFlash,
+}: Props) {
   const [colMin, setColMin] = useState(0);
   const [rowMin, setRowMin] = useState(0);
   const [colCount, setColCount] = useState(MIN_CHUNK * 3);
@@ -190,7 +270,21 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
 
+  const [crazyOverrides, setCrazyOverrides] = useState<Map<string, string>>(
+    () => new Map(),
+  );
+  const [crazyStrikeKeys, setCrazyStrikeKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const crazyFlashCountRef = useRef(0);
+  const { flash: flashScreen, portal: crazyFlashPortal } = useCrazyLightning();
+
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
+  const poolIds = useMemo(() => pool.map((toy) => toy.id), [pool]);
+  const poolImageById = useMemo(
+    () => new Map(pool.map((toy) => [toy.id, toy.image])),
+    [pool],
+  );
   const slots = colCount * rowCount;
 
   const cancelSnap = useCallback(() => {
@@ -589,6 +683,61 @@ export function ToyPileGrid({ toys, showText }: Props) {
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
 
+  useEffect(() => {
+    if (!crazyMode) {
+      setCrazyOverrides(new Map());
+      setCrazyStrikeKeys(new Set());
+      onCrazyFlash?.(false);
+      return;
+    }
+
+    let flashTimer: number | undefined;
+
+    const flash = () => {
+      const viewport = viewportRef.current;
+      if (!viewport || poolIds.length === 0) return;
+
+      const button = crazyBtnRef?.current;
+      if (!button) return;
+
+      const visibleCells = getVisiblePileCells(viewport);
+      if (visibleCells.length === 0) return;
+
+      crazyFlashCountRef.current += 1;
+      const seed = crazyFlashCountRef.current;
+      let s = (seed * 1664525 + 1013904223) >>> 0;
+      const pick = visibleCells[s % visibleCells.length]!;
+      const nextToyId = pickRandomToyId(poolIds, pick.toyId, seed);
+
+      preloadImages([poolImageById.get(nextToyId)].filter(Boolean) as string[]);
+
+      const btnRect = button.getBoundingClientRect();
+      flashScreen(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
+
+      setCrazyOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(pick.key, nextToyId);
+        return next;
+      });
+      setCrazyStrikeKeys(new Set([pick.key]));
+      onCrazyFlash?.(true);
+
+      flashTimer = window.setTimeout(() => {
+        setCrazyStrikeKeys(new Set());
+        onCrazyFlash?.(false);
+      }, CRAZY_CARD_FLASH_MS);
+    };
+
+    crazyFlashCountRef.current = 0;
+    flash();
+    const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
+    return () => {
+      window.clearInterval(id);
+      if (flashTimer) window.clearTimeout(flashTimer);
+      onCrazyFlash?.(false);
+    };
+  }, [crazyMode, poolIds, poolImageById, crazyBtnRef, flashScreen, onCrazyFlash]);
+
   if (pool.length === 0) {
     return (
       <div className="toy-pile-empty scroll-pad-bottom flex flex-1 items-center justify-center px-6">
@@ -600,45 +749,50 @@ export function ToyPileGrid({ toys, showText }: Props) {
   }
 
   return (
-    <div
-      ref={viewportRef}
-      className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
-      aria-label="Toy grid — drag to explore, pinch to zoom toward a card"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endPointer}
-      onPointerCancel={endPointer}
-    >
+    <>
       <div
-        className="toy-pile-stage"
-        style={{
-          transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-        }}
+        ref={viewportRef}
+        className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
+        aria-label="Toy grid — drag to explore, pinch to zoom toward a card"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
       >
         <div
-          className="toy-pile-grid"
-          style={{ "--pile-cols": colCount } as React.CSSProperties}
+          className="toy-pile-stage"
+          style={{
+            transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+          }}
         >
-          {Array.from({ length: slots }).map((_, index) => {
-            const col = colMin + (index % colCount);
-            const row = rowMin + Math.floor(index / colCount);
-            const relCol = index % colCount;
-            const colShift = relCol % 2 === 1 ? 0.5 : 0;
-            const toy = pool[toyIndexForCell(col, row, pool.length)]!;
-            return (
-              <ToyPileCard
-                key={`pile-${col}-${row}`}
-                col={col}
-                row={row}
-                toy={toy}
-                showText={showText}
-                colShift={colShift}
-              />
-            );
-          })}
+          <div
+            className="toy-pile-grid"
+            style={{ "--pile-cols": colCount } as React.CSSProperties}
+          >
+            {Array.from({ length: slots }).map((_, index) => {
+              const col = colMin + (index % colCount);
+              const row = rowMin + Math.floor(index / colCount);
+              const relCol = index % colCount;
+              const colShift = relCol % 2 === 1 ? 0.5 : 0;
+              const cellKey = pileCellKey(col, row);
+              const toy = toyForCell(col, row, pool, crazyOverrides);
+              return (
+                <ToyPileCard
+                  key={`pile-${col}-${row}`}
+                  col={col}
+                  row={row}
+                  toy={toy}
+                  showText={showText}
+                  colShift={colShift}
+                  crazyStrike={crazyMode && crazyStrikeKeys.has(cellKey)}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+      {crazyFlashPortal}
+    </>
   );
 }
 
@@ -648,12 +802,14 @@ const ToyPileCard = memo(function ToyPileCard({
   toy,
   showText,
   colShift = 0,
+  crazyStrike = false,
 }: {
   col: number;
   row: number;
   toy: Toy;
   showText: boolean;
   colShift?: number;
+  crazyStrike?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -665,13 +821,13 @@ const ToyPileCard = memo(function ToyPileCard({
 
   return (
     <article
-      className="toy-pile-card"
+      className={`toy-pile-card${crazyStrike ? " toy-pile-card--crazy-strike" : ""}`}
       data-pile-col={col}
       data-pile-row={row}
       data-toy-id={toy.id}
       style={{ "--pile-col-shift": colShift } as React.CSSProperties}
     >
-      <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97] will-change-transform">
+      <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
         <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
           <Image
             src={toy.image}

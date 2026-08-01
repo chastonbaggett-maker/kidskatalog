@@ -127,7 +127,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
     if (enterPhase !== "idle") return;
 
-    setCrazyMode(false);
     blockCompactShelf();
 
     if (prefersReducedMotion()) {
@@ -148,11 +147,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const handleCrazyModeToggle = useCallback(() => {
     if (!crazyMode) {
-      exitPileMode();
       pingMetrics("crazy_mode");
     }
     toggleCrazyMode();
-  }, [crazyMode, toggleCrazyMode, exitPileMode]);
+  }, [crazyMode, toggleCrazyMode]);
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
@@ -253,7 +251,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [filteredIdsKey, filteredIds, crazyMode, toyPileMode]);
 
   useEffect(() => {
-    if (!crazyMode) return;
+    if (!crazyMode || toyPileMode) return;
 
     let flashTimer: number | undefined;
 
@@ -308,7 +306,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
     };
-  }, [crazyMode, filteredIdsKey, filteredIds, flashScreen]);
+  }, [crazyMode, toyPileMode, filteredIdsKey, filteredIds, flashScreen]);
 
   useEffect(() => {
     if (!crazyMode) {
@@ -489,7 +487,13 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       >
         {toyPileMode && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
-            <ToyPileGrid toys={displayed} showText={showText} />
+            <ToyPileGrid
+              toys={displayed}
+              showText={showText}
+              crazyMode={crazyMode}
+              crazyBtnRef={filterCrazyBtnRef}
+              onCrazyFlash={setCrazyFlash}
+            />
           </div>
         )}
 

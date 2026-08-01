@@ -466,6 +466,19 @@ html[data-accent="both"] .kart-go-btn:hover {
   --pile-header-grad: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 48%, #ffc107 100%);
 }
 
+.browse-feed--toy-pile.browse-feed--crazy {
+  --star-field-bg: #18181f;
+  --star-field-image: var(--crazy-star-field);
+  background-color: var(--star-field-bg);
+  background-image: var(--star-field-image);
+  background-size: var(--star-field-size);
+  background-repeat: repeat;
+}
+
+.browse-feed--toy-pile.browse-feed--crazy .toy-pile-grid-host {
+  background: transparent;
+}
+
 .browse-feed--toy-pile .shelf-header--pile {
   position: relative;
   z-index: 1;
@@ -667,6 +680,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-card__eye {
   z-index: 2;
+}
+
+.toy-pile-card--crazy-strike .toy-pile-card__body {
+  animation: crazy-card-flash 0.28s ease-out forwards;
 }
 
 .browse-feed--crazy {

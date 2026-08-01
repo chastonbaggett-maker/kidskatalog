@@ -528,7 +528,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 }
 
-.crazy-lightning-layer {
+.crazy-flash-layer {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -536,76 +536,32 @@ html[data-accent="both"] .kart-go-btn:hover {
   overflow: hidden;
 }
 
-.crazy-lightning-flash {
+.crazy-screen-flash {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(
-    circle at var(--flash-x, 50%) var(--flash-y, 20%),
-    rgba(255, 248, 210, 0.34) 0%,
-    rgba(255, 229, 102, 0.12) 28%,
-    transparent 62%
-  );
-  animation: crazy-lightning-flash 0.95s ease-out forwards;
+  background:
+    radial-gradient(
+      circle at var(--flash-x, 50%) var(--flash-y, 20%),
+      rgba(255, 252, 220, 0.72) 0%,
+      rgba(255, 235, 130, 0.42) 22%,
+      rgba(255, 229, 102, 0.22) 48%,
+      rgba(255, 214, 0, 0.08) 72%,
+      transparent 100%
+    ),
+    rgba(255, 229, 102, 0.14);
+  animation: crazy-screen-flash 0.85s ease-out forwards;
 }
 
-.crazy-lightning-bolt {
-  position: fixed;
-  pointer-events: none;
-  transform-origin: top center;
-  animation: crazy-lightning-bolt-fade 1.05s ease-out forwards;
-}
-
-.crazy-lightning-bolt svg {
-  display: block;
-  overflow: visible;
-  animation: crazy-lightning-bolt-draw 0.32s cubic-bezier(0.15, 0.85, 0.25, 1) forwards;
-}
-
-.crazy-lightning-bolt__halo {
-  opacity: 0.72;
-}
-
-.crazy-lightning-bolt__core {
-  animation: crazy-lightning-bolt-flicker 0.42s ease-in-out 0.28s 2 alternate;
-}
-
-@keyframes crazy-lightning-flash {
+@keyframes crazy-screen-flash {
   0% {
     opacity: 0;
   }
-  8% {
+  10% {
     opacity: 1;
   }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes crazy-lightning-bolt-draw {
-  0% {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0.2;
-  }
-  100% {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
-}
-
-@keyframes crazy-lightning-bolt-flicker {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.55;
-  }
-}
-
-@keyframes crazy-lightning-bolt-fade {
-  0%,
-  28% {
-    opacity: 1;
+  55% {
+    opacity: 0.82;
   }
   100% {
     opacity: 0;
@@ -1503,15 +1459,8 @@ html[data-standalone="true"] .app-shell {
     animation: none;
   }
 
-  .crazy-lightning-bolt,
-  .crazy-lightning-bolt svg,
-  .crazy-lightning-bolt__core,
-  .crazy-lightning-flash {
+  .crazy-screen-flash {
     animation: none !important;
-  }
-
-  .crazy-lightning-bolt,
-  .crazy-lightning-flash {
     opacity: 0;
   }
 

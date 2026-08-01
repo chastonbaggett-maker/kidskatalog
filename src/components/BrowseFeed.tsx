@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import {
-  planLightningStrike,
+  planCrazyFlash,
   swapCardAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
@@ -44,7 +44,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfWantedRef = useRef(false);
   const crazyFlashCountRef = useRef(0);
 
-  const { strikeAt, portal: lightningPortal } = useCrazyLightning();
+  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -122,7 +122,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
 
-      const plan = planLightningStrike(
+      const plan = planCrazyFlash(
         scroller,
         filterCrazyBtnRef,
         shelfCrazyBtnRef,
@@ -130,9 +130,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       );
       if (!plan) return;
 
-      const { target, slotIndex } = plan;
+      const { slotIndex, flashX, flashY } = plan;
 
-      strikeAt(target);
+      flashScreen(flashX, flashY);
       setCrazyFlash(true);
 
       swapTimer = window.setTimeout(() => {
@@ -161,7 +161,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       if (flashTimer) window.clearTimeout(flashTimer);
       if (swapTimer) window.clearTimeout(swapTimer);
     };
-  }, [crazyMode, filteredIds, strikeAt]);
+  }, [crazyMode, filteredIds, flashScreen]);
 
   useEffect(() => {
     if (!crazyMode) {
@@ -305,7 +305,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           )}
         </div>
       </div>
-      {lightningPortal}
+      {flashPortal}
     </div>
   );
 }

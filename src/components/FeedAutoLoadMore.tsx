@@ -34,9 +34,6 @@ export function FeedAutoLoadMore({
         if (!entry?.isIntersecting || loadingRef.current) return;
         loadingRef.current = true;
         onLoad();
-        window.requestAnimationFrame(() => {
-          loadingRef.current = false;
-        });
       },
       {
         root,

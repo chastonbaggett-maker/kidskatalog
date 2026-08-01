@@ -8,22 +8,14 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { CrazyLightningBolt } from "@/components/CrazyLightningBolt";
 
-export type LightningTarget = {
-  originX: number;
-  originY: number;
-  endX: number;
-  endY: number;
-};
-
-type LightningStrike = LightningTarget & {
+type ScreenFlash = {
   id: string;
+  flashX: number;
+  flashY: number;
 };
 
-type Point = { x: number; y: number };
-
-const BOLT_MS = 1050;
+const FLASH_MS = 850;
 
 /** Minimum share of the card surface visible inside the strike viewport. */
 const MIN_VISIBLE_RATIO = 0.4;
@@ -90,58 +82,7 @@ function visibleSurfaceRatio(surfaceRect: DOMRect, viewport: DOMRect) {
   return (overlap.width * overlap.height) / surfaceArea;
 }
 
-function clampPointToViewport(point: Point, viewport: DOMRect): Point {
-  return {
-    x: Math.max(viewport.left, Math.min(point.x, viewport.right)),
-    y: Math.max(viewport.top, Math.min(point.y, viewport.bottom)),
-  };
-}
-
-function closestPointOnRect(rect: DOMRect, point: Point): Point {
-  return {
-    x: Math.max(rect.left, Math.min(point.x, rect.right)),
-    y: Math.max(rect.top, Math.min(point.y, rect.bottom)),
-  };
-}
-
-function closestCornerInViewport(
-  rect: DOMRect,
-  origin: Point,
-  viewport: DOMRect,
-): Point | null {
-  const corners: Point[] = [
-    { x: rect.left, y: rect.top },
-    { x: rect.right, y: rect.top },
-    { x: rect.left, y: rect.bottom },
-    { x: rect.right, y: rect.bottom },
-  ];
-
-  const inViewport = corners.filter(
-    (corner) =>
-      corner.x >= viewport.left &&
-      corner.x <= viewport.right &&
-      corner.y >= viewport.top &&
-      corner.y <= viewport.bottom,
-  );
-
-  const candidates = inViewport.length > 0 ? inViewport : [closestPointOnRect(rect, origin)];
-
-  let closest = candidates[0]!;
-  let minDist = Infinity;
-
-  for (const corner of candidates) {
-    const clamped = clampPointToViewport(corner, viewport);
-    const dist = (clamped.x - origin.x) ** 2 + (clamped.y - origin.y) ** 2;
-    if (dist < minDist) {
-      minDist = dist;
-      closest = clamped;
-    }
-  }
-
-  return closest;
-}
-
-export function pickVisibleCrazyButton(
+function pickVisibleCrazyButton(
   filterRef: RefObject<HTMLButtonElement | null>,
   shelfRef: RefObject<HTMLButtonElement | null>,
   viewport: DOMRect,
@@ -155,17 +96,8 @@ export function pickVisibleCrazyButton(
   return null;
 }
 
-export type StrikeCandidate = {
-  slotIndex: number;
-  card: HTMLElement;
-  surfaceRect: DOMRect;
-};
-
-export function getStrikeCandidates(
-  scroller: HTMLElement,
-  viewport: DOMRect,
-): StrikeCandidate[] {
-  const candidates: StrikeCandidate[] = [];
+function getStrikeCandidates(scroller: HTMLElement, viewport: DOMRect) {
+  const candidates: { slotIndex: number }[] = [];
 
   scroller.querySelectorAll<HTMLElement>("[data-feed-slot]").forEach((card) => {
     const slot = Number(card.dataset.feedSlot);
@@ -175,45 +107,18 @@ export function getStrikeCandidates(
     if (surfaceRect.width <= 0 || surfaceRect.height <= 0) return;
     if (visibleSurfaceRatio(surfaceRect, viewport) < MIN_VISIBLE_RATIO) return;
 
-    candidates.push({ slotIndex: slot, card, surfaceRect });
+    candidates.push({ slotIndex: slot });
   });
 
   return candidates;
 }
 
-export function getLightningStrikeTarget(
-  button: HTMLElement,
-  surfaceRect: DOMRect,
-  viewport: DOMRect,
-): LightningTarget | null {
-  const btnRect = button.getBoundingClientRect();
-  const originX = btnRect.left + btnRect.width / 2;
-  const originY = btnRect.top + btnRect.height * 0.58;
-
-  if (
-    originX < viewport.left ||
-    originX > viewport.right ||
-    originY < viewport.top ||
-    originY > viewport.bottom
-  ) {
-    return null;
-  }
-
-  const end = closestCornerInViewport(surfaceRect, { x: originX, y: originY }, viewport);
-  if (!end) return null;
-
-  const length = Math.hypot(end.x - originX, end.y - originY);
-  if (length < 32) return null;
-
-  return { originX, originY, endX: end.x, endY: end.y };
-}
-
-export function planLightningStrike(
+export function planCrazyFlash(
   scroller: HTMLElement,
   filterRef: RefObject<HTMLButtonElement | null>,
   shelfRef: RefObject<HTMLButtonElement | null>,
   seed: number,
-): { target: LightningTarget; slotIndex: number } | null {
+): { slotIndex: number; flashX: number; flashY: number } | null {
   const viewport = getStrikeViewport(scroller);
   if (viewport.width <= 0 || viewport.height <= 0) return null;
 
@@ -225,22 +130,13 @@ export function planLightningStrike(
 
   const index = ((seed * 7919 + 104729) >>> 0) % candidates.length;
   const picked = candidates[index]!;
-  const target = getLightningStrikeTarget(
-    button,
-    picked.surfaceRect,
-    viewport,
-  );
+  const btnRect = button.getBoundingClientRect();
 
-  if (!target) return null;
-
-  return { target, slotIndex: picked.slotIndex };
-}
-
-export function pickVisibleSlot(slots: number[], seed: number) {
-  if (slots.length === 0) return null;
-  const sorted = [...slots].sort((a, b) => a - b);
-  const index = ((seed * 7919 + 104729) >>> 0) % sorted.length;
-  return sorted[index]!;
+  return {
+    slotIndex: picked.slotIndex,
+    flashX: btnRect.left + btnRect.width / 2,
+    flashY: btnRect.top + btnRect.height / 2,
+  };
 }
 
 export function swapCardAt(ids: string[], slotIndex: number, seed: number) {
@@ -256,38 +152,46 @@ export function swapCardAt(ids: string[], slotIndex: number, seed: number) {
 export function useCrazyLightning() {
   const uid = useId();
   const [mounted, setMounted] = useState(false);
-  const [strikes, setStrikes] = useState<LightningStrike[]>([]);
+  const [flashes, setFlashes] = useState<ScreenFlash[]>([]);
 
   useEffect(() => setMounted(true), []);
 
-  const strikeAt = useCallback(
-    (target: LightningTarget) => {
+  const flash = useCallback(
+    (flashX: number, flashY: number) => {
       const stamp = Date.now();
-      const bolt: LightningStrike = {
+      const entry: ScreenFlash = {
         id: `${uid}-${stamp}`,
-        ...target,
+        flashX,
+        flashY,
       };
 
-      setStrikes((prev) => [...prev, bolt]);
+      setFlashes((prev) => [...prev, entry]);
 
       window.setTimeout(() => {
-        setStrikes((prev) => prev.filter((b) => b.id !== bolt.id));
-      }, BOLT_MS + 120);
+        setFlashes((prev) => prev.filter((f) => f.id !== entry.id));
+      }, FLASH_MS + 80);
     },
     [uid],
   );
 
   const portal =
-    mounted && strikes.length > 0
+    mounted && flashes.length > 0
       ? createPortal(
-          <div className="crazy-lightning-layer" aria-hidden>
-            {strikes.map((bolt) => (
-              <CrazyLightningBolt key={bolt.id} {...bolt} />
+          <div className="crazy-flash-layer" aria-hidden>
+            {flashes.map((entry) => (
+              <div
+                key={entry.id}
+                className="crazy-screen-flash"
+                style={{
+                  ["--flash-x" as string]: `${entry.flashX}px`,
+                  ["--flash-y" as string]: `${entry.flashY}px`,
+                }}
+              />
             ))}
           </div>,
           document.body,
         )
       : null;
 
-  return { strikeAt, portal };
+  return { flash, portal };
 }

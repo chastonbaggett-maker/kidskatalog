@@ -28,6 +28,8 @@ const EXPAND_COOLDOWN_MS = 450;
 const SNAP_DURATION_MS = 420;
 const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
+/** Bias initial pile zoom between min (full grid) and max (single card). */
+const INITIAL_PILE_ZOOM_BLEND = 0.36;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
 const CRAZY_MIN_VISIBLE_PX = 8;
@@ -111,6 +113,64 @@ function panToCenterStagePoint(
   return {
     x: clientWidth / 2 - stage.x * zoom,
     y: clientHeight / 2 - stage.y * zoom,
+  };
+}
+
+function getGridPadding(grid: HTMLElement) {
+  const style = getComputedStyle(grid);
+  return {
+    top: parseFloat(style.paddingTop) || 0,
+    left: parseFloat(style.paddingLeft) || 0,
+  };
+}
+
+function getCellStageCenter(
+  viewport: HTMLElement,
+  col: number,
+  row: number,
+  colMin: number,
+  rowMin: number,
+) {
+  const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
+  const { cell, stride } = getMetrics(viewport);
+  const padding = grid
+    ? getGridPadding(grid)
+    : { top: 0, left: 0 };
+  const relCol = col - colMin;
+  const relRow = row - rowMin;
+  const colShift = relCol % 2 === 1 ? 0.5 : 0;
+
+  return {
+    x: padding.left + relCol * stride + cell / 2,
+    y: padding.top + relRow * stride + cell / 2 + colShift * stride,
+  };
+}
+
+function getInitialPileView(
+  viewport: HTMLElement,
+  colCount: number,
+  rowCount: number,
+  colMin: number,
+  rowMin: number,
+) {
+  const { minZoom, maxZoom } = getZoomBounds(viewport);
+  const zoom = clampZoom(
+    viewport,
+    minZoom + (maxZoom - minZoom) * INITIAL_PILE_ZOOM_BLEND,
+  );
+  const centerCol = colMin + Math.floor(colCount / 2);
+  const centerRow = rowMin + Math.floor(rowCount / 2);
+  const lock = getCellStageCenter(
+    viewport,
+    centerCol,
+    centerRow,
+    colMin,
+    rowMin,
+  );
+
+  return {
+    zoom,
+    pan: panToCenterStagePoint(viewport, lock, zoom),
   };
 }
 
@@ -483,18 +543,16 @@ export function ToyPileGrid({
     const viewport = viewportRef.current;
     if (!viewport || centeredRef.current) return;
 
-    const { stride } = getMetrics(viewport);
-    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
-    const gridW = colCount * stride - gap;
-    const gridH = rowCount * stride - gap;
-    const initialZoom = clampZoom(viewport, 1);
-    const centered = {
-      x: (viewport.clientWidth - gridW * initialZoom) / 2,
-      y: (viewport.clientHeight - gridH * initialZoom) / 2,
-    };
-    commitTransform(centered, initialZoom);
+    const { pan, zoom } = getInitialPileView(
+      viewport,
+      colCount,
+      rowCount,
+      colMin,
+      rowMin,
+    );
+    commitTransform(pan, zoom);
     centeredRef.current = true;
-  }, [colCount, rowCount, commitTransform]);
+  }, [colCount, rowCount, colMin, rowMin, commitTransform]);
 
   useEffect(() => {
     const viewport = viewportRef.current;

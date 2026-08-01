@@ -986,13 +986,18 @@ const ToyPileCard = memo(function ToyPileCard({
       style={{ "--pile-col-shift": colShift } as React.CSSProperties}
     >
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
-        <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
+        <Link
+          href={`/toy/${toy.id}`}
+          className={`relative block aspect-[4/5] overflow-hidden bg-white ${
+            showText ? "rounded-t-[1.35rem]" : "rounded-[1.35rem]"
+          }`}
+        >
           <Image
             src={toy.image}
             alt={toy.imageAlt}
             fill
             sizes="(max-width: 640px) 92vw, 360px"
-            className="object-contain p-2.5 sm:p-3"
+            className="object-cover"
           />
         </Link>
         {showText ? (

@@ -1,12 +1,11 @@
 import "server-only";
-import { createClient, type Client } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client/web";
+import { tursoAuthToken, tursoConfigured, tursoDatabaseUrl } from "@/lib/store-env";
 
 let client: Client | null = null;
 let schemaReady: Promise<void> | null = null;
 
-export function tursoConfigured(): boolean {
-  return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
-}
+export { tursoConfigured } from "@/lib/store-env";
 
 export function getDb(): Client {
   if (!tursoConfigured()) {
@@ -14,8 +13,8 @@ export function getDb(): Client {
   }
   if (!client) {
     client = createClient({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN!,
+      url: tursoDatabaseUrl()!,
+      authToken: tursoAuthToken()!,
     });
   }
   return client;

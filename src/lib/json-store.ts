@@ -1,12 +1,13 @@
 import "server-only";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import {
+  blobConfigured,
+  missingProductionStoreMessage,
+  tursoConfigured,
+} from "@/lib/store-env";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-
-function tursoConfigured(): boolean {
-  return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
-}
 
 async function getDbModule() {
   return import("@/lib/db");
@@ -19,6 +20,16 @@ const FILE_NAMES: Record<StoreKey, string> = {
   admin: "admin.json",
   metrics: "metrics.json",
 };
+
+const BLOB_PATHS: Record<StoreKey, string> = {
+  catalog: "kidskatalog/catalog.json",
+  admin: "kidskatalog/admin.json",
+  metrics: "kidskatalog/metrics.json",
+};
+
+function isDevLocalStore(): boolean {
+  return process.env.NODE_ENV === "development";
+}
 
 async function readLocal<T>(key: StoreKey): Promise<T | null> {
   try {
@@ -38,11 +49,6 @@ async function writeLocal<T>(key: StoreKey, data: T): Promise<void> {
   );
 }
 
-function isDevLocalStore(): boolean {
-  return process.env.NODE_ENV === "development";
-}
-
-/** Best-effort dev mirror — never fail production writes when Turso succeeded. */
 async function mirrorLocalOptional<T>(key: StoreKey, data: T): Promise<void> {
   if (!isDevLocalStore()) return;
   try {
@@ -88,6 +94,44 @@ async function seedTursoFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
   return seed;
 }
 
+async function readBlob<T>(key: StoreKey): Promise<T | null> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) return null;
+
+  const { head } = await import("@vercel/blob");
+  try {
+    const info = await head(BLOB_PATHS[key], { token });
+    if (!info?.url) return null;
+    const res = await fetch(info.url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function writeBlob<T>(key: StoreKey, data: T): Promise<void> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
+
+  const { put } = await import("@vercel/blob");
+  await put(BLOB_PATHS[key], JSON.stringify(data, null, 2), {
+    access: "public",
+    token,
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+  });
+}
+
+async function seedBlobFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
+  const local = await readLocal<T>(key);
+  const seed = local ?? fallback;
+  await writeBlob(key, seed);
+  await mirrorLocalOptional(key, seed);
+  return seed;
+}
+
 export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
   if (tursoConfigured()) {
     try {
@@ -96,10 +140,30 @@ export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
       return seedTursoFromLocal(key, fallback);
     } catch (error) {
       console.error(`Turso read failed for ${key}`, error);
-      const local = await readLocal<T>(key);
-      if (local) return local;
-      return fallback;
     }
+  }
+
+  if (blobConfigured()) {
+    const blob = await readBlob<T>(key);
+    if (blob) {
+      if (key === "admin") {
+        const blobPins = (blob as { pins?: unknown[] }).pins;
+        if (!blobPins?.length) {
+          const local = await readLocal<T>(key);
+          const localPins = local ? (local as { pins?: unknown[] }).pins : undefined;
+          if (localPins?.length && local) return local;
+        }
+      }
+      return blob;
+    }
+    if (isDevLocalStore()) {
+      const local = await readLocal<T>(key);
+      if (local) {
+        await writeBlob(key, local).catch(() => undefined);
+        return local;
+      }
+    }
+    return seedBlobFromLocal(key, fallback);
   }
 
   const local = await readLocal<T>(key);
@@ -115,6 +179,11 @@ export async function writeStore<T>(key: StoreKey, data: T): Promise<void> {
       return;
     } catch (error) {
       console.error(`Turso write failed for ${key}`, error);
+      if (blobConfigured()) {
+        await writeBlob(key, data);
+        await mirrorLocalOptional(key, data);
+        return;
+      }
       if (isDevLocalStore()) {
         await writeLocal(key, data);
         return;
@@ -123,10 +192,16 @@ export async function writeStore<T>(key: StoreKey, data: T): Promise<void> {
     }
   }
 
+  if (blobConfigured()) {
+    await writeBlob(key, data);
+    await mirrorLocalOptional(key, data);
+    return;
+  }
+
   if (isDevLocalStore()) {
     await writeLocal(key, data);
     return;
   }
 
-  throw new Error("Database is not configured for production writes");
+  throw new Error(missingProductionStoreMessage());
 }

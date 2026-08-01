@@ -18,8 +18,8 @@ type ScreenFlash = {
 
 const FLASH_MS = CRAZY_SCREEN_FLASH_MS;
 
-/** Minimum share of the card surface visible inside the strike viewport. */
-const MIN_VISIBLE_RATIO = 0.4;
+/** Minimum visible overlap before a card counts as on-screen. */
+const MIN_VISIBLE_PX = 8;
 
 function isElementVisible(el: HTMLElement, viewport: DOMRect) {
   const rect = el.getBoundingClientRect();
@@ -76,11 +76,10 @@ function getCardSurfaceRect(card: HTMLElement): DOMRect {
   return (surface ?? card).getBoundingClientRect();
 }
 
-function visibleSurfaceRatio(surfaceRect: DOMRect, viewport: DOMRect) {
+function isCardVisibleInViewport(surfaceRect: DOMRect, viewport: DOMRect) {
+  if (!rectsIntersect(surfaceRect, viewport)) return false;
   const overlap = intersectionRect(surfaceRect, viewport);
-  const surfaceArea = surfaceRect.width * surfaceRect.height;
-  if (surfaceArea <= 0) return 0;
-  return (overlap.width * overlap.height) / surfaceArea;
+  return overlap.width >= MIN_VISIBLE_PX && overlap.height >= MIN_VISIBLE_PX;
 }
 
 function pickVisibleCrazyButton(
@@ -98,16 +97,18 @@ function pickVisibleCrazyButton(
 }
 
 function getStrikeCandidates(scroller: HTMLElement, viewport: DOMRect) {
+  const seen = new Set<number>();
   const candidates: { slotIndex: number }[] = [];
 
   scroller.querySelectorAll<HTMLElement>("[data-feed-slot]").forEach((card) => {
     const slot = Number(card.dataset.feedSlot);
-    if (Number.isNaN(slot)) return;
+    if (Number.isNaN(slot) || seen.has(slot)) return;
 
     const surfaceRect = getCardSurfaceRect(card);
     if (surfaceRect.width <= 0 || surfaceRect.height <= 0) return;
-    if (visibleSurfaceRatio(surfaceRect, viewport) < MIN_VISIBLE_RATIO) return;
+    if (!isCardVisibleInViewport(surfaceRect, viewport)) return;
 
+    seen.add(slot);
     candidates.push({ slotIndex: slot });
   });
 
@@ -139,7 +140,12 @@ export function planCrazyFlash(
   filterRef: RefObject<HTMLButtonElement | null>,
   shelfRef: RefObject<HTMLButtonElement | null>,
   seed: number,
-): { slotIndices: number[]; flashX: number; flashY: number } | null {
+): {
+  slotIndices: number[];
+  visibleSlots: number[];
+  flashX: number;
+  flashY: number;
+} | null {
   const viewport = getStrikeViewport(scroller);
   if (viewport.width <= 0 || viewport.height <= 0) return null;
 
@@ -155,17 +161,23 @@ export function planCrazyFlash(
 
   return {
     slotIndices,
+    visibleSlots,
     flashX: btnRect.left + btnRect.width / 2,
     flashY: btnRect.top + btnRect.height / 2,
   };
 }
 
-export function swapCardsAt(ids: string[], slotIndices: number[], seed: number) {
+export function swapCardsAt(
+  ids: string[],
+  slotIndices: number[],
+  visibleSlots: number[],
+  seed: number,
+) {
   const next = [...ids];
   let s = seed;
 
   for (const slotIndex of slotIndices) {
-    const otherSlots = next.map((_, i) => i).filter((i) => i !== slotIndex);
+    const otherSlots = visibleSlots.filter((i) => i !== slotIndex);
     if (otherSlots.length === 0) continue;
 
     s = (s * 1664525 + 1013904223) >>> 0;

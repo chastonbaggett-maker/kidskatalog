@@ -143,13 +143,13 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       );
       if (!plan) return;
 
-      const { slotIndices, flashX, flashY } = plan;
+      const { slotIndices, visibleSlots, flashX, flashY } = plan;
       const prevOrder =
         displayIdsRef.current.length === filteredIds.length &&
         displayIdsRef.current.every((id) => filteredIds.includes(id))
           ? displayIdsRef.current
           : filteredIds;
-      const nextOrder = swapCardsAt(prevOrder, slotIndices, nextKey);
+      const nextOrder = swapCardsAt(prevOrder, slotIndices, visibleSlots, nextKey);
 
       preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
 

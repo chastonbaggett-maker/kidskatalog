@@ -135,8 +135,13 @@ export function MoreToysFeed({
       );
       if (!plan) return;
 
-      const { slotIndices, flashX, flashY } = plan;
-      const nextOrder = swapCardsAt(displayIdsRef.current, slotIndices, nextKey);
+      const { slotIndices, visibleSlots, flashX, flashY } = plan;
+      const nextOrder = swapCardsAt(
+        displayIdsRef.current,
+        slotIndices,
+        visibleSlots,
+        nextKey,
+      );
 
       preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
 

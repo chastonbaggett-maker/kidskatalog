@@ -29,7 +29,7 @@ const SNAP_DURATION_MS = 420;
 const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
 /** Focus card width as a fraction of the pile viewport (reference mobile layout). */
-const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.7;
+const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
 const CRAZY_MIN_VISIBLE_PX = 8;

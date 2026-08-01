@@ -47,6 +47,7 @@ export function BottomNav() {
     onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
   const pileShelfRaised =
     pileNavActive && (toyPileMode || enterPhase === "chrome");
+  const [pileNavEnterVisible, setPileNavEnterVisible] = useState(false);
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -65,6 +66,15 @@ export function BottomNav() {
     const t = window.setTimeout(() => setLanding(false), 520);
     return () => window.clearTimeout(t);
   }, [kartBounceToken]);
+
+  useEffect(() => {
+    if (enterPhase === "chrome") {
+      setPileNavEnterVisible(false);
+      const id = requestAnimationFrame(() => setPileNavEnterVisible(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setPileNavEnterVisible(toyPileMode);
+  }, [enterPhase, toyPileMode]);
 
   function resetBrandTaps() {
     brandTapCount.current = 0;
@@ -127,8 +137,10 @@ export function BottomNav() {
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileNavActive ? " bottom-nav--pile" : ""
-        }${pileShelfRaised ? " is-shelf-raised" : ""}`}
+          pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
+        }${pileShelfRaised ? " is-shelf-raised" : ""}${
+          pileNavEnterVisible ? " is-enter-visible" : ""
+        }`}
       >
         {pileNavActive && (
           <div className="bottom-nav__icons-base" aria-hidden="true" />

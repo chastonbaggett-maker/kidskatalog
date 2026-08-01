@@ -566,8 +566,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 @media (prefers-reduced-motion: reduce) {
   .pile-chrome-exit-host,
   .pile-header-enter,
-  .bottom-nav__icons-base,
-  .bottom-nav--pile.is-shelf-raised {
+  .bottom-nav--pile.bottom-nav-enter {
     transition: none !important;
   }
 
@@ -577,6 +576,11 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 
   .pile-header-enter.is-visible {
+    transform: none;
+    opacity: 1;
+  }
+
+  .bottom-nav--pile.bottom-nav-enter.is-enter-visible {
     transform: none;
     opacity: 1;
   }
@@ -1053,7 +1057,20 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .bottom-nav--pile.is-shelf-raised {
   min-height: var(--pile-nav-stack-height);
-  transition: min-height 680ms ease-in-out;
+}
+
+.bottom-nav--pile.bottom-nav-enter {
+  transform: translate3d(0, 100%, 0);
+  opacity: 0;
+  transition:
+    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
+    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+  will-change: transform, opacity;
+}
+
+.bottom-nav--pile.bottom-nav-enter.is-enter-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
 }
 
 .bottom-nav__icons-base {
@@ -1075,17 +1092,12 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.55)
   );
   pointer-events: none;
-  transition: height 680ms ease-in-out, top 680ms ease-in-out;
 }
 
 .bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {
   top: 0;
   bottom: 0;
   height: auto;
-}
-
-.bottom-nav--pile:not(.is-shelf-raised) .bottom-nav__icons-base {
-  height: var(--bottom-nav-offset);
 }
 
 .bottom-nav__icons {
@@ -1105,17 +1117,14 @@ html[data-accent="both"] .kart-go-btn:hover {
   transform: translate3d(0, 0, 0);
 }
 
-.bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
-  border-radius: 2rem 2rem 0 0;
-}
-
 .bottom-nav--pile .bottom-nav__icons {
-  background-color: rgba(255, 255, 255, 0.72);
-  background-image: linear-gradient(
-    to top,
-    rgba(255, 255, 255, 0.82),
-    rgba(255, 255, 255, 0.55)
-  );
+  border-radius: 0;
+  border-top: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: transparent;
+  background-image: none;
 }
 
 .scroll-pad-bottom {

@@ -37,6 +37,9 @@ const TABLET_MIN_ZOOM_OUT_ROWS = 4.5;
 /** Tablet max zoom-in reference — ~3 columns × ~2.5 rows in the visible band. */
 const TABLET_MAX_ZOOM_IN_COLUMNS = 3;
 const TABLET_MAX_ZOOM_IN_ROWS = 2.5;
+/** Desktop locked view — roughly 25 cards (5×5) in the visible band. */
+const DESKTOP_VISIBLE_COLUMNS = 5;
+const DESKTOP_VISIBLE_ROWS = 5;
 const TABLET_MIN_WIDTH_PX = 640;
 const DESKTOP_MIN_WIDTH_PX = 1024;
 const CRAZY_MIN_VISIBLE_PX = 8;
@@ -83,8 +86,16 @@ function isPileZoomEnabled(viewport: HTMLElement) {
 function getMaxPileZoom(viewport: HTMLElement) {
   const { cell, stride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
+  const formFactor = getPileFormFactor(viewport);
 
-  if (getPileFormFactor(viewport) === "tablet") {
+  if (formFactor === "desktop") {
+    return Math.max(
+      band.width / (DESKTOP_VISIBLE_COLUMNS * stride),
+      band.height / (DESKTOP_VISIBLE_ROWS * stride),
+    );
+  }
+
+  if (formFactor === "tablet") {
     return Math.max(
       band.width / (TABLET_MAX_ZOOM_IN_COLUMNS * stride),
       band.height / (TABLET_MAX_ZOOM_IN_ROWS * stride),

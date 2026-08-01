@@ -142,6 +142,9 @@ export function BottomNav() {
         >
           <div id={PILE_FILTER_PORTAL_ID} className="bottom-nav__pile-filter" />
         </div>
+        {pileShelfActive && (
+          <div className="bottom-nav__icons-base" aria-hidden="true" />
+        )}
         <ul
           className={`bottom-nav__icons flex items-center justify-around px-2.5 pt-2${
             pileShelfRaised ? " is-raised" : ""

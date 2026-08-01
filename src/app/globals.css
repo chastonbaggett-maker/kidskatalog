@@ -462,10 +462,27 @@ html[data-accent="both"] .kart-go-btn:hover {
 .browse-feed--toy-pile .shelf-header--pile {
   position: relative;
   z-index: 1;
-  background-color: #ff9a56;
-  background-image: var(--pile-header-grad);
+  overflow: hidden;
+  border-radius: 0 0 2rem 2rem;
+  background: transparent;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1rem;
+}
+
+.browse-feed--toy-pile .shelf-header--pile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-color: #ff9a56;
+  background-image: var(--pile-header-grad);
+}
+
+.browse-feed--toy-pile .shelf-header--pile > * {
+  position: relative;
+  z-index: 1;
 }
 
 .browse-feed--toy-pile .toy-pile-shell {
@@ -518,6 +535,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .pile-header-enter {
+  background: transparent;
   transform: translate3d(0, -100%, 0);
   opacity: 0;
   transition:

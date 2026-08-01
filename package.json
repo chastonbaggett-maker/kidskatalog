@@ -6,10 +6,12 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:turso": "node scripts/seed-turso.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@libsql/client": "^0.17.4",
     "@vercel/blob": "^2.6.1",
     "jspdf": "^4.2.1",
     "next": "16.2.12",

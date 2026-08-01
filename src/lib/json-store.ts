@@ -1,26 +1,16 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { head, put } from "@vercel/blob";
+import { ensureSchema, getDb, tursoConfigured } from "@/lib/db";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
-type StoreKey = "catalog" | "admin" | "metrics";
+export type StoreKey = "catalog" | "admin" | "metrics";
 
 const FILE_NAMES: Record<StoreKey, string> = {
   catalog: "catalog.json",
   admin: "admin.json",
   metrics: "metrics.json",
 };
-
-const BLOB_PATHS: Record<StoreKey, string> = {
-  catalog: "kidskatalog/catalog.json",
-  admin: "kidskatalog/admin.json",
-  metrics: "kidskatalog/metrics.json",
-};
-
-function useBlob() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}
 
 async function readLocal<T>(key: StoreKey): Promise<T | null> {
   try {
@@ -40,60 +30,70 @@ async function writeLocal<T>(key: StoreKey, data: T): Promise<void> {
   );
 }
 
-async function readBlob<T>(key: StoreKey): Promise<T | null> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return null;
-
-  try {
-    const info = await head(BLOB_PATHS[key], { token });
-    if (!info?.url) return null;
-    const res = await fetch(info.url, { cache: "no-store" });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  }
+async function readTurso<T>(key: StoreKey): Promise<T | null> {
+  await ensureSchema();
+  const db = getDb();
+  const result = await db.execute({
+    sql: "SELECT body FROM store_documents WHERE namespace = ?",
+    args: [key],
+  });
+  const row = result.rows[0];
+  if (!row?.body) return null;
+  return JSON.parse(String(row.body)) as T;
 }
 
-async function writeBlob<T>(key: StoreKey, data: T): Promise<void> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
-
-  await put(BLOB_PATHS[key], JSON.stringify(data, null, 2), {
-    access: "public",
-    token,
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
+async function writeTurso<T>(key: StoreKey, data: T): Promise<void> {
+  await ensureSchema();
+  const db = getDb();
+  const body = JSON.stringify(data);
+  await db.execute({
+    sql: `INSERT INTO store_documents (namespace, body, updated_at)
+          VALUES (?, ?, datetime('now'))
+          ON CONFLICT(namespace) DO UPDATE SET
+            body = excluded.body,
+            updated_at = excluded.updated_at`,
+    args: [key, body],
   });
 }
 
+async function seedTursoFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
+  const local = await readLocal<T>(key);
+  const seed = local ?? fallback;
+  await writeTurso(key, seed);
+  await writeLocal(key, seed);
+  return seed;
+}
+
 export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
-  if (useBlob()) {
-    const blob = await readBlob<T>(key);
-    if (blob) {
-      // Prefer local admin pins when blob was seeded empty but dev setup saved locally.
-      if (key === "admin") {
-        const blobPins = (blob as { pins?: unknown[] }).pins;
-        if (!blobPins?.length) {
-          const local = await readLocal<T>(key);
-          const localPins = local ? (local as { pins?: unknown[] }).pins : undefined;
-          if (localPins?.length && local) return local;
-        }
-      }
-      return blob;
+  if (tursoConfigured()) {
+    try {
+      const stored = await readTurso<T>(key);
+      if (stored) return stored;
+      return seedTursoFromLocal(key, fallback);
+    } catch (error) {
+      console.error(`Turso read failed for ${key}`, error);
+      const local = await readLocal<T>(key);
+      if (local) return local;
+      return fallback;
     }
   }
+
   const local = await readLocal<T>(key);
   if (local) return local;
   return fallback;
 }
 
 export async function writeStore<T>(key: StoreKey, data: T): Promise<void> {
-  if (useBlob()) {
-    await writeBlob(key, data);
-    await writeLocal(key, data);
-    return;
+  if (tursoConfigured()) {
+    try {
+      await writeTurso(key, data);
+      await writeLocal(key, data);
+      return;
+    } catch (error) {
+      console.error(`Turso write failed for ${key}`, error);
+      await writeLocal(key, data);
+      return;
+    }
   }
   await writeLocal(key, data);
 }

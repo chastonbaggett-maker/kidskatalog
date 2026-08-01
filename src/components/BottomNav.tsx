@@ -10,6 +10,7 @@ import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 import { isPileEntering, useToyPileModeStore } from "@/lib/toy-pile-store";
+import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
@@ -47,7 +48,7 @@ export function BottomNav() {
     onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
   const pileShelfRaised =
     pileNavActive && (toyPileMode || enterPhase === "chrome");
-  const [pileNavEnterVisible, setPileNavEnterVisible] = useState(false);
+  const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -66,15 +67,6 @@ export function BottomNav() {
     const t = window.setTimeout(() => setLanding(false), 520);
     return () => window.clearTimeout(t);
   }, [kartBounceToken]);
-
-  useEffect(() => {
-    if (enterPhase === "chrome") {
-      setPileNavEnterVisible(false);
-      const id = requestAnimationFrame(() => setPileNavEnterVisible(true));
-      return () => cancelAnimationFrame(id);
-    }
-    setPileNavEnterVisible(toyPileMode);
-  }, [enterPhase, toyPileMode]);
 
   function resetBrandTaps() {
     brandTapCount.current = 0;

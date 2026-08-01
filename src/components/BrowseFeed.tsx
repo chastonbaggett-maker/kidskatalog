@@ -13,6 +13,7 @@ import {
   prefersReducedMotion,
 } from "@/lib/pile-transition-utils";
 import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
+import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -62,7 +63,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   usePileEnterTransition();
 
-  const [pileHeaderVisible, setPileHeaderVisible] = useState(false);
+  const pileHeaderActive = isEntering || toyPileMode;
+  const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const [chromeExiting, setChromeExiting] = useState(false);
 
   useEffect(() => {
@@ -73,14 +75,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
     setChromeExiting(false);
   }, [enterPhase]);
-
-  useEffect(() => {
-    if (enterPhase === "chrome") {
-      const id = requestAnimationFrame(() => setPileHeaderVisible(true));
-      return () => cancelAnimationFrame(id);
-    }
-    setPileHeaderVisible(toyPileMode);
-  }, [enterPhase, toyPileMode]);
 
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);

@@ -18,6 +18,9 @@ test("pile mode enter shows grid after header transition", async ({ page }) => {
   await expect(page.locator(".bottom-nav--pile.is-shelf-raised")).toBeVisible({
     timeout: 2000,
   });
+  await expect(page.locator(".bottom-nav--pile.bottom-nav-enter.is-enter-visible")).toBeVisible({
+    timeout: 5000,
+  });
 
   await expect(page.locator(".toy-pile-viewport")).toBeVisible({ timeout: 5000 });
   await expect(page.locator(".bottom-nav__pile-shelf")).toHaveCount(0);

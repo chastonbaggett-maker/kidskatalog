@@ -569,6 +569,21 @@ html[data-accent="both"] .kart-go-btn:hover {
   opacity: 1;
 }
 
+/* Seamless handoff — pile grid replaces feed in-place, then zooms out */
+.browse-feed--pile-handoff .pile-grid-layer {
+  opacity: 1;
+  transition: none;
+}
+
+.browse-feed--pile-handoff .pile-feed-layer {
+  transition: none;
+}
+
+.browse-feed--pile-handoff .pile-feed-layer--handoff-done {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .browse-feed--pile-entering .page-scroll {
   overflow: hidden !important;
 }

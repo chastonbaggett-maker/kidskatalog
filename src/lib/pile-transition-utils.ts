@@ -9,15 +9,6 @@ function intersectionArea(a: DOMRect, b: DOMRect) {
   return (right - left) * (bottom - top);
 }
 
-export function snapshotRect(rect: DOMRect): PileAnchorRect {
-  return {
-    left: rect.left,
-    top: rect.top,
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
 export function findMostVisibleFeedCard(
   scroller: HTMLElement,
 ): PileAnchor | null {
@@ -59,6 +50,50 @@ export function findMostVisibleFeedCard(
       y: sumY / visibleCount,
     },
   };
+}
+
+export function snapshotRect(rect: DOMRect): PileAnchorRect {
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+/** Live feed-card rect at handoff — accounts for chrome collapse / layout shift. */
+export function measureLiveFeedAnchorRect(
+  scroller: HTMLElement,
+  anchorToyId: string,
+): PileAnchorRect | null {
+  const el = scroller.querySelector(
+    `.feed-card[data-toy-id="${CSS.escape(anchorToyId)}"]`,
+  );
+  if (!el) return null;
+  return snapshotRect(el.getBoundingClientRect());
+}
+
+/** Centroid of feed cards still visible in the scroller at handoff time. */
+export function measureLiveFeedViewCenter(
+  scroller: HTMLElement,
+): { x: number; y: number } | null {
+  const viewportRect = scroller.getBoundingClientRect();
+  const cards = scroller.querySelectorAll(".feed-card[data-feed-slot]");
+  let sumX = 0;
+  let sumY = 0;
+  let visibleCount = 0;
+
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    const area = intersectionArea(rect, viewportRect);
+    if (area <= 0) continue;
+    visibleCount += 1;
+    sumX += rect.left + rect.width / 2;
+    sumY += rect.top + rect.height / 2;
+  }
+
+  if (visibleCount === 0) return null;
+  return { x: sumX / visibleCount, y: sumY / visibleCount };
 }
 
 /** Hash-based toy slot for infinite pile coordinates (matches ToyPileGrid). */

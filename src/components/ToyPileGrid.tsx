@@ -13,7 +13,8 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import { getCenteredPileGridOrigin, getPileEntryTargetZoom } from "@/lib/pile-transition-utils";
+import type { RefObject } from "react";
+import { getCenteredPileGridOrigin, getPileEntryTargetZoom, measureLiveFeedAnchorRect, measureLiveFeedViewCenter } from "@/lib/pile-transition-utils";
 import type { PileAnchorRect } from "@/lib/toy-pile-store";
 import { PILE_ZOOM_MS } from "@/lib/toy-pile-store";
 
@@ -33,6 +34,8 @@ type Props = {
     anchorToyId: string;
     fromRect: PileAnchorRect;
     viewCenter: { x: number; y: number };
+    feedScrollerRef?: RefObject<HTMLElement | null>;
+    onAligned?: () => void;
     onComplete?: () => void;
   };
 };
@@ -478,12 +481,17 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       const { maxZoom } = bounds;
       const toZoom = getPileEntryTargetZoom(viewport, metrics, bounds);
       const viewportRect = viewport.getBoundingClientRect();
-      const fromRect = entryAnimation.fromRect;
+      const scroller = entryAnimation.feedScrollerRef?.current;
+      const liveRect =
+        scroller && measureLiveFeedAnchorRect(scroller, entryAnimation.anchorToyId);
+      const liveViewCenter = scroller ? measureLiveFeedViewCenter(scroller) : null;
+      const fromRect = liveRect ?? entryAnimation.fromRect;
+      const viewCenter = liveViewCenter ?? entryAnimation.viewCenter;
       const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
       const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
       const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
-      const viewScreenX = entryAnimation.viewCenter.x - viewportRect.left;
-      const viewScreenY = entryAnimation.viewCenter.y - viewportRect.top;
+      const viewScreenX = viewCenter.x - viewportRect.left;
+      const viewScreenY = viewCenter.y - viewportRect.top;
       const viewLock: StagePoint = {
         x: (viewScreenX - initialPan.x) / maxZoom,
         y: (viewScreenY - initialPan.y) / maxZoom,
@@ -492,17 +500,16 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       entryStartedRef.current = true;
       centeredRef.current = true;
       applyTransformImmediate(initialPan, maxZoom);
+      entryAnimation.onAligned?.();
 
-      requestAnimationFrame(() => {
-        animateZoomOut(
-          maxZoom,
-          toZoom,
-          viewLock,
-          entryAnimation.onComplete,
-          { x: viewScreenX, y: viewScreenY },
-          easeInOutCubic,
-        );
-      });
+      animateZoomOut(
+        maxZoom,
+        toZoom,
+        viewLock,
+        entryAnimation.onComplete,
+        { x: viewScreenX, y: viewScreenY },
+        easeInOutCubic,
+      );
       return;
     }
 

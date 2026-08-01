@@ -3,6 +3,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import {
+  getCardLightningTarget,
+  getVisibleFeedSlots,
+  pickVisibleSlot,
+  swapCardAt,
+  useCrazyLightning,
+} from "@/hooks/useCrazyLightning";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
@@ -10,42 +17,13 @@ import { FeedCard } from "./FeedCard";
 import { FeedAutoLoadMore } from "./FeedAutoLoadMore";
 import { ShelfHeader } from "./ShelfHeader";
 import { CrazyModeButton } from "./CrazyModeButton";
-import { useCrazyLightning } from "@/hooks/useCrazyLightning";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
 /** Synced with `.filter-crazy-btn--active` lightning flash cycle. */
 const CRAZY_FLASH_MS = 2200;
+const CRAZY_SWAP_MS = 280;
 const FEED_PAGE_SIZE = 20;
-
-function shuffleWithSeed<T>(items: T[], seed: number): T[] {
-  const arr = [...items];
-  let s = seed;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function shuffleAlternatingGroup(ids: string[], evenGroup: boolean, seed: number) {
-  const next = [...ids];
-  const slots = ids
-    .map((_, i) => i)
-    .filter((i) => (evenGroup ? i % 2 === 0 : i % 2 === 1));
-  const shuffled = shuffleWithSeed(
-    slots.map((slot) => ids[slot]),
-    seed,
-  );
-  slots.forEach((slot, i) => {
-    next[slot] = shuffled[i];
-  });
-  return next;
-}
 
 export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const audience = useAccentStore((s) => s.audience);
@@ -57,9 +35,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [displayIds, setDisplayIds] = useState<string[]>([]);
   const [crazyMode, setCrazyMode] = useState(false);
   const [crazyFlash, setCrazyFlash] = useState(false);
-  const [crazyFlashGroup, setCrazyFlashGroup] = useState<"even" | "odd" | null>(
-    null,
-  );
+  const [crazyFlashSlot, setCrazyFlashSlot] = useState<number | null>(null);
   const [loadedPages, setLoadedPages] = useState(1);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
@@ -70,10 +46,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfWantedRef = useRef(false);
   const crazyFlashCountRef = useRef(0);
 
-  const { strike: strikeLightning, portal: lightningPortal } = useCrazyLightning(
-    filterCrazyBtnRef,
-    shelfCrazyBtnRef,
-  );
+  const { strikeAt, portal: lightningPortal } = useCrazyLightning();
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -83,7 +56,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry) return;
-        // Show compact shelf once the expanded nav leaves the top of the scroller
         const want =
           !entry.isIntersecting || entry.intersectionRatio < 0.08;
         shelfWantedRef.current = want;
@@ -104,7 +76,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return () => observer.disconnect();
   }, []);
 
-  // Finish leave fade while staying pinned; cancel if chrome leaves again mid-fade
   useEffect(() => {
     if (shelfMode !== "leaving") return;
     const t = window.setTimeout(() => {
@@ -136,7 +107,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     setDisplayIds(filteredIds);
     setShuffleKey(0);
     setCrazyMode(false);
-    setCrazyFlashGroup(null);
+    setCrazyFlashSlot(null);
     setLoadedPages(1);
   }, [filteredIds]);
 
@@ -144,28 +115,44 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     if (!crazyMode) return;
 
     let flashTimer: number | undefined;
+    let swapTimer: number | undefined;
 
     const flash = () => {
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+
+      const visibleSlots = getVisibleFeedSlots(scroller);
+      if (visibleSlots.length === 0) return;
+
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
-      const shuffleEvens = nextKey % 2 === 1;
+      const slotIndex = pickVisibleSlot(visibleSlots, nextKey);
+      if (slotIndex == null) return;
 
-      setShuffleKey(nextKey);
-      setDisplayIds((prev) => {
-        const order =
-          prev.length === filteredIds.length &&
-          prev.every((id) => filteredIds.includes(id))
-            ? prev
-            : filteredIds;
-        return shuffleAlternatingGroup(order, shuffleEvens, nextKey);
-      });
+      const cardEl = scroller.querySelector<HTMLElement>(
+        `[data-feed-slot="${slotIndex}"]`,
+      );
+      if (!cardEl) return;
 
-      setCrazyFlashGroup(shuffleEvens ? "even" : "odd");
+      strikeAt(getCardLightningTarget(cardEl));
       setCrazyFlash(true);
-      flashTimer = window.setTimeout(() => {
-        setCrazyFlash(false);
-        setCrazyFlashGroup(null);
-      }, 380);
+
+      swapTimer = window.setTimeout(() => {
+        setShuffleKey(nextKey);
+        setDisplayIds((prev) => {
+          const order =
+            prev.length === filteredIds.length &&
+            prev.every((id) => filteredIds.includes(id))
+              ? prev
+              : filteredIds;
+          return swapCardAt(order, slotIndex, nextKey);
+        });
+        setCrazyFlashSlot(slotIndex);
+        flashTimer = window.setTimeout(() => {
+          setCrazyFlash(false);
+          setCrazyFlashSlot(null);
+        }, 380);
+      }, CRAZY_SWAP_MS);
     };
 
     crazyFlashCountRef.current = 0;
@@ -174,19 +161,16 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return () => {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
+      if (swapTimer) window.clearTimeout(swapTimer);
     };
-  }, [crazyMode, filteredIds]);
+  }, [crazyMode, filteredIds, strikeAt]);
 
   useEffect(() => {
     if (!crazyMode) {
       setCrazyFlash(false);
-      setCrazyFlashGroup(null);
+      setCrazyFlashSlot(null);
     }
   }, [crazyMode]);
-
-  useEffect(() => {
-    if (crazyFlash && crazyMode) strikeLightning();
-  }, [crazyFlash, crazyMode, strikeLightning]);
 
   const displayed = useMemo(() => {
     const byId = new Map(filtered.map((t) => [t.id, t]));
@@ -219,14 +203,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return chunks;
   }, [displayed, visiblePages]);
 
-  const gridClassName = [
-    "toy-feed-grid",
-    crazyMode ? "toy-feed-grid--crazy" : "",
-    crazyFlash && crazyFlashGroup === "even"
-      ? "toy-feed-grid--crazy-flash-even"
-      : "",
-    crazyFlash && crazyFlashGroup === "odd" ? "toy-feed-grid--crazy-flash-odd" : "",
-  ]
+  const gridClassName = ["toy-feed-grid", crazyMode ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -238,7 +215,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         crazyMode ? "browse-feed--crazy" : ""
       }`}
     >
-      {/* Compact shelf — glides down when expanded header scrolls away */}
       <div
         className={`browse-shelf-overlay ${
           shelfMode === "shown" ? "is-visible" : ""
@@ -266,7 +242,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           crazyMode ? "page-scroll--crazy" : ""
         }`}
       >
-        {/* Header, filters, and categories scroll with the feed */}
         <div ref={chromeRef} className="relative z-20">
           <FeedHeader query={query} onQueryChange={setQuery} />
           <div className={crazyMode ? "browse-controls" : "bg-white"}>
@@ -302,14 +277,19 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           {visibleChunks.map((chunk, chunkIndex) => (
             <Fragment key={`feed-chunk-${chunkIndex}`}>
               <div className={gridClassName}>
-                {chunk.map((toy, indexInChunk) => (
-                  <FeedCard
-                    key={toy.id}
-                    toy={toy}
-                    showText={showText}
-                    index={chunkIndex * FEED_PAGE_SIZE + indexInChunk}
-                  />
-                ))}
+                {chunk.map((toy, indexInChunk) => {
+                  const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
+                  return (
+                    <FeedCard
+                      key={`feed-slot-${slotIndex}`}
+                      toy={toy}
+                      showText={showText}
+                      index={slotIndex}
+                      slotIndex={slotIndex}
+                      crazyStrike={crazyFlashSlot === slotIndex}
+                    />
+                  );
+                })}
               </div>
               {chunkIndex === visibleChunks.length - 1 && hasMore && (
                 <FeedAutoLoadMore
@@ -330,4 +310,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       {lightningPortal}
     </div>
   );
+}
+
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const arr = [...items];
+  let s = seed;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }

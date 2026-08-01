@@ -622,6 +622,8 @@ export function ToyPileGrid({ toys, showText }: Props) {
           {Array.from({ length: slots }).map((_, index) => {
             const col = colMin + (index % colCount);
             const row = rowMin + Math.floor(index / colCount);
+            const relCol = index % colCount;
+            const colShift = relCol % 2 === 1 ? 0.5 : 0;
             const toy = pool[toyIndexForCell(col, row, pool.length)]!;
             return (
               <ToyPileCard
@@ -630,6 +632,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
                 row={row}
                 toy={toy}
                 showText={showText}
+                colShift={colShift}
               />
             );
           })}
@@ -644,11 +647,13 @@ const ToyPileCard = memo(function ToyPileCard({
   row,
   toy,
   showText,
+  colShift = 0,
 }: {
   col: number;
   row: number;
   toy: Toy;
   showText: boolean;
+  colShift?: number;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -664,6 +669,7 @@ const ToyPileCard = memo(function ToyPileCard({
       data-pile-col={col}
       data-pile-row={row}
       data-toy-id={toy.id}
+      style={{ "--pile-col-shift": colShift } as React.CSSProperties}
     >
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
         <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">

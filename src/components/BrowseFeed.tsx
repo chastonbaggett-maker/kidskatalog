@@ -113,10 +113,16 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [toys, query, audience, age]);
 
   const filteredIds = useMemo(() => filtered.map((t) => t.id), [filtered]);
+  const filteredIdsKey = useMemo(() => filteredIds.join("\0"), [filteredIds]);
   const toyImageById = useMemo(
     () => new Map(filtered.map((t) => [t.id, t.image])),
     [filtered],
   );
+  const toyImageByIdRef = useRef(toyImageById);
+
+  useEffect(() => {
+    toyImageByIdRef.current = toyImageById;
+  }, [toyImageById]);
 
   useEffect(() => {
     displayIdsRef.current = displayIds;
@@ -124,10 +130,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   useEffect(() => {
     setDisplayIds(filteredIds);
-    setShuffleKey(0);
-    setCrazyFlashSlots([]);
     setLoadedPages(1);
-  }, [filteredIds]);
+    if (!crazyMode) {
+      setShuffleKey(0);
+      setCrazyFlashSlots([]);
+    }
+  }, [filteredIdsKey, filteredIds, crazyMode]);
 
   useEffect(() => {
     if (!crazyMode) return;
@@ -162,7 +170,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         nextKey,
       );
 
-      preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
+      preloadImages(
+        urlsForSwappedSlots(nextOrder, slotIndices, toyImageByIdRef.current),
+      );
 
       flashScreen(flashX, flashY);
       setCrazyFlash(true);
@@ -183,7 +193,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
     };
-  }, [crazyMode, filteredIds, flashScreen, toyImageById]);
+  }, [crazyMode, filteredIdsKey, filteredIds, flashScreen]);
 
   useEffect(() => {
     if (!crazyMode) {

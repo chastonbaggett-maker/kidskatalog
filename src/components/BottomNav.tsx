@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
@@ -12,6 +12,8 @@ import { useKartStore } from "@/lib/kart-store";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
+/** Wait longer than a rapid multi-tap before treating tap 1 as "go home". */
+const BRAND_SINGLE_TAP_NAV_MS = 400;
 
 function useViewAccentClass() {
   const audience = useAccentStore((s) => s.audience);
@@ -39,6 +41,12 @@ export function BottomNav() {
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
   const brandTapTimer = useRef<number | null>(null);
+  const brandNavTimer = useRef<number | null>(null);
+
+  const handleAdminUnlocked = useCallback(() => {
+    setPinGateOpen(false);
+    setAdminOpen(true);
+  }, []);
 
   useEffect(() => {
     if (kartBounceToken === 0) return;
@@ -53,11 +61,20 @@ export function BottomNav() {
       window.clearTimeout(brandTapTimer.current);
       brandTapTimer.current = null;
     }
+    if (brandNavTimer.current !== null) {
+      window.clearTimeout(brandNavTimer.current);
+      brandNavTimer.current = null;
+    }
   }
 
   function handleBrandTap(e: React.MouseEvent) {
     e.preventDefault();
     brandTapCount.current += 1;
+
+    if (brandNavTimer.current !== null) {
+      window.clearTimeout(brandNavTimer.current);
+      brandNavTimer.current = null;
+    }
 
     if (brandTapTimer.current === null) {
       brandTapTimer.current = window.setTimeout(() => {
@@ -71,7 +88,15 @@ export function BottomNav() {
       return;
     }
 
-    router.push("/");
+    // Only a lone tap should navigate home — not taps 2–9 of the admin easter egg.
+    if (brandTapCount.current === 1) {
+      brandNavTimer.current = window.setTimeout(() => {
+        if (brandTapCount.current === 1) {
+          router.push("/");
+        }
+        brandNavTimer.current = null;
+      }, BRAND_SINGLE_TAP_NAV_MS);
+    }
   }
 
   const items = [
@@ -143,10 +168,7 @@ export function BottomNav() {
       <AdminPinGate
         open={pinGateOpen}
         onClose={() => setPinGateOpen(false)}
-        onUnlocked={() => {
-          setPinGateOpen(false);
-          setAdminOpen(true);
-        }}
+        onUnlocked={handleAdminUnlocked}
       />
       <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
     </>

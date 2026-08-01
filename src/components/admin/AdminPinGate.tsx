@@ -38,7 +38,9 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         if (data.authenticated) onUnlocked();
       })
       .catch(() => setMode("unlock"));
-  }, [open, onUnlocked]);
+    // Only re-check auth when the gate opens — not when parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const fail = useCallback((message: string) => {
     setError(message);

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useConfettiBurst } from "@/hooks/useConfettiBurst";
 import { useScrollTapGuard } from "@/hooks/useScrollTapGuard";
 import { CrazyModeButton } from "@/components/CrazyModeButton";
+import { ToyPileModeButton } from "@/components/ToyPileModeButton";
 import type { Audience } from "@/types/toy";
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const;
@@ -49,6 +50,8 @@ type Props = {
   onCrazyModeToggle: () => void;
   crazyFlash: boolean;
   crazyBtnRef: RefObject<HTMLButtonElement | null>;
+  toyPileMode: boolean;
+  onToyPileModeToggle: () => void;
 };
 
 export function FilterRow({
@@ -63,6 +66,8 @@ export function FilterRow({
   onCrazyModeToggle,
   crazyFlash,
   crazyBtnRef,
+  toyPileMode,
+  onToyPileModeToggle,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -302,6 +307,20 @@ export function FilterRow({
             const turningOn = !crazyMode;
             onCrazyModeToggle();
             if (turningOn) {
+              fireConfetti(
+                e.currentTarget.getBoundingClientRect(),
+                RAINBOW_CONFETTI,
+              );
+            }
+          }}
+        />
+
+        <ToyPileModeButton
+          active={toyPileMode}
+          onClick={(e) => {
+            if (shouldIgnoreTap()) return;
+            onToyPileModeToggle();
+            if (!toyPileMode) {
               fireConfetti(
                 e.currentTarget.getBoundingClientRect(),
                 RAINBOW_CONFETTI,

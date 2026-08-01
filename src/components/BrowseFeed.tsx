@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
+import { useToyPileModeStore, toyPileRootClass } from "@/lib/toy-pile-store";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -22,7 +23,9 @@ import { ThumbCarousel } from "./ThumbCarousel";
 import { FeedCard } from "./FeedCard";
 import { FeedAutoLoadMore } from "./FeedAutoLoadMore";
 import { ShelfHeader } from "./ShelfHeader";
+import { ToyPileGrid } from "./ToyPileGrid";
 import { CrazyModeButton } from "./CrazyModeButton";
+import { ToyPileModeButton } from "./ToyPileModeButton";
 
 type ShelfMode = "hidden" | "shown" | "leaving";
 
@@ -39,11 +42,22 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
+  const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
+  const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
+  const toggleToyPileMode = useToyPileModeStore((s) => s.toggleToyPileMode);
 
   const handleCrazyModeToggle = useCallback(() => {
-    if (!crazyMode) pingMetrics("crazy_mode");
+    if (!crazyMode) {
+      setToyPileMode(false);
+      pingMetrics("crazy_mode");
+    }
     toggleCrazyMode();
-  }, [crazyMode, toggleCrazyMode]);
+  }, [crazyMode, toggleCrazyMode, setToyPileMode]);
+
+  const handleToyPileModeToggle = useCallback(() => {
+    if (!toyPileMode) setCrazyMode(false);
+    toggleToyPileMode();
+  }, [toyPileMode, toggleToyPileMode, setCrazyMode]);
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [loadedPages, setLoadedPages] = useState(1);
@@ -135,7 +149,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       setShuffleKey(0);
       setCrazyFlashSlots([]);
     }
-  }, [filteredIdsKey, filteredIds, crazyMode]);
+  }, [filteredIdsKey, filteredIds, crazyMode, toyPileMode]);
 
   useEffect(() => {
     if (!crazyMode) return;
@@ -240,7 +254,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
-    <div className={`relative shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
+    <div
+      className={`relative shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
+    >
       <div
         className={`browse-shelf-overlay ${
           shelfMode === "shown" ? "is-visible" : ""
@@ -257,6 +273,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                 crazyFlash={crazyFlash}
                 onClick={() => setCrazyMode(false)}
               />
+            ) : toyPileMode ? (
+              <ToyPileModeButton
+                active
+                className="shelf-crazy-btn"
+                onClick={() => setToyPileMode(false)}
+              />
             ) : undefined
           }
         />
@@ -264,11 +286,23 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 ${crazyModeScrollClass(crazyMode)}`}
+        className={`min-h-0 flex-1 ${
+          toyPileMode
+            ? "toy-pile-shell star-field flex flex-col overflow-hidden"
+            : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}`
+        }`}
       >
-        <div ref={chromeRef} className="relative z-20">
+        <div ref={chromeRef} className="relative z-20 shrink-0">
           <FeedHeader query={query} onQueryChange={setQuery} />
-          <div className={crazyMode ? "browse-controls" : "browse-chrome-panel"}>
+          <div
+            className={
+              crazyMode
+                ? "browse-controls"
+                : toyPileMode
+                  ? "browse-chrome-panel browse-chrome-panel--pile"
+                  : "browse-chrome-panel"
+            }
+          >
             <FilterRow
               audience={audience}
               onAudienceChange={setAudience}
@@ -292,11 +326,16 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               onCrazyModeToggle={handleCrazyModeToggle}
               crazyFlash={crazyFlash}
               crazyBtnRef={filterCrazyBtnRef}
+              toyPileMode={toyPileMode}
+              onToyPileModeToggle={handleToyPileModeToggle}
             />
             <ThumbCarousel />
           </div>
         </div>
 
+        {toyPileMode ? (
+          <ToyPileGrid toys={displayed} showText={showText} />
+        ) : (
         <div className="scroll-pad-bottom space-y-6 pt-4">
           {visibleChunks.map((chunk, chunkIndex) => (
             <Fragment key={`feed-chunk-${chunkIndex}`}>
@@ -330,6 +369,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             </p>
           )}
         </div>
+        )}
       </div>
       {flashPortal}
     </div>

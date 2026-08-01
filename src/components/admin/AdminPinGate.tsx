@@ -15,6 +15,7 @@ type Props = {
 export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("unlock");
+  const [pinsExist, setPinsExist] = useState(true);
   const [entry, setEntry] = useState("");
   const [firstPin, setFirstPin] = useState("");
   const [error, setError] = useState("");
@@ -39,9 +40,19 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
 
       const res = await fetch("/api/admin/auth");
       const data = (await res.json()) as { pinsExist?: boolean };
-      setMode(data.pinsExist ? "unlock" : "setup");
+      const exists = Boolean(data.pinsExist);
+      setPinsExist(exists);
+      setMode(exists ? "unlock" : "setup");
     })().catch(() => setMode("unlock"));
   }, [open]);
+
+  const startSetup = useCallback(() => {
+    setMode("setup");
+    setEntry("");
+    setFirstPin("");
+    setError("");
+    setShake(false);
+  }, []);
 
   const fail = useCallback((message: string) => {
     setError(message);
@@ -153,8 +164,17 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
 
         <button
           type="button"
+          onClick={startSetup}
+          disabled={busy || (!pinsExist && mode === "setup")}
+          className="admin-gate__setup mt-8 text-base font-medium transition active:opacity-70 disabled:opacity-40"
+        >
+          Setup Admin
+        </button>
+
+        <button
+          type="button"
           onClick={onClose}
-          className="admin-gate__cancel mt-8 text-base font-medium transition active:opacity-70"
+          className="admin-gate__cancel mt-3 text-base font-medium transition active:opacity-70"
         >
           Cancel
         </button>

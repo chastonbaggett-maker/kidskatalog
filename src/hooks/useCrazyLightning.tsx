@@ -8,15 +8,16 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { CrazyLightningBolt } from "@/components/CrazyLightningBolt";
 
-type LightningBolt = {
+type LightningStrike = {
   id: string;
   left: number;
   top: number;
   height: number;
 };
 
-const BOLT_MS = 950;
+const BOLT_MS = 1050;
 
 function pickStrikeOrigin(...candidates: (HTMLElement | null | undefined)[]) {
   for (const el of candidates) {
@@ -40,7 +41,7 @@ export function useCrazyLightning(
 ) {
   const uid = useId();
   const [mounted, setMounted] = useState(false);
-  const [bolts, setBolts] = useState<LightningBolt[]>([]);
+  const [strikes, setStrikes] = useState<LightningStrike[]>([]);
 
   useEffect(() => setMounted(true), []);
 
@@ -49,37 +50,29 @@ export function useCrazyLightning(
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const originY = rect.bottom - 4;
-    const height = Math.max(window.innerHeight - originY, 120);
+    const originY = rect.top + rect.height * 0.55;
+    const height = Math.max(window.innerHeight - originY + 8, 140);
     const stamp = Date.now();
-    const bolt: LightningBolt = {
+    const bolt: LightningStrike = {
       id: `${uid}-${stamp}`,
       left: rect.left + rect.width * 0.5,
       top: originY,
       height,
     };
 
-    setBolts((prev) => [...prev, bolt]);
+    setStrikes((prev) => [...prev, bolt]);
 
     window.setTimeout(() => {
-      setBolts((prev) => prev.filter((b) => b.id !== bolt.id));
+      setStrikes((prev) => prev.filter((b) => b.id !== bolt.id));
     }, BOLT_MS + 120);
   }, [uid, primaryRef, altRef]);
 
   const portal =
-    mounted && bolts.length > 0
+    mounted && strikes.length > 0
       ? createPortal(
           <div className="crazy-lightning-layer" aria-hidden>
-            {bolts.map((bolt) => (
-              <span
-                key={bolt.id}
-                className="crazy-lightning-bolt"
-                style={{
-                  left: bolt.left,
-                  top: bolt.top,
-                  ["--bolt-height" as string]: `${bolt.height}px`,
-                }}
-              />
+            {strikes.map((bolt) => (
+              <CrazyLightningBolt key={bolt.id} {...bolt} />
             ))}
           </div>,
           document.body,

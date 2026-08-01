@@ -531,74 +531,83 @@ html[data-accent="both"] .kart-go-btn:hover {
   inset: 0;
   pointer-events: none;
   z-index: 180;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.crazy-lightning-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--flash-x, 50%) var(--flash-y, 20%),
+    rgba(255, 248, 210, 0.34) 0%,
+    rgba(255, 229, 102, 0.12) 28%,
+    transparent 62%
+  );
+  animation: crazy-lightning-flash 0.95s ease-out forwards;
 }
 
 .crazy-lightning-bolt {
   position: fixed;
-  top: var(--bolt-top, 0);
-  left: var(--bolt-left, 0);
-  width: 34px;
-  height: var(--bolt-height, 100vh);
-  margin-left: -17px;
-  background: linear-gradient(
-    to bottom,
-    #fffef5 0%,
-    #fff6b8 8%,
-    #ffe566 28%,
-    #ffd700 62%,
-    #ffb300 100%
-  );
-  clip-path: polygon(
-    50% 0%,
-    66% 4%,
-    42% 4%,
-    72% 9%,
-    36% 9%,
-    68% 14%,
-    38% 14%,
-    70% 19%,
-    34% 19%,
-    66% 24%,
-    40% 24%,
-    72% 29%,
-    36% 29%,
-    68% 34%,
-    38% 34%,
-    70% 39%,
-    34% 39%,
-    66% 44%,
-    42% 44%,
-    72% 49%,
-    36% 49%,
-    68% 54%,
-    38% 54%,
-    70% 59%,
-    34% 59%,
-    66% 64%,
-    40% 64%,
-    72% 69%,
-    36% 69%,
-    68% 74%,
-    38% 74%,
-    70% 79%,
-    34% 79%,
-    66% 84%,
-    42% 84%,
-    72% 89%,
-    36% 89%,
-    64% 94%,
-    44% 94%,
-    58% 100%,
-    42% 100%
-  );
   pointer-events: none;
-  filter:
-    drop-shadow(0 0 14px rgba(255, 241, 118, 0.98))
-    drop-shadow(0 0 28px rgba(255, 229, 102, 0.85))
-    drop-shadow(0 0 48px rgba(255, 193, 7, 0.45));
   transform-origin: top center;
-  animation: crazy-bolt-strike-down 0.95s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  animation: crazy-lightning-bolt-fade 1.05s ease-out forwards;
+}
+
+.crazy-lightning-bolt svg {
+  display: block;
+  overflow: visible;
+  animation: crazy-lightning-bolt-draw 0.32s cubic-bezier(0.15, 0.85, 0.25, 1) forwards;
+}
+
+.crazy-lightning-bolt__halo {
+  opacity: 0.72;
+}
+
+.crazy-lightning-bolt__core {
+  animation: crazy-lightning-bolt-flicker 0.42s ease-in-out 0.28s 2 alternate;
+}
+
+@keyframes crazy-lightning-flash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes crazy-lightning-bolt-draw {
+  0% {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.2;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes crazy-lightning-bolt-flicker {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes crazy-lightning-bolt-fade {
+  0%,
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes crazy-btn-strike-pulse {
@@ -611,25 +620,6 @@ html[data-accent="both"] .kart-go-btn:hover {
   100% {
     box-shadow: 0 2px 8px rgba(60, 70, 120, 0.18);
     filter: brightness(1);
-  }
-}
-
-@keyframes crazy-bolt-strike-down {
-  0% {
-    opacity: 0;
-    transform: scaleY(0.04);
-  }
-  7% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-  62% {
-    opacity: 0.92;
-    transform: scaleY(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scaleY(1);
   }
 }
 
@@ -1515,8 +1505,15 @@ html[data-standalone="true"] .app-shell {
     animation: none;
   }
 
-  .crazy-lightning-bolt {
-    animation: none;
+  .crazy-lightning-bolt,
+  .crazy-lightning-bolt svg,
+  .crazy-lightning-bolt__core,
+  .crazy-lightning-flash {
+    animation: none !important;
+  }
+
+  .crazy-lightning-bolt,
+  .crazy-lightning-flash {
     opacity: 0;
   }
 

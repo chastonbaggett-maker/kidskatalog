@@ -25,7 +25,12 @@
   --girls-chip: #f5a9c5;
   /* Bottom nav clearance for scroll areas (icons + safe area) */
   --bottom-nav-offset: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  --bottom-nav-icons-height: 4rem;
   --pile-shelf-height: 4.25rem;
+  --pile-nav-lift: calc(
+    var(--bottom-nav-offset) + var(--pile-shelf-height) - var(--bottom-nav-icons-height)
+  );
+  --pile-nav-stack-height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
 }
 
 /* Boys tab — site accents go blue */
@@ -555,14 +560,14 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .browse-feed--toy-pile .toy-pile-viewport,
 .browse-feed--toy-pile .toy-pile-empty {
-  padding-bottom: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
+  padding-bottom: var(--pile-nav-stack-height);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pile-chrome-exit-host,
   .pile-header-enter,
-  .bottom-nav__icons,
-  .bottom-nav__icons-base {
+  .bottom-nav__icons-base,
+  .bottom-nav--pile.is-shelf-raised {
     transition: none !important;
   }
 
@@ -576,12 +581,10 @@ html[data-accent="both"] .kart-go-btn:hover {
     opacity: 1;
   }
 
-  .bottom-nav__icons.is-raised {
-    transform: none;
-  }
-
   .bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {
-    height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
+    top: 0;
+    bottom: 0;
+    height: auto;
   }
 }
 
@@ -1048,6 +1051,11 @@ html[data-accent="both"] .kart-go-btn:hover {
   box-shadow: none;
 }
 
+.bottom-nav--pile.is-shelf-raised {
+  min-height: var(--pile-nav-stack-height);
+  transition: min-height 680ms ease-in-out;
+}
+
 .bottom-nav__icons-base {
   position: absolute;
   left: 0;
@@ -1067,11 +1075,17 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.55)
   );
   pointer-events: none;
-  transition: height 680ms ease-in-out;
+  transition: height 680ms ease-in-out, top 680ms ease-in-out;
 }
 
 .bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {
-  height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
+  top: 0;
+  bottom: 0;
+  height: auto;
+}
+
+.bottom-nav--pile:not(.is-shelf-raised) .bottom-nav__icons-base {
+  height: var(--bottom-nav-offset);
 }
 
 .bottom-nav__icons {
@@ -1089,12 +1103,10 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.28)
   );
   transform: translate3d(0, 0, 0);
-  transition: transform 680ms ease-in-out;
-  will-change: transform;
 }
 
-.bottom-nav__icons.is-raised {
-  transform: translate3d(0, calc(-1 * var(--pile-shelf-height)), 0);
+.bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
+  border-radius: 2rem 2rem 0 0;
 }
 
 .bottom-nav--pile .bottom-nav__icons {

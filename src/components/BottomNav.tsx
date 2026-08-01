@@ -133,11 +133,7 @@ export function BottomNav() {
         {pileNavActive && (
           <div className="bottom-nav__icons-base" aria-hidden="true" />
         )}
-        <ul
-          className={`bottom-nav__icons flex items-center justify-around px-2.5 pt-2${
-            pileShelfRaised ? " is-raised" : ""
-          }`}
-        >
+        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
           {items.map((item) => {
             const active =
               item.href === "/shop"

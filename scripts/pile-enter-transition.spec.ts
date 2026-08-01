@@ -15,7 +15,7 @@ test("pile mode enter shows grid after header transition", async ({ page }) => {
   await expect(page.locator(".pile-header-enter.is-visible")).toBeVisible({
     timeout: 5000,
   });
-  await expect(page.locator(".bottom-nav__icons.is-raised")).toBeVisible({
+  await expect(page.locator(".bottom-nav--pile.is-shelf-raised")).toBeVisible({
     timeout: 2000,
   });
 

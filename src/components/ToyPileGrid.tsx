@@ -18,6 +18,9 @@ const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
 const EDGE_THRESHOLD = 220;
 const EXPAND_COOLDOWN_MS = 450;
+const SNAP_DURATION_MS = 420;
+const SNAP_DRAG_THRESHOLD_PX = 10;
+const WHEEL_LOCK_IDLE_MS = 180;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
 
@@ -35,7 +38,10 @@ type DragState = {
   startY: number;
   originX: number;
   originY: number;
+  moved: number;
 };
+
+type StagePoint = { x: number; y: number };
 
 function getMetrics(viewport: HTMLElement) {
   const cell = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-cell")) || 160;
@@ -67,13 +73,96 @@ function toyIndexForCell(col: number, row: number, poolLength: number) {
   return hash % poolLength;
 }
 
-function pointerDistance(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-) {
+function pointerDistance(a: StagePoint, b: StagePoint) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   return Math.hypot(dx, dy);
+}
+
+function easeOutCubic(t: number) {
+  return 1 - (1 - t) ** 3;
+}
+
+function intersectionArea(a: DOMRect, b: DOMRect) {
+  const left = Math.max(a.left, b.left);
+  const top = Math.max(a.top, b.top);
+  const right = Math.min(a.right, b.right);
+  const bottom = Math.min(a.bottom, b.bottom);
+  if (right <= left || bottom <= top) return 0;
+  return (right - left) * (bottom - top);
+}
+
+function panToCenterStagePoint(
+  viewport: HTMLElement,
+  stage: StagePoint,
+  zoom: number,
+): Pan {
+  const { clientWidth, clientHeight } = viewport;
+  return {
+    x: clientWidth / 2 - stage.x * zoom,
+    y: clientHeight / 2 - stage.y * zoom,
+  };
+}
+
+function getCardStageCenter(
+  viewport: HTMLElement,
+  card: Element,
+  pan: Pan,
+  zoom: number,
+): StagePoint {
+  const viewportRect = viewport.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const cx = cardRect.left + cardRect.width / 2 - viewportRect.left;
+  const cy = cardRect.top + cardRect.height / 2 - viewportRect.top;
+  return {
+    x: (cx - pan.x) / zoom,
+    y: (cy - pan.y) / zoom,
+  };
+}
+
+function findCardAtClientPoint(viewport: HTMLElement, clientX: number, clientY: number) {
+  const target = document.elementFromPoint(clientX, clientY);
+  return target?.closest(".toy-pile-card") ?? null;
+}
+
+function findNearestCard(viewport: HTMLElement, clientX: number, clientY: number) {
+  const direct = findCardAtClientPoint(viewport, clientX, clientY);
+  if (direct) return direct;
+
+  const cards = viewport.querySelectorAll(".toy-pile-card");
+  let bestEl: Element | null = null;
+  let bestDist = Infinity;
+
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dist = Math.hypot(clientX - cx, clientY - cy);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestEl = card;
+    }
+  }
+
+  return bestEl;
+}
+
+function findMostVisibleCard(viewport: HTMLElement) {
+  const viewportRect = viewport.getBoundingClientRect();
+  const cards = viewport.querySelectorAll(".toy-pile-card");
+  let bestEl: Element | null = null;
+  let bestArea = 0;
+
+  for (const card of cards) {
+    const area = intersectionArea(card.getBoundingClientRect(), viewportRect);
+    if (area <= 0) continue;
+    if (area > bestArea) {
+      bestArea = area;
+      bestEl = card;
+    }
+  }
+
+  return bestEl;
 }
 
 export function ToyPileGrid({ toys, showText }: Props) {
@@ -89,9 +178,14 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const zoomRef = useRef(1);
   const dragRef = useRef<DragState | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const pinchRef = useRef<{ dist: number; zoom: number; cx: number; cy: number } | null>(
-    null,
-  );
+  const pinchRef = useRef<{
+    dist: number;
+    zoom: number;
+    lock: StagePoint;
+  } | null>(null);
+  const wheelLockRef = useRef<StagePoint | null>(null);
+  const wheelLockTimerRef = useRef<number | null>(null);
+  const snapAnimRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const centeredRef = useRef(false);
   const expandCooldownRef = useRef(0);
@@ -100,19 +194,55 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
 
-  const commitTransform = useCallback((nextPan: Pan, nextZoom: number) => {
-    panRef.current = nextPan;
-    zoomRef.current = nextZoom;
-    if (rafRef.current !== null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      setPan({ ...panRef.current });
-      setZoom(zoomRef.current);
-    });
+  const cancelSnap = useCallback(() => {
+    if (snapAnimRef.current !== null) {
+      cancelAnimationFrame(snapAnimRef.current);
+      snapAnimRef.current = null;
+    }
   }, []);
 
-  const zoomAt = useCallback(
-    (targetZoom: number, clientX: number, clientY: number) => {
+  const commitTransform = useCallback(
+    (nextPan: Pan, nextZoom: number) => {
+      panRef.current = nextPan;
+      zoomRef.current = nextZoom;
+      if (rafRef.current !== null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        setPan({ ...panRef.current });
+        setZoom(zoomRef.current);
+      });
+    },
+    [],
+  );
+
+  const applyTransformImmediate = useCallback((nextPan: Pan, nextZoom: number) => {
+    panRef.current = nextPan;
+    zoomRef.current = nextZoom;
+    setPan({ ...nextPan });
+    setZoom(nextZoom);
+  }, []);
+
+  const resolveStageLock = useCallback(
+    (viewport: HTMLElement, clientX: number, clientY: number): StagePoint => {
+      const card = findNearestCard(viewport, clientX, clientY);
+      if (card) {
+        return getCardStageCenter(viewport, card, panRef.current, zoomRef.current);
+      }
+
+      const viewportRect = viewport.getBoundingClientRect();
+      const px = clientX - viewportRect.left;
+      const py = clientY - viewportRect.top;
+      const zoom = zoomRef.current;
+      return {
+        x: (px - panRef.current.x) / zoom,
+        y: (py - panRef.current.y) / zoom,
+      };
+    },
+    [],
+  );
+
+  const zoomToLockedCard = useCallback(
+    (targetZoom: number, lock: StagePoint) => {
       const viewport = viewportRef.current;
       if (!viewport) return;
 
@@ -120,22 +250,57 @@ export function ToyPileGrid({ toys, showText }: Props) {
       const prevZoom = zoomRef.current;
       if (Math.abs(clamped - prevZoom) < 0.0001) return;
 
-      const rect = viewport.getBoundingClientRect();
-      const px = clientX - rect.left;
-      const py = clientY - rect.top;
-      const stageX = (px - panRef.current.x) / prevZoom;
-      const stageY = (py - panRef.current.y) / prevZoom;
-
-      commitTransform(
-        {
-          x: px - stageX * clamped,
-          y: py - stageY * clamped,
-        },
-        clamped,
-      );
+      commitTransform(panToCenterStagePoint(viewport, lock, clamped), clamped);
     },
     [commitTransform],
   );
+
+  const animateSnapToCard = useCallback(
+    (card: Element) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      cancelSnap();
+
+      const zoom = zoomRef.current;
+      const lock = getCardStageCenter(viewport, card, panRef.current, zoom);
+      const targetPan = panToCenterStagePoint(viewport, lock, zoom);
+      const startPan = { ...panRef.current };
+      const delta = Math.hypot(targetPan.x - startPan.x, targetPan.y - startPan.y);
+      if (delta < 4) return;
+      const startTime = performance.now();
+
+      const tick = (now: number) => {
+        const t = easeOutCubic(Math.min(1, (now - startTime) / SNAP_DURATION_MS));
+        applyTransformImmediate(
+          {
+            x: startPan.x + (targetPan.x - startPan.x) * t,
+            y: startPan.y + (targetPan.y - startPan.y) * t,
+          },
+          zoom,
+        );
+
+        if (t < 1) {
+          snapAnimRef.current = requestAnimationFrame(tick);
+        } else {
+          snapAnimRef.current = null;
+        }
+      };
+
+      snapAnimRef.current = requestAnimationFrame(tick);
+    },
+    [applyTransformImmediate, cancelSnap],
+  );
+
+  const snapToMostVisible = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const card = findMostVisibleCard(viewport);
+    if (!card) return;
+
+    animateSnapToCard(card);
+  }, [animateSnapToCard]);
 
   const shiftPan = useCallback(
     (dx: number, dy: number) => {
@@ -225,17 +390,35 @@ export function ToyPileGrid({ toys, showText }: Props) {
     const onResize = () => {
       const clamped = clampZoom(viewport, zoomRef.current);
       if (clamped !== zoomRef.current) {
-        const rect = viewport.getBoundingClientRect();
-        zoomAt(clamped, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        const card = findMostVisibleCard(viewport);
+        const lock = card
+          ? getCardStageCenter(viewport, card, panRef.current, zoomRef.current)
+          : {
+              x: (viewport.clientWidth / 2 - panRef.current.x) / zoomRef.current,
+              y: (viewport.clientHeight / 2 - panRef.current.y) / zoomRef.current,
+            };
+        zoomToLockedCard(clamped, lock);
       }
     };
 
     const observer = new ResizeObserver(onResize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [zoomAt]);
+  }, [zoomToLockedCard]);
+
+  useEffect(() => {
+    return () => {
+      cancelSnap();
+      if (wheelLockTimerRef.current !== null) {
+        window.clearTimeout(wheelLockTimerRef.current);
+      }
+    };
+  }, [cancelSnap]);
 
   const syncPinch = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
     const pointers = [...pointersRef.current.values()];
     if (pointers.length !== 2) {
       pinchRef.current = null;
@@ -248,19 +431,31 @@ export function ToyPileGrid({ toys, showText }: Props) {
     const cy = (a.y + b.y) / 2;
 
     if (!pinchRef.current) {
+      cancelSnap();
       dragRef.current = null;
-      pinchRef.current = { dist, zoom: zoomRef.current, cx, cy };
+      pinchRef.current = {
+        dist,
+        zoom: zoomRef.current,
+        lock: resolveStageLock(viewport, cx, cy),
+      };
       return;
     }
 
     const ratio = dist / pinchRef.current.dist;
-    zoomAt(pinchRef.current.zoom * ratio, cx, cy);
-  }, [zoomAt]);
+    zoomToLockedCard(pinchRef.current.zoom * ratio, pinchRef.current.lock);
+  }, [cancelSnap, resolveStageLock, zoomToLockedCard]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
       if (target.closest("a, button")) return;
+
+      cancelSnap();
+      wheelLockRef.current = null;
+      if (wheelLockTimerRef.current !== null) {
+        window.clearTimeout(wheelLockTimerRef.current);
+        wheelLockTimerRef.current = null;
+      }
 
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -279,9 +474,10 @@ export function ToyPileGrid({ toys, showText }: Props) {
         startY: e.clientY,
         originX: panRef.current.x,
         originY: panRef.current.y,
+        moved: 0,
       };
     },
-    [syncPinch],
+    [cancelSnap, syncPinch],
   );
 
   const onPointerMove = useCallback(
@@ -298,10 +494,14 @@ export function ToyPileGrid({ toys, showText }: Props) {
       const drag = dragRef.current;
       if (!drag?.active || drag.pointerId !== e.pointerId) return;
 
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
+
       commitTransform(
         {
-          x: drag.originX + (e.clientX - drag.startX),
-          y: drag.originY + (e.clientY - drag.startY),
+          x: drag.originX + dx,
+          y: drag.originY + dy,
         },
         zoomRef.current,
       );
@@ -319,8 +519,12 @@ export function ToyPileGrid({ toys, showText }: Props) {
 
       const drag = dragRef.current;
       if (drag?.active && drag.pointerId === e.pointerId) {
+        const shouldSnap = drag.moved >= SNAP_DRAG_THRESHOLD_PX;
         dragRef.current = null;
         maybeExpand();
+        if (shouldSnap) {
+          window.requestAnimationFrame(() => snapToMostVisible());
+        }
       }
 
       if (pointersRef.current.size === 1) {
@@ -334,19 +538,37 @@ export function ToyPileGrid({ toys, showText }: Props) {
             startY: point.y,
             originX: panRef.current.x,
             originY: panRef.current.y,
+            moved: 0,
           };
         }
       }
     },
-    [maybeExpand],
+    [maybeExpand, snapToMostVisible],
   );
 
   const onWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
       if (e.ctrlKey || e.metaKey) {
+        cancelSnap();
+
+        if (!wheelLockRef.current) {
+          wheelLockRef.current = resolveStageLock(viewport, e.clientX, e.clientY);
+        }
+
+        if (wheelLockTimerRef.current !== null) {
+          window.clearTimeout(wheelLockTimerRef.current);
+        }
+        wheelLockTimerRef.current = window.setTimeout(() => {
+          wheelLockRef.current = null;
+          wheelLockTimerRef.current = null;
+        }, WHEEL_LOCK_IDLE_MS);
+
         const factor = Math.exp(-e.deltaY * 0.0025);
-        zoomAt(zoomRef.current * factor, e.clientX, e.clientY);
+        zoomToLockedCard(zoomRef.current * factor, wheelLockRef.current);
         return;
       }
 
@@ -358,7 +580,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
         zoomRef.current,
       );
     },
-    [commitTransform, zoomAt],
+    [cancelSnap, commitTransform, resolveStageLock, zoomToLockedCard],
   );
 
   useEffect(() => {
@@ -382,7 +604,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
     <div
       ref={viewportRef}
       className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
-      aria-label="Toy grid — drag to explore, pinch to zoom"
+      aria-label="Toy grid — drag to explore, pinch to zoom toward a card"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
@@ -405,6 +627,8 @@ export function ToyPileGrid({ toys, showText }: Props) {
             return (
               <ToyPileCard
                 key={`pile-${col}-${row}`}
+                col={col}
+                row={row}
                 toy={toy}
                 showText={showText}
               />
@@ -417,9 +641,13 @@ export function ToyPileGrid({ toys, showText }: Props) {
 }
 
 const ToyPileCard = memo(function ToyPileCard({
+  col,
+  row,
   toy,
   showText,
 }: {
+  col: number;
+  row: number;
   toy: Toy;
   showText: boolean;
 }) {
@@ -432,7 +660,7 @@ const ToyPileCard = memo(function ToyPileCard({
         : "bg-[var(--mint)]";
 
   return (
-    <article className="toy-pile-card">
+    <article className="toy-pile-card" data-pile-col={col} data-pile-row={row}>
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
         <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
           <Image

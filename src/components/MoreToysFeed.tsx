@@ -1,22 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import type { Toy } from "@/types/toy";
+import {
+  planCrazyFlash,
+  swapCardsAt,
+  useCrazyLightning,
+} from "@/hooks/useCrazyLightning";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
+const CRAZY_FLASH_MS = 2200;
+const CRAZY_SWAP_MS = 280;
+const emptyBtnRef = { current: null } as RefObject<HTMLButtonElement | null>;
 
 export function MoreToysFeed({
   seed,
   showText = true,
+  sectionRef,
+  crazyMode = false,
+  crazyEffectsActive = false,
+  scrollerRef,
+  crazyBtnRef,
+  onCrazyFlash,
 }: {
   seed: Toy[];
   showText?: boolean;
+  sectionRef?: RefObject<HTMLElement | null>;
+  crazyMode?: boolean;
+  crazyEffectsActive?: boolean;
+  scrollerRef?: RefObject<HTMLElement | null>;
+  crazyBtnRef?: RefObject<HTMLButtonElement | null>;
+  onCrazyFlash?: (active: boolean) => void;
 }) {
   const [items, setItems] = useState<Toy[]>(() => seed.slice(0, PAGE));
+  const [displayIds, setDisplayIds] = useState<string[]>(() =>
+    seed.slice(0, PAGE).map((t) => t.id),
+  );
+  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const cursorRef = useRef(Math.min(PAGE, seed.length));
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const crazyFlashCountRef = useRef(0);
+  const localSectionRef = useRef<HTMLElement>(null);
+  const mergedSectionRef = sectionRef ?? localSectionRef;
+
+  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
+
+  const seedKey = seed.map((t) => t.id).join(",");
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || seed.length === 0) return;
@@ -30,17 +68,19 @@ export function MoreToysFeed({
     }
     cursorRef.current = i;
     setItems((prev) => [...prev, ...next]);
+    setDisplayIds((prev) => [...prev, ...next.map((t) => t.id)]);
 
     requestAnimationFrame(() => {
       loadingRef.current = false;
     });
   }, [seed]);
 
-  const seedKey = seed.map((t) => t.id).join(",");
-
   useEffect(() => {
-    setItems(seed.slice(0, PAGE));
+    const initial = seed.slice(0, PAGE);
+    setItems(initial);
+    setDisplayIds(initial.map((t) => t.id));
     cursorRef.current = Math.min(PAGE, seed.length);
+    setCrazyFlashSlots([]);
   }, [seed, seedKey]);
 
   useEffect(() => {
@@ -58,30 +98,109 @@ export function MoreToysFeed({
     return () => observer.disconnect();
   }, [loadMore]);
 
+  useEffect(() => {
+    if (!crazyMode || !crazyEffectsActive) {
+      onCrazyFlash?.(false);
+      setCrazyFlashSlots([]);
+      return;
+    }
+
+    const scroller = scrollerRef?.current;
+    if (!scroller) return;
+
+    let flashTimer: number | undefined;
+    let swapTimer: number | undefined;
+
+    const flash = () => {
+      crazyFlashCountRef.current += 1;
+      const nextKey = crazyFlashCountRef.current;
+
+      const plan = planCrazyFlash(
+        scroller,
+        emptyBtnRef,
+        crazyBtnRef ?? emptyBtnRef,
+        nextKey,
+      );
+      if (!plan) return;
+
+      const { slotIndices, flashX, flashY } = plan;
+
+      flashScreen(flashX, flashY);
+      onCrazyFlash?.(true);
+
+      swapTimer = window.setTimeout(() => {
+        setDisplayIds((prev) => swapCardsAt(prev, slotIndices, nextKey));
+        setCrazyFlashSlots(slotIndices);
+        flashTimer = window.setTimeout(() => {
+          onCrazyFlash?.(false);
+          setCrazyFlashSlots([]);
+        }, 380);
+      }, CRAZY_SWAP_MS);
+    };
+
+    crazyFlashCountRef.current = 0;
+    flash();
+    const id = window.setInterval(flash, CRAZY_FLASH_MS);
+    return () => {
+      window.clearInterval(id);
+      if (flashTimer) window.clearTimeout(flashTimer);
+      if (swapTimer) window.clearTimeout(swapTimer);
+      onCrazyFlash?.(false);
+      setCrazyFlashSlots([]);
+    };
+  }, [
+    crazyMode,
+    crazyEffectsActive,
+    scrollerRef,
+    crazyBtnRef,
+    flashScreen,
+    onCrazyFlash,
+  ]);
+
+  const displayed = useMemo(() => {
+    const byId = new Map(items.map((t) => [t.id, t]));
+    return displayIds
+      .map((id) => byId.get(id))
+      .filter((t): t is Toy => t != null);
+  }, [items, displayIds]);
+
+  const gridClassName = [
+    "toy-feed-grid",
+    crazyMode && crazyEffectsActive ? "toy-feed-grid--crazy" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   if (seed.length === 0) return null;
 
   return (
-    <section
-      className="more-toys-feed mt-10 border-t border-black/5 pt-8"
-      aria-label="More toys"
-    >
-      <h3 className="mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:text-3xl">
-        More toys
-      </h3>
-      <div className="toy-feed-grid">
-        {items.map((toy, index) => (
-          <FeedCard
-            key={`${toy.id}-${index}`}
-            toy={toy}
-            showText={showText}
-            index={index}
-          />
-        ))}
-      </div>
-      <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
-      <p className="more-toys-feed__hint mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
-        Keep scrolling — more toys ahead
-      </p>
-    </section>
+    <>
+      <section
+        ref={mergedSectionRef}
+        className="more-toys-feed mt-10 border-t border-black/5 pt-8"
+        aria-label="More toys"
+      >
+        <h3 className="mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:text-3xl">
+          More toys
+        </h3>
+        <div className={gridClassName}>
+          {displayed.map((toy, index) => (
+            <FeedCard
+              key={`${toy.id}-${index}`}
+              toy={toy}
+              showText={showText}
+              index={index}
+              slotIndex={index}
+              crazyStrike={crazyFlashSlots.includes(index)}
+            />
+          ))}
+        </div>
+        <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
+        <p className="more-toys-feed__hint mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
+          Keep scrolling — more toys ahead
+        </p>
+      </section>
+      {flashPortal}
+    </>
   );
 }

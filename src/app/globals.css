@@ -607,7 +607,8 @@ html[data-accent="both"] .kart-go-btn:hover {
     opacity: 1;
   }
 
-  .bottom-nav--pile.is-shelf-raised {
+  .bottom-nav--pile.is-shelf-raised::before {
+    opacity: 1;
     backdrop-filter: blur(28px) saturate(1.8);
     -webkit-backdrop-filter: blur(28px) saturate(1.8);
   }
@@ -1054,10 +1055,21 @@ html[data-accent="both"] .kart-go-btn:hover {
   margin: 0;
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
+  /* Icons above home indicator; frosted fill is painted by ::before */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: transparent;
+  border-top-color: transparent;
+  box-shadow: none;
+}
+
+.bottom-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
   border-top: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  /* Icons above home indicator; bar background fills the inset zone */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   -webkit-backdrop-filter: blur(28px) saturate(1.8);
   backdrop-filter: blur(28px) saturate(1.8);
   background-color: rgba(255, 255, 255, 0.45);
@@ -1066,6 +1078,16 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.62),
     rgba(255, 255, 255, 0.28)
   );
+  pointer-events: none;
+}
+
+.bottom-nav--pile:not(.is-shelf-raised)::before {
+  opacity: 0;
+  transition: opacity var(--pile-chrome-duration) ease-in-out;
+}
+
+.bottom-nav--pile.is-shelf-raised::before {
+  opacity: 1;
 }
 
 .bottom-nav--pile:not(.is-shelf-raised) {
@@ -1107,6 +1129,17 @@ html[data-accent="both"] .kart-go-btn:hover {
 .bottom-nav__icons {
   position: relative;
   z-index: 1;
+  background: transparent;
+  border-top: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-image: none;
+}
+
+/* Regular shelf + pile icon row — own frosted layer over the fill */
+.bottom-nav:not(.bottom-nav--pile) .bottom-nav__icons,
+.bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
   border-radius: 2rem 2rem 0 0;
   border-top: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
@@ -1118,21 +1151,12 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.62),
     rgba(255, 255, 255, 0.28)
   );
-  transform: translate3d(0, 0, 0);
 }
 
-.bottom-nav--pile .bottom-nav__icons {
-  border-radius: 0;
-  border-top: none;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background-color: transparent;
-  background-image: none;
-}
-
+.bottom-nav--pile .bottom-nav__icons,
 .bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
-  border-radius: 2rem 2rem 0 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .scroll-pad-bottom {

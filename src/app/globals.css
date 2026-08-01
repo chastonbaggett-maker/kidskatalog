@@ -1514,56 +1514,126 @@ html[data-standalone="true"] .app-shell {
     animation: none;
   }
 
-  .admin-gate__panel--shake {
+  .admin-gate__head--shake {
     animation: none;
   }
 }
 
-/* Admin PIN gate — frosted glass */
+/* Admin PIN gate — iOS-style passcode over site */
 .admin-gate {
   isolation: isolate;
 }
 
 .admin-gate__backdrop {
-  background: rgba(8, 12, 28, 0.55);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
 }
 
-.admin-gate__panel {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 2rem;
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(48px) saturate(180%);
-  -webkit-backdrop-filter: blur(48px) saturate(180%);
+.admin-gate__content {
+  pointer-events: none;
 }
 
-.admin-gate__panel--shake {
+.admin-gate__content > * {
+  pointer-events: auto;
+}
+
+.admin-gate__title {
+  font-family: var(--font-body);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
+}
+
+.admin-gate__head--shake {
   animation: admin-pin-shake 0.45s ease;
 }
 
+.admin-gate__error {
+  min-height: 1.25rem;
+  color: #ffd0d0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.admin-gate__cancel {
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+}
+
 .admin-pin-dot {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  transition: transform 0.12s ease, background 0.12s ease;
+  display: block;
+  height: 0.85rem;
+  width: 0.85rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .admin-pin-dot--filled {
-  background: rgba(255, 255, 255, 0.95);
-  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.96);
+  transform: scale(1.02);
+}
+
+.admin-pin-keypad__row + .admin-pin-keypad__row {
+  margin-top: 1rem;
 }
 
 .admin-pin-key {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 18px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .admin-pin-key:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-pin-key:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.admin-pin-key--action {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.admin-pin-key--action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-pin-key__digit {
+  font-size: 1.85rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.22);
+}
+
+.admin-pin-key__letters {
+  margin-top: 0.1rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  opacity: 0.82;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes admin-pin-shake {

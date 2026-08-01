@@ -15,7 +15,6 @@ type Props = {
 export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("unlock");
-  const [pinsExist, setPinsExist] = useState(true);
   const [entry, setEntry] = useState("");
   const [firstPin, setFirstPin] = useState("");
   const [error, setError] = useState("");
@@ -32,9 +31,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
     fetch("/api/admin/auth")
       .then((r) => r.json())
       .then((data: { pinsExist?: boolean; authenticated?: boolean }) => {
-        const exists = Boolean(data.pinsExist);
-        setPinsExist(exists);
-        setMode(exists ? "unlock" : "setup");
+        setMode(data.pinsExist ? "unlock" : "setup");
         if (data.authenticated) onUnlocked();
       })
       .catch(() => setMode("unlock"));
@@ -106,49 +103,43 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
 
   const title =
     mode === "setup"
-      ? "Create Admin PIN"
+      ? "Create Passcode"
       : mode === "confirm"
-        ? "Re-enter PIN"
-        : "Enter Admin PIN";
-
-  const subtitle =
-    mode === "setup"
-      ? "Choose a 4-digit PIN"
-      : mode === "confirm"
-        ? "Confirm your PIN"
-        : pinsExist
-          ? "Admin access"
-          : "Set up your first PIN";
+        ? "Re-enter Passcode"
+        : "Enter Passcode";
 
   return createPortal(
-    <div className="admin-gate fixed inset-0 z-[200] flex items-center justify-center px-4">
+    <div className="admin-gate fixed inset-0 z-[200] flex flex-col">
       <button
         type="button"
         className="admin-gate__backdrop absolute inset-0"
         aria-label="Close admin PIN"
         onClick={onClose}
       />
-      <div className={`admin-gate__panel relative w-full max-w-sm px-6 py-8 ${shake ? "admin-gate__panel--shake" : ""}`}>
-        <p className="mb-1 text-center text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
-          KidsKatalog
-        </p>
-        <h2 className="mb-6 text-center font-[family-name:var(--font-display)] text-2xl font-bold text-white">
-          {title}
-        </h2>
-        <p className="mb-5 text-center text-sm text-white/75">{subtitle}</p>
 
-        <div className="mb-8 flex items-center justify-center gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <span
-              key={i}
-              className={`admin-pin-dot h-3.5 w-3.5 rounded-full ${i < entry.length ? "admin-pin-dot--filled" : ""}`}
-            />
-          ))}
+      <div className="admin-gate__content relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <div
+          className={`admin-gate__head mb-10 w-full max-w-sm text-center ${shake ? "admin-gate__head--shake" : ""}`}
+        >
+          <h2 className="admin-gate__title">{title}</h2>
+
+          <div className="admin-gate__dots mt-8 flex items-center justify-center gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <span
+                key={i}
+                className={`admin-pin-dot ${i < entry.length ? "admin-pin-dot--filled" : ""}`}
+              />
+            ))}
+          </div>
+
+          {error ? (
+            <p className="admin-gate__error mt-5 text-sm font-medium">{error}</p>
+          ) : (
+            <p className="admin-gate__error mt-5 text-sm font-medium" aria-hidden>
+              &nbsp;
+            </p>
+          )}
         </div>
-
-        {error ? (
-          <p className="mb-4 text-center text-sm font-semibold text-[#ffb4b4]">{error}</p>
-        ) : null}
 
         <PinKeypad
           disabled={busy}
@@ -159,7 +150,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-full py-2.5 text-sm font-semibold text-white/70 transition hover:text-white"
+          className="admin-gate__cancel mt-8 text-base font-medium transition active:opacity-70"
         >
           Cancel
         </button>

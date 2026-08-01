@@ -268,7 +268,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       >
         <div ref={chromeRef} className="relative z-20">
           <FeedHeader query={query} onQueryChange={setQuery} />
-          <div className={crazyMode ? "browse-controls" : "bg-white"}>
+          <div className={crazyMode ? "browse-controls" : "browse-chrome-panel"}>
             <FilterRow
               audience={audience}
               onAudienceChange={setAudience}

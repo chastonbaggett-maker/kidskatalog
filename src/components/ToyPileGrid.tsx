@@ -223,6 +223,26 @@ function pickRandomToyId(poolIds: string[], currentId: string, seed: number) {
   return candidates[s % candidates.length]!;
 }
 
+/** Pick ~half of visible pile cells, at least one when any are visible. */
+function pickHalfVisibleCells(
+  cells: { key: string; toyId: string }[],
+  seed: number,
+) {
+  if (cells.length === 0) return [];
+
+  const count = Math.max(1, Math.ceil(cells.length / 2));
+  const shuffled = [...cells];
+  let s = seed;
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+
+  return shuffled.slice(0, count);
+}
+
 function toyForCell(
   col: number,
   row: number,
@@ -705,21 +725,34 @@ export function ToyPileGrid({
 
       crazyFlashCountRef.current += 1;
       const seed = crazyFlashCountRef.current;
-      let s = (seed * 1664525 + 1013904223) >>> 0;
-      const pick = visibleCells[s % visibleCells.length]!;
-      const nextToyId = pickRandomToyId(poolIds, pick.toyId, seed);
+      const picks = pickHalfVisibleCells(visibleCells, seed);
+      let swapSeed = seed;
 
-      preloadImages([poolImageById.get(nextToyId)].filter(Boolean) as string[]);
+      const swaps = picks.map((pick) => {
+        swapSeed = (swapSeed * 1664525 + 1013904223) >>> 0;
+        return {
+          key: pick.key,
+          nextToyId: pickRandomToyId(poolIds, pick.toyId, swapSeed),
+        };
+      });
+
+      preloadImages(
+        swaps
+          .map(({ nextToyId }) => poolImageById.get(nextToyId))
+          .filter((src): src is string => Boolean(src)),
+      );
 
       const btnRect = button.getBoundingClientRect();
       flashScreen(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
 
       setCrazyOverrides((prev) => {
         const next = new Map(prev);
-        next.set(pick.key, nextToyId);
+        for (const { key, nextToyId } of swaps) {
+          next.set(key, nextToyId);
+        }
         return next;
       });
-      setCrazyStrikeKeys(new Set([pick.key]));
+      setCrazyStrikeKeys(new Set(swaps.map(({ key }) => key)));
       onCrazyFlash?.(true);
 
       flashTimer = window.setTimeout(() => {

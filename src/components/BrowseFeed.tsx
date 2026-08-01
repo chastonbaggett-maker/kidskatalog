@@ -4,10 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import {
-  getLightningStrikeTarget,
-  getVisibleFeedSlots,
-  pickVisibleCrazyButton,
-  pickVisibleSlot,
+  planLightningStrike,
   swapCardAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
@@ -122,26 +119,20 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       const scroller = scrollerRef.current;
       if (!scroller) return;
 
-      const visibleSlots = getVisibleFeedSlots(scroller);
-      if (visibleSlots.length === 0) return;
-
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
-      const slotIndex = pickVisibleSlot(visibleSlots, nextKey);
-      if (slotIndex == null) return;
 
-      const cardEl = scroller.querySelector<HTMLElement>(
-        `[data-feed-slot="${slotIndex}"]`,
-      );
-      if (!cardEl) return;
-
-      const crazyBtn = pickVisibleCrazyButton(
+      const plan = planLightningStrike(
+        scroller,
         filterCrazyBtnRef,
         shelfCrazyBtnRef,
+        nextKey,
       );
-      if (!crazyBtn) return;
+      if (!plan) return;
 
-      strikeAt(getLightningStrikeTarget(crazyBtn, cardEl));
+      const { target, slotIndex } = plan;
+
+      strikeAt(target);
       setCrazyFlash(true);
 
       swapTimer = window.setTimeout(() => {

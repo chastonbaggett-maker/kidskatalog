@@ -21,7 +21,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
+    <div className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
       <ShelfHeader
         backHref="/shop"
         trailing={

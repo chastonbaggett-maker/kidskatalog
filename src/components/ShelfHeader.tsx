@@ -27,53 +27,55 @@ export function ShelfHeader({
   className = "",
   trailing,
 }: ShelfHeaderProps) {
+  const surfaceClass = [
+    "shelf-header__surface",
+    altGradient ? "shelf-header__surface--alt" : "",
+    rounded ? "shelf-header__surface--rounded" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <header
-      className={`shrink-0 ${
-        altGradient
-          ? "bg-[image:var(--header-grad-alt)]"
-          : "bg-[image:var(--header-grad)]"
-      } px-3 pb-5 pt-[max(1rem,env(safe-area-inset-top))] text-white shadow-[0_8px_20px_-12px_rgba(80,100,180,0.55)] ${
-        rounded ? "rounded-b-[2rem]" : ""
-      } ${className}`}
-    >
-      <div className="relative flex min-h-11 items-center justify-center">
-        {backHref ? (
-          <Link
-            href={backHref}
-            className="back-fun absolute left-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
-            aria-label="Back"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M14.5 5.5 8 12l6.5 6.5"
-                stroke="currentColor"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M9 12h9"
-                stroke="currentColor"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </Link>
+    <header className="shelf-header shrink-0">
+      <div className={`${surfaceClass} ${className}`.trim()}>
+        <div className="relative flex min-h-11 items-center justify-center px-3">
+          {backHref ? (
+            <Link
+              href={backHref}
+              className="back-fun absolute left-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
+              aria-label="Back"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M14.5 5.5 8 12l6.5 6.5"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 12h9"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </Link>
+          ) : null}
+
+          <Logo variant="icon" light glow href="/shop" size={44} />
+          {trailing}
+        </div>
+
+        {title ? (
+          <h1 className="mt-2 px-3 text-center font-[family-name:var(--font-display)] text-2xl font-bold leading-tight sm:text-3xl">
+            {title}
+          </h1>
         ) : null}
-
-        <Logo variant="icon" light glow href="/shop" size={44} />
-        {trailing}
+        {subtitle ? (
+          <p className="mt-0.5 px-3 text-center text-white/85">{subtitle}</p>
+        ) : null}
       </div>
-
-      {title ? (
-        <h1 className="mt-2 text-center font-[family-name:var(--font-display)] text-2xl font-bold leading-tight sm:text-3xl">
-          {title}
-        </h1>
-      ) : null}
-      {subtitle ? (
-        <p className="mt-0.5 text-center text-white/85">{subtitle}</p>
-      ) : null}
     </header>
   );
 }

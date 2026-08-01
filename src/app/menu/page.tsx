@@ -8,7 +8,7 @@ import type { CategoryId } from "@/types/toy";
 export default function MenuPage() {
   return (
     <AppShell>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
         <ShelfHeader title="Piles" subtitle="Pick a toy group" />
         <div className="page-scroll star-field grid min-h-0 flex-1 grid-cols-2 gap-3 px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6">
           {categories.map((cat) => (

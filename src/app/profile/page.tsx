@@ -4,7 +4,7 @@ import { ShelfHeader } from "@/components/ShelfHeader";
 export default function ProfilePage() {
   return (
     <AppShell>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
         <ShelfHeader
           title="My profile"
           subtitle="Just for browsing — no account needed."

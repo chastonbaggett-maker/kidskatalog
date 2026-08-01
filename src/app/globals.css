@@ -114,6 +114,37 @@ select {
   background-repeat: repeat;
 }
 
+/* Shelf pages — star field sits behind header corner cutouts */
+.shelf-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.shelf-header {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
+
+.shelf-header__surface {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: 1.25rem;
+  color: #fff;
+  background-color: transparent;
+  background-image: var(--header-grad);
+  background-clip: padding-box;
+  box-shadow: 0 8px 20px -12px rgba(80, 100, 180, 0.55);
+}
+
+.shelf-header__surface--alt {
+  background-image: var(--header-grad-alt);
+}
+
+.shelf-header__surface--rounded {
+  border-radius: 0 0 2rem 2rem;
+  overflow: hidden;
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -205,6 +236,13 @@ select {
   opacity: 0;
   transform: translate3d(0, 0, 0);
   transition: opacity 300ms ease;
+}
+
+.browse-feed--crazy .browse-shelf-overlay {
+  background-color: #18181f;
+  background-image: var(--crazy-star-field);
+  background-size: 360px 480px;
+  background-repeat: repeat;
 }
 
 .back-fun {
@@ -383,7 +421,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   overflow-x: hidden;
 }
 
-.browse-feed--crazy header {
+.browse-feed--crazy .shelf-header__surface {
   box-shadow:
     0 8px 28px -10px rgba(0, 0, 0, 0.55),
     0 1px 0 rgba(255, 229, 102, 0.08);

@@ -16,7 +16,7 @@ export default function KartPage() {
 
   return (
     <AppShell>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
         <ShelfHeader
           title="My Kart"
           subtitle={

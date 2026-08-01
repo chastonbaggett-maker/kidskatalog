@@ -210,9 +210,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
-    <div className={`relative flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
+    <div className={`relative shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
       <div
-        className={`browse-shelf-overlay ${
+        className={`browse-shelf-overlay star-field ${
           shelfMode === "shown" ? "is-visible" : ""
         } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
         aria-hidden={!shelfActive || shelfMode === "leaving"}

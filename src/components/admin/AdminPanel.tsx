@@ -54,12 +54,21 @@ export function AdminPanel({ open, onClose }: Props) {
     void refresh();
   }, [open, refresh]);
 
-  async function handleLogout() {
+  async function clearAdminSession() {
     await fetch("/api/admin/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "logout" }),
     });
+  }
+
+  async function handleLock() {
+    await clearAdminSession();
+    onClose();
+  }
+
+  async function handleClose() {
+    await clearAdminSession();
     onClose();
   }
 
@@ -106,14 +115,14 @@ export function AdminPanel({ open, onClose }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => void handleLogout()}
+            onClick={() => void handleLock()}
             className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--ink-soft)]"
           >
             Lock
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => void handleClose()}
             className="rounded-full bg-[var(--purple-deep)] px-3 py-2 text-sm font-bold text-white"
           >
             Close

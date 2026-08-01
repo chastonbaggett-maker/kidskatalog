@@ -1,4 +1,12 @@
 {
   "version": 1,
-  "pins": []
+  "pins": [
+    {
+      "id": "pin-1785550508106",
+      "hash": "82555dabb53963a1730701fad953f0dd80830b06fb36b7bf5f6f27150fc136d4",
+      "label": "Admin",
+      "pin": "2114",
+      "createdAt": "2026-08-01T02:15:08.106Z"
+    }
+  ]
 }

@@ -28,15 +28,19 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
     setEntry("");
     setFirstPin("");
     setError("");
-    fetch("/api/admin/auth")
-      .then((r) => r.json())
-      .then((data: { pinsExist?: boolean; authenticated?: boolean }) => {
-        setMode(data.pinsExist ? "unlock" : "setup");
-        if (data.authenticated) onUnlocked();
-      })
-      .catch(() => setMode("unlock"));
-    // Only re-check auth when the gate opens — not when parent re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    void (async () => {
+      // Always require a fresh PIN — clear any existing admin session first.
+      await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
+      });
+
+      const res = await fetch("/api/admin/auth");
+      const data = (await res.json()) as { pinsExist?: boolean };
+      setMode(data.pinsExist ? "unlock" : "setup");
+    })().catch(() => setMode("unlock"));
   }, [open]);
 
   const fail = useCallback((message: string) => {

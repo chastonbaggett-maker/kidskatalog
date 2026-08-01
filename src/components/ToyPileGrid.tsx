@@ -13,22 +13,6 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import type { RefObject } from "react";
-import {
-  appendPopulateRing,
-  getCenteredPileGridOrigin,
-  getPileEntryTargetZoom,
-  measureLiveFeedAnchorRect,
-  pileCellKey,
-  prefersReducedMotion,
-} from "@/lib/pile-transition-utils";
-import type { PileAnchorRect, PileEnterPhase } from "@/lib/toy-pile-store";
-import {
-  PILE_CENTER_MS,
-  PILE_POPULATE_MAX_RING,
-  PILE_POPULATE_RING_MS,
-  PILE_ZOOM_MS,
-} from "@/lib/toy-pile-store";
 
 const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
@@ -39,19 +23,10 @@ const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
+
 type Props = {
   toys: Toy[];
   showText: boolean;
-  anchorToyId?: string;
-  interactive?: boolean;
-  entryAnimation?: {
-    phase: Extract<PileEnterPhase, "center" | "zoom">;
-    anchorToyId: string;
-    fromRect: PileAnchorRect;
-    feedScrollerRef?: RefObject<HTMLElement | null>;
-    onCenterComplete?: () => void;
-    onComplete?: () => void;
-  };
 };
 
 type Pan = { x: number; y: number };
@@ -78,7 +53,6 @@ function getZoomBounds(viewport: HTMLElement) {
   const { cell, gap, stride } = getMetrics(viewport);
   const { clientWidth, clientHeight } = viewport;
   const feedWidth = Math.max(clientWidth - FEED_CARD_SIDE_INSET_PX, cell);
-  /** Six cells plus five gaps — exact footprint of a 6×6 block */
   const gridSpan = GRID_VIEW * stride - gap;
   const minZoom = Math.min(clientWidth / gridSpan, clientHeight / gridSpan);
   const maxZoom = feedWidth / cell;
@@ -106,10 +80,6 @@ function pointerDistance(a: StagePoint, b: StagePoint) {
 
 function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3;
-}
-
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 function intersectionArea(a: DOMRect, b: DOMRect) {
@@ -146,36 +116,6 @@ function getCardStageCenter(
   return {
     x: (cx - pan.x) / zoom,
     y: (cy - pan.y) / zoom,
-  };
-}
-
-function getCellStageCenter(
-  col: number,
-  row: number,
-  colMin: number,
-  rowMin: number,
-  viewport: HTMLElement,
-): StagePoint {
-  const { stride, cell } = getMetrics(viewport);
-  const padL = 16;
-  const padT = 24;
-  const relCol = col - colMin;
-  const relRow = row - rowMin;
-  return {
-    x: padL + relCol * stride + cell / 2,
-    y: padT + relRow * stride + cell / 2,
-  };
-}
-
-function panForScreenPoint(
-  screenX: number,
-  screenY: number,
-  stage: StagePoint,
-  zoom: number,
-): Pan {
-  return {
-    x: screenX - stage.x * zoom,
-    y: screenY - stage.y * zoom,
   };
 }
 
@@ -224,47 +164,11 @@ function findMostVisibleCard(viewport: HTMLElement) {
   return bestEl;
 }
 
-function getInitialGridOrigin(
-  anchorToyId: string | undefined,
-  toys: Toy[],
-  gridSize: number,
-) {
-  if (!anchorToyId || toys.length === 0) {
-    return { colMin: 0, rowMin: 0, anchorCol: 0, anchorRow: 0 };
-  }
-  return getCenteredPileGridOrigin(anchorToyId, toys, gridSize);
-}
-
-function getRestingTransform(viewport: HTMLElement, anchorCol: number, anchorRow: number, colMin: number, rowMin: number) {
-  const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
-  const metrics = getMetrics(viewport);
-  const bounds = getZoomBounds(viewport);
-  const zoom = getPileEntryTargetZoom(viewport, metrics, bounds);
-  const pan = panForScreenPoint(
-    viewport.clientWidth / 2,
-    viewport.clientHeight / 2,
-    stageCenter,
-    zoom,
-  );
-  return { pan, zoom, stageCenter };
-}
-
-export function ToyPileGrid({
-  toys,
-  showText,
-  anchorToyId,
-  interactive = true,
-  entryAnimation,
-}: Props) {
-  const resolvedAnchorId = entryAnimation?.anchorToyId ?? anchorToyId;
-  const initialGridSize = MIN_CHUNK * 3;
-  const initialGridRef = useRef(
-    getInitialGridOrigin(resolvedAnchorId, toys, initialGridSize),
-  );
-  const [colMin, setColMin] = useState(initialGridRef.current.colMin);
-  const [rowMin, setRowMin] = useState(initialGridRef.current.rowMin);
-  const [colCount, setColCount] = useState(initialGridSize);
-  const [rowCount, setRowCount] = useState(initialGridSize);
+export function ToyPileGrid({ toys, showText }: Props) {
+  const [colMin, setColMin] = useState(0);
+  const [rowMin, setRowMin] = useState(0);
+  const [colCount, setColCount] = useState(MIN_CHUNK * 3);
+  const [rowCount, setRowCount] = useState(MIN_CHUNK * 3);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
 
@@ -282,20 +186,9 @@ export function ToyPileGrid({
   const wheelLockTimerRef = useRef<number | null>(null);
   const snapAnimRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const centeredRef = useRef(false);
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
-  const centerStartedRef = useRef(false);
-  const zoomStartedRef = useRef(false);
-  const coldStartDoneRef = useRef(false);
-  const populateStartedRef = useRef(false);
-  const populateTimerRef = useRef<number | null>(null);
-
-  const { anchorCol, anchorRow } = initialGridRef.current;
-  const anchorKey = pileCellKey(anchorCol, anchorRow);
-  const [revealedCells, setRevealedCells] = useState<Set<string>>(
-    () => new Set([anchorKey]),
-  );
-  const [populateDone, setPopulateDone] = useState(false);
 
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
@@ -472,228 +365,22 @@ export function ToyPileGrid({
     }, EXPAND_COOLDOWN_MS);
   }, [colCount, rowCount, pool.length, shiftPan]);
 
-  const animatePanTo = useCallback(
-    (
-      targetPan: Pan,
-      zoom: number,
-      duration: number,
-      onComplete?: () => void,
-      ease: (t: number) => number = easeInOutCubic,
-    ) => {
-      const viewport = viewportRef.current;
-      if (!viewport) return;
-
-      cancelSnap();
-
-      const startPan = { ...panRef.current };
-      const delta = Math.hypot(targetPan.x - startPan.x, targetPan.y - startPan.y);
-      if (delta < 2) {
-        applyTransformImmediate(targetPan, zoom);
-        onComplete?.();
-        return;
-      }
-
-      const startTime = performance.now();
-
-      const tick = (now: number) => {
-        const t = ease(Math.min(1, (now - startTime) / duration));
-        applyTransformImmediate(
-          {
-            x: startPan.x + (targetPan.x - startPan.x) * t,
-            y: startPan.y + (targetPan.y - startPan.y) * t,
-          },
-          zoom,
-        );
-
-        if (t < 1) {
-          snapAnimRef.current = requestAnimationFrame(tick);
-        } else {
-          snapAnimRef.current = null;
-          onComplete?.();
-        }
-      };
-
-      snapAnimRef.current = requestAnimationFrame(tick);
-    },
-    [applyTransformImmediate, cancelSnap],
-  );
-
-  const animateZoomOut = useCallback(
-    (
-      fromZoom: number,
-      toZoom: number,
-      lock: StagePoint,
-      onComplete?: () => void,
-      screenLock?: { x: number; y: number },
-      ease: (t: number) => number = easeOutCubic,
-    ) => {
-      const viewport = viewportRef.current;
-      if (!viewport) return;
-
-      cancelSnap();
-
-      const startPan = { ...panRef.current };
-      const targetPan = screenLock
-        ? panForScreenPoint(screenLock.x, screenLock.y, lock, toZoom)
-        : panToCenterStagePoint(viewport, lock, toZoom);
-      const startTime = performance.now();
-
-      const tick = (now: number) => {
-        const t = ease(Math.min(1, (now - startTime) / PILE_ZOOM_MS));
-        const zoom = fromZoom + (toZoom - fromZoom) * t;
-        applyTransformImmediate(
-          {
-            x: startPan.x + (targetPan.x - startPan.x) * t,
-            y: startPan.y + (targetPan.y - startPan.y) * t,
-          },
-          zoom,
-        );
-
-        if (t < 1) {
-          snapAnimRef.current = requestAnimationFrame(tick);
-        } else {
-          snapAnimRef.current = null;
-          onComplete?.();
-        }
-      };
-
-      snapAnimRef.current = requestAnimationFrame(tick);
-    },
-    [applyTransformImmediate, cancelSnap],
-  );
-
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    if (!viewport || centeredRef.current) return;
 
-    if (entryAnimation?.phase === "center" && !centerStartedRef.current) {
-      const { anchorCol, anchorRow } = initialGridRef.current;
-      const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
-      const bounds = getZoomBounds(viewport);
-      const { maxZoom } = bounds;
-      const viewportRect = viewport.getBoundingClientRect();
-      const scroller = entryAnimation.feedScrollerRef?.current;
-      const liveRect =
-        scroller && measureLiveFeedAnchorRect(scroller, entryAnimation.anchorToyId);
-      const fromRect = liveRect ?? entryAnimation.fromRect;
-      const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
-      const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
-      const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
-      const targetPan = panForScreenPoint(
-        viewport.clientWidth / 2,
-        viewport.clientHeight / 2,
-        stageCenter,
-        maxZoom,
-      );
-
-      centerStartedRef.current = true;
-      applyTransformImmediate(initialPan, maxZoom);
-
-      requestAnimationFrame(() => {
-        animatePanTo(
-          targetPan,
-          maxZoom,
-          PILE_CENTER_MS,
-          entryAnimation.onCenterComplete,
-          easeInOutCubic,
-        );
-      });
-      return;
-    }
-
-    if (entryAnimation?.phase === "zoom" && !zoomStartedRef.current) {
-      const { anchorCol, anchorRow } = initialGridRef.current;
-      const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
-      const metrics = getMetrics(viewport);
-      const bounds = getZoomBounds(viewport);
-      const { maxZoom } = bounds;
-      const toZoom = getPileEntryTargetZoom(viewport, metrics, bounds);
-      const viewportCenterX = viewport.clientWidth / 2;
-      const viewportCenterY = viewport.clientHeight / 2;
-
-      zoomStartedRef.current = true;
-      applyTransformImmediate(
-        panForScreenPoint(viewportCenterX, viewportCenterY, stageCenter, maxZoom),
-        maxZoom,
-      );
-
-      requestAnimationFrame(() => {
-        animateZoomOut(
-          maxZoom,
-          toZoom,
-          stageCenter,
-          entryAnimation.onComplete,
-          { x: viewportCenterX, y: viewportCenterY },
-          easeInOutCubic,
-        );
-      });
-      return;
-    }
-
-    if (entryAnimation) return;
-
-    if (coldStartDoneRef.current) return;
-
-    const { anchorCol: coldAnchorCol, anchorRow: coldAnchorRow } = initialGridRef.current;
-    const { pan, zoom } = getRestingTransform(
-      viewport,
-      coldAnchorCol,
-      coldAnchorRow,
-      colMin,
-      rowMin,
-    );
-    applyTransformImmediate(pan, zoom);
-    coldStartDoneRef.current = true;
-  }, [
-    colCount,
-    rowCount,
-    colMin,
-    rowMin,
-    entryAnimation,
-    applyTransformImmediate,
-    animatePanTo,
-    animateZoomOut,
-  ]);
-
-  useEffect(() => {
-    if (entryAnimation) return;
-    if (populateStartedRef.current) return;
-
-    populateStartedRef.current = true;
-
-    if (prefersReducedMotion()) {
-      let all = new Set([anchorKey]);
-      for (let ring = 1; ring <= PILE_POPULATE_MAX_RING; ring++) {
-        all = appendPopulateRing(all, anchorCol, anchorRow, ring);
-      }
-      setRevealedCells(all);
-      setPopulateDone(true);
-      return;
-    }
-
-    let ring = 1;
-    populateTimerRef.current = window.setInterval(() => {
-      if (ring > PILE_POPULATE_MAX_RING) {
-        if (populateTimerRef.current !== null) {
-          window.clearInterval(populateTimerRef.current);
-          populateTimerRef.current = null;
-        }
-        setPopulateDone(true);
-        return;
-      }
-      setRevealedCells((prev) =>
-        appendPopulateRing(prev, anchorCol, anchorRow, ring),
-      );
-      ring += 1;
-    }, PILE_POPULATE_RING_MS);
-
-    return () => {
-      if (populateTimerRef.current !== null) {
-        window.clearInterval(populateTimerRef.current);
-        populateTimerRef.current = null;
-      }
+    const { stride } = getMetrics(viewport);
+    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
+    const gridW = colCount * stride - gap;
+    const gridH = rowCount * stride - gap;
+    const initialZoom = clampZoom(viewport, 1);
+    const centered = {
+      x: (viewport.clientWidth - gridW * initialZoom) / 2,
+      y: (viewport.clientHeight - gridH * initialZoom) / 2,
     };
-  }, [entryAnimation, anchorCol, anchorRow, anchorKey]);
+    commitTransform(centered, initialZoom);
+    centeredRef.current = true;
+  }, [colCount, rowCount, commitTransform]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -723,9 +410,6 @@ export function ToyPileGrid({
       cancelSnap();
       if (wheelLockTimerRef.current !== null) {
         window.clearTimeout(wheelLockTimerRef.current);
-      }
-      if (populateTimerRef.current !== null) {
-        window.clearInterval(populateTimerRef.current);
       }
     };
   }, [cancelSnap]);
@@ -762,7 +446,6 @@ export function ToyPileGrid({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive) return;
       const target = e.target as HTMLElement;
       if (target.closest("a, button")) return;
 
@@ -793,12 +476,11 @@ export function ToyPileGrid({
         moved: 0,
       };
     },
-    [cancelSnap, syncPinch, interactive],
+    [cancelSnap, syncPinch],
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive) return;
       if (!pointersRef.current.has(e.pointerId)) return;
 
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -823,12 +505,11 @@ export function ToyPileGrid({
         zoomRef.current,
       );
     },
-    [commitTransform, syncPinch, interactive],
+    [commitTransform, syncPinch],
   );
 
   const endPointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive) return;
       pointersRef.current.delete(e.pointerId);
 
       if (pointersRef.current.size < 2) {
@@ -861,12 +542,11 @@ export function ToyPileGrid({
         }
       }
     },
-    [maybeExpand, snapToMostVisible, interactive],
+    [maybeExpand, snapToMostVisible],
   );
 
   const onWheel = useCallback(
     (e: WheelEvent) => {
-      if (!interactive) return;
       e.preventDefault();
       const viewport = viewportRef.current;
       if (!viewport) return;
@@ -899,7 +579,7 @@ export function ToyPileGrid({
         zoomRef.current,
       );
     },
-    [cancelSnap, commitTransform, resolveStageLock, zoomToLockedCard, interactive],
+    [cancelSnap, commitTransform, resolveStageLock, zoomToLockedCard],
   );
 
   useEffect(() => {
@@ -908,12 +588,6 @@ export function ToyPileGrid({
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
-
-  const entryPhase = entryAnimation?.phase;
-  const isCellRevealed = useCallback(
-    (col: number, row: number) => revealedCells.has(pileCellKey(col, row)),
-    [revealedCells],
-  );
 
   if (pool.length === 0) {
     return (
@@ -928,14 +602,8 @@ export function ToyPileGrid({
   return (
     <div
       ref={viewportRef}
-      className={`toy-pile-viewport scroll-pad-bottom min-h-0 flex-1${
-        interactive ? "" : " toy-pile-viewport--entry"
-      }`}
-      aria-label={
-        interactive
-          ? "Toy grid — drag to explore, pinch to zoom toward a card"
-          : "Toy pile loading"
-      }
+      className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
+      aria-label="Toy grid — drag to explore, pinch to zoom toward a card"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
@@ -954,27 +622,7 @@ export function ToyPileGrid({
           {Array.from({ length: slots }).map((_, index) => {
             const col = colMin + (index % colCount);
             const row = rowMin + Math.floor(index / colCount);
-            const isAnchor = col === anchorCol && row === anchorRow;
-            const revealed = isCellRevealed(col, row);
-
-            if (entryPhase === "center" && !isAnchor) {
-              return (
-                <div
-                  key={`pile-spacer-${col}-${row}`}
-                  className="toy-pile-card toy-pile-card--spacer"
-                  aria-hidden
-                />
-              );
-            }
-
-            if (!revealed) {
-              return (
-                <PileLoadingCard key={`pile-loading-${col}-${row}`} col={col} row={row} />
-              );
-            }
-
             const toy = pool[toyIndexForCell(col, row, pool.length)]!;
-            const justRevealed = !populateDone && !isAnchor;
             return (
               <ToyPileCard
                 key={`pile-${col}-${row}`}
@@ -982,8 +630,6 @@ export function ToyPileGrid({
                 row={row}
                 toy={toy}
                 showText={showText}
-                interactive={interactive}
-                reveal={justRevealed}
               />
             );
           })}
@@ -993,41 +639,16 @@ export function ToyPileGrid({
   );
 }
 
-const PileLoadingCard = memo(function PileLoadingCard({
-  col,
-  row,
-}: {
-  col: number;
-  row: number;
-}) {
-  return (
-    <article
-      className="toy-pile-card toy-pile-card--loading"
-      data-pile-col={col}
-      data-pile-row={row}
-      aria-hidden
-    >
-      <div className="toy-pile-card__body toy-pile-card__body--loading aspect-[4/5] rounded-[1.35rem] ring-1 ring-black/[0.04]">
-        <div className="toy-pile-card__shimmer" aria-hidden />
-      </div>
-    </article>
-  );
-});
-
 const ToyPileCard = memo(function ToyPileCard({
   col,
   row,
   toy,
   showText,
-  interactive = true,
-  reveal = false,
 }: {
   col: number;
   row: number;
   toy: Toy;
   showText: boolean;
-  interactive?: boolean;
-  reveal?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -1039,18 +660,13 @@ const ToyPileCard = memo(function ToyPileCard({
 
   return (
     <article
-      className={`toy-pile-card${reveal ? " toy-pile-card--revealing" : ""}`}
+      className="toy-pile-card"
       data-pile-col={col}
       data-pile-row={row}
       data-toy-id={toy.id}
     >
       <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
-        <Link
-          href={`/toy/${toy.id}`}
-          tabIndex={interactive ? undefined : -1}
-          className="relative block aspect-[4/5] bg-white"
-          aria-hidden={!interactive}
-        >
+        <Link href={`/toy/${toy.id}`} className="relative block aspect-[4/5] bg-white">
           <Image
             src={toy.image}
             alt={toy.imageAlt}
@@ -1061,7 +677,7 @@ const ToyPileCard = memo(function ToyPileCard({
         </Link>
         {showText ? (
           <div className="px-2.5 pb-2.5 pt-1 pr-11 sm:px-3 sm:pb-3 sm:pt-2 sm:pr-12">
-            <Link href={`/toy/${toy.id}`} tabIndex={interactive ? undefined : -1}>
+            <Link href={`/toy/${toy.id}`}>
               <h2 className="truncate font-[family-name:var(--font-display)] text-sm font-bold text-[var(--ink)] sm:text-base">
                 {toy.name}
               </h2>
@@ -1071,7 +687,6 @@ const ToyPileCard = memo(function ToyPileCard({
         <Link
           href={`/toy/${toy.id}`}
           aria-label={`View ${toy.name}`}
-          tabIndex={interactive ? undefined : -1}
           className={`toy-pile-card__eye absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 sm:h-10 sm:w-10 ${viewBtnClass}`}
         >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 sm:h-5 sm:w-5">

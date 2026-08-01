@@ -12,7 +12,6 @@ import {
   toyPileRootClass,
 } from "@/lib/toy-pile-store";
 import {
-  findMostVisibleFeedCard,
   prefersReducedMotion,
 } from "@/lib/pile-transition-utils";
 import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
@@ -56,9 +55,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
-  const anchor = useToyPileModeStore((s) => s.anchor);
   const startEnterTransition = useToyPileModeStore((s) => s.startEnterTransition);
-  const advanceEnterPhase = useToyPileModeStore((s) => s.advanceEnterPhase);
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
 
@@ -70,8 +67,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [portalMounted, setPortalMounted] = useState(false);
   const [pileHeaderVisible, setPileHeaderVisible] = useState(false);
   const [chromeExiting, setChromeExiting] = useState(false);
-  const [gridVisible, setGridVisible] = useState(false);
-  const [feedExiting, setFeedExiting] = useState(false);
   const [filterPortalTarget, setFilterPortalTarget] = useState<HTMLElement | null>(
     null,
   );
@@ -102,16 +97,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     }
     setChromeExiting(false);
   }, [enterPhase]);
-
-  useEffect(() => {
-    if (enterPhase === "center" || enterPhase === "zoom") {
-      setGridVisible(true);
-      setFeedExiting(true);
-      return;
-    }
-    setGridVisible(toyPileMode && enterPhase === "idle");
-    setFeedExiting(false);
-  }, [enterPhase, toyPileMode]);
 
   useEffect(() => {
     if (enterPhase === "chrome") {
@@ -165,14 +150,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       return;
     }
 
-    const scroller = scrollerRef.current;
-    const captured = scroller ? findMostVisibleFeedCard(scroller) : null;
-    if (!captured) {
-      skipToPileResting();
-      return;
-    }
-
-    startEnterTransition(captured);
+    startEnterTransition();
   }, [
     toyPileMode,
     enterPhase,
@@ -182,15 +160,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     skipToPileResting,
     startEnterTransition,
   ]);
-
-  const handleCenterComplete = useCallback(() => {
-    advanceEnterPhase("zoom");
-  }, [advanceEnterPhase]);
-
-  const handleEntryZoomComplete = useCallback(() => {
-    advanceEnterPhase("done");
-    resetTransition();
-  }, [advanceEnterPhase, resetTransition]);
 
   const handleCrazyModeToggle = useCallback(() => {
     if (!crazyMode) {
@@ -448,22 +417,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     />
   );
 
-  const showFeedLayer = !toyPileMode || enterPhase === "center" || enterPhase === "zoom";
-  const showBrowseChrome = !toyPileMode && enterPhase !== "center" && enterPhase !== "zoom";
-  const pileExploreEnabled = toyPileMode && enterPhase === "idle";
-  const feedExitClass =
-    enterPhase === "center" || enterPhase === "zoom"
-      ? "pile-feed-layer--handoff-hidden"
-      : feedExiting
-        ? "pile-feed-layer--exit"
-        : "";
-  const gridEnterClass =
-    gridVisible || enterPhase === "center" || enterPhase === "zoom"
-      ? "pile-grid-layer--enter"
-      : "";
+  const showFeedLayer = !toyPileMode;
+  const showBrowseChrome = !toyPileMode;
 
   const feedCards = (
-    <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4 ${feedExitClass}`}>
+    <div className="pile-feed-layer scroll-pad-bottom space-y-6 pt-4">
       {visibleChunks.map((chunk, chunkIndex) => (
         <Fragment key={`feed-chunk-${chunkIndex}`}>
           <div className={gridClassName}>
@@ -548,27 +506,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         }`}
       >
         {toyPileMode && (
-          <div
-            className={`pile-grid-layer toy-pile-grid-host star-field absolute inset-0 z-[1] flex min-h-0 flex-col ${gridEnterClass}`}
-          >
-            <ToyPileGrid
-              toys={displayed}
-              showText={showText}
-              anchorToyId={anchor?.toyId ?? displayed[0]?.id}
-              interactive={pileExploreEnabled}
-              entryAnimation={
-                (enterPhase === "center" || enterPhase === "zoom") && anchor
-                  ? {
-                      phase: enterPhase,
-                      anchorToyId: anchor.toyId,
-                      fromRect: anchor.rect,
-                      feedScrollerRef: scrollerRef,
-                      onCenterComplete: handleCenterComplete,
-                      onComplete: handleEntryZoomComplete,
-                    }
-                  : undefined
-              }
-            />
+          <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
+            <ToyPileGrid toys={displayed} showText={showText} />
           </div>
         )}
 

@@ -6,11 +6,11 @@ import {
   useToyPileModeStore,
 } from "@/lib/toy-pile-store";
 
-/** Chain chrome → zoom phase timers after enter transition starts. */
+/** After chrome animation, switch to pile grid with drag explore. */
 export function usePileEnterTransition() {
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
-  const advanceEnterPhase = useToyPileModeStore((s) => s.advanceEnterPhase);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
+  const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const chromeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function usePileEnterTransition() {
 
     chromeTimerRef.current = window.setTimeout(() => {
       setToyPileMode(true);
-      advanceEnterPhase("center");
+      resetTransition();
     }, PILE_CHROME_MS);
 
     return () => {
@@ -27,5 +27,5 @@ export function usePileEnterTransition() {
         chromeTimerRef.current = null;
       }
     };
-  }, [enterPhase, advanceEnterPhase, setToyPileMode]);
+  }, [enterPhase, resetTransition, setToyPileMode]);
 }

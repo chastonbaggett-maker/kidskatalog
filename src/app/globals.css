@@ -356,13 +356,13 @@ html[data-accent="both"] .kart-go-btn:hover {
   display: none;
 }
 
-/* Browse chrome — one clipped shell so corners/shadows don't bleed past the radius */
+/* Browse chrome — square top sits flush under header; bottom corners clip shelf */
 .browse-chrome-panel {
   position: relative;
   z-index: 1;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 2rem;
+  border-radius: 0 0 2rem 2rem;
   background-color: #fff;
   box-shadow:
     0 10px 28px -10px rgba(60, 70, 120, 0.28),

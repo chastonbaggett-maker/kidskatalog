@@ -338,10 +338,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         <div ref={chromeRef} className="relative z-20 shrink-0">
           {toyPileMode ? (
             <>
+              {pileShelfHeader}
               <div className="browse-chrome-panel browse-chrome-panel--pile">
                 {filterRow}
               </div>
-              {pileShelfHeader}
             </>
           ) : (
             <>

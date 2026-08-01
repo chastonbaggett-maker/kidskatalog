@@ -41,26 +41,34 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
     if (!scroller || !productArea || !moreToys) return;
 
     let productVisible = true;
+    let productRatio = 1;
     let moreToysVisible = false;
+    let moreToysRatio = 0;
 
     const sync = () => {
-      setMoreToysInView(moreToysVisible && !productVisible);
+      const inMoreToys =
+        moreToysVisible &&
+        moreToysRatio >= 0.06 &&
+        (!productVisible || productRatio < 0.15 || moreToysRatio > productRatio);
+      setMoreToysInView(inMoreToys);
     };
 
     const productObserver = new IntersectionObserver(
       ([entry]) => {
         productVisible = entry?.isIntersecting ?? false;
+        productRatio = entry?.intersectionRatio ?? 0;
         sync();
       },
-      { root: scroller, threshold: 0.12 },
+      { root: scroller, threshold: [0, 0.06, 0.12, 0.25, 0.5, 0.75, 1] },
     );
 
     const moreToysObserver = new IntersectionObserver(
       ([entry]) => {
         moreToysVisible = entry?.isIntersecting ?? false;
+        moreToysRatio = entry?.intersectionRatio ?? 0;
         sync();
       },
-      { root: scroller, threshold: 0.08 },
+      { root: scroller, threshold: [0, 0.06, 0.12, 0.25, 0.5, 0.75, 1] },
     );
 
     productObserver.observe(productArea);

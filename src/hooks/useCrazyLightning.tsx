@@ -55,6 +55,21 @@ function intersectionRect(a: DOMRect, b: DOMRect): DOMRect {
   };
 }
 
+/** Full window — used for header/shelf controls outside the scroller. */
+function getWindowViewport(): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    left: 0,
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    toJSON: () => ({}),
+  };
+}
+
 /** Visible feed area — scroller pane clipped to the window. */
 export function getStrikeViewport(scroller: HTMLElement): DOMRect {
   const scrollerRect = scroller.getBoundingClientRect();
@@ -149,7 +164,7 @@ export function planCrazyFlash(
   const viewport = getStrikeViewport(scroller);
   if (viewport.width <= 0 || viewport.height <= 0) return null;
 
-  const button = pickVisibleCrazyButton(filterRef, shelfRef, viewport);
+  const button = pickVisibleCrazyButton(filterRef, shelfRef, getWindowViewport());
   if (!button) return null;
 
   const candidates = getStrikeCandidates(scroller, viewport);

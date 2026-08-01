@@ -40,27 +40,29 @@ export function ShelfHeader({
       <div className={`${surfaceClass} ${className}`.trim()}>
         <div className="relative flex min-h-11 items-center justify-center px-3">
           {backHref ? (
-            <Link
-              href={backHref}
-              className="shelf-back-btn back-fun flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
-              aria-label="Back"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M14.5 5.5 8 12l6.5 6.5"
-                  stroke="currentColor"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9 12h9"
-                  stroke="currentColor"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </Link>
+            <div className="shelf-back-btn">
+              <Link
+                href={backHref}
+                className="back-fun flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
+                aria-label="Back"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M14.5 5.5 8 12l6.5 6.5"
+                    stroke="currentColor"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12h9"
+                    stroke="currentColor"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </Link>
+            </div>
           ) : null}
 
           <Logo variant="icon" light glow href="/shop" size={44} />

@@ -26,7 +26,7 @@ const EDGE_THRESHOLD = 220;
 const EXPAND_COOLDOWN_MS = 450;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
-/** Focus card width as a fraction of the visible pile band — also caps max zoom. */
+/** Mobile focus card width as a fraction of the visible pile band — also caps max zoom. */
 const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
 /** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
@@ -34,6 +34,9 @@ const MIN_ZOOM_OUT_ROWS = 6;
 /** Tablet max zoom-out reference — ~6 columns × ~4.5 rows in the visible band. */
 const TABLET_MIN_ZOOM_OUT_COLUMNS = 6;
 const TABLET_MIN_ZOOM_OUT_ROWS = 4.5;
+/** Tablet max zoom-in reference — ~3 columns × ~2.5 rows in the visible band. */
+const TABLET_MAX_ZOOM_IN_COLUMNS = 3;
+const TABLET_MAX_ZOOM_IN_ROWS = 2.5;
 const TABLET_MIN_WIDTH_PX = 640;
 const DESKTOP_MIN_WIDTH_PX = 1024;
 const CRAZY_MIN_VISIBLE_PX = 8;
@@ -78,8 +81,16 @@ function isPileZoomEnabled(viewport: HTMLElement) {
 }
 
 function getMaxPileZoom(viewport: HTMLElement) {
-  const { cell } = getMetrics(viewport);
+  const { cell, stride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
+
+  if (getPileFormFactor(viewport) === "tablet") {
+    return Math.max(
+      band.width / (TABLET_MAX_ZOOM_IN_COLUMNS * stride),
+      band.height / (TABLET_MAX_ZOOM_IN_ROWS * stride),
+    );
+  }
+
   return (band.width * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
 }
 

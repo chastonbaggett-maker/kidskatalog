@@ -51,7 +51,8 @@ export function useCrazyLightning(
 
     const rect = el.getBoundingClientRect();
     const originY = rect.top + rect.height * 0.55;
-    const height = Math.max(window.innerHeight - originY + 8, 140);
+    const available = window.innerHeight - originY;
+    const height = Math.min(Math.max(available * 0.42, 150), 240);
     const stamp = Date.now();
     const bolt: LightningStrike = {
       id: `${uid}-${stamp}`,

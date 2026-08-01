@@ -13,7 +13,7 @@ const BOLT_PATH =
   "L38 100 L42 92 L30 88 L46 76 L32 72 L50 60 L36 54 L54 42 L38 36 L56 24 L42 18 L58 8 L36 4 Z";
 
 export function CrazyLightningBolt({ id, left, top, height }: Props) {
-  const width = Math.min(Math.max(height * 0.048, 26), 44);
+  const width = Math.min(Math.max(height * 0.28, 56), 80);
   const gradId = `bolt-grad-${id}`;
   const glowId = `bolt-glow-${id}`;
 
@@ -52,8 +52,8 @@ export function CrazyLightningBolt({ id, left, top, height }: Props) {
               <stop offset="55%" stopColor="#ffe566" />
               <stop offset="100%" stopColor="#ff9800" />
             </linearGradient>
-            <filter id={glowId} x="-80%" y="-5%" width="260%" height="110%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="blur" />
+            <filter id={glowId} x="-70%" y="-5%" width="240%" height="110%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="3.6" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />

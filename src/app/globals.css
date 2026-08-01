@@ -375,6 +375,7 @@ html[data-accent="both"] .kart-go-btn:hover {
     #1e1e26 45%,
     #121216 100%
   );
+  overflow-x: hidden;
 }
 
 .browse-feed--crazy header {
@@ -437,6 +438,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 .page-scroll--crazy {
   position: relative;
   isolation: isolate;
+  overflow-x: hidden;
   background-color: #18181f;
   background-image: none;
   transition: background-color 320ms ease;
@@ -445,7 +447,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 .page-scroll--crazy::before {
   content: "";
   position: absolute;
-  inset: -12% -8%;
+  inset: -12% 0;
   z-index: 0;
   pointer-events: none;
   background:
@@ -510,10 +512,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 @keyframes crazy-cloud-drift {
   0% {
-    transform: translate3d(-1%, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   100% {
-    transform: translate3d(2%, -2%, 0) scale(1.04);
+    transform: translate3d(0, -2%, 0) scale(1.03);
   }
 }
 

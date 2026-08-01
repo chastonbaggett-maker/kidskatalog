@@ -45,6 +45,8 @@ export function BottomNav() {
     pathname.startsWith("/toy");
   const pileNavActive =
     onShopBrowse && (toyPileMode || isPileEntering(enterPhase));
+  const pileShelfRaised =
+    pileNavActive && (toyPileMode || enterPhase === "chrome");
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -126,9 +128,22 @@ export function BottomNav() {
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
           pileNavActive ? " bottom-nav--pile" : ""
-        }`}
+        }${pileShelfRaised ? " is-shelf-raised" : ""}`}
       >
-        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
+        <div
+          className={`bottom-nav__pile-shelf ${
+            pileShelfRaised ? "is-raised" : ""
+          } ${enterPhase === "chrome" || toyPileMode ? "is-visible" : ""}`}
+          aria-hidden={!pileNavActive}
+        />
+        {pileNavActive && (
+          <div className="bottom-nav__icons-base" aria-hidden="true" />
+        )}
+        <ul
+          className={`bottom-nav__icons flex items-center justify-around px-2.5 pt-2${
+            pileShelfRaised ? " is-raised" : ""
+          }`}
+        >
           {items.map((item) => {
             const active =
               item.href === "/shop"

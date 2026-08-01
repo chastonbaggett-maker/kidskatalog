@@ -176,7 +176,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         <button
           type="button"
           onClick={startSetup}
-          disabled={busy || pinsExist || (!pinsExist && mode === "setup")}
+          disabled={busy}
           className="admin-gate__setup mt-8 text-base font-medium transition active:opacity-70 disabled:opacity-40"
         >
           Setup Admin

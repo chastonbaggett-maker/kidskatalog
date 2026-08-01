@@ -38,10 +38,6 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "setup") {
-    const exists = await hasAdminPins();
-    if (exists) {
-      return NextResponse.json({ error: "Admin PIN already configured" }, { status: 403 });
-    }
     const record = await createAdminPin(pin, body.label || "Admin");
     const token = signSession(record.id);
     const res = NextResponse.json({ ok: true, authenticated: true });

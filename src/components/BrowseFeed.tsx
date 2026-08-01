@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
   planCrazyFlash,
   swapCardsAt,
@@ -31,7 +32,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [showText, setShowText] = useState(true);
   const [shuffleKey, setShuffleKey] = useState(0);
   const [displayIds, setDisplayIds] = useState<string[]>([]);
-  const [crazyMode, setCrazyMode] = useState(false);
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
+  const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [loadedPages, setLoadedPages] = useState(1);
@@ -104,7 +107,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   useEffect(() => {
     setDisplayIds(filteredIds);
     setShuffleKey(0);
-    setCrazyMode(false);
     setCrazyFlashSlots([]);
     setLoadedPages(1);
   }, [filteredIds]);
@@ -208,11 +210,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
   return (
-    <div
-      className={`relative flex min-h-0 flex-1 flex-col ${
-        crazyMode ? "browse-feed--crazy" : ""
-      }`}
-    >
+    <div className={`relative flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
       <div
         className={`browse-shelf-overlay ${
           shelfMode === "shown" ? "is-visible" : ""
@@ -236,9 +234,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 ${
-          crazyMode ? "page-scroll--crazy" : ""
-        }`}
+        className={`page-scroll star-field min-h-0 flex-1 ${crazyModeScrollClass(crazyMode)}`}
       >
         <div ref={chromeRef} className="relative z-20">
           <FeedHeader query={query} onQueryChange={setQuery} />
@@ -263,7 +259,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                 });
               }}
               crazyMode={crazyMode}
-              onCrazyModeToggle={() => setCrazyMode((v) => !v)}
+              onCrazyModeToggle={toggleCrazyMode}
               crazyFlash={crazyFlash}
               crazyBtnRef={filterCrazyBtnRef}
             />

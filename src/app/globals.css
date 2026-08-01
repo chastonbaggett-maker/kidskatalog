@@ -510,6 +510,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .browse-chrome-panel--pile {
+  border-radius: 0;
   box-shadow:
     0 10px 28px -10px rgba(255, 120, 80, 0.22),
     0 4px 10px -6px rgba(60, 70, 120, 0.1);

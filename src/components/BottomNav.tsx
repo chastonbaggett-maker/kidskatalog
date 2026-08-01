@@ -126,6 +126,8 @@ export function BottomNav() {
   const brandActive =
     pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
 
+  const showFrostFill = !pileNavActive || pileShelfRaised;
+
   return (
     <>
       <nav
@@ -135,6 +137,9 @@ export function BottomNav() {
           pileNavEnterVisible ? " is-enter-visible" : ""
         }`}
       >
+        {showFrostFill && (
+          <div className="bottom-nav__frost" aria-hidden="true" />
+        )}
         <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
           {items.map((item) => {
             const active =

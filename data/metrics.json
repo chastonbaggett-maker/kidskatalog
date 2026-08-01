@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "totalVisits": 158,
+  "totalVisits": 239,
   "totalSessions": 2,
   "sessionIds": [
     "e62b7913-4213-4e94-9088-93647b9352d6",
     "11324f93-9e97-447b-9319-3c236c15c87c"
   ],
   "dailyVisits": {
-    "2026-08-01": 158
+    "2026-08-01": 239
   },
   "kartAdds": 0,
   "kartEmailsSent": 0,

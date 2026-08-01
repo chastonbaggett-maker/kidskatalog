@@ -15,9 +15,13 @@ export const useAccentStore = create<AccentState>()(
   persist(
     (set) => ({
       audience: "all",
-      setAudience: (audience) => set({ audience }),
+      setAudience: (audience) =>
+        set((state) => (state.audience === audience ? state : { audience })),
     }),
-    { name: "kidskatalog-accent" },
+    {
+      name: "kidskatalog-accent",
+      partialize: (state) => ({ audience: state.audience }),
+    },
   ),
 );
 

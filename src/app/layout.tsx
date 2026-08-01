@@ -104,6 +104,11 @@ export default function RootLayout({
             __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');}catch(e){}})();`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var raw=localStorage.getItem('kidskatalog-accent');if(!raw)return;var data=JSON.parse(raw);var aud=data&&data.state&&data.state.audience;if(aud==='boys')document.documentElement.dataset.accent='boys';else if(aud==='girls')document.documentElement.dataset.accent='girls';else document.documentElement.dataset.accent='both';}catch(e){}})();`,
+          }}
+        />
         <StandaloneClass />
         <AccentSync />
         {children}

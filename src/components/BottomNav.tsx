@@ -92,7 +92,11 @@ export function BottomNav() {
     if (brandTapCount.current === 1) {
       brandNavTimer.current = window.setTimeout(() => {
         if (brandTapCount.current === 1) {
-          router.push("/");
+          const onHome =
+            pathname === "/" ||
+            pathname.startsWith("/shop") ||
+            pathname.startsWith("/toy");
+          if (!onHome) router.push("/shop");
         }
         brandNavTimer.current = null;
       }, BRAND_SINGLE_TAP_NAV_MS);

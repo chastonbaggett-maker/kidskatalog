@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useConfettiBurst } from "@/hooks/useConfettiBurst";
+import { useScrollTapGuard } from "@/hooks/useScrollTapGuard";
 import { CrazyModeButton } from "@/components/CrazyModeButton";
 import type { Audience } from "@/types/toy";
 
@@ -70,6 +71,13 @@ export function FilterRow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
+  const {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onClickCapture,
+    shouldIgnoreTap,
+  } = useScrollTapGuard();
 
   useLayoutEffect(() => {
     if (!crazyMode) return;
@@ -178,11 +186,19 @@ export function FilterRow({
     <div
       ref={scrollRef}
       className="filter-row-scroll relative overflow-x-auto overscroll-x-contain"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onClickCapture={onClickCapture}
     >
       <div className="flex w-max min-w-full items-center gap-2.5 px-4 py-3.5">
         <button
           type="button"
-          onClick={() => onShowTextChange(!showText)}
+          onClick={() => {
+            if (shouldIgnoreTap()) return;
+            onShowTextChange(!showText);
+          }}
           className="flex shrink-0 items-center gap-2 rounded-full bg-[#f3f4f8] px-3.5 py-2.5 text-sm font-bold text-[var(--blue)] shadow-sm"
         >
           Text
@@ -202,19 +218,18 @@ export function FilterRow({
         <button
           type="button"
           onClick={(e) => {
+            if (shouldIgnoreTap()) return;
             const next = audience === "boys" ? "all" : "boys";
             onAudienceChange(next);
-            const origin = (
-              e.currentTarget as HTMLButtonElement
-            ).getBoundingClientRect();
+            const origin = e.currentTarget.getBoundingClientRect();
             if (next === "boys") fireConfetti(origin, BOYS_CONFETTI);
             else if (next === "all") fireConfetti(origin, UNISEX_CONFETTI);
           }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
-            audience === "boys" || audience === "all"
+            audience === "boys"
               ? "bg-[var(--boys-chip)]"
               : "bg-[var(--boys-chip)]/45"
-          } ${audience === "girls" ? "opacity-55" : ""}`}
+          }`}
         >
           Boys
           <RocketIcon />
@@ -223,19 +238,18 @@ export function FilterRow({
         <button
           type="button"
           onClick={(e) => {
+            if (shouldIgnoreTap()) return;
             const next = audience === "girls" ? "all" : "girls";
             onAudienceChange(next);
-            const origin = (
-              e.currentTarget as HTMLButtonElement
-            ).getBoundingClientRect();
+            const origin = e.currentTarget.getBoundingClientRect();
             if (next === "girls") fireConfetti(origin, GIRLS_CONFETTI);
             else if (next === "all") fireConfetti(origin, UNISEX_CONFETTI);
           }}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-4.5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
-            audience === "girls" || audience === "all"
+            audience === "girls"
               ? "bg-[var(--girls-chip)]"
               : "bg-[var(--girls-chip)]/45"
-          } ${audience === "boys" ? "opacity-55" : ""}`}
+          }`}
         >
           Girls
           <DollIcon />
@@ -247,7 +261,10 @@ export function FilterRow({
           <button
             ref={btnRef}
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+            if (shouldIgnoreTap()) return;
+            setOpen((v) => !v);
+          }}
             aria-haspopup="dialog"
             aria-expanded={open}
             className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95 ${
@@ -263,9 +280,10 @@ export function FilterRow({
         <button
           type="button"
           onClick={(e) => {
+            if (shouldIgnoreTap()) return;
             onRandomize();
             fireConfetti(
-              (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+              e.currentTarget.getBoundingClientRect(),
               RAINBOW_CONFETTI,
             );
           }}
@@ -280,11 +298,12 @@ export function FilterRow({
           crazyMode={crazyMode}
           crazyFlash={crazyFlash}
           onClick={(e) => {
+            if (shouldIgnoreTap()) return;
             const turningOn = !crazyMode;
             onCrazyModeToggle();
             if (turningOn) {
               fireConfetti(
-                (e.currentTarget as HTMLButtonElement).getBoundingClientRect(),
+                e.currentTarget.getBoundingClientRect(),
                 RAINBOW_CONFETTI,
               );
             }

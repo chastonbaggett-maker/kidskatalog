@@ -577,6 +577,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .page-scroll--crazy .feed-card > div:first-child {
   background: #fff;
+  box-shadow:
+    0 12px 30px -18px rgba(60, 70, 120, 0.45),
+    0 0 22px rgba(255, 229, 102, 0.26),
+    0 0 44px rgba(255, 252, 220, 0.12);
 }
 
 .page-scroll--crazy.star-field {

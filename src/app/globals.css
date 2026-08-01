@@ -359,7 +359,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .filter-crazy-btn-wrap--active.filter-crazy-btn-wrap--striking .filter-crazy-btn--active {
-  animation: crazy-btn-strike-pulse 0.38s ease-out;
+  animation: crazy-btn-strike-pulse 0.28s ease-out;
 }
 
 .browse-feed--crazy {
@@ -550,7 +550,7 @@ html[data-accent="both"] .kart-go-btn:hover {
       transparent 100%
     ),
     rgba(255, 229, 102, 0.14);
-  animation: crazy-screen-flash 0.85s ease-out forwards;
+  animation: crazy-screen-flash 0.6s ease-out forwards;
 }
 
 @keyframes crazy-screen-flash {
@@ -588,7 +588,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .feed-card--crazy-strike > div:first-child {
-  animation: crazy-card-flash 0.38s ease-out forwards;
+  animation: crazy-card-flash 0.28s ease-out forwards;
 }
 
 @keyframes crazy-card-flash {

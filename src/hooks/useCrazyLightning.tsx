@@ -15,7 +15,7 @@ type ScreenFlash = {
   flashY: number;
 };
 
-const FLASH_MS = 850;
+const FLASH_MS = 600;
 
 /** Minimum share of the card surface visible inside the strike viewport. */
 const MIN_VISIBLE_RATIO = 0.4;

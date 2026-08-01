@@ -32,7 +32,7 @@ export function ProductGallery({
       </div>
 
       {shots.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto p-1 scrollbar-none">
           {shots.map((src, i) => (
             <button
               key={src}

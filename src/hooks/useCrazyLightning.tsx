@@ -13,13 +13,10 @@ type LightningBolt = {
   id: string;
   left: number;
   top: number;
-  rot: number;
-  drift: number;
-  delay: number;
-  travel: number;
+  height: number;
 };
 
-const BOLT_MS = 1150;
+const BOLT_MS = 950;
 
 function pickStrikeOrigin(...candidates: (HTMLElement | null | undefined)[]) {
   for (const el of candidates) {
@@ -52,44 +49,20 @@ export function useCrazyLightning(
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const originY = rect.bottom - 6;
-    const travel = window.innerHeight - originY + 140;
+    const originY = rect.bottom - 4;
+    const height = Math.max(window.innerHeight - originY, 120);
     const stamp = Date.now();
+    const bolt: LightningBolt = {
+      id: `${uid}-${stamp}`,
+      left: rect.left + rect.width * 0.5,
+      top: originY,
+      height,
+    };
 
-    const batch: LightningBolt[] = [
-      {
-        id: `${uid}-a-${stamp}`,
-        left: rect.left + rect.width * 0.24,
-        top: originY,
-        rot: -18,
-        drift: -36,
-        delay: 0,
-        travel,
-      },
-      {
-        id: `${uid}-b-${stamp}`,
-        left: rect.left + rect.width * 0.5,
-        top: originY,
-        rot: 4,
-        drift: 0,
-        delay: 50,
-        travel,
-      },
-      {
-        id: `${uid}-c-${stamp}`,
-        left: rect.left + rect.width * 0.76,
-        top: originY,
-        rot: 17,
-        drift: 38,
-        delay: 90,
-        travel,
-      },
-    ];
-
-    setBolts((prev) => [...prev, ...batch]);
+    setBolts((prev) => [...prev, bolt]);
 
     window.setTimeout(() => {
-      setBolts((prev) => prev.filter((b) => !batch.some((n) => n.id === b.id)));
+      setBolts((prev) => prev.filter((b) => b.id !== bolt.id));
     }, BOLT_MS + 120);
   }, [uid, primaryRef, altRef]);
 
@@ -104,10 +77,7 @@ export function useCrazyLightning(
                 style={{
                   left: bolt.left,
                   top: bolt.top,
-                  animationDelay: `${bolt.delay}ms`,
-                  ["--rot" as string]: `${bolt.rot}deg`,
-                  ["--drift" as string]: `${bolt.drift}px`,
-                  ["--travel" as string]: `${bolt.travel}px`,
+                  ["--bolt-height" as string]: `${bolt.height}px`,
                 }}
               />
             ))}

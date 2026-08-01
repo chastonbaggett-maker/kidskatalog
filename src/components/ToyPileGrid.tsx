@@ -26,11 +26,13 @@ const EDGE_THRESHOLD = 220;
 const EXPAND_COOLDOWN_MS = 450;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
-/** Focus card width as a fraction of the pile viewport — also caps max zoom. */
+/** Focus card width as a fraction of the visible pile band — also caps max zoom. */
 const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
-/** Visible grid span at the most zoomed-out level (reference mobile layout). */
+/** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
 const MIN_ZOOM_OUT_ROWS = 6;
+const REFERENCE_BAND_WIDTH_PX = 390;
+const REFERENCE_BAND_HEIGHT_PX = 560;
 const CRAZY_MIN_VISIBLE_PX = 8;
 
 type Props = {
@@ -63,7 +65,21 @@ function getMetrics(viewport: HTMLElement) {
 
 function getMaxPileZoom(viewport: HTMLElement) {
   const { cell } = getMetrics(viewport);
-  return (viewport.clientWidth * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
+  const band = getPileVisibleBand(viewport);
+  return (band.width * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
+}
+
+function getMinZoomOutCounts(band: { width: number; height: number }) {
+  const columns = Math.max(
+    MIN_ZOOM_OUT_COLUMNS,
+    Math.round((band.width / REFERENCE_BAND_WIDTH_PX) * MIN_ZOOM_OUT_COLUMNS),
+  );
+  const rows = Math.max(
+    MIN_ZOOM_OUT_ROWS,
+    Math.round((band.height / REFERENCE_BAND_HEIGHT_PX) * MIN_ZOOM_OUT_ROWS),
+  );
+
+  return { columns, rows };
 }
 
 function getPileVisibleBand(viewport: HTMLElement) {
@@ -110,9 +126,10 @@ function getPileVisibleBand(viewport: HTMLElement) {
 function getMinPileZoom(viewport: HTMLElement) {
   const { stride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
+  const { columns, rows } = getMinZoomOutCounts(band);
   return Math.max(
-    band.width / (MIN_ZOOM_OUT_COLUMNS * stride),
-    band.height / (MIN_ZOOM_OUT_ROWS * stride),
+    band.width / (columns * stride),
+    band.height / (rows * stride),
   );
 }
 
@@ -232,11 +249,7 @@ function getInitialPileView(
   colMin: number,
   rowMin: number,
 ) {
-  const { cell } = getMetrics(viewport);
-  const zoom = clampZoom(
-    viewport,
-    (viewport.clientWidth * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell,
-  );
+  const zoom = clampZoom(viewport, getMaxPileZoom(viewport));
   const centerCol = colMin + Math.floor(colCount / 2);
   const centerRow = rowMin + Math.floor(rowCount / 2);
   const centerCard = viewport.querySelector(

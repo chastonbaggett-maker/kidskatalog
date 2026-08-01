@@ -634,7 +634,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport {
-  --pile-cell: clamp(8.75rem, 26vmin, 11.5rem);
+  --pile-cell: clamp(8.75rem, 26vw, 11.5rem);
   --pile-gap: 1rem;
   position: relative;
   overflow: hidden;
@@ -644,6 +644,18 @@ html[data-accent="both"] .kart-go-btn:hover {
   padding: 0;
   user-select: none;
   -webkit-user-select: none;
+}
+
+@media (min-width: 640px) {
+  .toy-pile-viewport {
+    --pile-cell: clamp(8.75rem, 22vw, 12rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .toy-pile-viewport {
+    --pile-cell: clamp(9rem, 18vw, 13rem);
+  }
 }
 
 .toy-pile-viewport:active {

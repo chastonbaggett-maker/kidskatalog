@@ -270,35 +270,18 @@ const ToyPileCard = memo(function ToyPileCard({
 
   return (
     <article className="toy-pile-card">
-      <div className="toy-pile-card__body overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
-        <div className="relative">
-          <Link href={`/toy/${toy.id}`} className="relative block aspect-square bg-white">
-            <Image
-              src={toy.image}
-              alt={toy.imageAlt}
-              fill
-              sizes="(max-width: 640px) 28vw, 180px"
-              className="object-contain p-2.5"
-            />
-          </Link>
-          <Link
-            href={`/toy/${toy.id}`}
-            aria-label={`View ${toy.name}`}
-            className={`toy-pile-card__eye absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 sm:h-10 sm:w-10 ${viewBtnClass}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 sm:h-5 sm:w-5">
-              <path
-                d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <circle cx="12" cy="12" r="2.75" fill="currentColor" />
-            </svg>
-          </Link>
-        </div>
+      <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
+        <Link href={`/toy/${toy.id}`} className="relative block aspect-square bg-white">
+          <Image
+            src={toy.image}
+            alt={toy.imageAlt}
+            fill
+            sizes="(max-width: 640px) 28vw, 180px"
+            className="object-contain p-2.5"
+          />
+        </Link>
         {showText ? (
-          <div className="px-2.5 pb-2.5 pt-1">
+          <div className="px-2.5 pb-2.5 pt-1 pr-11">
             <Link href={`/toy/${toy.id}`}>
               <h2 className="truncate font-[family-name:var(--font-display)] text-sm font-bold text-[var(--ink)]">
                 {toy.name}
@@ -306,6 +289,21 @@ const ToyPileCard = memo(function ToyPileCard({
             </Link>
           </div>
         ) : null}
+        <Link
+          href={`/toy/${toy.id}`}
+          aria-label={`View ${toy.name}`}
+          className={`toy-pile-card__eye absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 sm:h-10 sm:w-10 ${viewBtnClass}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 sm:h-5 sm:w-5">
+            <path
+              d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="12" r="2.75" fill="currentColor" />
+          </svg>
+        </Link>
       </div>
     </article>
   );

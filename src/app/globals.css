@@ -458,17 +458,32 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .browse-feed--toy-pile .toy-pile-shell {
-  touch-action: pan-x pan-y;
+  touch-action: none;
 }
 
 .toy-pile-viewport {
-  --pile-cell: clamp(5.75rem, 15vw, 8.25rem);
-  --pile-gap: 0.85rem;
-  overflow: auto;
+  --pile-cell: clamp(8.75rem, 26vmin, 11.5rem);
+  --pile-gap: 1rem;
+  position: relative;
+  overflow: hidden;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-  padding: 1rem 0.75rem 0.5rem;
+  touch-action: none;
+  cursor: grab;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.toy-pile-viewport:active {
+  cursor: grabbing;
+}
+
+.toy-pile-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .toy-pile-grid {
@@ -476,15 +491,15 @@ html[data-accent="both"] .kart-go-btn:hover {
   grid-template-columns: repeat(var(--pile-cols, 6), var(--pile-cell));
   gap: var(--pile-gap);
   width: max-content;
-  min-width: calc(100% - 1.5rem);
-  margin-inline: auto;
-  padding: 1.25rem 0.75rem 2rem;
+  padding: 1.5rem 1rem 2.5rem;
 }
 
 .toy-pile-card {
   position: relative;
   width: var(--pile-cell);
   transform-origin: center center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--pile-cell);
 }
 
 .toy-pile-card__body {

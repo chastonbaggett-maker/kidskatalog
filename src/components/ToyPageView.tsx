@@ -38,7 +38,9 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
       <div
         className={`page-scroll star-field min-h-0 flex-1 px-4 py-4 sm:px-6 lg:px-8 ${crazyModeScrollClass(crazyMode)}`}
       >
-        <div className="product-detail mx-auto w-full max-w-6xl">
+        <div
+          className={`product-detail mx-auto w-full max-w-6xl${crazyMode ? " product-detail--crazy" : ""}`}
+        >
           <div className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />
 
@@ -46,16 +48,10 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
               <p className="mb-1 text-sm font-bold text-[var(--blue)]">
                 {categoryLabel}
               </p>
-              <h2
-                className={`font-[family-name:var(--font-display)] text-3xl font-bold sm:text-4xl ${
-                  crazyMode ? "text-white" : "text-[var(--ink)]"
-                }`}
-              >
+              <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--ink)] sm:text-4xl">
                 {toy.name}
               </h2>
-              <p
-                className={`mt-2 text-lg ${crazyMode ? "text-white" : "text-[var(--ink-soft)]"}`}
-              >
+              <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>
               <p className="mt-2 text-sm font-semibold text-[var(--purple-deep)]">
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>

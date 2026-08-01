@@ -500,6 +500,42 @@ html[data-accent="both"] .kart-go-btn:hover {
   background: #fff;
 }
 
+.page-scroll--crazy.star-field {
+  background-color: #18181f;
+  background-image: var(--crazy-star-field);
+}
+
+.page-scroll--crazy .product-detail,
+.page-scroll--crazy .more-toys-feed {
+  position: relative;
+  z-index: 1;
+}
+
+.product-detail--crazy .product-detail__info > p {
+  color: #fff;
+}
+
+.product-detail--crazy .product-detail__info > p:first-child {
+  color: #ffe566;
+}
+
+.product-detail--crazy .product-detail__info > p.font-semibold {
+  color: rgba(255, 241, 118, 0.9);
+}
+
+.product-detail--crazy .product-detail__info h2 {
+  color: #fff;
+}
+
+.browse-feed--crazy .more-toys-feed {
+  border-color: rgba(255, 229, 102, 0.12);
+}
+
+.browse-feed--crazy .more-toys-feed h3,
+.browse-feed--crazy .more-toys-feed__hint {
+  color: #fff;
+}
+
 @keyframes crazy-cloud-drift {
   0% {
     transform: translate3d(0, 0, 0) scale(1);

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
-import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
@@ -14,7 +13,6 @@ export function MoreToysFeed({
   seed: Toy[];
   showText?: boolean;
 }) {
-  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [items, setItems] = useState<Toy[]>(() => seed.slice(0, PAGE));
   const cursorRef = useRef(Math.min(PAGE, seed.length));
   const loadingRef = useRef(false);
@@ -63,12 +61,11 @@ export function MoreToysFeed({
   if (seed.length === 0) return null;
 
   return (
-    <section className="mt-10 border-t border-black/5 pt-8" aria-label="More toys">
-      <h3
-        className={`mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl ${
-          crazyMode ? "text-white" : "text-[var(--ink)]"
-        }`}
-      >
+    <section
+      className="more-toys-feed mt-10 border-t border-black/5 pt-8"
+      aria-label="More toys"
+    >
+      <h3 className="mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:text-3xl">
         More toys
       </h3>
       <div className="toy-feed-grid">
@@ -82,7 +79,7 @@ export function MoreToysFeed({
         ))}
       </div>
       <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
-      <p className="mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
+      <p className="more-toys-feed__hint mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
         Keep scrolling — more toys ahead
       </p>
     </section>

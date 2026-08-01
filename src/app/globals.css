@@ -455,6 +455,16 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .browse-feed--toy-pile {
   --star-field-bg: #f0ebe3;
+  --pile-header-grad: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 48%, #ffc107 100%);
+}
+
+.browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded {
+  box-shadow: 0 10px 28px -12px rgba(255, 107, 107, 0.42);
+}
+
+.browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded::before {
+  background-color: rgba(255, 154, 86, 0.88);
+  background-image: var(--pile-header-grad);
 }
 
 .browse-feed--toy-pile .toy-pile-shell {

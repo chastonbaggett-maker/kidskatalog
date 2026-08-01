@@ -293,7 +293,21 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         }`}
       >
         <div ref={chromeRef} className="relative z-20 shrink-0">
-          <FeedHeader query={query} onQueryChange={setQuery} />
+          {toyPileMode ? (
+            <ShelfHeader
+              rounded
+              className="shelf-header--pile"
+              trailing={
+                <ToyPileModeButton
+                  active
+                  className="shelf-crazy-btn"
+                  onClick={() => setToyPileMode(false)}
+                />
+              }
+            />
+          ) : (
+            <FeedHeader query={query} onQueryChange={setQuery} />
+          )}
           <div
             className={
               crazyMode
@@ -329,7 +343,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               toyPileMode={toyPileMode}
               onToyPileModeToggle={handleToyPileModeToggle}
             />
-            <ThumbCarousel />
+            {!toyPileMode ? <ThumbCarousel /> : null}
           </div>
         </div>
 

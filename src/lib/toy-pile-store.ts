@@ -34,7 +34,8 @@ type ToyPileModeState = {
 
 export const PILE_CHROME_MS = 680;
 export const PILE_CHROME_EASE = "ease-in-out";
-export const PILE_ZOOM_MS = 650;
+export const PILE_ZOOM_MS = 780;
+export const PILE_ZOOM_EASE = "ease-in-out";
 
 export const useToyPileModeStore = create<ToyPileModeState>()(
   persist(

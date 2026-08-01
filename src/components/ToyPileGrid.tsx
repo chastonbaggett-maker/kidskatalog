@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import { getPileEntryTargetZoom } from "@/lib/pile-transition-utils";
 import type { PileAnchorRect } from "@/lib/toy-pile-store";
 import { PILE_ZOOM_MS } from "@/lib/toy-pile-store";
 
@@ -25,9 +26,6 @@ const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
-/** Entry transition: zoom out to this fraction of max (feed-card) zoom */
-const PILE_ENTRY_ZOOM_RATIO = 0.88;
-
 type Props = {
   toys: Toy[];
   showText: boolean;
@@ -91,6 +89,10 @@ function pointerDistance(a: StagePoint, b: StagePoint) {
 
 function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3;
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 function intersectionArea(a: DOMRect, b: DOMRect) {
@@ -414,6 +416,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       lock: StagePoint,
       onComplete?: () => void,
       screenLock?: { x: number; y: number },
+      ease: (t: number) => number = easeOutCubic,
     ) => {
       const viewport = viewportRef.current;
       if (!viewport) return;
@@ -427,7 +430,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       const startTime = performance.now();
 
       const tick = (now: number) => {
-        const t = easeOutCubic(Math.min(1, (now - startTime) / PILE_ZOOM_MS));
+        const t = ease(Math.min(1, (now - startTime) / PILE_ZOOM_MS));
         const zoom = fromZoom + (toZoom - fromZoom) * t;
         applyTransformImmediate(
           {
@@ -463,8 +466,10 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       const col = Number(anchorEl.getAttribute("data-pile-col") ?? "0");
       const row = Number(anchorEl.getAttribute("data-pile-row") ?? "0");
       const stageCenter = getCellStageCenter(col, row, colMin, rowMin, viewport);
-      const { maxZoom } = getZoomBounds(viewport);
-      const toZoom = maxZoom * PILE_ENTRY_ZOOM_RATIO;
+      const metrics = getMetrics(viewport);
+      const bounds = getZoomBounds(viewport);
+      const { maxZoom } = bounds;
+      const toZoom = getPileEntryTargetZoom(viewport, metrics, bounds);
       const viewportRect = viewport.getBoundingClientRect();
       const fromRect = entryAnimation.fromRect;
       const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
@@ -488,6 +493,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
           viewLock,
           entryAnimation.onComplete,
           { x: viewScreenX, y: viewScreenY },
+          easeInOutCubic,
         );
       });
       return;

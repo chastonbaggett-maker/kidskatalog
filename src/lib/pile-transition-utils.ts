@@ -65,3 +65,51 @@ export function prefersReducedMotion() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+/** Matches `.toy-feed-grid` column breakpoints in globals.css */
+export const FEED_GRID_BREAKPOINTS = {
+  twoCol: 720,
+  threeCol: 1024,
+} as const;
+
+export function getFeedColumnCount(viewportWidth: number): number {
+  if (viewportWidth >= FEED_GRID_BREAKPOINTS.threeCol) return 3;
+  if (viewportWidth >= FEED_GRID_BREAKPOINTS.twoCol) return 2;
+  return 1;
+}
+
+/** `.toy-pile-grid` uses 1rem horizontal padding */
+const PILE_GRID_PAD_X = 16;
+
+/** Single-column feed: slight zoom out from feed-card scale */
+const PILE_ENTRY_MOBILE_RATIO = 0.84;
+
+export type PileZoomBounds = {
+  minZoom: number;
+  maxZoom: number;
+};
+
+export type PileGridMetrics = {
+  cell: number;
+  gap: number;
+};
+
+/** Target zoom after pile enter — mirrors visible feed column count on wider screens. */
+export function getPileEntryTargetZoom(
+  viewport: HTMLElement,
+  metrics: PileGridMetrics,
+  bounds: PileZoomBounds,
+): number {
+  const { clientWidth } = viewport;
+  const { cell, gap } = metrics;
+  const cols = getFeedColumnCount(clientWidth);
+
+  if (cols === 1) {
+    const mobileZoom = bounds.maxZoom * PILE_ENTRY_MOBILE_RATIO;
+    return Math.min(bounds.maxZoom, Math.max(bounds.minZoom, mobileZoom));
+  }
+
+  const span = cols * cell + (cols - 1) * gap;
+  const fitZoom = (clientWidth - 2 * PILE_GRID_PAD_X) / span;
+  return Math.min(bounds.maxZoom, Math.max(bounds.minZoom, fitZoom));
+}

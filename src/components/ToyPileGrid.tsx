@@ -15,12 +15,20 @@ import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import type { RefObject } from "react";
 import {
+  appendPopulateRing,
   getCenteredPileGridOrigin,
   getPileEntryTargetZoom,
   measureLiveFeedAnchorRect,
+  pileCellKey,
+  prefersReducedMotion,
 } from "@/lib/pile-transition-utils";
 import type { PileAnchorRect, PileEnterPhase } from "@/lib/toy-pile-store";
-import { PILE_CENTER_MS, PILE_ZOOM_MS } from "@/lib/toy-pile-store";
+import {
+  PILE_CENTER_MS,
+  PILE_POPULATE_MAX_RING,
+  PILE_POPULATE_RING_MS,
+  PILE_ZOOM_MS,
+} from "@/lib/toy-pile-store";
 
 const MIN_CHUNK = 6;
 const GRID_VIEW = 6;
@@ -34,6 +42,7 @@ const FEED_CARD_SIDE_INSET_PX = 48;
 type Props = {
   toys: Toy[];
   showText: boolean;
+  anchorToyId?: string;
   interactive?: boolean;
   entryAnimation?: {
     phase: Extract<PileEnterPhase, "center" | "zoom">;
@@ -216,24 +225,42 @@ function findMostVisibleCard(viewport: HTMLElement) {
 }
 
 function getInitialGridOrigin(
-  entryAnimation: Props["entryAnimation"],
+  anchorToyId: string | undefined,
   toys: Toy[],
   gridSize: number,
 ) {
-  if (!entryAnimation || toys.length === 0) {
+  if (!anchorToyId || toys.length === 0) {
     return { colMin: 0, rowMin: 0, anchorCol: 0, anchorRow: 0 };
   }
-  return getCenteredPileGridOrigin(entryAnimation.anchorToyId, toys, gridSize);
+  return getCenteredPileGridOrigin(anchorToyId, toys, gridSize);
+}
+
+function getRestingTransform(viewport: HTMLElement, anchorCol: number, anchorRow: number, colMin: number, rowMin: number) {
+  const stageCenter = getCellStageCenter(anchorCol, anchorRow, colMin, rowMin, viewport);
+  const metrics = getMetrics(viewport);
+  const bounds = getZoomBounds(viewport);
+  const zoom = getPileEntryTargetZoom(viewport, metrics, bounds);
+  const pan = panForScreenPoint(
+    viewport.clientWidth / 2,
+    viewport.clientHeight / 2,
+    stageCenter,
+    zoom,
+  );
+  return { pan, zoom, stageCenter };
 }
 
 export function ToyPileGrid({
   toys,
   showText,
+  anchorToyId,
   interactive = true,
   entryAnimation,
 }: Props) {
+  const resolvedAnchorId = entryAnimation?.anchorToyId ?? anchorToyId;
   const initialGridSize = MIN_CHUNK * 3;
-  const initialGridRef = useRef(getInitialGridOrigin(entryAnimation, toys, initialGridSize));
+  const initialGridRef = useRef(
+    getInitialGridOrigin(resolvedAnchorId, toys, initialGridSize),
+  );
   const [colMin, setColMin] = useState(initialGridRef.current.colMin);
   const [rowMin, setRowMin] = useState(initialGridRef.current.rowMin);
   const [colCount, setColCount] = useState(initialGridSize);
@@ -260,6 +287,15 @@ export function ToyPileGrid({
   const centerStartedRef = useRef(false);
   const zoomStartedRef = useRef(false);
   const coldStartDoneRef = useRef(false);
+  const populateStartedRef = useRef(false);
+  const populateTimerRef = useRef<number | null>(null);
+
+  const { anchorCol, anchorRow } = initialGridRef.current;
+  const anchorKey = pileCellKey(anchorCol, anchorRow);
+  const [revealedCells, setRevealedCells] = useState<Set<string>>(
+    () => new Set([anchorKey]),
+  );
+  const [populateDone, setPopulateDone] = useState(false);
 
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
@@ -598,28 +634,66 @@ export function ToyPileGrid({
 
     if (coldStartDoneRef.current) return;
 
-    const { stride } = getMetrics(viewport);
-    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
-    const gridW = colCount * stride - gap;
-    const gridH = rowCount * stride - gap;
-    const initialZoom = clampZoom(viewport, 1);
-    const centered = {
-      x: (viewport.clientWidth - gridW * initialZoom) / 2,
-      y: (viewport.clientHeight - gridH * initialZoom) / 2,
-    };
-    commitTransform(centered, initialZoom);
+    const { anchorCol: coldAnchorCol, anchorRow: coldAnchorRow } = initialGridRef.current;
+    const { pan, zoom } = getRestingTransform(
+      viewport,
+      coldAnchorCol,
+      coldAnchorRow,
+      colMin,
+      rowMin,
+    );
+    applyTransformImmediate(pan, zoom);
     coldStartDoneRef.current = true;
   }, [
     colCount,
     rowCount,
     colMin,
     rowMin,
-    commitTransform,
     entryAnimation,
     applyTransformImmediate,
     animatePanTo,
     animateZoomOut,
   ]);
+
+  useEffect(() => {
+    if (entryAnimation) return;
+    if (populateStartedRef.current) return;
+
+    populateStartedRef.current = true;
+
+    if (prefersReducedMotion()) {
+      let all = new Set([anchorKey]);
+      for (let ring = 1; ring <= PILE_POPULATE_MAX_RING; ring++) {
+        all = appendPopulateRing(all, anchorCol, anchorRow, ring);
+      }
+      setRevealedCells(all);
+      setPopulateDone(true);
+      return;
+    }
+
+    let ring = 1;
+    populateTimerRef.current = window.setInterval(() => {
+      if (ring > PILE_POPULATE_MAX_RING) {
+        if (populateTimerRef.current !== null) {
+          window.clearInterval(populateTimerRef.current);
+          populateTimerRef.current = null;
+        }
+        setPopulateDone(true);
+        return;
+      }
+      setRevealedCells((prev) =>
+        appendPopulateRing(prev, anchorCol, anchorRow, ring),
+      );
+      ring += 1;
+    }, PILE_POPULATE_RING_MS);
+
+    return () => {
+      if (populateTimerRef.current !== null) {
+        window.clearInterval(populateTimerRef.current);
+        populateTimerRef.current = null;
+      }
+    };
+  }, [entryAnimation, anchorCol, anchorRow, anchorKey]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -649,6 +723,9 @@ export function ToyPileGrid({
       cancelSnap();
       if (wheelLockTimerRef.current !== null) {
         window.clearTimeout(wheelLockTimerRef.current);
+      }
+      if (populateTimerRef.current !== null) {
+        window.clearInterval(populateTimerRef.current);
       }
     };
   }, [cancelSnap]);
@@ -832,9 +909,11 @@ export function ToyPileGrid({
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
 
-  const { anchorCol, anchorRow } = initialGridRef.current;
   const entryPhase = entryAnimation?.phase;
-  const showLoadingCells = entryPhase === "zoom";
+  const isCellRevealed = useCallback(
+    (col: number, row: number) => revealedCells.has(pileCellKey(col, row)),
+    [revealedCells],
+  );
 
   if (pool.length === 0) {
     return (
@@ -876,11 +955,8 @@ export function ToyPileGrid({
             const col = colMin + (index % colCount);
             const row = rowMin + Math.floor(index / colCount);
             const isAnchor = col === anchorCol && row === anchorRow;
-            if (showLoadingCells && !isAnchor) {
-              return (
-                <PileLoadingCard key={`pile-loading-${col}-${row}`} col={col} row={row} />
-              );
-            }
+            const revealed = isCellRevealed(col, row);
+
             if (entryPhase === "center" && !isAnchor) {
               return (
                 <div
@@ -890,7 +966,15 @@ export function ToyPileGrid({
                 />
               );
             }
+
+            if (!revealed) {
+              return (
+                <PileLoadingCard key={`pile-loading-${col}-${row}`} col={col} row={row} />
+              );
+            }
+
             const toy = pool[toyIndexForCell(col, row, pool.length)]!;
+            const justRevealed = !populateDone && !isAnchor;
             return (
               <ToyPileCard
                 key={`pile-${col}-${row}`}
@@ -899,6 +983,7 @@ export function ToyPileGrid({
                 toy={toy}
                 showText={showText}
                 interactive={interactive}
+                reveal={justRevealed}
               />
             );
           })}
@@ -922,7 +1007,9 @@ const PileLoadingCard = memo(function PileLoadingCard({
       data-pile-row={row}
       aria-hidden
     >
-      <div className="toy-pile-card__body toy-pile-card__body--loading aspect-[4/5] rounded-[1.35rem] bg-white ring-1 ring-black/[0.04]" />
+      <div className="toy-pile-card__body toy-pile-card__body--loading aspect-[4/5] rounded-[1.35rem] ring-1 ring-black/[0.04]">
+        <div className="toy-pile-card__shimmer" aria-hidden />
+      </div>
     </article>
   );
 });
@@ -933,12 +1020,14 @@ const ToyPileCard = memo(function ToyPileCard({
   toy,
   showText,
   interactive = true,
+  reveal = false,
 }: {
   col: number;
   row: number;
   toy: Toy;
   showText: boolean;
   interactive?: boolean;
+  reveal?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -950,7 +1039,7 @@ const ToyPileCard = memo(function ToyPileCard({
 
   return (
     <article
-      className="toy-pile-card"
+      className={`toy-pile-card${reveal ? " toy-pile-card--revealing" : ""}`}
       data-pile-col={col}
       data-pile-row={row}
       data-toy-id={toy.id}

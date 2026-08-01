@@ -38,6 +38,8 @@ export const PILE_CENTER_MS = 560;
 export const PILE_CENTER_EASE = "ease-in-out";
 export const PILE_ZOOM_MS = 780;
 export const PILE_ZOOM_EASE = "ease-in-out";
+export const PILE_POPULATE_RING_MS = 95;
+export const PILE_POPULATE_MAX_RING = 5;
 
 export const useToyPileModeStore = create<ToyPileModeState>()(
   persist(

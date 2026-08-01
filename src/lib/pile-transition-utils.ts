@@ -184,3 +184,24 @@ export function getPileEntryTargetZoom(
   const fitZoom = (clientWidth - 2 * PILE_GRID_PAD_X) / span;
   return Math.min(bounds.maxZoom, Math.max(bounds.minZoom, fitZoom));
 }
+
+export function pileCellKey(col: number, row: number) {
+  return `${col},${row}`;
+}
+
+/** Chebyshev ring around anchor — used to stagger pile cell population. */
+export function appendPopulateRing(
+  revealed: Set<string>,
+  anchorCol: number,
+  anchorRow: number,
+  ring: number,
+) {
+  const next = new Set(revealed);
+  for (let dc = -ring; dc <= ring; dc++) {
+    for (let dr = -ring; dr <= ring; dr++) {
+      if (Math.max(Math.abs(dc), Math.abs(dr)) !== ring) continue;
+      next.add(pileCellKey(anchorCol + dc, anchorRow + dr));
+    }
+  }
+  return next;
+}

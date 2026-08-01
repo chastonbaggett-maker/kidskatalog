@@ -30,9 +30,11 @@ test("pile mode enter transition reaches grid", async ({ page }) => {
     timeout: 3000,
   });
 
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: "/tmp/pile-enter-complete.png" });
+  await page.waitForTimeout(1800);
 
   await expect(page.locator(".feed-card")).toHaveCount(0);
   await expect(page.locator(".toy-pile-card").first()).toBeVisible();
+  await expect(page.locator(".toy-pile-card--loading")).toHaveCount(0, {
+    timeout: 4000,
+  });
 });

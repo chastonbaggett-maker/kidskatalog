@@ -554,6 +554,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             <ToyPileGrid
               toys={displayed}
               showText={showText}
+              anchorToyId={anchor?.toyId ?? displayed[0]?.id}
               interactive={pileExploreEnabled}
               entryAnimation={
                 (enterPhase === "center" || enterPhase === "zoom") && anchor

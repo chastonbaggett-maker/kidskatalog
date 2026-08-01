@@ -130,12 +130,6 @@ export function BottomNav() {
           pileNavActive ? " bottom-nav--pile" : ""
         }${pileShelfRaised ? " is-shelf-raised" : ""}`}
       >
-        <div
-          className={`bottom-nav__pile-shelf ${
-            pileShelfRaised ? "is-raised" : ""
-          } ${enterPhase === "chrome" || toyPileMode ? "is-visible" : ""}`}
-          aria-hidden={!pileNavActive}
-        />
         {pileNavActive && (
           <div className="bottom-nav__icons-base" aria-hidden="true" />
         )}

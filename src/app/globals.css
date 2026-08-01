@@ -561,8 +561,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 @media (prefers-reduced-motion: reduce) {
   .pile-chrome-exit-host,
   .pile-header-enter,
-  .bottom-nav__pile-shelf,
-  .bottom-nav__icons {
+  .bottom-nav__icons,
+  .bottom-nav__icons-base {
     transition: none !important;
   }
 
@@ -578,6 +578,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
   .bottom-nav__icons.is-raised {
     transform: none;
+  }
+
+  .bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {
+    height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
   }
 }
 
@@ -1044,32 +1048,6 @@ html[data-accent="both"] .kart-go-btn:hover {
   box-shadow: none;
 }
 
-.bottom-nav__pile-shelf {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--bottom-nav-offset);
-  z-index: 0;
-  height: var(--pile-shelf-height);
-  overflow: hidden;
-  border-radius: 2rem 2rem 0 0;
-  background-color: #fff;
-  box-shadow:
-    0 -10px 28px -10px rgba(255, 120, 80, 0.22),
-    0 -4px 10px -6px rgba(60, 70, 120, 0.1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 680ms ease-in-out;
-}
-
-.bottom-nav__pile-shelf.is-visible {
-  pointer-events: auto;
-}
-
-.bottom-nav__pile-shelf.is-raised {
-  opacity: 1;
-}
-
 .bottom-nav__icons-base {
   position: absolute;
   left: 0;
@@ -1089,6 +1067,11 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.55)
   );
   pointer-events: none;
+  transition: height 680ms ease-in-out;
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {
+  height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
 }
 
 .bottom-nav__icons {

@@ -459,6 +459,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded {
+  padding-top: 0.75rem;
   box-shadow: 0 10px 28px -12px rgba(255, 107, 107, 0.42);
 }
 
@@ -521,6 +522,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .browse-chrome-panel--pile {
   border-radius: 0;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
   box-shadow:
     0 10px 28px -10px rgba(255, 120, 80, 0.22),
     0 4px 10px -6px rgba(60, 70, 120, 0.1);

@@ -253,6 +253,49 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
+  const filterRow = (
+    <FilterRow
+      audience={audience}
+      onAudienceChange={setAudience}
+      showText={showText}
+      onShowTextChange={setShowText}
+      age={age}
+      onAgeChange={setAge}
+      onRandomize={() => {
+        setShuffleKey((k) => {
+          const next = k + 1;
+          setDisplayIds((prev) =>
+            shuffleWithSeed(
+              prev.length === filteredIds.length ? prev : filteredIds,
+              next,
+            ),
+          );
+          return next;
+        });
+      }}
+      crazyMode={crazyMode}
+      onCrazyModeToggle={handleCrazyModeToggle}
+      crazyFlash={crazyFlash}
+      crazyBtnRef={filterCrazyBtnRef}
+      toyPileMode={toyPileMode}
+      onToyPileModeToggle={handleToyPileModeToggle}
+    />
+  );
+
+  const pileShelfHeader = (
+    <ShelfHeader
+      rounded
+      className="shelf-header--pile"
+      trailing={
+        <ToyPileModeButton
+          active
+          className="shelf-crazy-btn"
+          onClick={() => setToyPileMode(false)}
+        />
+      }
+    />
+  );
+
   return (
     <div
       className={`relative shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
@@ -294,57 +337,25 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       >
         <div ref={chromeRef} className="relative z-20 shrink-0">
           {toyPileMode ? (
-            <ShelfHeader
-              rounded
-              className="shelf-header--pile"
-              trailing={
-                <ToyPileModeButton
-                  active
-                  className="shelf-crazy-btn"
-                  onClick={() => setToyPileMode(false)}
-                />
-              }
-            />
+            <>
+              <div className="browse-chrome-panel browse-chrome-panel--pile">
+                {filterRow}
+              </div>
+              {pileShelfHeader}
+            </>
           ) : (
-            <FeedHeader query={query} onQueryChange={setQuery} />
+            <>
+              <FeedHeader query={query} onQueryChange={setQuery} />
+              <div
+                className={
+                  crazyMode ? "browse-controls" : "browse-chrome-panel"
+                }
+              >
+                {filterRow}
+                <ThumbCarousel />
+              </div>
+            </>
           )}
-          <div
-            className={
-              crazyMode
-                ? "browse-controls"
-                : toyPileMode
-                  ? "browse-chrome-panel browse-chrome-panel--pile"
-                  : "browse-chrome-panel"
-            }
-          >
-            <FilterRow
-              audience={audience}
-              onAudienceChange={setAudience}
-              showText={showText}
-              onShowTextChange={setShowText}
-              age={age}
-              onAgeChange={setAge}
-              onRandomize={() => {
-                setShuffleKey((k) => {
-                  const next = k + 1;
-                  setDisplayIds((prev) =>
-                    shuffleWithSeed(
-                      prev.length === filteredIds.length ? prev : filteredIds,
-                      next,
-                    ),
-                  );
-                  return next;
-                });
-              }}
-              crazyMode={crazyMode}
-              onCrazyModeToggle={handleCrazyModeToggle}
-              crazyFlash={crazyFlash}
-              crazyBtnRef={filterCrazyBtnRef}
-              toyPileMode={toyPileMode}
-              onToyPileModeToggle={handleToyPileModeToggle}
-            />
-            {!toyPileMode ? <ThumbCarousel /> : null}
-          </div>
         </div>
 
         {toyPileMode ? (

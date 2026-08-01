@@ -31,6 +31,8 @@
     var(--bottom-nav-offset) + var(--pile-shelf-height) - var(--bottom-nav-icons-height)
   );
   --pile-nav-stack-height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
+  --pile-chrome-duration: 680ms;
+  --pile-chrome-ease: ease-in-out;
 }
 
 /* Boys tab — site accents go blue */
@@ -525,11 +527,21 @@ html[data-accent="both"] .kart-go-btn:hover {
   --pile-chrome-ease: ease-in-out;
 }
 
+/* Pile enter transition — ease-in-out on every property */
+.pile-chrome-exit-host,
+.pile-feed-layer,
+.pile-header-enter,
+.bottom-nav--pile.bottom-nav-enter,
+.bottom-nav--pile.is-shelf-raised,
+.bottom-nav--pile .bottom-nav__icons-base {
+  transition-timing-function: ease-in-out;
+}
+
 /* Pile enter transition */
 .pile-chrome-exit-host {
   transition:
-    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
-    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+    transform var(--pile-chrome-duration) ease-in-out,
+    opacity var(--pile-chrome-duration) ease-in-out;
   will-change: transform, opacity;
 }
 
@@ -540,8 +552,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .pile-feed-layer {
-  transition:
-    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+  transition: opacity var(--pile-chrome-duration) ease-in-out;
   will-change: opacity;
 }
 
@@ -555,8 +566,8 @@ html[data-accent="both"] .kart-go-btn:hover {
   transform: translate3d(0, -100%, 0);
   opacity: 0;
   transition:
-    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
-    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+    transform var(--pile-chrome-duration) ease-in-out,
+    opacity var(--pile-chrome-duration) ease-in-out;
   will-change: transform, opacity;
 }
 
@@ -1069,6 +1080,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   -webkit-backdrop-filter: none;
   border-top-color: transparent;
   box-shadow: none;
+  transition: min-height var(--pile-chrome-duration) ease-in-out;
 }
 
 .bottom-nav--pile.is-shelf-raised {
@@ -1079,8 +1091,9 @@ html[data-accent="both"] .kart-go-btn:hover {
   transform: translate3d(0, 100%, 0);
   opacity: 0;
   transition:
-    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
-    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
+    transform var(--pile-chrome-duration) ease-in-out,
+    opacity var(--pile-chrome-duration) ease-in-out,
+    min-height var(--pile-chrome-duration) ease-in-out;
   will-change: transform, opacity;
 }
 
@@ -1108,6 +1121,10 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.55)
   );
   pointer-events: none;
+  transition:
+    top var(--pile-chrome-duration) ease-in-out,
+    bottom var(--pile-chrome-duration) ease-in-out,
+    height var(--pile-chrome-duration) ease-in-out;
 }
 
 .bottom-nav--pile.is-shelf-raised .bottom-nav__icons-base {

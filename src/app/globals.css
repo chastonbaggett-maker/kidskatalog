@@ -498,11 +498,16 @@ html[data-accent="both"] .kart-go-btn:hover {
   box-shadow: none;
 }
 
+.browse-feed--pile-entering {
+  --pile-chrome-duration: 680ms;
+  --pile-chrome-ease: ease-in-out;
+}
+
 /* Pile enter transition */
 .pile-chrome-exit-host {
   transition:
-    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
+    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
   will-change: transform, opacity;
 }
 
@@ -516,8 +521,8 @@ html[data-accent="both"] .kart-go-btn:hover {
   transform: translate3d(0, -100%, 0);
   opacity: 0;
   transition:
-    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out),
+    opacity var(--pile-chrome-duration, 680ms) var(--pile-chrome-ease, ease-in-out);
   will-change: transform, opacity;
 }
 
@@ -1056,8 +1061,8 @@ html[data-accent="both"] .kart-go-btn:hover {
   opacity: 0;
   pointer-events: none;
   transition:
-    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 680ms ease-in-out,
+    opacity 680ms ease-in-out;
   will-change: transform, opacity;
 }
 
@@ -1072,7 +1077,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .bottom-nav__pile-filter {
   opacity: 0;
-  transition: opacity 360ms cubic-bezier(0.22, 1, 0.36, 1) 80ms;
+  transition: opacity 680ms ease-in-out 120ms;
 }
 
 .bottom-nav__pile-shelf.is-raised .bottom-nav__pile-filter {

@@ -190,9 +190,16 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
+    if (isEntering || toyPileMode) {
+      setShelfMode("hidden");
+      shelfWantedRef.current = false;
+    }
+  }, [isEntering, toyPileMode]);
+
+  useEffect(() => {
     const scroller = scrollerRef.current;
     const chrome = chromeRef.current;
-    if (!scroller || !chrome) return;
+    if (!scroller || !chrome || isEntering || toyPileMode) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -215,7 +222,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
     observer.observe(chrome);
     return () => observer.disconnect();
-  }, []);
+  }, [isEntering, toyPileMode]);
 
   useEffect(() => {
     if (shelfMode !== "leaving") return;
@@ -466,7 +473,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     >
       {(isEntering || toyPileMode) && (
         <div
-          className={`pile-header-enter pointer-events-none absolute inset-x-0 top-0 z-30 ${
+          className={`pile-header-enter pointer-events-none absolute inset-x-0 top-0 z-50 ${
             pileHeaderVisible ? "is-visible" : ""
           }`}
         >
@@ -474,32 +481,28 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         </div>
       )}
 
-      <div
-        className={`browse-shelf-overlay ${
-          shelfMode === "shown" ? "is-visible" : ""
-        } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
-        aria-hidden={!shelfActive || shelfMode === "leaving" || isEntering}
-      >
-        <ShelfHeader
-          trailing={
-            crazyMode ? (
-              <CrazyModeButton
-                ref={shelfCrazyBtnRef}
-                className="shelf-crazy-btn"
-                crazyMode
-                crazyFlash={crazyFlash}
-                onClick={() => setCrazyMode(false)}
-              />
-            ) : toyPileMode ? (
-              <ToyPileModeButton
-                active
-                className="shelf-crazy-btn"
-                onClick={exitPileMode}
-              />
-            ) : undefined
-          }
-        />
-      </div>
+      {!isEntering && !toyPileMode && (
+        <div
+          className={`browse-shelf-overlay ${
+            shelfMode === "shown" ? "is-visible" : ""
+          } ${shelfMode === "leaving" ? "is-leaving" : ""}`}
+          aria-hidden={!shelfActive || shelfMode === "leaving"}
+        >
+          <ShelfHeader
+            trailing={
+              crazyMode ? (
+                <CrazyModeButton
+                  ref={shelfCrazyBtnRef}
+                  className="shelf-crazy-btn"
+                  crazyMode
+                  crazyFlash={crazyFlash}
+                  onClick={() => setCrazyMode(false)}
+                />
+              ) : undefined
+            }
+          />
+        </div>
+      )}
 
       <div
         ref={scrollerRef}

@@ -187,17 +187,12 @@ export function FilterRow({
         )
       : null;
 
-  return (
+  const chipRow = (
     <div
-      ref={scrollRef}
-      className="filter-row-scroll relative overflow-x-auto overscroll-x-contain"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onClickCapture={onClickCapture}
+      className={`flex w-max items-center gap-2.5 px-4 py-3.5${
+        toyPileMode ? "" : " min-w-full"
+      }`}
     >
-      <div className="flex w-max min-w-full items-center gap-2.5 px-4 py-3.5">
         <button
           type="button"
           onClick={() => {
@@ -328,10 +323,31 @@ export function FilterRow({
             }
           }}
         />
-      </div>
+    </div>
+  );
+
+  const scrollRow = (
+    <div
+      ref={scrollRef}
+      className={`filter-row-scroll relative overflow-x-auto overscroll-x-contain${
+        toyPileMode ? " filter-row-scroll--pile pointer-events-auto" : ""
+      }`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onClickCapture={onClickCapture}
+    >
+      {toyPileMode ? (
+        <div className="filter-row-pile-pill">{chipRow}</div>
+      ) : (
+        chipRow
+      )}
       {confettiPortal}
     </div>
   );
+
+  return scrollRow;
 }
 
 function CakeIcon() {

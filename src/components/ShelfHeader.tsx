@@ -42,7 +42,7 @@ export function ShelfHeader({
           {backHref ? (
             <Link
               href={backHref}
-              className="back-fun absolute left-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
+              className="shelf-back-btn back-fun flex h-11 w-11 items-center justify-center rounded-full bg-white/25 text-white shadow-[0_6px_16px_-8px_rgba(40,40,80,0.55)] ring-2 ring-white/40 backdrop-blur-[2px] transition active:scale-90"
               aria-label="Back"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>

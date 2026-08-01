@@ -435,7 +435,14 @@ html[data-accent="both"] .kart-go-btn:hover {
     drop-shadow(0 0 32px rgba(255, 193, 7, 0.4));
 }
 
-/* Align shelf crazy toggle with feed-card outer edge (header uses px-3). */
+/* Align shelf header actions with feed-card outer edge (row uses px-3). */
+.shelf-back-btn {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+}
+
 .shelf-crazy-btn {
   position: absolute;
   top: 50%;
@@ -444,18 +451,30 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 @media (min-width: 640px) {
+  .shelf-back-btn {
+    left: 0.25rem;
+  }
+
   .shelf-crazy-btn {
     right: 0.25rem;
   }
 }
 
 @media (min-width: 720px) {
+  .shelf-back-btn {
+    left: 0.75rem;
+  }
+
   .shelf-crazy-btn {
     right: 0.75rem;
   }
 }
 
 @media (min-width: 1024px) {
+  .shelf-back-btn {
+    left: 0.25rem;
+  }
+
   .shelf-crazy-btn {
     right: 0.25rem;
   }

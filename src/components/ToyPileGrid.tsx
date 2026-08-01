@@ -985,10 +985,10 @@ const ToyPileCard = memo(function ToyPileCard({
       data-toy-id={toy.id}
       style={{ "--pile-col-shift": colShift } as React.CSSProperties}
     >
-      <div className="toy-pile-card__body relative overflow-hidden rounded-[1.35rem] bg-white transition-transform active:scale-[0.97]">
+      <div className="toy-pile-card__body transition-transform active:scale-[0.97]">
         <Link
           href={`/toy/${toy.id}`}
-          className={`toy-pile-card__media relative block aspect-[4/5] overflow-hidden bg-white ${
+          className={`toy-pile-card__media relative block aspect-[4/5] ${
             showText ? "toy-pile-card__media--with-text" : "toy-pile-card__media--solo"
           }`}
         >

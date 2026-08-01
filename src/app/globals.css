@@ -675,10 +675,19 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-card__body {
+  position: relative;
   width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border-radius: 1.35rem;
   background-color: #fff;
-  box-shadow: 0 10px 28px -16px rgba(60, 70, 120, 0.34);
+  border: 1px solid rgba(0, 0, 0, 0.045);
+  /* Vertical, tight spread — depth without edge glow or corner halos */
+  box-shadow: 0 8px 18px -16px rgba(60, 70, 120, 0.24);
+}
+
+.toy-pile-card__media {
+  overflow: hidden;
+  background-color: #fff;
 }
 
 .toy-pile-card__media--solo {
@@ -687,6 +696,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-card__media--with-text {
   border-radius: calc(1.35rem - 1px) calc(1.35rem - 1px) 0 0;
+}
+
+.toy-pile-card__media img {
+  background-color: #fff;
 }
 
 .toy-pile-card__eye {

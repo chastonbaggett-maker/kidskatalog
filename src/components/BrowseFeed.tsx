@@ -284,7 +284,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const pileShelfHeader = (
     <ShelfHeader
-      rounded
+      rounded={false}
       className="shelf-header--pile"
       trailing={
         <ToyPileModeButton
@@ -337,10 +337,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       >
         <div ref={chromeRef} className="relative z-20 shrink-0">
           {toyPileMode ? (
-            <div className="toy-pile-chrome">
+            <>
               {pileShelfHeader}
-              <div className="toy-pile-mode-bar">{filterRow}</div>
-            </div>
+              <div className="browse-chrome-panel browse-chrome-panel--pile">
+                {filterRow}
+              </div>
+            </>
           ) : (
             <>
               <FeedHeader query={query} onQueryChange={setQuery} />

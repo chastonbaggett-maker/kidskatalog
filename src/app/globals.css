@@ -458,19 +458,12 @@ html[data-accent="both"] .kart-go-btn:hover {
   --pile-header-grad: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 48%, #ffc107 100%);
 }
 
-.browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded {
-  border-radius: 0;
+.browse-feed--toy-pile .shelf-header--pile {
+  background-color: #ff9a56;
+  background-image: var(--pile-header-grad);
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1rem;
-}
-
-.toy-pile-chrome .shelf-header--pile.shelf-header--rounded {
-  box-shadow: none;
-}
-
-.browse-feed--toy-pile .shelf-header--pile.shelf-header--rounded::before {
-  background-color: rgba(255, 154, 86, 0.88);
-  background-image: var(--pile-header-grad);
+  z-index: 2;
 }
 
 .browse-feed--toy-pile .toy-pile-shell {
@@ -525,29 +518,24 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 2;
 }
 
-/* Pile chrome — one clipped shell so rounded bottom corners don't bleed */
-.toy-pile-chrome {
+/* Pile mode bar — clipped white shell; radius on scroll row too for Safari */
+.browse-chrome-panel--pile {
   position: relative;
   z-index: 1;
   isolation: isolate;
   overflow: hidden;
   border-radius: 0 0 2rem 2rem;
+  background-color: #fff;
+  transform: translateZ(0);
   box-shadow:
     0 10px 28px -10px rgba(255, 120, 80, 0.22),
     0 4px 10px -6px rgba(60, 70, 120, 0.1);
 }
 
-.toy-pile-mode-bar {
+.browse-chrome-panel--pile .filter-row-scroll {
   background-color: #fff;
-}
-
-.toy-pile-chrome .shelf-header--pile.shelf-header--rounded {
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.toy-pile-chrome .toy-pile-mode-bar .filter-row-scroll {
   border-bottom: none;
+  border-radius: 0 0 2rem 2rem;
 }
 
 .browse-feed--crazy {

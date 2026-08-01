@@ -497,7 +497,6 @@ html[data-accent="both"] .kart-go-btn:hover {
 .toy-pile-card {
   position: relative;
   width: var(--pile-cell);
-  transform-origin: center center;
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-cell);
 }

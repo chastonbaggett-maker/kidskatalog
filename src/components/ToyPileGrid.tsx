@@ -18,9 +18,6 @@ const MIN_CHUNK = 6;
 const EDGE_THRESHOLD = 220;
 const EXPAND_COOLDOWN_MS = 450;
 
-/** Rotations covering every direction — flat, diagonal, and skewed piles. */
-const ROTATIONS = [-52, -38, -24, -12, -6, 0, 6, 12, 24, 38, 52, -68, 68, 15, -15, 42];
-
 type Props = {
   toys: Toy[];
   showText: boolean;
@@ -43,9 +40,16 @@ function getMetrics(viewport: HTMLElement) {
   return { cell, gap, stride: cell + gap };
 }
 
+function toyIndexForCell(col: number, row: number, poolLength: number) {
+  const hash = ((col * 73856093) ^ (row * 19349663)) >>> 0;
+  return hash % poolLength;
+}
+
 export function ToyPileGrid({ toys, showText }: Props) {
-  const [cols, setCols] = useState(MIN_CHUNK * 3);
-  const [rows, setRows] = useState(MIN_CHUNK * 3);
+  const [colMin, setColMin] = useState(0);
+  const [rowMin, setRowMin] = useState(0);
+  const [colCount, setColCount] = useState(MIN_CHUNK * 3);
+  const [rowCount, setRowCount] = useState(MIN_CHUNK * 3);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -56,12 +60,8 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
 
-  const pool = useMemo(() => {
-    if (toys.length === 0) return [];
-    return shuffleWithSeed(toys, toys.map((t) => t.id).join("|"));
-  }, [toys]);
-
-  const slots = cols * rows;
+  const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
+  const slots = colCount * rowCount;
 
   const applyPan = useCallback((next: Pan) => {
     panRef.current = next;
@@ -72,28 +72,53 @@ export function ToyPileGrid({ toys, showText }: Props) {
     });
   }, []);
 
+  const shiftPan = useCallback((dx: number, dy: number) => {
+    const next = {
+      x: panRef.current.x + dx,
+      y: panRef.current.y + dy,
+    };
+    panRef.current = next;
+    setPan(next);
+  }, []);
+
   const maybeExpand = useCallback(() => {
     const viewport = viewportRef.current;
-    if (!viewport || expandLockRef.current) return;
+    if (!viewport || expandLockRef.current || pool.length === 0) return;
     if (Date.now() - expandCooldownRef.current < EXPAND_COOLDOWN_MS) return;
 
     const { stride } = getMetrics(viewport);
+    const chunkPx = MIN_CHUNK * stride;
     const { x, y } = panRef.current;
     const { clientWidth, clientHeight } = viewport;
-    const gridW = cols * stride - parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap"));
-    const gridH = rows * stride - parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap"));
+    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
+    const gridW = colCount * stride - gap;
+    const gridH = rowCount * stride - gap;
 
-    const viewRight = -x + clientWidth;
-    const viewBottom = -y + clientHeight;
+    const viewLeft = -x;
+    const viewTop = -y;
+    const viewRight = viewLeft + clientWidth;
+    const viewBottom = viewTop + clientHeight;
 
     let expanded = false;
 
+    if (viewLeft < EDGE_THRESHOLD) {
+      setColMin((min) => min - MIN_CHUNK);
+      setColCount((count) => count + MIN_CHUNK);
+      shiftPan(-chunkPx, 0);
+      expanded = true;
+    }
+    if (viewTop < EDGE_THRESHOLD) {
+      setRowMin((min) => min - MIN_CHUNK);
+      setRowCount((count) => count + MIN_CHUNK);
+      shiftPan(0, -chunkPx);
+      expanded = true;
+    }
     if (viewRight > gridW - EDGE_THRESHOLD) {
-      setCols((c) => c + MIN_CHUNK);
+      setColCount((count) => count + MIN_CHUNK);
       expanded = true;
     }
     if (viewBottom > gridH - EDGE_THRESHOLD) {
-      setRows((r) => r + MIN_CHUNK);
+      setRowCount((count) => count + MIN_CHUNK);
       expanded = true;
     }
 
@@ -104,7 +129,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
     window.setTimeout(() => {
       expandLockRef.current = false;
     }, EXPAND_COOLDOWN_MS);
-  }, [cols, rows]);
+  }, [colCount, rowCount, pool.length, shiftPan]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -112,8 +137,8 @@ export function ToyPileGrid({ toys, showText }: Props) {
 
     const { stride } = getMetrics(viewport);
     const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
-    const gridW = cols * stride - gap;
-    const gridH = rows * stride - gap;
+    const gridW = colCount * stride - gap;
+    const gridH = rowCount * stride - gap;
     const centered = {
       x: (viewport.clientWidth - gridW) / 2,
       y: (viewport.clientHeight - gridH) / 2,
@@ -121,7 +146,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
     panRef.current = centered;
     setPan(centered);
     centeredRef.current = true;
-  }, [cols, rows]);
+  }, [colCount, rowCount]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -144,11 +169,9 @@ export function ToyPileGrid({ toys, showText }: Props) {
       const drag = dragRef.current;
       if (!drag?.active || drag.pointerId !== e.pointerId) return;
 
-      const dx = e.clientX - drag.startX;
-      const dy = e.clientY - drag.startY;
       applyPan({
-        x: drag.originX + dx,
-        y: drag.originY + dy,
+        x: drag.originX + (e.clientX - drag.startX),
+        y: drag.originY + (e.clientY - drag.startY),
       });
     },
     [applyPan],
@@ -196,7 +219,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
     <div
       ref={viewportRef}
       className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
-      aria-label="Toy pile — drag to explore in any direction"
+      aria-label="Toy grid — drag to explore in any direction"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -210,15 +233,16 @@ export function ToyPileGrid({ toys, showText }: Props) {
       >
         <div
           className="toy-pile-grid"
-          style={{ "--pile-cols": cols } as React.CSSProperties}
+          style={{ "--pile-cols": colCount } as React.CSSProperties}
         >
           {Array.from({ length: slots }).map((_, index) => {
-            const toy = pool[index % pool.length]!;
+            const col = colMin + (index % colCount);
+            const row = rowMin + Math.floor(index / colCount);
+            const toy = pool[toyIndexForCell(col, row, pool.length)]!;
             return (
               <ToyPileCard
-                key={`pile-${index}-${toy.id}`}
+                key={`pile-${col}-${row}`}
                 toy={toy}
-                index={index}
                 showText={showText}
               />
             );
@@ -231,11 +255,9 @@ export function ToyPileGrid({ toys, showText }: Props) {
 
 const ToyPileCard = memo(function ToyPileCard({
   toy,
-  index,
   showText,
 }: {
   toy: Toy;
-  index: number;
   showText: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
@@ -246,17 +268,8 @@ const ToyPileCard = memo(function ToyPileCard({
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
 
-  const rotation = ROTATIONS[index % ROTATIONS.length] ?? 0;
-  const offsetX = ((index * 17) % 9) - 4;
-  const offsetY = ((index * 23) % 9) - 4;
-
   return (
-    <article
-      className="toy-pile-card"
-      style={{
-        transform: `rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
-      }}
-    >
+    <article className="toy-pile-card">
       <div className="toy-pile-card__body overflow-hidden rounded-[1.35rem] bg-white shadow-[0_10px_28px_-14px_rgba(60,70,120,0.5)] ring-1 ring-black/[0.04] transition-transform active:scale-[0.97]">
         <Link href={`/toy/${toy.id}`} className="relative block aspect-square bg-white">
           <Image
@@ -295,20 +308,3 @@ const ToyPileCard = memo(function ToyPileCard({
     </article>
   );
 });
-
-function shuffleWithSeed<T>(items: T[], seedKey: string): T[] {
-  const arr = [...items];
-  let s = 0;
-  for (let i = 0; i < seedKey.length; i++) {
-    s = (s + seedKey.charCodeAt(i) * (i + 1)) >>> 0;
-  }
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}

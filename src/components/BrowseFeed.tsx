@@ -12,7 +12,7 @@ import {
 } from "@/lib/crazy-mode-timing";
 import {
   planCrazyFlash,
-  swapCardsAt,
+  assignRandomProductsAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
 import { FeedHeader } from "./FeedHeader";
@@ -143,13 +143,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       );
       if (!plan) return;
 
-      const { slotIndices, visibleSlots, flashX, flashY } = plan;
+      const { slotIndices, flashX, flashY } = plan;
       const prevOrder =
         displayIdsRef.current.length === filteredIds.length &&
         displayIdsRef.current.every((id) => filteredIds.includes(id))
           ? displayIdsRef.current
           : filteredIds;
-      const nextOrder = swapCardsAt(prevOrder, slotIndices, visibleSlots, nextKey);
+      const nextOrder = assignRandomProductsAt(
+        prevOrder,
+        slotIndices,
+        filteredIds,
+        nextKey,
+      );
 
       preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
 

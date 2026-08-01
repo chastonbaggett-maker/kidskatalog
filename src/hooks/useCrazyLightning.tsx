@@ -182,22 +182,26 @@ export function planCrazyFlash(
   };
 }
 
-export function swapCardsAt(
+export function assignRandomProductsAt(
   ids: string[],
   slotIndices: number[],
-  visibleSlots: number[],
+  pool: string[],
   seed: number,
 ) {
+  if (pool.length === 0 || slotIndices.length === 0) return ids;
+
   const next = [...ids];
   let s = seed;
 
   for (const slotIndex of slotIndices) {
-    const otherSlots = visibleSlots.filter((i) => i !== slotIndex);
-    if (otherSlots.length === 0) continue;
+    if (slotIndex < 0 || slotIndex >= next.length) continue;
+
+    const currentId = next[slotIndex];
+    let candidates = pool.filter((id) => id !== currentId);
+    if (candidates.length === 0) candidates = pool;
 
     s = (s * 1664525 + 1013904223) >>> 0;
-    const swapSlot = otherSlots[s % otherSlots.length]!;
-    [next[slotIndex], next[swapSlot]] = [next[swapSlot]!, next[slotIndex]!];
+    next[slotIndex] = candidates[s % candidates.length]!;
   }
 
   return next;

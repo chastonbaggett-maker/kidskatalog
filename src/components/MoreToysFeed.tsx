@@ -17,7 +17,7 @@ import {
 } from "@/lib/crazy-mode-timing";
 import {
   planCrazyFlash,
-  swapCardsAt,
+  assignRandomProductsAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
 import { FeedCard } from "./FeedCard";
@@ -44,7 +44,6 @@ export function MoreToysFeed({
   crazyBtnRef?: RefObject<HTMLButtonElement | null>;
   onCrazyFlash?: (active: boolean) => void;
 }) {
-  const [items, setItems] = useState<Toy[]>(() => seed.slice(0, PAGE));
   const [displayIds, setDisplayIds] = useState<string[]>(() =>
     seed.slice(0, PAGE).map((t) => t.id),
   );
@@ -60,6 +59,8 @@ export function MoreToysFeed({
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   const seedKey = seed.map((t) => t.id).join(",");
+  const poolIds = useMemo(() => seed.map((t) => t.id), [seed]);
+  const toyById = useMemo(() => new Map(seed.map((t) => [t.id, t])), [seed]);
   const toyImageById = useMemo(
     () => new Map(seed.map((t) => [t.id, t.image])),
     [seed],
@@ -80,7 +81,6 @@ export function MoreToysFeed({
       i += 1;
     }
     cursorRef.current = i;
-    setItems((prev) => [...prev, ...next]);
     setDisplayIds((prev) => [...prev, ...next.map((t) => t.id)]);
 
     requestAnimationFrame(() => {
@@ -90,7 +90,6 @@ export function MoreToysFeed({
 
   useEffect(() => {
     const initial = seed.slice(0, PAGE);
-    setItems(initial);
     setDisplayIds(initial.map((t) => t.id));
     cursorRef.current = Math.min(PAGE, seed.length);
     setCrazyFlashSlots([]);
@@ -135,11 +134,11 @@ export function MoreToysFeed({
       );
       if (!plan) return;
 
-      const { slotIndices, visibleSlots, flashX, flashY } = plan;
-      const nextOrder = swapCardsAt(
+      const { slotIndices, flashX, flashY } = plan;
+      const nextOrder = assignRandomProductsAt(
         displayIdsRef.current,
         slotIndices,
-        visibleSlots,
+        poolIds,
         nextKey,
       );
 
@@ -173,14 +172,14 @@ export function MoreToysFeed({
     flashScreen,
     onCrazyFlash,
     toyImageById,
+    poolIds,
   ]);
 
   const displayed = useMemo(() => {
-    const byId = new Map(items.map((t) => [t.id, t]));
     return displayIds
-      .map((id) => byId.get(id))
+      .map((id) => toyById.get(id))
       .filter((t): t is Toy => t != null);
-  }, [items, displayIds]);
+  }, [displayIds, toyById]);
 
   const gridClassName = [
     "toy-feed-grid",

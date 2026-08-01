@@ -2,9 +2,10 @@
 
 type Props = {
   id: string;
-  left: number;
-  top: number;
-  height: number;
+  originX: number;
+  originY: number;
+  endX: number;
+  endY: number;
 };
 
 /** Asymmetric jagged ribbon — scales cleanly with preserveAspectRatio="none". */
@@ -12,8 +13,12 @@ const BOLT_PATH =
   "M32 0 L46 9 L24 13 L50 24 L20 29 L48 41 L22 46 L52 58 L18 63 L44 75 L26 79 L40 90 L28 94 L34 100 " +
   "L38 100 L42 92 L30 88 L46 76 L32 72 L50 60 L36 54 L54 42 L38 36 L56 24 L42 18 L58 8 L36 4 Z";
 
-export function CrazyLightningBolt({ id, left, top, height }: Props) {
-  const width = Math.min(Math.max(height * 0.28, 56), 80);
+export function CrazyLightningBolt({ id, originX, originY, endX, endY }: Props) {
+  const dx = endX - originX;
+  const dy = endY - originY;
+  const length = Math.max(Math.hypot(dx, dy), 48);
+  const rotation = Math.atan2(dx, dy) * (180 / Math.PI);
+  const width = Math.min(Math.max(length * 0.11, 48), 72);
   const gradId = `bolt-grad-${id}`;
   const glowId = `bolt-glow-${id}`;
 
@@ -22,20 +27,19 @@ export function CrazyLightningBolt({ id, left, top, height }: Props) {
       <div
         className="crazy-lightning-flash"
         style={{
-          left,
-          top,
-          ["--flash-x" as string]: `${left}px`,
-          ["--flash-y" as string]: `${top}px`,
+          ["--flash-x" as string]: `${originX}px`,
+          ["--flash-y" as string]: `${originY}px`,
         }}
       />
       <div
         className="crazy-lightning-bolt"
         style={{
-          left,
-          top,
-          height,
+          left: originX,
+          top: originY,
+          height: length,
           width,
           marginLeft: -width / 2,
+          transform: `rotate(${rotation}deg)`,
         }}
       >
         <svg

@@ -5,14 +5,16 @@ import {
   useEffect,
   useId,
   useState,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { CrazyLightningBolt } from "@/components/CrazyLightningBolt";
 
 export type LightningTarget = {
-  left: number;
-  top: number;
-  height: number;
+  originX: number;
+  originY: number;
+  endX: number;
+  endY: number;
 };
 
 type LightningStrike = LightningTarget & {
@@ -23,6 +25,31 @@ const BOLT_MS = 1050;
 
 /** Minimum share of the card that must be visible inside the scroller. */
 const MIN_VISIBLE_RATIO = 0.35;
+
+type Point = { x: number; y: number };
+
+function isElementVisible(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom > 0 &&
+    rect.top < window.innerHeight
+  );
+}
+
+export function pickVisibleCrazyButton(
+  filterRef: RefObject<HTMLButtonElement | null>,
+  shelfRef: RefObject<HTMLButtonElement | null>,
+) {
+  if (filterRef.current && isElementVisible(filterRef.current)) {
+    return filterRef.current;
+  }
+  if (shelfRef.current && isElementVisible(shelfRef.current)) {
+    return shelfRef.current;
+  }
+  return filterRef.current ?? shelfRef.current;
+}
 
 export function getVisibleFeedSlots(scroller: HTMLElement): number[] {
   const scrollerRect = scroller.getBoundingClientRect();
@@ -49,14 +76,43 @@ export function getVisibleFeedSlots(scroller: HTMLElement): number[] {
   return visible;
 }
 
-export function getCardLightningTarget(card: HTMLElement): LightningTarget {
-  const rect = card.getBoundingClientRect();
-  const height = Math.min(Math.max(rect.height * 0.62, 130), 220);
+function getClosestCorner(cardRect: DOMRect, origin: Point): Point {
+  const corners: Point[] = [
+    { x: cardRect.left, y: cardRect.top },
+    { x: cardRect.right, y: cardRect.top },
+    { x: cardRect.left, y: cardRect.bottom },
+    { x: cardRect.right, y: cardRect.bottom },
+  ];
+
+  let closest = corners[0]!;
+  let minDist = Infinity;
+
+  for (const corner of corners) {
+    const dist = (corner.x - origin.x) ** 2 + (corner.y - origin.y) ** 2;
+    if (dist < minDist) {
+      minDist = dist;
+      closest = corner;
+    }
+  }
+
+  return closest;
+}
+
+export function getLightningStrikeTarget(
+  button: HTMLElement,
+  card: HTMLElement,
+): LightningTarget {
+  const btnRect = button.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const originX = btnRect.left + btnRect.width / 2;
+  const originY = btnRect.top + btnRect.height * 0.58;
+  const corner = getClosestCorner(cardRect, { x: originX, y: originY });
 
   return {
-    left: rect.left + rect.width * 0.5,
-    top: rect.top - height * 0.12,
-    height,
+    originX,
+    originY,
+    endX: corner.x,
+    endY: corner.y,
   };
 }
 

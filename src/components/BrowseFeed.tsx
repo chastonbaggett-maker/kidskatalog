@@ -4,8 +4,9 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import {
-  getCardLightningTarget,
+  getLightningStrikeTarget,
   getVisibleFeedSlots,
+  pickVisibleCrazyButton,
   pickVisibleSlot,
   swapCardAt,
   useCrazyLightning,
@@ -134,7 +135,13 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       );
       if (!cardEl) return;
 
-      strikeAt(getCardLightningTarget(cardEl));
+      const crazyBtn = pickVisibleCrazyButton(
+        filterCrazyBtnRef,
+        shelfCrazyBtnRef,
+      );
+      if (!crazyBtn) return;
+
+      strikeAt(getLightningStrikeTarget(crazyBtn, cardEl));
       setCrazyFlash(true);
 
       swapTimer = window.setTimeout(() => {

@@ -5,7 +5,7 @@ import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import {
   planCrazyFlash,
-  swapCardAt,
+  swapCardsAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
 import { FeedHeader } from "./FeedHeader";
@@ -33,7 +33,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [displayIds, setDisplayIds] = useState<string[]>([]);
   const [crazyMode, setCrazyMode] = useState(false);
   const [crazyFlash, setCrazyFlash] = useState(false);
-  const [crazyFlashSlot, setCrazyFlashSlot] = useState<number | null>(null);
+  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [loadedPages, setLoadedPages] = useState(1);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
 
@@ -105,7 +105,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     setDisplayIds(filteredIds);
     setShuffleKey(0);
     setCrazyMode(false);
-    setCrazyFlashSlot(null);
+    setCrazyFlashSlots([]);
     setLoadedPages(1);
   }, [filteredIds]);
 
@@ -130,7 +130,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       );
       if (!plan) return;
 
-      const { slotIndex, flashX, flashY } = plan;
+      const { slotIndices, flashX, flashY } = plan;
 
       flashScreen(flashX, flashY);
       setCrazyFlash(true);
@@ -143,12 +143,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
             prev.every((id) => filteredIds.includes(id))
               ? prev
               : filteredIds;
-          return swapCardAt(order, slotIndex, nextKey);
+          return swapCardsAt(order, slotIndices, nextKey);
         });
-        setCrazyFlashSlot(slotIndex);
+        setCrazyFlashSlots(slotIndices);
         flashTimer = window.setTimeout(() => {
           setCrazyFlash(false);
-          setCrazyFlashSlot(null);
+          setCrazyFlashSlots([]);
         }, 380);
       }, CRAZY_SWAP_MS);
     };
@@ -166,7 +166,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   useEffect(() => {
     if (!crazyMode) {
       setCrazyFlash(false);
-      setCrazyFlashSlot(null);
+      setCrazyFlashSlots([]);
     }
   }, [crazyMode]);
 
@@ -284,7 +284,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                       showText={showText}
                       index={slotIndex}
                       slotIndex={slotIndex}
-                      crazyStrike={crazyFlashSlot === slotIndex}
+                      crazyStrike={crazyFlashSlots.includes(slotIndex)}
                     />
                   );
                 })}

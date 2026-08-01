@@ -113,12 +113,32 @@ function getStrikeCandidates(scroller: HTMLElement, viewport: DOMRect) {
   return candidates;
 }
 
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const arr = [...items];
+  let s = seed;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function pickRandomHalf(slots: number[], seed: number): number[] {
+  if (slots.length === 0) return [];
+  const pickCount = Math.max(1, Math.floor(slots.length / 2));
+  return shuffleWithSeed(slots, seed).slice(0, pickCount);
+}
+
 export function planCrazyFlash(
   scroller: HTMLElement,
   filterRef: RefObject<HTMLButtonElement | null>,
   shelfRef: RefObject<HTMLButtonElement | null>,
   seed: number,
-): { slotIndex: number; flashX: number; flashY: number } | null {
+): { slotIndices: number[]; flashX: number; flashY: number } | null {
   const viewport = getStrikeViewport(scroller);
   if (viewport.width <= 0 || viewport.height <= 0) return null;
 
@@ -128,24 +148,30 @@ export function planCrazyFlash(
   const candidates = getStrikeCandidates(scroller, viewport);
   if (candidates.length === 0) return null;
 
-  const index = ((seed * 7919 + 104729) >>> 0) % candidates.length;
-  const picked = candidates[index]!;
+  const visibleSlots = candidates.map((c) => c.slotIndex);
+  const slotIndices = pickRandomHalf(visibleSlots, seed);
   const btnRect = button.getBoundingClientRect();
 
   return {
-    slotIndex: picked.slotIndex,
+    slotIndices,
     flashX: btnRect.left + btnRect.width / 2,
     flashY: btnRect.top + btnRect.height / 2,
   };
 }
 
-export function swapCardAt(ids: string[], slotIndex: number, seed: number) {
+export function swapCardsAt(ids: string[], slotIndices: number[], seed: number) {
   const next = [...ids];
-  const otherSlots = ids.map((_, i) => i).filter((i) => i !== slotIndex);
-  if (otherSlots.length === 0) return ids;
+  let s = seed;
 
-  const swapSlot = otherSlots[seed % otherSlots.length]!;
-  [next[slotIndex], next[swapSlot]] = [next[swapSlot]!, next[slotIndex]!];
+  for (const slotIndex of slotIndices) {
+    const otherSlots = next.map((_, i) => i).filter((i) => i !== slotIndex);
+    if (otherSlots.length === 0) continue;
+
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const swapSlot = otherSlots[s % otherSlots.length]!;
+    [next[slotIndex], next[swapSlot]] = [next[swapSlot]!, next[slotIndex]!];
+  }
+
   return next;
 }
 

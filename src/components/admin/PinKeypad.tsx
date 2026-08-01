@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
+
 type Props = {
   onDigit: (digit: string) => void;
   onDelete: () => void;
@@ -18,6 +20,22 @@ const LETTER_HINTS: Record<string, string> = {
 };
 
 export function PinKeypad({ onDigit, onDelete, disabled }: Props) {
+  const [tappedKey, setTappedKey] = useState<string | null>(null);
+  const tapSeq = useRef(0);
+
+  const playTap = useCallback((key: string) => {
+    tapSeq.current += 1;
+    const seq = tapSeq.current;
+    setTappedKey(null);
+    requestAnimationFrame(() => {
+      if (seq === tapSeq.current) setTappedKey(key);
+    });
+  }, []);
+
+  const clearTap = useCallback((key: string) => {
+    setTappedKey((current) => (current === key ? null : current));
+  }, []);
+
   const rows = [
     ["1", "2", "3"],
     ["4", "5", "6"],
@@ -34,14 +52,22 @@ export function PinKeypad({ onDigit, onDelete, disabled }: Props) {
               return <div key={`spacer-${rowIndex}-${colIndex}`} aria-hidden />;
             }
 
+            const isTapped = tappedKey === key;
+            const tapClass = isTapped ? "admin-pin-key--tap" : "";
+
             if (key === "del") {
               return (
                 <button
                   key="del"
                   type="button"
                   disabled={disabled}
-                  onClick={onDelete}
-                  className="admin-pin-key admin-pin-key--action flex h-[4.75rem] items-center justify-center rounded-full transition active:scale-95 disabled:opacity-40"
+                  onPointerDown={() => {
+                    if (disabled) return;
+                    playTap("del");
+                  }}
+                  onClick={() => onDelete()}
+                  onAnimationEnd={() => clearTap("del")}
+                  className={`admin-pin-key admin-pin-key--action flex h-[4.75rem] items-center justify-center rounded-full disabled:opacity-40 ${tapClass}`}
                   aria-label="Delete"
                 >
                   <BackspaceIcon />
@@ -55,8 +81,13 @@ export function PinKeypad({ onDigit, onDelete, disabled }: Props) {
                 key={key}
                 type="button"
                 disabled={disabled}
+                onPointerDown={() => {
+                  if (disabled) return;
+                  playTap(key);
+                }}
                 onClick={() => onDigit(key)}
-                className="admin-pin-key flex h-[4.75rem] flex-col items-center justify-center rounded-full transition active:scale-95 disabled:opacity-40"
+                onAnimationEnd={() => clearTap(key)}
+                className={`admin-pin-key flex h-[4.75rem] flex-col items-center justify-center rounded-full disabled:opacity-40 ${tapClass}`}
               >
                 <span className="admin-pin-key__digit">{key}</span>
                 {letters ? (

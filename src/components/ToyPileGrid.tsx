@@ -22,13 +22,15 @@ import {
 import { useCrazyLightning } from "@/hooks/useCrazyLightning";
 
 const MIN_CHUNK = 6;
-const GRID_VIEW = 6;
 const EDGE_THRESHOLD = 220;
 const EXPAND_COOLDOWN_MS = 450;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
 /** Focus card width as a fraction of the pile viewport — also caps max zoom. */
 const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
+/** Visible grid span at the most zoomed-out level (reference mobile layout). */
+const MIN_ZOOM_OUT_COLUMNS = 3;
+const MIN_ZOOM_OUT_ROWS = 6;
 const CRAZY_MIN_VISIBLE_PX = 8;
 
 type Props = {
@@ -64,11 +66,58 @@ function getMaxPileZoom(viewport: HTMLElement) {
   return (viewport.clientWidth * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
 }
 
+function getPileVisibleBand(viewport: HTMLElement) {
+  const viewportRect = viewport.getBoundingClientRect();
+  let top = 0;
+  let bottom = viewport.clientHeight;
+
+  const header = document.querySelector<HTMLElement>(".pile-header-enter");
+  if (header) {
+    const headerRect = header.getBoundingClientRect();
+    if (headerRect.height > 0) {
+      top = Math.max(top, headerRect.bottom - viewportRect.top);
+    }
+  }
+
+  const nav = document.querySelector<HTMLElement>(".bottom-nav.bottom-nav--pile");
+  if (nav) {
+    const navRect = nav.getBoundingClientRect();
+    if (navRect.height > 0) {
+      bottom = Math.min(bottom, navRect.top - viewportRect.top);
+    }
+  } else {
+    const feedRoot = viewport.closest(".browse-feed--toy-pile");
+    if (feedRoot) {
+      const stackHeight = parseFloat(
+        getComputedStyle(feedRoot).getPropertyValue("--pile-nav-stack-height"),
+      );
+      if (stackHeight > 0) {
+        bottom = viewport.clientHeight - stackHeight;
+      }
+    }
+  }
+
+  const height = bottom <= top ? viewport.clientHeight : bottom - top;
+
+  return {
+    width: viewport.clientWidth,
+    height,
+    centerX: viewport.clientWidth / 2,
+    centerY: top + height / 2,
+  };
+}
+
+function getMinPileZoom(viewport: HTMLElement) {
+  const { stride } = getMetrics(viewport);
+  const band = getPileVisibleBand(viewport);
+  return Math.max(
+    band.width / (MIN_ZOOM_OUT_COLUMNS * stride),
+    band.height / (MIN_ZOOM_OUT_ROWS * stride),
+  );
+}
+
 function getZoomBounds(viewport: HTMLElement) {
-  const { gap, stride } = getMetrics(viewport);
-  const { clientWidth, clientHeight } = viewport;
-  const gridSpan = GRID_VIEW * stride - gap;
-  const minZoom = Math.min(clientWidth / gridSpan, clientHeight / gridSpan);
+  const minZoom = getMinPileZoom(viewport);
   const maxZoom = getMaxPileZoom(viewport);
   return {
     minZoom: Math.min(minZoom, maxZoom),
@@ -102,46 +151,10 @@ function intersectionArea(a: DOMRect, b: DOMRect) {
 }
 
 function getPileFocusCenter(viewport: HTMLElement) {
-  const viewportRect = viewport.getBoundingClientRect();
-  let top = 0;
-  let bottom = viewport.clientHeight;
-
-  const header = document.querySelector<HTMLElement>(".pile-header-enter");
-  if (header) {
-    const headerRect = header.getBoundingClientRect();
-    if (headerRect.height > 0) {
-      top = Math.max(top, headerRect.bottom - viewportRect.top);
-    }
-  }
-
-  const nav = document.querySelector<HTMLElement>(".bottom-nav.bottom-nav--pile");
-  if (nav) {
-    const navRect = nav.getBoundingClientRect();
-    if (navRect.height > 0) {
-      bottom = Math.min(bottom, navRect.top - viewportRect.top);
-    }
-  } else {
-    const feedRoot = viewport.closest(".browse-feed--toy-pile");
-    if (feedRoot) {
-      const stackHeight = parseFloat(
-        getComputedStyle(feedRoot).getPropertyValue("--pile-nav-stack-height"),
-      );
-      if (stackHeight > 0) {
-        bottom = viewport.clientHeight - stackHeight;
-      }
-    }
-  }
-
-  if (bottom <= top) {
-    return {
-      x: viewport.clientWidth / 2,
-      y: viewport.clientHeight / 2,
-    };
-  }
-
+  const band = getPileVisibleBand(viewport);
   return {
-    x: viewport.clientWidth / 2,
-    y: top + (bottom - top) / 2,
+    x: band.centerX,
+    y: band.centerY,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
+import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
@@ -13,6 +14,7 @@ export function MoreToysFeed({
   seed: Toy[];
   showText?: boolean;
 }) {
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [items, setItems] = useState<Toy[]>(() => seed.slice(0, PAGE));
   const cursorRef = useRef(Math.min(PAGE, seed.length));
   const loadingRef = useRef(false);
@@ -62,7 +64,11 @@ export function MoreToysFeed({
 
   return (
     <section className="mt-10 border-t border-black/5 pt-8" aria-label="More toys">
-      <h3 className="mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:text-3xl">
+      <h3
+        className={`mb-5 px-1 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl ${
+          crazyMode ? "text-white" : "text-[var(--ink)]"
+        }`}
+      >
         More toys
       </h3>
       <div className="toy-feed-grid">

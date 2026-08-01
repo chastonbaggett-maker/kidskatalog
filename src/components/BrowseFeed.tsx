@@ -526,6 +526,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                   ? {
                       anchorToyId: anchor.toyId,
                       fromRect: anchor.rect,
+                      viewCenter: anchor.viewCenter,
                       onComplete: handleEntryZoomComplete,
                     }
                   : undefined

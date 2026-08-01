@@ -25,6 +25,8 @@ const SNAP_DRAG_THRESHOLD_PX = 10;
 const WHEEL_LOCK_IDLE_MS = 180;
 /** feed-card uses mx-6 (1.5rem) on each side */
 const FEED_CARD_SIDE_INSET_PX = 48;
+/** Entry transition: zoom out to this fraction of max (feed-card) zoom */
+const PILE_ENTRY_ZOOM_RATIO = 0.88;
 
 type Props = {
   toys: Toy[];
@@ -32,6 +34,7 @@ type Props = {
   entryAnimation?: {
     anchorToyId: string;
     fromRect: PileAnchorRect;
+    viewCenter: { x: number; y: number };
     onComplete?: () => void;
   };
 };
@@ -410,6 +413,7 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       toZoom: number,
       lock: StagePoint,
       onComplete?: () => void,
+      screenLock?: { x: number; y: number },
     ) => {
       const viewport = viewportRef.current;
       if (!viewport) return;
@@ -417,7 +421,9 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       cancelSnap();
 
       const startPan = { ...panRef.current };
-      const targetPan = panToCenterStagePoint(viewport, lock, toZoom);
+      const targetPan = screenLock
+        ? panForScreenPoint(screenLock.x, screenLock.y, lock, toZoom)
+        : panToCenterStagePoint(viewport, lock, toZoom);
       const startTime = performance.now();
 
       const tick = (now: number) => {
@@ -457,19 +463,32 @@ export function ToyPileGrid({ toys, showText, entryAnimation }: Props) {
       const col = Number(anchorEl.getAttribute("data-pile-col") ?? "0");
       const row = Number(anchorEl.getAttribute("data-pile-row") ?? "0");
       const stageCenter = getCellStageCenter(col, row, colMin, rowMin, viewport);
-      const { maxZoom, minZoom } = getZoomBounds(viewport);
+      const { maxZoom } = getZoomBounds(viewport);
+      const toZoom = maxZoom * PILE_ENTRY_ZOOM_RATIO;
       const viewportRect = viewport.getBoundingClientRect();
       const fromRect = entryAnimation.fromRect;
       const screenX = fromRect.left + fromRect.width / 2 - viewportRect.left;
       const screenY = fromRect.top + fromRect.height / 2 - viewportRect.top;
       const initialPan = panForScreenPoint(screenX, screenY, stageCenter, maxZoom);
+      const viewScreenX = entryAnimation.viewCenter.x - viewportRect.left;
+      const viewScreenY = entryAnimation.viewCenter.y - viewportRect.top;
+      const viewLock: StagePoint = {
+        x: (viewScreenX - initialPan.x) / maxZoom,
+        y: (viewScreenY - initialPan.y) / maxZoom,
+      };
 
       entryStartedRef.current = true;
       centeredRef.current = true;
       applyTransformImmediate(initialPan, maxZoom);
 
       requestAnimationFrame(() => {
-        animateZoomOut(maxZoom, minZoom, stageCenter, entryAnimation.onComplete);
+        animateZoomOut(
+          maxZoom,
+          toZoom,
+          viewLock,
+          entryAnimation.onComplete,
+          { x: viewScreenX, y: viewScreenY },
+        );
       });
       return;
     }

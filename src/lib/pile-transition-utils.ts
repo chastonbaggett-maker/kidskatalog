@@ -25,17 +25,26 @@ export function findMostVisibleFeedCard(
   const cards = scroller.querySelectorAll(".feed-card[data-feed-slot]");
   let bestEl: Element | null = null;
   let bestArea = 0;
+  let sumX = 0;
+  let sumY = 0;
+  let visibleCount = 0;
 
   for (const card of cards) {
-    const area = intersectionArea(card.getBoundingClientRect(), viewportRect);
+    const rect = card.getBoundingClientRect();
+    const area = intersectionArea(rect, viewportRect);
     if (area <= 0) continue;
+
+    visibleCount += 1;
+    sumX += rect.left + rect.width / 2;
+    sumY += rect.top + rect.height / 2;
+
     if (area > bestArea) {
       bestArea = area;
       bestEl = card;
     }
   }
 
-  if (!bestEl) return null;
+  if (!bestEl || visibleCount === 0) return null;
 
   const slotIndex = Number(bestEl.getAttribute("data-feed-slot") ?? "-1");
   const toyId = bestEl.getAttribute("data-toy-id") ?? "";
@@ -45,6 +54,10 @@ export function findMostVisibleFeedCard(
     slotIndex,
     toyId,
     rect: snapshotRect(bestEl.getBoundingClientRect()),
+    viewCenter: {
+      x: sumX / visibleCount,
+      y: sumY / visibleCount,
+    },
   };
 }
 

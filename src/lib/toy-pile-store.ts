@@ -16,6 +16,8 @@ export type PileAnchor = {
   slotIndex: number;
   toyId: string;
   rect: PileAnchorRect;
+  /** Client coords — centroid of feed cards visible when pile was tapped */
+  viewCenter: { x: number; y: number };
 };
 
 type ToyPileModeState = {

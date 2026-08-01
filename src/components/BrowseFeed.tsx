@@ -107,6 +107,15 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const blockCompactShelfRef = useRef(false);
   const crazyFlashCountRef = useRef(0);
   const displayIdsRef = useRef<string[]>([]);
+  const prevToyPileModeRef = useRef(false);
+
+  useEffect(() => {
+    const enteringPile = toyPileMode && !prevToyPileModeRef.current;
+    prevToyPileModeRef.current = toyPileMode;
+    if (enteringPile) {
+      setShowText(false);
+    }
+  }, [toyPileMode]);
 
   const blockCompactShelf = useCallback(() => {
     blockCompactShelfRef.current = true;

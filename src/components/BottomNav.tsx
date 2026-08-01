@@ -8,6 +8,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
+import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { useKartStore } from "@/lib/kart-store";
 import { useToyPileModeStore } from "@/lib/toy-pile-store";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
@@ -192,6 +193,13 @@ export function BottomNav() {
             </button>
           </li>
         </ul>
+        {pileShelfRaised && (
+          <div
+            ref={registerPileNavModeRow}
+            className="bottom-nav__mode-row"
+            data-testid="pile-nav-mode-row"
+          />
+        )}
       </nav>
 
       <AdminPinGate

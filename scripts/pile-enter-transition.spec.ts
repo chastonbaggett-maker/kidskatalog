@@ -23,7 +23,9 @@ test("pile mode enter shows grid after header transition", async ({ page }) => {
   });
 
   await expect(page.locator(".toy-pile-viewport")).toBeVisible({ timeout: 5000 });
-  await expect(page.locator(".bottom-nav__pile-shelf")).toHaveCount(0);
+  await expect(page.locator(".bottom-nav__mode-row")).toBeVisible({ timeout: 2000 });
+  await expect(page.locator(".bottom-nav__mode-row").getByRole("button", { name: /Text/i })).toBeVisible();
+  await expect(page.locator(".bottom-nav__mode-row").getByRole("button", { name: /Toy Pile/i })).toBeVisible();
 
   await page.waitForTimeout(900);
 

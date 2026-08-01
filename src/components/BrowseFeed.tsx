@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
@@ -16,6 +17,7 @@ import {
 import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
+import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -70,6 +72,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const pileHeaderActive =
     toyPileMode && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
+  const pileShelfRaised = pileHeaderActive && pileHeaderVisible;
+  const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
   const [feedExiting, setFeedExiting] = useState(false);
 
@@ -350,34 +354,34 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
 
-  const filterRow = (
-    <FilterRow
-      audience={audience}
-      onAudienceChange={setAudience}
-      showText={showText}
-      onShowTextChange={setShowText}
-      age={age}
-      onAgeChange={setAge}
-      onRandomize={() => {
-        setShuffleKey((k) => {
-          const next = k + 1;
-          setDisplayIds((prev) =>
-            shuffleWithSeed(
-              prev.length === filteredIds.length ? prev : filteredIds,
-              next,
-            ),
-          );
-          return next;
-        });
-      }}
-      crazyMode={crazyMode}
-      onCrazyModeToggle={handleCrazyModeToggle}
-      crazyFlash={crazyFlash}
-      crazyBtnRef={filterCrazyBtnRef}
-      toyPileMode={false}
-      onToyPileModeToggle={handleToyPileModeToggle}
-    />
-  );
+  const filterRowProps = {
+    audience,
+    onAudienceChange: setAudience,
+    showText,
+    onShowTextChange: setShowText,
+    age,
+    onAgeChange: setAge,
+    onRandomize: () => {
+      setShuffleKey((k) => {
+        const next = k + 1;
+        setDisplayIds((prev) =>
+          shuffleWithSeed(
+            prev.length === filteredIds.length ? prev : filteredIds,
+            next,
+          ),
+        );
+        return next;
+      });
+    },
+    crazyMode,
+    onCrazyModeToggle: handleCrazyModeToggle,
+    crazyFlash,
+    crazyBtnRef: filterCrazyBtnRef,
+    onToyPileModeToggle: handleToyPileModeToggle,
+  } as const;
+
+  const filterRow = <FilterRow {...filterRowProps} toyPileMode={false} />;
+  const pileModeFilterRow = <FilterRow {...filterRowProps} toyPileMode />;
 
   const pileShelfHeader = (
     <ShelfHeader
@@ -514,6 +518,9 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         )}
       </div>
       {flashPortal}
+      {pileShelfRaised &&
+        pileModeRowTarget &&
+        createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>
   );
 }

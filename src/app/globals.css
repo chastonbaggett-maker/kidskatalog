@@ -1628,6 +1628,10 @@ html[data-standalone="true"] .app-shell {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.admin-pin-key__delete-icon {
+  opacity: 0.92;
+}
+
 .admin-pin-key__digit {
   font-size: 1.85rem;
   font-weight: 400;

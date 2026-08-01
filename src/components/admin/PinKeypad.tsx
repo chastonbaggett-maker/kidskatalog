@@ -108,19 +108,25 @@ export function PinKeypad({ onDigit, onDelete, disabled }: Props) {
 
 function BackspaceIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      className="admin-pin-key__delete-icon"
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
       <path
-        d="M6 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6l-4-4.5L6 7z"
+        d="M9.2 5.8h9.3c1.05 0 1.9.85 1.9 1.9v7.6c0 1.05-.85 1.9-1.9 1.9H9.2L4.5 12l4.7-6.2z"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinejoin="round"
       />
       <path
-        d="M14.5 10.5 12 13l2.5 2.5M12 13h4"
+        d="M11.8 9.6 14.8 12.6M14.8 9.6 11.8 12.6"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );

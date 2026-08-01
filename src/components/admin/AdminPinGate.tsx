@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { readJsonResponse } from "@/lib/read-json-response";
 import { PinKeypad } from "./PinKeypad";
 
 type Mode = "setup" | "confirm" | "unlock";
@@ -19,6 +20,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
   const [ready, setReady] = useState(false);
   const [entry, setEntry] = useState("");
   const [firstPin, setFirstPin] = useState("");
+  const firstPinRef = useRef("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -33,6 +35,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
 
     setEntry("");
     setFirstPin("");
+    firstPinRef.current = "";
     setError("");
     setShake(false);
     setMode("unlock");
@@ -47,7 +50,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
       });
 
       const res = await fetch("/api/admin/auth");
-      const data = (await res.json()) as { pinsExist?: boolean };
+      const data = await readJsonResponse<{ pinsExist?: boolean }>(res);
       const exists = Boolean(data.pinsExist);
       setPinsExist(exists);
       setMode(exists ? "unlock" : "setup");
@@ -62,6 +65,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
     setMode("setup");
     setEntry("");
     setFirstPin("");
+    firstPinRef.current = "";
     setError("");
     setShake(false);
   }, []);
@@ -79,6 +83,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
       setError("");
       try {
         if (mode === "setup") {
+          firstPinRef.current = pin;
           setFirstPin(pin);
           setMode("confirm");
           setEntry("");
@@ -86,9 +91,10 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         }
 
         if (mode === "confirm") {
-          if (pin !== firstPin) {
+          if (pin !== firstPinRef.current) {
             fail("PINs did not match. Try again.");
             setMode("setup");
+            firstPinRef.current = "";
             setFirstPin("");
             return;
           }
@@ -97,7 +103,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "setup", pin }),
           });
-          const data = await res.json();
+          const data = await readJsonResponse<{ error?: string }>(res);
           if (!res.ok) throw new Error(data.error || "Setup failed");
           onUnlocked();
           return;
@@ -108,7 +114,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "verify", pin }),
         });
-        const data = await res.json();
+        const data = await readJsonResponse<{ error?: string }>(res);
         if (!res.ok) throw new Error(data.error || "Incorrect PIN");
         onUnlocked();
       } catch (e) {
@@ -117,7 +123,7 @@ export function AdminPinGate({ open, onClose, onUnlocked }: Props) {
         setBusy(false);
       }
     },
-    [mode, firstPin, fail, onUnlocked],
+    [mode, fail, onUnlocked],
   );
 
   useEffect(() => {

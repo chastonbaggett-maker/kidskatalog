@@ -14,6 +14,13 @@ import {
   signSession,
 } from "@/lib/admin-auth";
 
+function setupErrorResponse(error: unknown) {
+  console.error("Admin setup failed", error);
+  const message =
+    error instanceof Error ? error.message : "Could not save admin PIN";
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 export async function GET(req: Request) {
   const session = getSessionFromRequest(req as import("next/server").NextRequest);
   const pinsExist = await hasAdminPins();
@@ -38,11 +45,15 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "setup") {
-    const record = await createAdminPin(pin, body.label || "Admin");
-    const token = signSession(record.id);
-    const res = NextResponse.json({ ok: true, authenticated: true });
-    res.headers.set("Set-Cookie", sessionCookieHeader(token));
-    return res;
+    try {
+      const record = await createAdminPin(pin, body.label || "Admin");
+      const token = signSession(record.id);
+      const res = NextResponse.json({ ok: true, authenticated: true });
+      res.headers.set("Set-Cookie", sessionCookieHeader(token));
+      return res;
+    } catch (error) {
+      return setupErrorResponse(error);
+    }
   }
 
   if (body.action === "verify") {

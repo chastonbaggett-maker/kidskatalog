@@ -38,6 +38,20 @@ async function writeLocal<T>(key: StoreKey, data: T): Promise<void> {
   );
 }
 
+function isDevLocalStore(): boolean {
+  return process.env.NODE_ENV === "development";
+}
+
+/** Best-effort dev mirror — never fail production writes when Turso succeeded. */
+async function mirrorLocalOptional<T>(key: StoreKey, data: T): Promise<void> {
+  if (!isDevLocalStore()) return;
+  try {
+    await writeLocal(key, data);
+  } catch (error) {
+    console.warn(`Local mirror write failed for ${key}`, error);
+  }
+}
+
 async function readTurso<T>(key: StoreKey): Promise<T | null> {
   const { ensureSchema, getDb } = await getDbModule();
   await ensureSchema();
@@ -70,7 +84,7 @@ async function seedTursoFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
   const local = await readLocal<T>(key);
   const seed = local ?? fallback;
   await writeTurso(key, seed);
-  await writeLocal(key, seed);
+  await mirrorLocalOptional(key, seed);
   return seed;
 }
 
@@ -97,13 +111,22 @@ export async function writeStore<T>(key: StoreKey, data: T): Promise<void> {
   if (tursoConfigured()) {
     try {
       await writeTurso(key, data);
-      await writeLocal(key, data);
+      await mirrorLocalOptional(key, data);
       return;
     } catch (error) {
       console.error(`Turso write failed for ${key}`, error);
-      await writeLocal(key, data);
-      return;
+      if (isDevLocalStore()) {
+        await writeLocal(key, data);
+        return;
+      }
+      throw error;
     }
   }
-  await writeLocal(key, data);
+
+  if (isDevLocalStore()) {
+    await writeLocal(key, data);
+    return;
+  }
+
+  throw new Error("Database is not configured for production writes");
 }

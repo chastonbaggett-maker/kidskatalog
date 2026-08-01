@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { readJsonResponse } from "@/lib/read-json-response";
 import { PinKeypad } from "./PinKeypad";
 
 type PinRecord = {
@@ -20,6 +21,7 @@ export function AdminPinManager({ pins, onRefresh }: Props) {
   const [adding, setAdding] = useState(false);
   const [entry, setEntry] = useState("");
   const [firstPin, setFirstPin] = useState("");
+  const firstPinRef = useRef("");
   const [step, setStep] = useState<"enter" | "confirm">("enter");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,10 +42,8 @@ export function AdminPinManager({ pins, onRefresh }: Props) {
       const res = await fetch(`/api/admin/pins?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Could not remove PIN");
-      }
+      const data = await readJsonResponse<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || "Could not remove PIN");
       onRefresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Remove failed");
@@ -61,17 +61,19 @@ export function AdminPinManager({ pins, onRefresh }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin, label: "Admin" }),
       });
-      const data = await res.json();
+      const data = await readJsonResponse<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Could not add PIN");
       setAdding(false);
       setEntry("");
       setFirstPin("");
+      firstPinRef.current = "";
       setStep("enter");
       onRefresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Add failed");
       setEntry("");
       setFirstPin("");
+      firstPinRef.current = "";
       setStep("enter");
     } finally {
       setBusy(false);
@@ -82,22 +84,24 @@ export function AdminPinManager({ pins, onRefresh }: Props) {
     if (!adding || entry.length !== 4 || busy) return;
 
     if (step === "enter") {
+      firstPinRef.current = entry;
       setFirstPin(entry);
       setStep("confirm");
       setEntry("");
       return;
     }
 
-    if (entry !== firstPin) {
+    if (entry !== firstPinRef.current) {
       setError("PINs did not match");
       setStep("enter");
+      firstPinRef.current = "";
       setFirstPin("");
       setEntry("");
       return;
     }
 
     void saveNewPin(entry);
-  }, [adding, entry, step, firstPin, busy]);
+  }, [adding, entry, step, busy]);
 
   return (
     <section className="admin-panel__section p-4">
@@ -113,6 +117,7 @@ export function AdminPinManager({ pins, onRefresh }: Props) {
               setAdding(true);
               setEntry("");
               setFirstPin("");
+              firstPinRef.current = "";
               setStep("enter");
               setError("");
             }}

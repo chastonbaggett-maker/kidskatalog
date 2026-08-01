@@ -48,8 +48,8 @@ export function BottomNav() {
   const revealGateOpen = usePileRevealGate();
   const pileNavActive =
     onShopBrowse && toyPileMode && enterPhase !== "chrome" && revealGateOpen;
-  const pileShelfRaised = pileNavActive;
   const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
+  const pileShelfRaised = pileNavActive && pileNavEnterVisible;
   const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);

@@ -46,7 +46,11 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
               <p className="mb-1 text-sm font-bold text-[var(--blue)]">
                 {categoryLabel}
               </p>
-              <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--ink)] sm:text-4xl">
+              <h2
+                className={`font-[family-name:var(--font-display)] text-3xl font-bold sm:text-4xl ${
+                  crazyMode ? "text-white" : "text-[var(--ink)]"
+                }`}
+              >
                 {toy.name}
               </h2>
               <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>

@@ -135,11 +135,6 @@ export function BottomNav() {
           pileNavEnterVisible ? " is-enter-visible" : ""
         }`}
       >
-        {pileNavActive && (
-          <div className="bottom-nav__shelf-shell" aria-hidden="true">
-            <div className="bottom-nav__icons-base" />
-          </div>
-        )}
         <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
           {items.map((item) => {
             const active =

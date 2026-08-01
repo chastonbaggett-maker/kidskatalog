@@ -532,9 +532,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 .pile-feed-layer,
 .pile-header-enter,
 .bottom-nav--pile.bottom-nav-enter,
-.bottom-nav--pile.is-shelf-raised,
-.bottom-nav--pile .bottom-nav__shelf-shell,
-.bottom-nav--pile .bottom-nav__icons-base {
+.bottom-nav--pile.is-shelf-raised {
   transition-timing-function: ease-in-out;
 }
 
@@ -583,7 +581,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .browse-feed--toy-pile .toy-pile-viewport,
 .browse-feed--toy-pile .toy-pile-empty {
-  padding-bottom: var(--pile-nav-stack-height);
+  /* Keep cards reachable under icons, but let them show through the frosted extension */
+  padding-bottom: var(--bottom-nav-offset);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -608,15 +607,9 @@ html[data-accent="both"] .kart-go-btn:hover {
     opacity: 1;
   }
 
-  .bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__shelf-shell {
-    top: 0;
-    opacity: 1;
-  }
-
-  .bottom-nav--pile.is-shelf-raised .bottom-nav__shelf-shell {
-    top: 0;
-    bottom: 0;
-    height: auto;
+  .bottom-nav--pile.is-shelf-raised {
+    backdrop-filter: blur(28px) saturate(1.8);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
   }
 }
 
@@ -1075,13 +1068,15 @@ html[data-accent="both"] .kart-go-btn:hover {
   );
 }
 
-.bottom-nav--pile {
+.bottom-nav--pile:not(.is-shelf-raised) {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-top-color: transparent;
   box-shadow: none;
-  overflow: hidden;
+}
+
+.bottom-nav--pile {
   border-radius: 2rem 2rem 0 0;
   transition: min-height var(--pile-chrome-duration) ease-in-out;
 }
@@ -1093,38 +1088,6 @@ html[data-accent="both"] .kart-go-btn:hover {
 .bottom-nav--pile.bottom-nav-enter {
   opacity: 1;
   transform: none;
-}
-
-.bottom-nav__shelf-shell {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  height: var(--bottom-nav-offset);
-  overflow: hidden;
-  border-radius: 2rem 2rem 0 0;
-  pointer-events: none;
-  transition:
-    top var(--pile-chrome-duration) ease-in-out,
-    opacity var(--pile-chrome-duration) ease-in-out,
-    height var(--pile-chrome-duration) ease-in-out;
-}
-
-.bottom-nav--pile.is-shelf-raised .bottom-nav__shelf-shell {
-  top: 0;
-  bottom: 0;
-  height: auto;
-}
-
-.bottom-nav--pile.bottom-nav-enter:not(.is-enter-visible) .bottom-nav__shelf-shell {
-  opacity: 0;
-  top: var(--pile-shelf-height);
-}
-
-.bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__shelf-shell {
-  opacity: 1;
-  top: 0;
 }
 
 .bottom-nav--pile.bottom-nav-enter:not(.is-enter-visible) .bottom-nav__icons {
@@ -1139,23 +1102,6 @@ html[data-accent="both"] .kart-go-btn:hover {
     rgba(255, 255, 255, 0.62),
     rgba(255, 255, 255, 0.28)
   );
-}
-
-.bottom-nav__icons-base {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border-top: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  -webkit-backdrop-filter: blur(28px) saturate(1.8);
-  backdrop-filter: blur(28px) saturate(1.8);
-  background-color: rgba(255, 255, 255, 0.72);
-  background-image: linear-gradient(
-    to top,
-    rgba(255, 255, 255, 0.82),
-    rgba(255, 255, 255, 0.55)
-  );
-  pointer-events: none;
 }
 
 .bottom-nav__icons {
@@ -1183,6 +1129,10 @@ html[data-accent="both"] .kart-go-btn:hover {
   backdrop-filter: none;
   background-color: transparent;
   background-image: none;
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
+  border-radius: 2rem 2rem 0 0;
 }
 
 .scroll-pad-bottom {

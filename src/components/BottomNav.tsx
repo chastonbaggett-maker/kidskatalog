@@ -130,9 +130,9 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className={`bottom-nav absolute inset-x-0 bottom-0 z-40 ${
-          pileShelfActive ? "bottom-nav--pile" : ""
-        }`}
+        className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
+          pileShelfActive ? " bottom-nav--pile" : ""
+        }${pileShelfRaised ? " is-shelf-raised" : ""}`}
       >
         <div
           className={`bottom-nav__pile-shelf ${
@@ -142,7 +142,11 @@ export function BottomNav() {
         >
           <div id={PILE_FILTER_PORTAL_ID} className="bottom-nav__pile-filter" />
         </div>
-        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
+        <ul
+          className={`bottom-nav__icons flex items-center justify-around px-2.5 pt-2${
+            pileShelfRaised ? " is-raised" : ""
+          }`}
+        >
           {items.map((item) => {
             const active =
               item.href === "/shop"

@@ -672,10 +672,22 @@ html[data-accent="both"] .kart-go-btn:hover {
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-cell);
   transform: translateY(calc((var(--pile-cell) + var(--pile-gap)) * var(--pile-col-shift, 0)));
+  isolation: isolate;
+  filter: drop-shadow(0 10px 20px rgba(60, 70, 120, 0.16));
 }
 
 .toy-pile-card__body {
   width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background-color: #fff;
+}
+
+.toy-pile-card__media--solo {
+  border-radius: calc(1.35rem - 1px);
+}
+
+.toy-pile-card__media--with-text {
+  border-radius: calc(1.35rem - 1px) calc(1.35rem - 1px) 0 0;
 }
 
 .toy-pile-card__eye {

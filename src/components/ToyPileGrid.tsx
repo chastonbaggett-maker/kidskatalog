@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   memo,
   useCallback,
@@ -62,6 +63,7 @@ type DragState = {
   originX: number;
   originY: number;
   moved: number;
+  captured: boolean;
 };
 
 type StagePoint = { x: number; y: number };
@@ -322,6 +324,11 @@ function getCardStageCenter(
   };
 }
 
+function findToyLinkAtClientPoint(clientX: number, clientY: number) {
+  const target = document.elementFromPoint(clientX, clientY);
+  return target?.closest('a[href^="/toy/"]') as HTMLAnchorElement | null;
+}
+
 function findCardAtClientPoint(viewport: HTMLElement, clientX: number, clientY: number) {
   const target = document.elementFromPoint(clientX, clientY);
   return target?.closest(".toy-pile-card") ?? null;
@@ -439,6 +446,7 @@ export function ToyPileGrid({
   crazyBtnRef,
   onCrazyFlash,
 }: Props) {
+  const router = useRouter();
   const [colMin, setColMin] = useState(0);
   const [rowMin, setRowMin] = useState(0);
   const [colCount, setColCount] = useState(MIN_CHUNK * 3);
@@ -453,6 +461,7 @@ export function ToyPileGrid({
   const zoomRef = useRef(1);
   const dragRef = useRef<DragState | null>(null);
   const dragMovedRef = useRef(false);
+  const hadMultiTouchRef = useRef(false);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{
     dist: number;
@@ -559,6 +568,27 @@ export function ToyPileGrid({
       );
     },
     [commitTransform],
+  );
+
+  const navigateToToyAtPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const link = findToyLinkAtClientPoint(clientX, clientY);
+      if (link) {
+        const href = link.getAttribute("href");
+        if (href) {
+          router.push(href);
+          return;
+        }
+      }
+
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      const card = findCardAtClientPoint(viewport, clientX, clientY);
+      const toyId = card?.getAttribute("data-toy-id");
+      if (toyId) router.push(`/toy/${toyId}`);
+    },
+    [router],
   );
 
   const maybeExpand = useCallback(() => {
@@ -699,9 +729,12 @@ export function ToyPileGrid({
       }
 
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      e.currentTarget.setPointerCapture(e.pointerId);
+      if (pointersRef.current.size >= 2) {
+        hadMultiTouchRef.current = true;
+      }
 
       if (pointersRef.current.size === 2) {
+        e.currentTarget.setPointerCapture(e.pointerId);
         syncPinch();
         return;
       }
@@ -716,6 +749,7 @@ export function ToyPileGrid({
         originX: panRef.current.x,
         originY: panRef.current.y,
         moved: 0,
+        captured: false,
       };
     },
     [syncPinch],
@@ -739,9 +773,14 @@ export function ToyPileGrid({
       const dy = e.clientY - drag.startY;
       drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
       if (drag.moved >= DRAG_CLICK_THRESHOLD_PX) {
+        if (!drag.captured) {
+          drag.captured = true;
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }
         dragMovedRef.current = true;
       }
 
+      if (!drag.captured) return;
       applyStageTransform(
         {
           x: drag.originX + dx,
@@ -764,9 +803,20 @@ export function ToyPileGrid({
 
       const drag = dragRef.current;
       if (drag?.active && drag.pointerId === e.pointerId) {
+        if (
+          !dragMovedRef.current &&
+          !hadMultiTouchRef.current &&
+          pointersRef.current.size === 0
+        ) {
+          navigateToToyAtPoint(e.clientX, e.clientY);
+        }
         dragRef.current = null;
         syncTransformState();
         maybeExpand();
+      }
+
+      if (pointersRef.current.size === 0) {
+        hadMultiTouchRef.current = false;
       }
 
       if (pointersRef.current.size === 1) {
@@ -781,17 +831,20 @@ export function ToyPileGrid({
             originX: panRef.current.x,
             originY: panRef.current.y,
             moved: 0,
+            captured: false,
           };
         }
       }
     },
-    [maybeExpand, syncTransformState],
+    [maybeExpand, navigateToToyAtPoint, syncTransformState],
   );
 
   const onViewportClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!dragMovedRef.current) return;
-    e.preventDefault();
-    e.stopPropagation();
+    const toyLink = (e.target as HTMLElement).closest('a[href^="/toy/"]');
+    if (toyLink || dragMovedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     dragMovedRef.current = false;
   }, []);
 

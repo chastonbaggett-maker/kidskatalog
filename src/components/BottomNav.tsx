@@ -10,7 +10,7 @@ import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { useKartStore } from "@/lib/kart-store";
-import { useToyPileModeStore } from "@/lib/toy-pile-store";
+import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
@@ -42,13 +42,18 @@ export function BottomNav() {
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
+  const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const onShopBrowse =
     pathname === "/" ||
     pathname.startsWith("/shop") ||
     pathname.startsWith("/toy");
+  const onPileBrowseRoute = isPileBrowseRoute(pathname);
   const revealGateOpen = usePileRevealGate();
   const pileNavActive =
-    onShopBrowse && toyPileMode && enterPhase !== "chrome" && revealGateOpen;
+    onPileBrowseRoute &&
+    toyPileMode &&
+    enterPhase !== "chrome" &&
+    revealGateOpen;
   const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
   const pileShelfMounted = pileNavActive;
   const [landing, setLanding] = useState(false);
@@ -69,6 +74,12 @@ export function BottomNav() {
     const t = window.setTimeout(() => setLanding(false), 520);
     return () => window.clearTimeout(t);
   }, [kartBounceToken]);
+
+  useEffect(() => {
+    if (!onPileBrowseRoute) {
+      resetTransition();
+    }
+  }, [onPileBrowseRoute, resetTransition]);
 
   function resetBrandTaps() {
     brandTapCount.current = 0;

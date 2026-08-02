@@ -44,6 +44,11 @@ export function toyPileRootClass(active: boolean) {
   return active ? "browse-feed--toy-pile" : "";
 }
 
+/** Routes where the pile grid and extended bottom nav shelf are shown. */
+export function isPileBrowseRoute(pathname: string) {
+  return pathname === "/shop" || pathname.startsWith("/shop/");
+}
+
 /** Feed chrome exit: header closes, cards fade — normal nav, no pile header. */
 export function isPileChromePhase(phase: PileEnterPhase) {
   return phase === "chrome";

@@ -1,16 +1,30 @@
 "use client";
 
-import { useEffect, useState, type ImgHTMLAttributes } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
-/**
- * Clipped catalog photo — sizing/overflow is enforced in CSS on the container +
- * photo class. Swaps src only after the next image is decoded to avoid flashes.
- */
+type ToyPhotoProps = {
+  src?: string;
+  alt?: string;
+  className?: string;
+  style?: CSSProperties;
+  loading?: "lazy" | "eager";
+  decoding?: "async" | "sync" | "auto";
+  width?: number;
+  height?: number;
+  draggable?: boolean;
+  fetchPriority?: "high" | "low" | "auto";
+};
+
+/** Clipped surfaces use background-image so iOS cannot paint the bitmap fullscreen. */
+const BG_SURFACE =
+  /(?:^|\s)(feed-card__photo|product-gallery__photo|product-gallery__thumb)(?:\s|$)/;
+
 export function ToyPhoto({
   src,
   alt,
-  ...props
-}: ImgHTMLAttributes<HTMLImageElement>) {
+  className = "",
+  style,
+}: ToyPhotoProps) {
   const nextSrc = typeof src === "string" ? src : "";
   const [displaySrc, setDisplaySrc] = useState(nextSrc);
 
@@ -19,8 +33,6 @@ export function ToyPhoto({
 
     let cancelled = false;
     const img = new window.Image();
-    img.decoding = "async";
-
     const commit = () => {
       if (!cancelled) setDisplaySrc(nextSrc);
     };
@@ -28,7 +40,6 @@ export function ToyPhoto({
     img.onload = commit;
     img.onerror = commit;
     img.src = nextSrc;
-
     if (img.complete) commit();
 
     return () => {
@@ -36,5 +47,29 @@ export function ToyPhoto({
     };
   }, [nextSrc, displaySrc]);
 
-  return <img {...props} src={displaySrc || nextSrc} alt={alt} />;
+  const resolved = displaySrc || nextSrc;
+
+  if (BG_SURFACE.test(className)) {
+    return (
+      <div
+        role="img"
+        aria-label={alt ?? ""}
+        className={className}
+        style={{
+          ...style,
+          backgroundImage: resolved ? `url("${resolved}")` : undefined,
+        }}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={resolved}
+      alt={alt}
+      className={className}
+      style={style}
+      decoding="async"
+    />
+  );
 }

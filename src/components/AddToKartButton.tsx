@@ -82,7 +82,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     }
   };
 
-  const showInKart = (inKart || adding) && !removing;
+  const showMint = inKart || adding || removing;
+  const showInKartLabel = (inKart || adding) && !removing;
 
   return (
     <>
@@ -95,13 +96,13 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          showInKart
+          showMint
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
-        } ${charging && !showInKart ? "add-kart-btn--charging" : ""} ${
+        } ${charging && !showMint ? "add-kart-btn--charging" : ""} ${
           bursting && !adding && !inKart ? "add-kart-btn--burst" : ""
         } ${removing ? "add-kart-btn--removing" : ""}`}
-        aria-pressed={showInKart}
+        aria-pressed={showInKartLabel}
         aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
         aria-busy={removing}
       >
@@ -121,7 +122,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
                 Tap to remove
               </span>
             </>
-          ) : showInKart ? (
+          ) : showInKartLabel ? (
             "Tap to remove"
           ) : (
             <>

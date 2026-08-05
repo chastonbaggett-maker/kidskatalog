@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { categories } from "@/data/categories";
 
@@ -14,13 +13,12 @@ export function ThumbCarousel() {
             aria-label={cat.label}
             title={cat.label}
           >
-            <Image
+            <img
               src={cat.image}
               alt={cat.imageAlt}
-              fill
-              unoptimized
-              className="object-cover"
-              sizes="64px"
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </Link>
         ))}

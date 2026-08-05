@@ -50,4 +50,28 @@ test.describe("page load image flash", () => {
     );
     expect(hits, JSON.stringify(hits.slice(0, 3))).toEqual([]);
   });
+
+  test("roar-rex uses direct img URLs without fullscreen flash", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    for (const path of ["/shop", "/toy/roar-rex"]) {
+      await page.goto(`http://localhost:3456${path}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+
+      const roarMeta = await page.evaluate(() => {
+        const imgs = Array.from(document.querySelectorAll<HTMLImageElement>("img")).filter(
+          (img) => img.src.includes("roar-rex"),
+        );
+        const oversized = imgs.filter((img) => {
+          const r = img.getBoundingClientRect();
+          return r.width >= window.innerWidth * 0.95 || r.height >= window.innerHeight * 0.85;
+        });
+        const viaNext = imgs.some((img) => img.src.includes("/_next/image"));
+        return { count: imgs.length, oversized: oversized.length, viaNext };
+      });
+
+      expect(roarMeta.oversized, `${path} oversized roar-rex`).toBe(0);
+      expect(roarMeta.viaNext, `${path} roar-rex via _next/image`).toBe(false);
+    }
+  });
 });

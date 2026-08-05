@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
@@ -25,7 +24,6 @@ export function FeedCard({
       : audience === "girls"
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
-  const remote = toy.image.startsWith("http");
 
   return (
     <article
@@ -38,14 +36,13 @@ export function FeedCard({
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
         <Link href={`/toy/${toy.id}`} className="feed-card__media block bg-white">
-          <Image
+          {/* Native img avoids Next/Image fill escaping its box on first paint */}
+          <img
             src={toy.image}
             alt={toy.imageAlt}
-            fill
-            unoptimized={remote}
-            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 360px"
-            className="feed-card__photo object-contain p-3 sm:p-4"
-            priority={index < 2}
+            loading={index < 2 ? "eager" : "lazy"}
+            decoding="async"
+            className="feed-card__photo"
           />
         </Link>
         {showText && (

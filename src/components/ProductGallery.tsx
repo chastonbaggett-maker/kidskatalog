@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SWIPE_THRESHOLD_PX = 48;
@@ -72,15 +71,13 @@ export function ProductGallery({
         aria-roledescription={shots.length > 1 ? "carousel" : undefined}
         aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
       >
-        <Image
+        <img
           src={current}
           alt={alt}
-          fill
-          priority
-          unoptimized
+          loading="eager"
+          decoding="async"
           draggable={false}
-          className="product-gallery__photo select-none object-contain"
-          sizes="(max-width: 640px) 100vw, (max-width: 900px) 90vw, 520px"
+          className="product-gallery__photo h-full w-full select-none object-contain"
         />
       </div>
 
@@ -102,13 +99,12 @@ export function ProductGallery({
               aria-label={`Photo ${i + 1}`}
               aria-pressed={i === active}
             >
-              <Image
+              <img
                 src={src}
                 alt=""
-                fill
-                unoptimized
-                className="object-cover object-center"
-                sizes="64px"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-center"
               />
             </button>
           ))}

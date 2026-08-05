@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -1057,16 +1056,16 @@ const ToyPileCard = memo(function ToyPileCard({
       <div className="toy-pile-card__body transition-transform active:scale-[0.97]">
         <Link
           href={`/toy/${toy.id}`}
-          className={`toy-pile-card__media relative block aspect-[4/5] ${
+          className={`toy-pile-card__media relative block aspect-[4/5] overflow-hidden ${
             showText ? "toy-pile-card__media--with-text" : "toy-pile-card__media--solo"
           }`}
         >
-          <Image
+          <img
             src={toy.image}
             alt={toy.imageAlt}
-            fill
-            sizes="(max-width: 640px) 92vw, 360px"
-            className="object-contain p-2.5 sm:p-3"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-contain p-2.5 sm:p-3"
           />
         </Link>
         {showText ? (

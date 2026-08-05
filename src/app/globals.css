@@ -191,6 +191,10 @@ select {
   overflow: hidden;
 }
 
+.feed-card > div:first-child {
+  overflow: hidden;
+}
+
 .feed-card__view-btn {
   position: absolute;
   bottom: 0.75rem;
@@ -2009,6 +2013,27 @@ html[data-standalone="true"] .app-shell {
     display: none !important;
   }
 
+  .add-kart-btn,
+  .add-kart-btn--in,
+  .add-kart-btn--ready,
+  .add-kart-btn--charging,
+  .add-kart-btn--burst,
+  .add-kart-btn--removing {
+    transition: none !important;
+    animation: none !important;
+    isolation: auto;
+    transform: none !important;
+  }
+
+  .add-kart-btn__glow,
+  .add-kart-btn__plus {
+    animation: none !important;
+  }
+
+  .add-kart-btn__glow {
+    display: none !important;
+  }
+
   .add-kart-btn--burst,
   .add-kart-btn--charging,
   .add-kart-btn--charging .add-kart-btn__glow,
@@ -2020,6 +2045,62 @@ html[data-standalone="true"] .app-shell {
   .bottom-nav__kart-badge--pop {
     animation: none !important;
   }
+
+  .bottom-nav__icons a,
+  .bottom-nav__icons button {
+    transition: none !important;
+  }
+
+  .feed-card > div:first-child {
+    contain: paint layout;
+  }
+
+  .feed-card__photo,
+  .feed-card__view-btn,
+  .product-gallery__photo,
+  .product-gallery__thumb {
+    contain: strict;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .product-gallery__stage {
+    contain: paint layout;
+  }
+
+  .kart-go-arrow {
+    animation: none !important;
+  }
+}
+
+html[data-kart-effects-reduced="true"] .add-kart-confetti,
+html[data-kart-effects-reduced="true"] .kart-fly-ball {
+  display: none !important;
+}
+
+html[data-kart-effects-reduced="true"] .add-kart-btn,
+html[data-kart-effects-reduced="true"] .add-kart-btn--in {
+  transition: none !important;
+  animation: none !important;
+  isolation: auto;
+}
+
+html[data-kart-effects-reduced="true"] .add-kart-btn__glow {
+  display: none !important;
+}
+
+html[data-kart-effects-reduced="true"] .feed-card > div:first-child,
+html[data-kart-effects-reduced="true"] .product-gallery__stage {
+  contain: paint layout;
+}
+
+html[data-kart-effects-reduced="true"] .feed-card__photo,
+html[data-kart-effects-reduced="true"] .feed-card__view-btn,
+html[data-kart-effects-reduced="true"] .product-gallery__photo,
+html[data-kart-effects-reduced="true"] .product-gallery__thumb {
+  contain: strict;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

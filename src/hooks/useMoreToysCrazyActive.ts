@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useKartStore } from "@/lib/kart-store";
+import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 
 const SCROLL_ARM_PX = 48;
 const ACTIVATE_DELAY_MS = 520;
@@ -51,8 +52,7 @@ export function useMoreToysCrazyActive(
     };
 
     const evaluate = () => {
-      const kart = useKartStore.getState();
-      if (kart.flyBall || kart.kartAddActive > 0) return;
+      if (isKartEffectBlocked()) return;
 
       const scrollerRect = scroller.getBoundingClientRect();
       const moreRect = moreToys.getBoundingClientRect();

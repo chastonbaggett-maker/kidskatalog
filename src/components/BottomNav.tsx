@@ -12,6 +12,7 @@ import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { useKartStore } from "@/lib/kart-store";
 import { beginRouteChange } from "@/lib/route-change";
 import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
+import { useDeferredKartBadgeCount } from "@/hooks/useDeferredKartBadgeCount";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
@@ -37,7 +38,7 @@ function useViewBadgeClass() {
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const count = useKartStore((s) => s.ids.length);
+  const kartBadgeCount = useDeferredKartBadgeCount();
   const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
@@ -139,7 +140,7 @@ export function BottomNav() {
 
   const items = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/kart", label: "Kart", icon: KartIcon, badge: count },
+    { href: "/kart", label: "Kart", icon: KartIcon, badge: kartBadgeCount },
     { href: "/menu", label: "Menu", icon: MenuIcon },
   ] as const;
 

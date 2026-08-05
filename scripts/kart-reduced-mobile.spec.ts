@@ -19,7 +19,10 @@ test("mobile add-to-kart uses reduced path without fly ball or confetti", async 
   await page.evaluate(() => localStorage.removeItem("kidskatalog-kart"));
 
   await page.locator(".add-kart-btn").click();
-  await page.waitForTimeout(600);
+  await page.waitForFunction(() =>
+    localStorage.getItem("kidskatalog-kart")?.includes("sky-rocket"),
+  );
+  await page.waitForTimeout(200);
 
   const state = await page.evaluate(() => ({
     flyBall: !!document.querySelector(".kart-fly-ball"),

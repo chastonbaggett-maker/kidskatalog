@@ -19,11 +19,26 @@ export function detectKartEffectsReduced() {
   return false;
 }
 
+function syncKartEffectsReducedDataset(reduced: boolean) {
+  if (typeof document === "undefined") return;
+  if (reduced) {
+    document.documentElement.dataset.kartEffectsReduced = "true";
+  } else {
+    delete document.documentElement.dataset.kartEffectsReduced;
+  }
+}
+
 export function useKartEffectsReduced() {
-  const [reduced, setReduced] = useState(() => detectKartEffectsReduced());
+  const [reduced, setReduced] = useState(() => {
+    const detected = detectKartEffectsReduced();
+    syncKartEffectsReducedDataset(detected);
+    return detected;
+  });
 
   useEffect(() => {
-    setReduced(detectKartEffectsReduced());
+    const detected = detectKartEffectsReduced();
+    setReduced(detected);
+    syncKartEffectsReducedDataset(detected);
   }, []);
 
   return reduced;

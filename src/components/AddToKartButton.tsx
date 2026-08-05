@@ -85,15 +85,20 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     }
 
     clearCharge();
-    beginKartAdd();
-    setAdding(true);
 
     if (reducedEffects) {
-      add(toyId);
-      pingMetrics("kart_add");
-      finishKartAdd();
+      // Let iOS finish the tap compositor frame before any store/nav repaint.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          add(toyId);
+          pingMetrics("kart_add");
+        });
+      });
       return;
     }
+
+    beginKartAdd();
+    setAdding(true);
 
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {

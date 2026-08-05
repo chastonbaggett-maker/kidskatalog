@@ -56,6 +56,8 @@ export function MoreToysFeed({
   const displayIdsRef = useRef<string[]>([]);
   const localSectionRef = useRef<HTMLElement>(null);
   const mergedSectionRef = sectionRef ?? localSectionRef;
+  const userScrolledRef = useRef(false);
+  const loadReadyRef = useRef(false);
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
@@ -97,6 +99,29 @@ export function MoreToysFeed({
   }, [seed, seedKey]);
 
   useEffect(() => {
+    const root = scrollerRef?.current;
+    if (!root) {
+      loadReadyRef.current = true;
+      return;
+    }
+
+    userScrolledRef.current = root.scrollTop > 0;
+    const markScroll = () => {
+      userScrolledRef.current = true;
+    };
+    root.addEventListener("scroll", markScroll, { passive: true });
+
+    const readyTimer = window.setTimeout(() => {
+      loadReadyRef.current = true;
+    }, 600);
+
+    return () => {
+      root.removeEventListener("scroll", markScroll);
+      window.clearTimeout(readyTimer);
+    };
+  }, [scrollerRef]);
+
+  useEffect(() => {
     const node = sentinelRef.current;
     if (!node) return;
 
@@ -106,6 +131,8 @@ export function MoreToysFeed({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return;
+        if (root && (!loadReadyRef.current || !userScrolledRef.current)) return;
+
         const { flyBall, kartAddActive } = useKartStore.getState();
         if (flyBall || kartAddActive > 0) return;
 
@@ -116,7 +143,7 @@ export function MoreToysFeed({
           loadMore();
         }, 150);
       },
-      { root, rootMargin: root ? "320px 0px" : "480px 0px" },
+      { root, rootMargin: root ? "120px 0px" : "320px 0px", threshold: 0.01 },
     );
 
     observer.observe(node);

@@ -63,7 +63,7 @@ export function ProductGallery({
   return (
     <div className="mb-4">
       <div
-        className="relative mb-3 w-full touch-pan-y overflow-hidden rounded-[2rem] bg-white shadow-md"
+        className="product-gallery__stage relative mb-3 w-full touch-pan-y overflow-hidden rounded-[2rem] bg-white shadow-md"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
@@ -75,12 +75,11 @@ export function ProductGallery({
         <Image
           src={current}
           alt={alt}
-          width={1200}
-          height={1200}
+          fill
           priority
           unoptimized
           draggable={false}
-          className="h-auto w-full select-none object-contain"
+          className="product-gallery__photo select-none object-contain"
           sizes="(max-width: 640px) 100vw, (max-width: 900px) 90vw, 520px"
         />
       </div>

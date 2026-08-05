@@ -25,6 +25,7 @@ export function FeedCard({
       : audience === "girls"
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
+  const remote = toy.image.startsWith("http");
 
   return (
     <article
@@ -40,10 +41,10 @@ export function FeedCard({
           <Image
             src={toy.image}
             alt={toy.imageAlt}
-            width={720}
-            height={900}
+            fill
+            unoptimized={remote}
             sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 360px"
-            className="h-full w-full object-contain p-3 sm:p-4"
+            className="feed-card__photo object-contain p-3 sm:p-4"
             priority={index < 2}
           />
         </Link>

@@ -194,16 +194,37 @@ select {
 .feed-card__media {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 5;
   width: 100%;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  contain: layout paint;
+  contain: strict;
   isolation: isolate;
+  background: #fff;
 }
 
-.feed-card__media img {
-  display: block;
-  max-width: 100%;
+.feed-card__media > span {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.feed-card__photo {
+  object-fit: contain;
+}
+
+.product-gallery__stage {
+  aspect-ratio: 1 / 1;
+  contain: strict;
+}
+
+.product-gallery__stage > span {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }
 
 .logo-glow {

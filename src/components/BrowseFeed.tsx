@@ -19,6 +19,7 @@ import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { usePileNavSettled } from "@/hooks/usePileNavSettled";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -53,6 +54,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const [showText, setShowText] = useState(true);
   const [shuffleKey, setShuffleKey] = useState(0);
   const [displayIds, setDisplayIds] = useState<string[]>([]);
+  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
+  const pileHydrated = usePersistHydrated(getStorePersist(useToyPileModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
@@ -63,15 +66,18 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
 
+  const crazyOn = crazyHydrated && crazyMode;
+  const pileOn = pileHydrated && toyPileMode;
+
   const isChromePhase = isPileChromePhase(enterPhase);
   const isTransitioning = isPileTransitioning(enterPhase);
-  const showFilterChrome = !toyPileMode && !isChromePhase;
+  const showFilterChrome = !pileOn && !isChromePhase;
 
   usePileEnterTransition();
 
   const revealGateOpen = usePileRevealGate();
   const pileHeaderActive =
-    toyPileMode && !isChromePhase && revealGateOpen;
+    pileOn && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const pileShelfMounted = pileHeaderActive;
   const pileNavSettled = usePileNavSettled(pileHeaderVisible);
@@ -110,12 +116,12 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const prevToyPileModeRef = useRef(false);
 
   useEffect(() => {
-    const enteringPile = toyPileMode && !prevToyPileModeRef.current;
-    prevToyPileModeRef.current = toyPileMode;
+    const enteringPile = pileOn && !prevToyPileModeRef.current;
+    prevToyPileModeRef.current = pileOn;
     if (enteringPile) {
       setShowText(false);
     }
-  }, [toyPileMode]);
+  }, [pileOn]);
 
   const blockCompactShelf = useCallback(() => {
     blockCompactShelfRef.current = true;
@@ -132,7 +138,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   }, [setToyPileMode, resetTransition]);
 
   const handleToyPileModeToggle = useCallback(() => {
-    if (toyPileMode) {
+    if (pileOn) {
       exitPileMode();
       return;
     }
@@ -147,9 +153,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
     startEnterTransition();
   }, [
-    toyPileMode,
+    pileOn,
     enterPhase,
-    setCrazyMode,
     exitPileMode,
     blockCompactShelf,
     skipToPileResting,
@@ -157,24 +162,24 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   ]);
 
   const handleCrazyModeToggle = useCallback(() => {
-    if (!crazyMode) {
+    if (!crazyOn) {
       pingMetrics("crazy_mode");
     }
     toggleCrazyMode();
-  }, [crazyMode, toggleCrazyMode]);
+  }, [crazyOn, toggleCrazyMode]);
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
-    if (isChromePhase || toyPileMode) {
+    if (isChromePhase || pileOn) {
       blockCompactShelf();
     }
-  }, [isChromePhase, toyPileMode, blockCompactShelf]);
+  }, [isChromePhase, pileOn, blockCompactShelf]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
     const chrome = chromeRef.current;
-    if (!scroller || !chrome || isChromePhase || toyPileMode) return;
+    if (!scroller || !chrome || isChromePhase || pileOn) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -201,7 +206,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
     observer.observe(chrome);
     return () => observer.disconnect();
-  }, [isChromePhase, toyPileMode]);
+  }, [isChromePhase, pileOn]);
 
   useEffect(() => {
     if (shelfMode !== "leaving" || blockCompactShelfRef.current) return;
@@ -216,7 +221,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const showCompactShelf =
     !compactShelfBlocked &&
     enterPhase === "idle" &&
-    !toyPileMode &&
+    !pileOn &&
     !isChromePhase;
 
   const filtered = useMemo(() => {
@@ -255,14 +260,14 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   useEffect(() => {
     setDisplayIds(filteredIds);
     setLoadedPages(1);
-    if (!crazyMode) {
+    if (!crazyOn) {
       setShuffleKey(0);
       setCrazyFlashSlots([]);
     }
-  }, [filteredIdsKey, filteredIds, crazyMode, toyPileMode]);
+  }, [filteredIdsKey, filteredIds, crazyOn]);
 
   useEffect(() => {
-    if (!crazyMode || toyPileMode) return;
+    if (!crazyOn || pileOn) return;
 
     let flashTimer: number | undefined;
 
@@ -317,19 +322,19 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
     };
-  }, [crazyMode, toyPileMode, filteredIdsKey, filteredIds, flashScreen]);
+  }, [crazyOn, pileOn, filteredIdsKey, filteredIds, flashScreen]);
 
   useEffect(() => {
-    if (!crazyMode) {
+    if (!crazyOn) {
       setCrazyFlash(false);
       setCrazyFlashSlots([]);
     }
-  }, [crazyMode]);
+  }, [crazyOn]);
 
   const displayed = useMemo(() => {
     const byId = new Map(filtered.map((t) => [t.id, t]));
     const ids =
-      shuffleKey === 0 && !crazyMode
+      shuffleKey === 0 && !crazyOn
         ? filteredIds
         : displayIds.length === filteredIds.length
           ? displayIds
@@ -337,7 +342,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return ids
       .map((id) => byId.get(id))
       .filter((t): t is Toy => t != null);
-  }, [filtered, filteredIds, displayIds, shuffleKey, crazyMode]);
+  }, [filtered, filteredIds, displayIds, shuffleKey, crazyOn]);
 
   const totalPages = Math.max(1, Math.ceil(displayed.length / FEED_PAGE_SIZE));
   const visiblePages = Math.min(loadedPages, totalPages);
@@ -357,7 +362,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return chunks;
   }, [displayed, visiblePages]);
 
-  const gridClassName = ["toy-feed-grid", crazyMode ? "toy-feed-grid--crazy" : ""]
+  const gridClassName = ["toy-feed-grid", crazyOn ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -382,7 +387,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         return next;
       });
     },
-    crazyMode,
+    crazyMode: crazyOn,
     onCrazyModeToggle: handleCrazyModeToggle,
     crazyFlash,
     crazyBtnRef: filterCrazyBtnRef,
@@ -406,8 +411,8 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     />
   );
 
-  const showFeedLayer = !toyPileMode;
-  const showBrowseChrome = !toyPileMode;
+  const showFeedLayer = !pileOn;
+  const showBrowseChrome = !pileOn;
 
   const feedCards = (
     <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4${
@@ -451,7 +456,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     <div
       className={`relative shelf-page flex min-h-0 flex-1 flex-col ${
         isTransitioning ? "browse-feed--pile-entering" : ""
-      } ${toyPileMode ? "" : "star-field"} ${crazyModeRootClass(crazyMode)} ${toyPileRootClass(toyPileMode)}`}
+      } ${pileOn ? "" : "star-field"} ${crazyModeRootClass(crazyOn)} ${toyPileRootClass(pileOn)}`}
     >
       {pileHeaderActive && (
         <div
@@ -472,7 +477,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         >
           <ShelfHeader
             trailing={
-              crazyMode ? (
+              crazyOn ? (
                 <CrazyModeButton
                   ref={shelfCrazyBtnRef}
                   className="shelf-crazy-btn"
@@ -489,19 +494,19 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       <div
         ref={scrollerRef}
         className={`min-h-0 flex-1 ${
-          toyPileMode
+          pileOn
             ? "toy-pile-shell relative flex min-h-0 flex-1 flex-col overflow-hidden"
-            : `page-scroll star-field ${crazyModeScrollClass(crazyMode)}${
+            : `page-scroll star-field ${crazyModeScrollClass(crazyOn)}${
                 isChromePhase ? " overflow-hidden" : ""
               }`
         }`}
       >
-        {toyPileMode && (
+        {pileOn && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
             <ToyPileGrid
               toys={displayed}
               showText={showText}
-              crazyMode={crazyMode && pileNavSettled}
+              crazyMode={crazyOn && pileNavSettled}
               crazyBtnRef={filterCrazyBtnRef}
               onCrazyFlash={setCrazyFlash}
             />
@@ -520,7 +525,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                 <FeedHeader query={query} onQueryChange={setQuery} />
                 <div
                   className={
-                    crazyMode ? "browse-controls" : "browse-chrome-panel"
+                    crazyOn ? "browse-controls" : "browse-chrome-panel"
                   }
                 >
                   {showFilterChrome && filterRow}

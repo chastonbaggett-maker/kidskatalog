@@ -42,6 +42,7 @@ export function BottomNav() {
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
+  const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const onShopBrowse =
     pathname === "/" ||
@@ -78,8 +79,11 @@ export function BottomNav() {
   useEffect(() => {
     if (!onPileBrowseRoute) {
       resetTransition();
+      if (useToyPileModeStore.getState().toyPileMode) {
+        setToyPileMode(false);
+      }
     }
-  }, [onPileBrowseRoute, resetTransition]);
+  }, [onPileBrowseRoute, resetTransition, setToyPileMode]);
 
   function resetBrandTaps() {
     brandTapCount.current = 0;

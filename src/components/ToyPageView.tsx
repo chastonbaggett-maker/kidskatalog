@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
-import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
+import {
+  useCrazyModeStore,
+  crazyModeScrollClass,
+} from "@/lib/crazy-mode-store";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { useMoreToysCrazyActive } from "@/hooks/useMoreToysCrazyActive";
 import { ProductGallery } from "./ProductGallery";
 import { ShelfHeader } from "./ShelfHeader";
 import { MoreToysFeed } from "./MoreToysFeed";
@@ -18,89 +23,29 @@ type Props = {
 };
 
 export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
+  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
+  const crazyOn = crazyHydrated && crazyMode;
   const [crazyFlash, setCrazyFlash] = useState(false);
-  const [moreToysInView, setMoreToysInView] = useState(false);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const productAreaRef = useRef<HTMLDivElement>(null);
   const moreToysRef = useRef<HTMLElement>(null);
   const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!crazyMode) {
-      setMoreToysInView(false);
-      setCrazyFlash(false);
-      return;
-    }
-
-    const scroller = scrollerRef.current;
-    const productArea = productAreaRef.current;
-    const moreToys = moreToysRef.current;
-    if (!scroller || !productArea || !moreToys) return;
-
-    let productVisible = true;
-    let productRatio = 1;
-    let moreToysVisible = false;
-    let moreToysRatio = 0;
-
-    let activateTimer: number | undefined;
-
-    const sync = () => {
-      const inMoreToys =
-        moreToysVisible &&
-        moreToysRatio >= 0.06 &&
-        (!productVisible || productRatio < 0.15 || moreToysRatio > productRatio);
-
-      if (!inMoreToys) {
-        if (activateTimer) window.clearTimeout(activateTimer);
-        activateTimer = undefined;
-        setMoreToysInView(false);
-        return;
-      }
-
-      if (activateTimer) return;
-      activateTimer = window.setTimeout(() => {
-        activateTimer = undefined;
-        setMoreToysInView(true);
-      }, 400);
-    };
-
-    const productObserver = new IntersectionObserver(
-      ([entry]) => {
-        productVisible = entry?.isIntersecting ?? false;
-        productRatio = entry?.intersectionRatio ?? 0;
-        sync();
-      },
-      { root: scroller, threshold: [0, 0.06, 0.12, 0.25, 0.5, 0.75, 1] },
-    );
-
-    const moreToysObserver = new IntersectionObserver(
-      ([entry]) => {
-        moreToysVisible = entry?.isIntersecting ?? false;
-        moreToysRatio = entry?.intersectionRatio ?? 0;
-        sync();
-      },
-      { root: scroller, threshold: [0, 0.06, 0.12, 0.25, 0.5, 0.75, 1] },
-    );
-
-    productObserver.observe(productArea);
-    moreToysObserver.observe(moreToys);
-
-    return () => {
-      if (activateTimer) window.clearTimeout(activateTimer);
-      productObserver.disconnect();
-      moreToysObserver.disconnect();
-    };
-  }, [crazyMode, more.length]);
+  const moreToysCrazyActive = useMoreToysCrazyActive(
+    crazyOn,
+    scrollerRef,
+    moreToysRef,
+  );
 
   return (
-    <div className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyMode)}`}>
+    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
       <ShelfHeader
         backHref="/shop"
         trailing={
-          crazyMode ? (
+          crazyOn ? (
             <CrazyModeButton
               ref={shelfCrazyBtnRef}
               className="shelf-crazy-btn"
@@ -114,11 +59,11 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 py-4 ${crazyModeScrollClass(crazyMode)}`}
+        className={`page-scroll star-field min-h-0 flex-1 py-4 ${
+          moreToysCrazyActive ? crazyModeScrollClass(true) : ""
+        }`}
       >
-        <div
-          className={`product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8${crazyMode ? " product-detail--crazy" : ""}`}
-        >
+        <div className="product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div ref={productAreaRef} className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />
 
@@ -126,11 +71,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
               <p className="mb-1 text-sm font-bold text-[var(--blue)]">
                 {categoryLabel}
               </p>
-              <h2
-                className={`font-[family-name:var(--font-display)] text-3xl font-bold sm:text-4xl ${
-                  crazyMode ? "text-white" : "text-[var(--ink)]"
-                }`}
-              >
+              <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--ink)] sm:text-4xl">
                 {toy.name}
               </h2>
               <p className="mt-2 text-lg text-[var(--ink-soft)]">{toy.blurb}</p>
@@ -182,8 +123,8 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
             seed={more}
             showText
             sectionRef={moreToysRef}
-            crazyMode={crazyMode}
-            crazyEffectsActive={moreToysInView}
+            crazyMode={crazyOn}
+            crazyEffectsActive={moreToysCrazyActive}
             scrollerRef={scrollerRef}
             crazyBtnRef={shelfCrazyBtnRef}
             onCrazyFlash={setCrazyFlash}

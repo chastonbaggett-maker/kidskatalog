@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
-import { useKartFlyBall } from "@/hooks/useKartFlyBall";
+import { useKartFlyBallTrigger } from "@/hooks/useKartFlyBall";
 
 /** Fill + label wipe 480ms; pop starts at 480ms (320ms); toggle when fill completes. */
 const REMOVE_FILL_MS = 480;
@@ -13,13 +13,15 @@ const REMOVE_TOTAL_MS = REMOVE_FILL_MS + REMOVE_POP_MS + 40;
 
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
+  const add = useKartStore((s) => s.add);
   const toggle = useKartStore((s) => s.toggle);
   const btnRef = useRef<HTMLButtonElement>(null);
   const removeTimersRef = useRef<number[]>([]);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [adding, setAdding] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
-  const { fire: fireFlyBall, portal: flyPortal } = useKartFlyBall();
+  const { fire: fireFlyBall, pulseKartNav } = useKartFlyBallTrigger();
 
   const clearRemoveTimers = () => {
     for (const id of removeTimersRef.current) {
@@ -36,13 +38,13 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   useEffect(() => () => clearRemoveTimers(), []);
 
   const handlePointerDown = () => {
-    if (!inKart && !removing) setCharging(true);
+    if (!inKart && !removing && !adding) setCharging(true);
   };
 
   const clearCharge = () => setCharging(false);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (removing) return;
+    if (removing || adding) return;
 
     if (inKart) {
       setRemoving(true);
@@ -59,13 +61,21 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       return;
     }
 
-    const wasIn = inKart;
-    toggle(toyId);
     clearCharge();
-    if (!wasIn) {
-      const point = { x: e.clientX, y: e.clientY };
-      fireFlyBall(point);
-      fire(point, GOLD_CONFETTI);
+    const point = { x: e.clientX, y: e.clientY };
+    setAdding(true);
+    const started = fireFlyBall(point, () => {
+      add(toyId);
+      setAdding(false);
+      pingMetrics("kart_add");
+    });
+
+    fire(point, GOLD_CONFETTI);
+
+    if (!started) {
+      add(toyId);
+      pulseKartNav();
+      setAdding(false);
       pingMetrics("kart_add");
     }
   };
@@ -81,13 +91,13 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          inKart
+          inKart && !adding
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
-        } ${charging ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""} ${
+        } ${charging || adding ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""} ${
           removing ? "add-kart-btn--removing" : ""
         }`}
-        aria-pressed={inKart && !removing}
+        aria-pressed={inKart && !removing && !adding}
         aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
         aria-busy={removing}
       >
@@ -107,7 +117,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
                 In Kart — tap to remove
               </span>
             </>
-          ) : inKart ? (
+          ) : inKart && !adding ? (
             "In Kart — tap to remove"
           ) : (
             <>
@@ -119,7 +129,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         <span className="add-kart-btn__glow" aria-hidden />
       </button>
       {portal}
-      {flyPortal}
     </>
   );
 }

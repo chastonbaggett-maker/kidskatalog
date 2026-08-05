@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { InstallPrompt } from "./InstallPrompt";
+import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
+import { KartFlyBallOverlay } from "@/hooks/useKartFlyBall";
 
 export function AppShell({
   children,
@@ -12,9 +14,11 @@ export function AppShell({
 }) {
   return (
     <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+      <KartNavEffectGuard />
       <MetricsPing />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
+      <KartFlyBallOverlay />
       <InstallPrompt />
     </div>
   );

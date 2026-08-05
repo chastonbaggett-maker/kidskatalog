@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { getKartNavRect } from "@/lib/kart-nav-target";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
-import { useKartStore } from "@/lib/kart-store";
+import { useKartStore, type KartFlyBallFlight } from "@/lib/kart-store";
 
 /** Screen-space gravity (px/s²) — tuned for a natural toss arc. */
 const GRAVITY = 1050;
@@ -18,22 +18,12 @@ const POP_MS = 110;
 /** Minimum height the ball rises above the button before falling. */
 const APEX_LIFT_PX = 76;
 
-type Flight = {
-  fromX: number;
-  fromY: number;
-  vx: number;
-  vy: number;
-  toX: number;
-  toY: number;
-  duration: number;
-};
-
 function computeFlight(
   fromX: number,
   fromY: number,
   toX: number,
   toY: number,
-): Flight | null {
+): Omit<KartFlyBallFlight, "effectGeneration" | "onComplete"> | null {
   const vy0 = -Math.sqrt(2 * GRAVITY * APEX_LIFT_PX);
   const c = fromY - toY;
   const discriminant = vy0 * vy0 - 2 * GRAVITY * c;
@@ -46,11 +36,47 @@ function computeFlight(
   return { fromX, fromY, vx, vy: vy0, toX, toY, duration };
 }
 
-export function useKartFlyBall() {
+export function useKartFlyBallTrigger() {
+  const startFlyBall = useKartStore((s) => s.startFlyBall);
+
+  const fire = useCallback(
+    (
+      origin: BurstPoint | DOMRect | null | undefined,
+      onComplete: () => void,
+    ): boolean => {
+      const point = resolveBurstPoint(origin);
+      const toRect = getKartNavRect();
+      if (!point || !toRect) return false;
+
+      const fromX = point.x;
+      const fromY = point.y;
+      const toX = toRect.left + toRect.width / 2;
+      const toY = toRect.top + toRect.height * 0.36;
+
+      const path = computeFlight(fromX, fromY, toX, toY);
+      if (!path) return false;
+
+      startFlyBall({
+        ...path,
+        effectGeneration: useKartStore.getState().kartEffectGeneration,
+        onComplete,
+      });
+      return true;
+    },
+    [startFlyBall],
+  );
+
+  const pulseKartNav = useKartStore((s) => s.pulseKartNav);
+
+  return { fire, pulseKartNav };
+}
+
+export function KartFlyBallOverlay() {
   const ballRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef(0);
   const [mounted, setMounted] = useState(false);
-  const [flight, setFlight] = useState<Flight | null>(null);
+  const flyBall = useKartStore((s) => s.flyBall);
+  const clearFlyBall = useKartStore((s) => s.clearFlyBall);
   const pulseKartNav = useKartStore((s) => s.pulseKartNav);
 
   useEffect(() => setMounted(true), []);
@@ -62,24 +88,29 @@ export function useKartFlyBall() {
     [],
   );
 
-  const fire = useCallback((origin: BurstPoint | DOMRect | null | undefined) => {
-    const point = resolveBurstPoint(origin);
-    const toRect = getKartNavRect();
-    if (!point || !toRect) return;
-
-    const fromX = point.x;
-    const fromY = point.y;
-    const toX = toRect.left + toRect.width / 2;
-    const toY = toRect.top + toRect.height * 0.36;
-
-    const path = computeFlight(fromX, fromY, toX, toY);
-    if (path) setFlight(path);
-  }, []);
-
   useLayoutEffect(() => {
-    if (!flight) return;
+    if (!flyBall) return;
 
     let cancelled = false;
+    const {
+      fromX,
+      fromY,
+      vx,
+      vy,
+      toX,
+      toY,
+      duration,
+      effectGeneration,
+      onComplete,
+    } = flyBall;
+
+    const finish = () => {
+      onComplete();
+      if (useKartStore.getState().kartEffectGeneration === effectGeneration) {
+        pulseKartNav();
+      }
+      window.setTimeout(() => clearFlyBall(), 70);
+    };
 
     const run = () => {
       const el = ballRef.current;
@@ -88,7 +119,6 @@ export function useKartFlyBall() {
         return;
       }
 
-      const { fromX, fromY, vx, vy, toX, toY, duration } = flight;
       el.style.left = `${fromX}px`;
       el.style.top = `${fromY}px`;
       el.style.transform = "translate(-50%, -50%) scale(0.65)";
@@ -108,8 +138,7 @@ export function useKartFlyBall() {
           el.style.top = `${toY}px`;
           el.style.transform = "translate(-50%, -50%) scale(0.7)";
           el.style.opacity = "0";
-          pulseKartNav();
-          window.setTimeout(() => setFlight(null), 70);
+          finish();
           return;
         }
 
@@ -141,15 +170,15 @@ export function useKartFlyBall() {
       cancelled = true;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [flight, pulseKartNav]);
+  }, [flyBall, clearFlyBall, pulseKartNav]);
 
   const portal =
-    mounted && flight
+    mounted && flyBall
       ? createPortal(
           <span ref={ballRef} className="kart-fly-ball" aria-hidden />,
           document.body,
         )
       : null;
 
-  return { fire, portal, flying: flight !== null };
+  return portal;
 }

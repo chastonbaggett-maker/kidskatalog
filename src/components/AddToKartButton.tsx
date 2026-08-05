@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKartStore } from "@/lib/kart-store";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
+import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
 import { useKartFlyBallTrigger } from "@/hooks/useKartFlyBall";
 
 /** Fill + label wipe 480ms; pop starts at 480ms (320ms); toggle when fill completes. */
@@ -27,6 +28,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const [adding, setAdding] = useState(false);
   const { fire, portal, bursting } = useConfettiBurst();
   const { fire: fireFlyBall, pulseKartNav } = useKartFlyBallTrigger();
+  const reducedEffects = useKartEffectsReduced();
 
   const clearRemoveTimers = () => {
     for (const id of removeTimersRef.current) {
@@ -84,6 +86,15 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     clearCharge();
     beginKartAdd();
+    setAdding(true);
+
+    if (reducedEffects) {
+      add(toyId);
+      pingMetrics("kart_add");
+      finishKartAdd();
+      return;
+    }
+
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {
       add(toyId);
@@ -91,19 +102,15 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       finishKartAdd();
     });
 
-    if (started) {
-      setAdding(true);
-    }
-
-    fire(point, GOLD_CONFETTI);
-
     if (!started) {
-      setAdding(true);
       add(toyId);
       pulseKartNav();
       pingMetrics("kart_add");
       finishKartAdd();
+      return;
     }
+
+    fire(point, GOLD_CONFETTI);
   };
 
   const showMint = inKart || adding || removing;

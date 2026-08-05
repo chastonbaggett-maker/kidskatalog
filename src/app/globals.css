@@ -1518,8 +1518,6 @@ html[data-standalone="true"] .app-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
-  contain: layout paint;
-  isolation: isolate;
 }
 
 @media (min-width: 900px) {
@@ -1905,10 +1903,13 @@ html[data-standalone="true"] .app-shell {
 
 .add-kart-confetti {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
   pointer-events: none;
   z-index: 200;
-  overflow: hidden;
 }
 
 .add-kart-confetti__bit {
@@ -1955,7 +1956,6 @@ html[data-standalone="true"] .app-shell {
   box-shadow: 0 2px 8px rgba(30, 130, 118, 0.4);
   pointer-events: none;
   z-index: 150;
-  will-change: left, top, transform, opacity;
 }
 
 .bottom-nav__kart-icon {
@@ -1992,13 +1992,33 @@ html[data-standalone="true"] .app-shell {
 
 @keyframes kart-nav-badge-pop {
   0% {
-    transform: scale(0.55);
+    opacity: 0.6;
   }
   45% {
-    transform: scale(1.28);
+    opacity: 1;
   }
   100% {
-    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Touch / PWA: no fullscreen fixed layers or transform pulses during kart add */
+@media (pointer: coarse) {
+  .add-kart-confetti,
+  .kart-fly-ball {
+    display: none !important;
+  }
+
+  .add-kart-btn--burst,
+  .add-kart-btn--charging,
+  .add-kart-btn--charging .add-kart-btn__glow,
+  .add-kart-btn--burst .add-kart-btn__glow {
+    animation: none !important;
+  }
+
+  .bottom-nav__kart--land .bottom-nav__kart-icon,
+  .bottom-nav__kart-badge--pop {
+    animation: none !important;
   }
 }
 

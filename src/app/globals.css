@@ -188,12 +188,30 @@ select {
 }
 
 .feed-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
+  contain: layout style;
 }
 
 html.kart-effect-active .feed-card {
   content-visibility: visible;
+}
+
+html.kart-effect-active .feed-card__media,
+html.kart-effect-active .product-gallery__stage {
+  overflow: hidden;
+  contain: strict;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+html.kart-effect-active .feed-card__photo,
+html.kart-effect-active .product-gallery__photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+html.kart-effect-active .page-scroll {
+  contain: layout style;
 }
 
 html.kart-effect-active .crazy-screen-flash {
@@ -225,7 +243,7 @@ html.route-changing .page-scroll {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
-  overflow: clip;
+  overflow: hidden;
   contain: layout paint size;
   isolation: isolate;
   background: #fff;
@@ -1887,7 +1905,7 @@ html[data-standalone="true"] .app-shell {
   inset: 0;
   pointer-events: none;
   z-index: 200;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .add-kart-confetti__bit {

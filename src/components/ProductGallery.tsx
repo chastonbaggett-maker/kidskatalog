@@ -76,8 +76,11 @@ export function ProductGallery({
           src={current}
           alt={alt}
           loading="eager"
-          decoding="async"
+          decoding="sync"
+          fetchPriority="high"
           draggable={false}
+          width={800}
+          height={800}
           className="product-gallery__photo"
         />
       </div>

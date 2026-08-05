@@ -258,6 +258,7 @@ export function MoreToysFeed({
                 slotIndex={index}
                 crazyStrike={crazyFlashSlots.includes(index)}
                 animateEnter={false}
+                photoLoading="eager"
               />
             ))}
           </div>

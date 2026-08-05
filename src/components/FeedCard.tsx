@@ -12,6 +12,7 @@ export function FeedCard({
   slotIndex = index,
   crazyStrike = false,
   animateEnter = false,
+  photoLoading,
 }: {
   toy: Toy;
   showText: boolean;
@@ -19,6 +20,8 @@ export function FeedCard({
   slotIndex?: number;
   crazyStrike?: boolean;
   animateEnter?: boolean;
+  /** Override lazy/eager — more-toys uses eager for all cards to avoid decode flash on add. */
+  photoLoading?: "lazy" | "eager";
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -47,8 +50,10 @@ export function FeedCard({
           <ToyPhoto
             src={toy.image}
             alt={toy.imageAlt}
-            loading={index < 2 ? "eager" : "lazy"}
+            loading={photoLoading ?? (index < 2 ? "eager" : "lazy")}
             decoding="async"
+            width={400}
+            height={500}
             className="feed-card__photo"
           />
         </Link>

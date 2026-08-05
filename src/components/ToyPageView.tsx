@@ -45,12 +45,26 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
     let moreToysVisible = false;
     let moreToysRatio = 0;
 
+    let activateTimer: number | undefined;
+
     const sync = () => {
       const inMoreToys =
         moreToysVisible &&
         moreToysRatio >= 0.06 &&
         (!productVisible || productRatio < 0.15 || moreToysRatio > productRatio);
-      setMoreToysInView(inMoreToys);
+
+      if (!inMoreToys) {
+        if (activateTimer) window.clearTimeout(activateTimer);
+        activateTimer = undefined;
+        setMoreToysInView(false);
+        return;
+      }
+
+      if (activateTimer) return;
+      activateTimer = window.setTimeout(() => {
+        activateTimer = undefined;
+        setMoreToysInView(true);
+      }, 400);
     };
 
     const productObserver = new IntersectionObserver(
@@ -75,6 +89,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
     moreToysObserver.observe(moreToys);
 
     return () => {
+      if (activateTimer) window.clearTimeout(activateTimer);
       productObserver.disconnect();
       moreToysObserver.disconnect();
     };

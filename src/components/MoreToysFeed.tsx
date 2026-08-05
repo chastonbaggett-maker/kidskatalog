@@ -20,6 +20,7 @@ import {
   assignRandomProductsAt,
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
+import { useKartStore } from "@/lib/kart-store";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
@@ -123,6 +124,8 @@ export function MoreToysFeed({
     let flashTimer: number | undefined;
 
     const flash = () => {
+      if (useKartStore.getState().flyBall) return;
+
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
 
@@ -156,7 +159,6 @@ export function MoreToysFeed({
     };
 
     crazyFlashCountRef.current = 0;
-    flash();
     const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
     return () => {
       window.clearInterval(id);
@@ -203,7 +205,7 @@ export function MoreToysFeed({
         <div className={gridClassName}>
           {displayed.map((toy, index) => (
             <FeedCard
-              key={`${toy.id}-${index}`}
+              key={`feed-slot-${index}`}
               toy={toy}
               showText={showText}
               index={index}

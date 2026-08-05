@@ -6,7 +6,6 @@ import {
   KART_EFFECT_ARM_MS,
   KART_EFFECT_QUIET_MS,
   KART_NAV_PULSE_MS,
-  isKartEffectBlocked,
 } from "@/lib/kart-effect-guard";
 
 export type KartFlyBallFlight = {
@@ -20,14 +19,6 @@ export type KartFlyBallFlight = {
   effectGeneration: number;
   onComplete: () => void;
 };
-
-function syncKartEffectDom(state = useKartStore.getState()) {
-  if (typeof document === "undefined") return;
-  document.documentElement.classList.toggle(
-    "kart-effect-active",
-    isKartEffectBlocked(state),
-  );
-}
 
 type KartState = {
   ids: string[];
@@ -71,48 +62,34 @@ export const useKartStore = create<KartState>()(
       },
       clear: () => set({ ids: [] }),
       has: (id) => get().ids.includes(id),
-      pulseKartNav: () => {
+      pulseKartNav: () =>
         set((s) => ({
           kartBounceToken: s.kartBounceToken + 1,
           kartQuietUntil: Math.max(
             s.kartQuietUntil,
             Date.now() + KART_NAV_PULSE_MS,
           ),
-        }));
-        syncKartEffectDom(get());
-      },
+        })),
       bumpKartEffectGeneration: () =>
         set((s) => ({ kartEffectGeneration: s.kartEffectGeneration + 1 })),
-      beginKartAdd: () => {
-        if (typeof document !== "undefined") {
-          document.documentElement.classList.add("kart-effect-active");
-        }
+      beginKartAdd: () =>
         set((s) => {
           const armedUntil = Date.now() + KART_EFFECT_ARM_MS;
           return {
             kartAddActive: s.kartAddActive + 1,
             kartQuietUntil: Math.max(s.kartQuietUntil, armedUntil),
           };
-        });
-      },
-      endKartAdd: () => {
+        }),
+      endKartAdd: () =>
         set((s) => ({
           kartAddActive: Math.max(0, s.kartAddActive - 1),
           kartQuietUntil: Math.max(
             s.kartQuietUntil,
             Date.now() + KART_EFFECT_QUIET_MS,
           ),
-        }));
-        syncKartEffectDom(get());
-      },
-      startFlyBall: (flight) => {
-        set({ flyBall: flight });
-        syncKartEffectDom(get());
-      },
-      clearFlyBall: () => {
-        set({ flyBall: null });
-        syncKartEffectDom(get());
-      },
+        })),
+      startFlyBall: (flight) => set({ flyBall: flight }),
+      clearFlyBall: () => set({ flyBall: null }),
     }),
     {
       name: "kidskatalog-kart",

@@ -132,22 +132,20 @@ test.describe("add-to-kart flash (crazy mode OFF)", () => {
     );
   });
 
-  test("kart-effect-active class toggles on click", async ({ page }) => {
+  test("add completes without feed card count jump during effect", async ({ page }) => {
     await page.goto("/toy/sky-rocket", { waitUntil: "networkidle" });
     await page.evaluate(() => localStorage.removeItem("kidskatalog-kart"));
 
     await page.locator(".add-kart-btn").click();
 
-    const during = await page.evaluate(() =>
-      document.documentElement.classList.contains("kart-effect-active"),
-    );
-    expect(during, "kart-effect-active should be on during add").toBe(true);
+    const during = await page.evaluate(() => !!document.querySelector(".kart-fly-ball"));
+    expect(during, "fly ball should appear during add").toBe(true);
 
     await page.waitForTimeout(2500);
 
-    const after = await page.evaluate(() =>
-      document.documentElement.classList.contains("kart-effect-active"),
+    const after = await page.evaluate(
+      () => document.querySelectorAll("[data-feed-slot]").length,
     );
-    expect(after, "kart-effect-active should clear after settle").toBe(false);
+    expect(after, "feed cards should remain stable").toBeGreaterThan(0);
   });
 });

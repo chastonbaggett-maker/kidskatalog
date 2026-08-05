@@ -35,18 +35,17 @@ export function FeedCard({
     <article
       data-feed-slot={slotIndex}
       data-toy-id={toy.id}
-      className={`feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2 ${
+      className={`feed-card relative mx-6 overflow-hidden sm:mx-4 lg:mx-2 ${
         crazyStrike ? "feed-card--crazy-strike" : ""
       }${animateEnter ? " feed-card--enter" : ""}`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
-      <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
+      <div className="relative overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}
           className="feed-card__media block bg-white"
         >
-          {/* Native img avoids Next/Image fill escaping its box on first paint */}
           <ToyPhoto
             src={toy.image}
             alt={toy.imageAlt}
@@ -67,36 +66,13 @@ export function FeedCard({
             </Link>
           </div>
         )}
-      </div>
-
-      <div className="absolute bottom-3 right-0 z-10 translate-x-[18%] sm:translate-x-[12%] lg:translate-x-[15%]">
         <Link
           href={`/toy/${toy.id}`}
+          prefetch={false}
           aria-label={`View ${toy.name}`}
-          className={`flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 sm:h-[5.5rem] sm:w-[5.5rem] ${viewBtnClass}`}
-        >
-          <EyeIcon />
-        </Link>
+          className={`feed-card__view-btn ${viewBtnClass}`}
+        />
       </div>
     </article>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      className="h-9 w-9 sm:h-11 sm:w-11"
-    >
-      <path
-        d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="12" r="2.75" fill="currentColor" />
-    </svg>
   );
 }

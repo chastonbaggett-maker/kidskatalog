@@ -189,6 +189,39 @@ select {
 
 .feed-card {
   contain: layout style;
+  overflow: hidden;
+}
+
+.feed-card__view-btn {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  contain: strict;
+  isolation: isolate;
+  box-shadow: 0 10px 15px -3px rgba(60, 70, 120, 0.25);
+  /* SVG as background — inline svg nodes flash fullscreen on iOS repaints */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='12' r='2.75' fill='white'/%3E%3C/svg%3E");
+  background-size: 2.25rem 2.25rem;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 640px) {
+  .feed-card__view-btn {
+    width: 5.5rem;
+    height: 5.5rem;
+    background-size: 2.75rem 2.75rem;
+  }
+}
+
+html.kart-effect-active .feed-card__view-btn {
+  transform: none !important;
 }
 
 html.kart-effect-active .feed-card {

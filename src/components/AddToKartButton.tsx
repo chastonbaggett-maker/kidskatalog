@@ -118,11 +118,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
                 <span>Add to Kart</span>
               </span>
               <span className="add-kart-btn__label-wipe add-kart-btn__label-wipe--out">
-                In Kart — tap to remove
+                Tap to remove
               </span>
             </>
           ) : showInKart ? (
-            "In Kart — tap to remove"
+            "Tap to remove"
           ) : (
             <>
               <span className="add-kart-btn__plus">+</span>

@@ -63,19 +63,21 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     clearCharge();
     const point = { x: e.clientX, y: e.clientY };
-    setAdding(true);
     const started = fireFlyBall(point, () => {
       add(toyId);
       setAdding(false);
       pingMetrics("kart_add");
     });
 
+    if (started) {
+      setAdding(true);
+    }
+
     fire(point, GOLD_CONFETTI);
 
     if (!started) {
       add(toyId);
       pulseKartNav();
-      setAdding(false);
       pingMetrics("kart_add");
     }
   };
@@ -94,7 +96,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
           inKart && !adding
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
-        } ${charging || adding ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""} ${
+        } ${charging ? "add-kart-btn--charging" : ""} ${
+          adding ? "add-kart-btn--pending" : ""
+        } ${bursting && !adding && !inKart ? "add-kart-btn--burst" : ""} ${
           removing ? "add-kart-btn--removing" : ""
         }`}
         aria-pressed={inKart && !removing && !adding}

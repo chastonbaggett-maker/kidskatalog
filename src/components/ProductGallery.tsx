@@ -108,7 +108,7 @@ export function ProductGallery({
                 alt=""
                 fill
                 unoptimized
-                className="object-contain p-1"
+                className="object-cover object-center"
                 sizes="64px"
               />
             </button>

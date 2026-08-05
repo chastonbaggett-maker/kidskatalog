@@ -213,6 +213,25 @@ html.route-changing .page-scroll {
   overflow: hidden;
 }
 
+/* Add-to-kart only — not active on remove-from-kart */
+html.kart-add-active .more-toys-feed .feed-card__photo,
+html.kart-add-active .pile-feed-layer .feed-card__photo,
+html.kart-add-active .toy-pile-card__photo,
+html.kart-add-active .product-gallery__photo,
+html.kart-add-active .product-gallery__thumb {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+html.kart-add-active .product-detail__layout {
+  contain: paint;
+  isolation: isolate;
+}
+
+html.kart-add-active .page-scroll {
+  overflow-anchor: none;
+}
+
 .feed-card__media {
   position: relative;
   display: block;
@@ -245,6 +264,8 @@ html.route-changing .page-scroll {
 .product-gallery__stage {
   aspect-ratio: 1 / 1;
   contain: layout paint;
+  isolation: isolate;
+  min-height: 0;
 }
 
 .product-gallery__photo {

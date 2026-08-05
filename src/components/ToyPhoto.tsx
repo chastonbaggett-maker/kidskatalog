@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ImgHTMLAttributes } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 
 /** Toy catalog photo — clipped by its container; fades in once decoded. */
 export function ToyPhoto({
@@ -11,15 +11,30 @@ export function ToyPhoto({
   ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
   const ref = useRef<HTMLImageElement>(null);
+  const readySrcRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
 
+  const markReady = useCallback((nextSrc: string) => {
+    readySrcRef.current = nextSrc;
+    setReady(true);
+  }, []);
+
   useLayoutEffect(() => {
-    setReady(false);
     const el = ref.current;
-    if (el?.complete && el.naturalWidth > 0) {
+    if (!el || typeof src !== "string") return;
+
+    if (readySrcRef.current === src && el.complete && el.naturalWidth > 0) {
       setReady(true);
+      return;
     }
-  }, [src]);
+
+    readySrcRef.current = null;
+    setReady(false);
+
+    if (el.complete && el.naturalWidth > 0) {
+      markReady(src);
+    }
+  }, [src, markReady]);
 
   return (
     <img
@@ -33,7 +48,7 @@ export function ToyPhoto({
       }}
       {...props}
       onLoad={(event) => {
-        setReady(true);
+        if (typeof src === "string") markReady(src);
         onLoad?.(event);
       }}
     />

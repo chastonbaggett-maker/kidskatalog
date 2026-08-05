@@ -36,16 +36,14 @@ export function FeedCard({
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
-        <Link
-          href={`/toy/${toy.id}`}
-          className="relative block aspect-[4/5] overflow-hidden bg-white"
-        >
+        <Link href={`/toy/${toy.id}`} className="feed-card__media block bg-white">
           <Image
             src={toy.image}
             alt={toy.imageAlt}
-            fill
+            width={720}
+            height={900}
             sizes="(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 360px"
-            className="object-contain p-3 sm:p-4"
+            className="h-full w-full object-contain p-3 sm:p-4"
             priority={index < 2}
           />
         </Link>

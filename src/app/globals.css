@@ -191,6 +191,21 @@ select {
   animation: pop-in 0.45s ease-out both;
 }
 
+.feed-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+.feed-card__media img {
+  display: block;
+  max-width: 100%;
+}
+
 .logo-glow {
   filter:
     drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))

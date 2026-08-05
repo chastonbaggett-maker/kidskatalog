@@ -100,16 +100,31 @@ export function MoreToysFeed({
     const node = sentinelRef.current;
     if (!node) return;
 
+    const root = scrollerRef?.current ?? null;
+    let loadTimer: number | undefined;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) loadMore();
+        if (!entry?.isIntersecting) return;
+        const { flyBall, kartAddActive } = useKartStore.getState();
+        if (flyBall || kartAddActive > 0) return;
+
+        if (loadTimer) window.clearTimeout(loadTimer);
+        loadTimer = window.setTimeout(() => {
+          const state = useKartStore.getState();
+          if (state.flyBall || state.kartAddActive > 0) return;
+          loadMore();
+        }, 150);
       },
-      { root: null, rootMargin: "480px 0px" },
+      { root, rootMargin: root ? "320px 0px" : "480px 0px" },
     );
 
     observer.observe(node);
-    return () => observer.disconnect();
-  }, [loadMore]);
+    return () => {
+      observer.disconnect();
+      if (loadTimer) window.clearTimeout(loadTimer);
+    };
+  }, [loadMore, scrollerRef]);
 
   useEffect(() => {
     if (!crazyMode || !crazyEffectsActive) {
@@ -124,7 +139,8 @@ export function MoreToysFeed({
     let flashTimer: number | undefined;
 
     const flash = () => {
-      if (useKartStore.getState().flyBall) return;
+      const { flyBall, kartAddActive } = useKartStore.getState();
+      if (flyBall || kartAddActive > 0) return;
 
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;

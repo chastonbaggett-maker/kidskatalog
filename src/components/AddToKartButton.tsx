@@ -15,8 +15,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const add = useKartStore((s) => s.add);
   const toggle = useKartStore((s) => s.toggle);
+  const beginKartAdd = useKartStore((s) => s.beginKartAdd);
+  const endKartAdd = useKartStore((s) => s.endKartAdd);
   const btnRef = useRef<HTMLButtonElement>(null);
   const removeTimersRef = useRef<number[]>([]);
+  const kartAddEndTimerRef = useRef<number | undefined>(undefined);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -35,7 +38,22 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     removeTimersRef.current.push(id);
   };
 
-  useEffect(() => () => clearRemoveTimers(), []);
+  useEffect(() => () => {
+    clearRemoveTimers();
+    if (kartAddEndTimerRef.current) {
+      window.clearTimeout(kartAddEndTimerRef.current);
+    }
+  }, []);
+
+  const finishKartAdd = () => {
+    if (kartAddEndTimerRef.current) {
+      window.clearTimeout(kartAddEndTimerRef.current);
+    }
+    kartAddEndTimerRef.current = window.setTimeout(() => {
+      endKartAdd();
+      kartAddEndTimerRef.current = undefined;
+    }, 480);
+  };
 
   const handlePointerDown = () => {
     if (!inKart && !removing && !adding) setCharging(true);
@@ -62,11 +80,13 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     }
 
     clearCharge();
+    beginKartAdd();
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {
       add(toyId);
       setAdding(false);
       pingMetrics("kart_add");
+      finishKartAdd();
     });
 
     if (started) {
@@ -79,6 +99,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       add(toyId);
       pulseKartNav();
       pingMetrics("kart_add");
+      finishKartAdd();
     }
   };
 

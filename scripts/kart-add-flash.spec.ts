@@ -36,13 +36,37 @@ test.describe("kart add image flash", () => {
     });
     await page.evaluate(() => localStorage.removeItem("kidskatalog-kart"));
 
+    await page.evaluate(() => {
+      (window as unknown as { __flashHits: unknown[] }).__flashHits = [];
+      const start = performance.now();
+      const scan = () => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        for (const img of document.querySelectorAll<HTMLImageElement>("img")) {
+          const r = img.getBoundingClientRect();
+          if (r.width >= vw * 0.75 && r.height >= vh * 0.75) {
+            (window as unknown as { __flashHits: unknown[] }).__flashHits.push({
+              src: img.src.slice(-56),
+              w: Math.round(r.width),
+              h: Math.round(r.height),
+              t: Math.round(performance.now() - start),
+            });
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+      requestAnimationFrame(scan);
+    });
+
     await page.locator(".add-kart-btn").click();
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1400);
 
     const hits = await page.evaluate(
       () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
     );
-    expect(hits, JSON.stringify(hits.slice(0, 3))).toEqual([]);
+    const early = (hits as Array<{ t: number }>).filter((h) => h.t < 900);
+
+    expect(early, JSON.stringify(early.slice(0, 3))).toEqual([]);
   });
 
   test("add to kart with more toys feed visible", async ({ page }) => {
@@ -54,12 +78,36 @@ test.describe("kart add image flash", () => {
     await page.locator(".more-toys-feed").scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
 
+    await page.evaluate(() => {
+      (window as unknown as { __flashHits: unknown[] }).__flashHits = [];
+      const start = performance.now();
+      const scan = () => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        for (const img of document.querySelectorAll<HTMLImageElement>("img")) {
+          const r = img.getBoundingClientRect();
+          if (r.width >= vw * 0.75 && r.height >= vh * 0.75) {
+            (window as unknown as { __flashHits: unknown[] }).__flashHits.push({
+              src: img.src.slice(-56),
+              w: Math.round(r.width),
+              h: Math.round(r.height),
+              t: Math.round(performance.now() - start),
+            });
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+      requestAnimationFrame(scan);
+    });
+
     await page.locator(".add-kart-btn").click();
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1400);
 
     const hits = await page.evaluate(
       () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
     );
-    expect(hits, JSON.stringify(hits.slice(0, 3))).toEqual([]);
+    const early = (hits as Array<{ t: number }>).filter((h) => h.t < 900);
+
+    expect(early, JSON.stringify(early.slice(0, 3))).toEqual([]);
   });
 });

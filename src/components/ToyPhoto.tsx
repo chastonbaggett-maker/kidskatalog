@@ -17,7 +17,11 @@ export function ToyPhoto({
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (el?.complete && el.naturalWidth > 0) markReady();
+    if (!el) return;
+    delete el.dataset.ready;
+    if (el.complete && el.naturalWidth > 0) {
+      el.dataset.ready = "true";
+    }
   }, [src]);
 
   return (

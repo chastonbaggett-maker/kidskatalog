@@ -105,13 +105,21 @@ export function KartFlyBallOverlay() {
     } = flyBall;
 
     const finish = () => {
-      requestAnimationFrame(() => {
-        onComplete();
-        if (useKartStore.getState().kartEffectGeneration === effectGeneration) {
-          pulseKartNav();
-        }
-        window.setTimeout(() => clearFlyBall(), 70);
-      });
+      window.setTimeout(() => {
+        clearFlyBall();
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (
+              useKartStore.getState().kartEffectGeneration === effectGeneration
+            ) {
+              pulseKartNav();
+            }
+            requestAnimationFrame(() => {
+              onComplete();
+            });
+          });
+        });
+      }, 90);
     };
 
     const run = () => {

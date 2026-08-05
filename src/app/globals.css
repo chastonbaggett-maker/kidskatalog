@@ -211,7 +211,12 @@ html.kart-effect-active .product-gallery__photo {
 }
 
 html.kart-effect-active .page-scroll {
-  contain: layout style;
+  contain: layout paint;
+}
+
+html.kart-effect-active .app-shell > .star-field {
+  contain: layout paint;
+  isolation: isolate;
 }
 
 html.kart-effect-active .crazy-screen-flash {
@@ -1248,6 +1253,21 @@ html[data-accent="both"] .kart-go-btn:hover {
   background: transparent;
   border-top-color: transparent;
   box-shadow: none;
+  contain: layout style;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+/* backdrop-filter + transform on a child forces full-viewport repaints on iOS */
+.bottom-nav--kart-landing .bottom-nav__frost {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgba(255, 255, 255, 0.94);
+  background-image: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.98),
+    rgba(255, 255, 255, 0.9)
+  );
 }
 
 .bottom-nav--pile {
@@ -1963,15 +1983,19 @@ html[data-standalone="true"] .app-shell {
 }
 
 .bottom-nav__kart--land {
-  animation: kart-nav-land 0.52s cubic-bezier(0.34, 1.35, 0.64, 1);
+  animation: none;
 }
 
 .bottom-nav__kart--land .bottom-nav__kart-icon {
-  animation: kart-nav-icon-mint 0.52s ease forwards;
+  animation:
+    kart-nav-land 0.52s cubic-bezier(0.34, 1.35, 0.64, 1),
+    kart-nav-icon-mint 0.52s ease forwards;
 }
 
 .bottom-nav__kart-badge--pop {
   animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1);
+  transform-origin: center;
+  will-change: transform;
 }
 
 @keyframes kart-nav-land {

@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import {
   KART_EFFECT_ARM_MS,
   KART_EFFECT_QUIET_MS,
+  KART_NAV_PULSE_MS,
   isKartEffectBlocked,
 } from "@/lib/kart-effect-guard";
 
@@ -70,8 +71,16 @@ export const useKartStore = create<KartState>()(
       },
       clear: () => set({ ids: [] }),
       has: (id) => get().ids.includes(id),
-      pulseKartNav: () =>
-        set((s) => ({ kartBounceToken: s.kartBounceToken + 1 })),
+      pulseKartNav: () => {
+        set((s) => ({
+          kartBounceToken: s.kartBounceToken + 1,
+          kartQuietUntil: Math.max(
+            s.kartQuietUntil,
+            Date.now() + KART_NAV_PULSE_MS,
+          ),
+        }));
+        syncKartEffectDom(get());
+      },
       bumpKartEffectGeneration: () =>
         set((s) => ({ kartEffectGeneration: s.kartEffectGeneration + 1 })),
       beginKartAdd: () => {

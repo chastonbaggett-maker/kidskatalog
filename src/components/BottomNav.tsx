@@ -152,10 +152,10 @@ export function BottomNav() {
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
-        }${pileShelfMounted ? " is-shelf-raised" : ""}${
-          pileNavEnterVisible ? " is-enter-visible" : ""
-        }`}
+          landing ? " bottom-nav--kart-landing" : ""
+        }${pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""}${
+          pileShelfMounted ? " is-shelf-raised" : ""
+        }${pileNavEnterVisible ? " is-enter-visible" : ""}`}
       >
         {showFrostFill && (
           <div className="bottom-nav__frost" aria-hidden="true" />

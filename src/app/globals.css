@@ -1461,22 +1461,6 @@ html[data-standalone="true"] .app-shell {
   background: var(--blue);
 }
 
-/* Waiting for fly-ball — hold steady blue, no charge/burst glow */
-.add-kart-btn--pending {
-  transform: scale(1);
-  animation: none;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent);
-}
-
-.add-kart-btn--pending .add-kart-btn__glow {
-  opacity: 0;
-  animation: none;
-}
-
-.add-kart-btn--pending .add-kart-btn__plus {
-  animation: none;
-}
-
 /* Remove: mint base layer → blue fill wipes R→L → pop → label swap at peak */
 .add-kart-btn--removing {
   overflow: hidden;
@@ -1904,7 +1888,6 @@ html[data-standalone="true"] .app-shell {
   .add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging),
   .add-kart-btn--charging,
   .add-kart-btn--burst,
-  .add-kart-btn--pending,
   .add-kart-btn--removing,
   .add-kart-btn--removing .add-kart-btn__fill,
   .add-kart-btn--removing .add-kart-btn__label-wipe--out,

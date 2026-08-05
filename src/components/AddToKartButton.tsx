@@ -82,6 +82,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     }
   };
 
+  const showInKart = (inKart || adding) && !removing;
+
   return (
     <>
       <button
@@ -93,15 +95,13 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          inKart && !adding
+          showInKart
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
-        } ${charging ? "add-kart-btn--charging" : ""} ${
-          adding ? "add-kart-btn--pending" : ""
-        } ${bursting && !adding && !inKart ? "add-kart-btn--burst" : ""} ${
-          removing ? "add-kart-btn--removing" : ""
-        }`}
-        aria-pressed={inKart && !removing && !adding}
+        } ${charging && !showInKart ? "add-kart-btn--charging" : ""} ${
+          bursting && !adding && !inKart ? "add-kart-btn--burst" : ""
+        } ${removing ? "add-kart-btn--removing" : ""}`}
+        aria-pressed={showInKart}
         aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
         aria-busy={removing}
       >
@@ -121,7 +121,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
                 In Kart — tap to remove
               </span>
             </>
-          ) : inKart && !adding ? (
+          ) : showInKart ? (
             "In Kart — tap to remove"
           ) : (
             <>

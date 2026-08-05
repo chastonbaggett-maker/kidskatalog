@@ -13,22 +13,21 @@ import {
   CRAZY_CARD_FLASH_MS,
   CRAZY_FLASH_INTERVAL_MS,
   preloadImages,
-  urlsForSwappedSlots,
 } from "@/lib/crazy-mode-timing";
-import {
-  planCrazyFlash,
-  assignRandomProductsAt,
-  useCrazyLightning,
-} from "@/hooks/useCrazyLightning";
+import { fetchRandomCatalogToys } from "@/lib/catalog-client";
+import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
 import { useKartStore } from "@/lib/kart-store";
 import { useRouteSettled } from "@/hooks/useRouteSettled";
+import { useCatalogPage } from "@/hooks/useCatalogPage";
+import type { CatalogPageResult } from "@/lib/catalog-query";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
 const emptyBtnRef = { current: null } as RefObject<HTMLButtonElement | null>;
 
 export function MoreToysFeed({
-  seed,
+  excludeToyId,
+  initialPage,
   showText = true,
   sectionRef,
   crazyMode = false,
@@ -37,7 +36,8 @@ export function MoreToysFeed({
   crazyBtnRef,
   onCrazyFlash,
 }: {
-  seed: Toy[];
+  excludeToyId: string;
+  initialPage?: CatalogPageResult;
   showText?: boolean;
   sectionRef?: RefObject<HTMLElement | null>;
   crazyMode?: boolean;
@@ -46,12 +46,7 @@ export function MoreToysFeed({
   crazyBtnRef?: RefObject<HTMLButtonElement | null>;
   onCrazyFlash?: (active: boolean) => void;
 }) {
-  const [displayIds, setDisplayIds] = useState<string[]>(() =>
-    seed.slice(0, PAGE).map((t) => t.id),
-  );
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
-  const cursorRef = useRef(Math.min(PAGE, seed.length));
-  const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const crazyFlashCountRef = useRef(0);
   const displayIdsRef = useRef<string[]>([]);
@@ -61,44 +56,27 @@ export function MoreToysFeed({
   const loadReadyRef = useRef(false);
   const routeSettled = useRouteSettled();
 
-  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
+  const catalog = useCatalogPage({
+    excludeId: excludeToyId,
+    limit: PAGE,
+    initialPage,
+  });
 
-  const seedKey = seed.map((t) => t.id).join(",");
-  const poolIds = useMemo(() => seed.map((t) => t.id), [seed]);
-  const toyById = useMemo(() => new Map(seed.map((t) => [t.id, t])), [seed]);
-  const toyImageById = useMemo(
-    () => new Map(seed.map((t) => [t.id, t.image])),
-    [seed],
-  );
+  const {
+    displayed,
+    displayIds,
+    replaceDisplayIds,
+    mergeToys,
+    hasMore,
+    loading,
+    loadMore,
+  } = catalog;
+
+  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
   useEffect(() => {
     displayIdsRef.current = displayIds;
   }, [displayIds]);
-
-  const loadMore = useCallback(() => {
-    if (loadingRef.current || seed.length === 0) return;
-    loadingRef.current = true;
-
-    const next: Toy[] = [];
-    let i = cursorRef.current;
-    for (let n = 0; n < PAGE; n++) {
-      next.push(seed[i % seed.length]!);
-      i += 1;
-    }
-    cursorRef.current = i;
-    setDisplayIds((prev) => [...prev, ...next.map((t) => t.id)]);
-
-    requestAnimationFrame(() => {
-      loadingRef.current = false;
-    });
-  }, [seed]);
-
-  useEffect(() => {
-    const initial = seed.slice(0, PAGE);
-    setDisplayIds(initial.map((t) => t.id));
-    cursorRef.current = Math.min(PAGE, seed.length);
-    setCrazyFlashSlots([]);
-  }, [seed, seedKey]);
 
   useEffect(() => {
     const root = scrollerRef?.current;
@@ -123,6 +101,12 @@ export function MoreToysFeed({
     };
   }, [scrollerRef]);
 
+  const guardedLoadMore = useCallback(() => {
+    const { flyBall, kartAddActive } = useKartStore.getState();
+    if (flyBall || kartAddActive > 0) return;
+    void loadMore();
+  }, [loadMore]);
+
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node) return;
@@ -142,7 +126,7 @@ export function MoreToysFeed({
         loadTimer = window.setTimeout(() => {
           const state = useKartStore.getState();
           if (state.flyBall || state.kartAddActive > 0) return;
-          loadMore();
+          guardedLoadMore();
         }, 150);
       },
       { root, rootMargin: root ? "120px 0px" : "320px 0px", threshold: 0.01 },
@@ -153,7 +137,7 @@ export function MoreToysFeed({
       observer.disconnect();
       if (loadTimer) window.clearTimeout(loadTimer);
     };
-  }, [loadMore, scrollerRef]);
+  }, [guardedLoadMore, scrollerRef]);
 
   useEffect(() => {
     if (!crazyMode || !crazyEffectsActive) {
@@ -166,10 +150,11 @@ export function MoreToysFeed({
     if (!scroller) return;
 
     let flashTimer: number | undefined;
+    let cancelled = false;
 
-    const flash = () => {
+    const flash = async () => {
       const { flyBall, kartAddActive } = useKartStore.getState();
-      if (flyBall || kartAddActive > 0) return;
+      if (flyBall || kartAddActive > 0 || cancelled) return;
 
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
@@ -183,18 +168,29 @@ export function MoreToysFeed({
       if (!plan) return;
 
       const { slotIndices, flashX, flashY } = plan;
-      const nextOrder = assignRandomProductsAt(
-        displayIdsRef.current,
-        slotIndices,
-        poolIds,
+      const currentOrder =
+        displayIdsRef.current.length > 0 ? [...displayIdsRef.current] : displayIds;
+
+      const randomToys = await fetchRandomCatalogToys(
+        { excludeId: excludeToyId },
+        slotIndices.length,
         nextKey,
       );
+      if (cancelled || randomToys.length === 0) return;
 
-      preloadImages(urlsForSwappedSlots(nextOrder, slotIndices, toyImageById));
+      const nextOrder = [...currentOrder];
+      slotIndices.forEach((slotIndex, index) => {
+        const toy = randomToys[index];
+        if (!toy || slotIndex < 0 || slotIndex >= nextOrder.length) return;
+        nextOrder[slotIndex] = toy.id;
+      });
+
+      mergeToys(randomToys);
+      preloadImages(randomToys.map((toy) => toy.image));
 
       flashScreen(flashX, flashY);
       onCrazyFlash?.(true);
-      setDisplayIds(nextOrder);
+      replaceDisplayIds(nextOrder);
       setCrazyFlashSlots(slotIndices);
 
       flashTimer = window.setTimeout(() => {
@@ -204,8 +200,12 @@ export function MoreToysFeed({
     };
 
     crazyFlashCountRef.current = 0;
-    const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
+    const id = window.setInterval(() => {
+      void flash();
+    }, CRAZY_FLASH_INTERVAL_MS);
+
     return () => {
+      cancelled = true;
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
       onCrazyFlash?.(false);
@@ -216,26 +216,23 @@ export function MoreToysFeed({
     crazyEffectsActive,
     scrollerRef,
     crazyBtnRef,
+    displayIds,
+    excludeToyId,
     flashScreen,
+    mergeToys,
     onCrazyFlash,
-    toyImageById,
-    poolIds,
+    replaceDisplayIds,
   ]);
 
-  const displayed = useMemo(() => {
-    return displayIds
-      .map((id) => toyById.get(id))
-      .filter((t): t is Toy => t != null);
-  }, [displayIds, toyById]);
+  const gridClassName = useMemo(
+    () =>
+      ["toy-feed-grid", crazyMode ? "toy-feed-grid--crazy" : ""]
+        .filter(Boolean)
+        .join(" "),
+    [crazyMode],
+  );
 
-  const gridClassName = [
-    "toy-feed-grid",
-    crazyMode ? "toy-feed-grid--crazy" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  if (seed.length === 0 || !routeSettled) return null;
+  if (!routeSettled) return null;
 
   return (
     <>
@@ -247,23 +244,31 @@ export function MoreToysFeed({
         <h3 className="mb-5 px-4 font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)] sm:px-6 lg:px-8 sm:text-3xl">
           More toys
         </h3>
-        <div className={gridClassName}>
-          {displayed.map((toy, index) => (
-            <FeedCard
-              key={`feed-slot-${index}`}
-              toy={toy}
-              showText={showText}
-              index={index}
-              slotIndex={index}
-              crazyStrike={crazyFlashSlots.includes(index)}
-              animateEnter={false}
-            />
-          ))}
-        </div>
+        {displayed.length === 0 && !loading ? (
+          <p className="px-4 text-sm text-[var(--ink-soft)] sm:px-6 lg:px-8">
+            More toys coming soon.
+          </p>
+        ) : (
+          <div className={gridClassName}>
+            {displayed.map((toy, index) => (
+              <FeedCard
+                key={toy.id}
+                toy={toy}
+                showText={showText}
+                index={index}
+                slotIndex={index}
+                crazyStrike={crazyFlashSlots.includes(index)}
+                animateEnter={false}
+              />
+            ))}
+          </div>
+        )}
         <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
-        <p className="more-toys-feed__hint mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
-          Keep scrolling — more toys ahead
-        </p>
+        {hasMore && (
+          <p className="more-toys-feed__hint mt-2 pb-4 text-center text-sm font-semibold text-[var(--ink-soft)]">
+            Keep scrolling — more toys ahead
+          </p>
+        )}
       </section>
       {flashPortal}
     </>

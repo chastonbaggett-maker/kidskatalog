@@ -9,6 +9,7 @@ import {
 } from "@/lib/crazy-mode-store";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useMoreToysCrazyActive } from "@/hooks/useMoreToysCrazyActive";
+import type { CatalogPageResult } from "@/lib/catalog-query";
 import { ProductGallery } from "./ProductGallery";
 import { ShelfHeader } from "./ShelfHeader";
 import { MoreToysFeed } from "./MoreToysFeed";
@@ -19,10 +20,10 @@ type Props = {
   toy: Toy;
   categoryLabel: string;
   gallery: string[];
-  more: Toy[];
+  moreInitialPage?: CatalogPageResult;
 };
 
-export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
+export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Props) {
   const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
@@ -120,7 +121,8 @@ export function ToyPageView({ toy, categoryLabel, gallery, more }: Props) {
 
         <div className="scroll-pad-bottom pt-4">
           <MoreToysFeed
-            seed={more}
+            excludeToyId={toy.id}
+            initialPage={moreInitialPage}
             showText
             sectionRef={moreToysRef}
             crazyMode={crazyOn}

@@ -189,6 +189,8 @@ select {
 
 .feed-card {
   animation: pop-in 0.45s ease-out both;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
 }
 
 .feed-card--static {
@@ -209,24 +211,6 @@ html.route-changing .kart-row__photo {
 
 html.route-changing .page-scroll {
   overflow: hidden;
-}
-
-html.kart-effect-active .feed-card__photo,
-html.kart-effect-active .product-gallery__photo,
-html.kart-effect-active .product-gallery__thumb,
-html.kart-effect-active .toy-pile-card__photo,
-html.kart-effect-active .thumb-carousel__photo {
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-.feed-card__photo:not([data-ready]),
-.product-gallery__photo:not([data-ready]),
-.product-gallery__thumb:not([data-ready]),
-.toy-pile-card__photo:not([data-ready]),
-.thumb-carousel__photo:not([data-ready]),
-.kart-row__photo:not([data-ready]) {
-  opacity: 0;
 }
 
 .feed-card__media {

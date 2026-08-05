@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Toy } from "@/types/toy";
+import type { CategoryId, Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
@@ -11,9 +11,7 @@ import {
   useToyPileModeStore,
   toyPileRootClass,
 } from "@/lib/toy-pile-store";
-import {
-  prefersReducedMotion,
-} from "@/lib/pile-transition-utils";
+import { prefersReducedMotion } from "@/lib/pile-transition-utils";
 import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
@@ -21,18 +19,17 @@ import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { usePileNavSettled } from "@/hooks/usePileNavSettled";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useRouteSettled } from "@/hooks/useRouteSettled";
+import { useCatalogPage } from "@/hooks/useCatalogPage";
 import { pingMetrics } from "@/lib/metrics-client";
+import { fetchRandomCatalogToys } from "@/lib/catalog-client";
+import type { CatalogPageResult } from "@/lib/catalog-query";
 import {
   CRAZY_CARD_FLASH_MS,
   CRAZY_FLASH_INTERVAL_MS,
   preloadImages,
-  urlsForSwappedSlots,
 } from "@/lib/crazy-mode-timing";
-import {
-  planCrazyFlash,
-  assignRandomProductsAt,
-  useCrazyLightning,
-} from "@/hooks/useCrazyLightning";
+import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { useKartStore } from "@/lib/kart-store";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
@@ -47,14 +44,17 @@ type ShelfMode = "hidden" | "shown" | "leaving";
 
 const FEED_PAGE_SIZE = 20;
 
-export function BrowseFeed({ toys }: { toys: Toy[] }) {
+type Props = {
+  category?: CategoryId;
+  initialPage?: CatalogPageResult;
+};
+
+export function BrowseFeed({ category, initialPage }: Props) {
   const audience = useAccentStore((s) => s.audience);
   const setAudience = useAccentStore((s) => s.setAudience);
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
-  const [shuffleKey, setShuffleKey] = useState(0);
-  const [displayIds, setDisplayIds] = useState<string[]>([]);
   const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
   const pileHydrated = usePersistHydrated(getStorePersist(useToyPileModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
@@ -70,6 +70,25 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const crazyOn = crazyHydrated && crazyMode;
   const pileOn = pileHydrated && toyPileMode;
 
+  const catalog = useCatalogPage({
+    category,
+    audience,
+    age,
+    q: query,
+    limit: FEED_PAGE_SIZE,
+    initialPage,
+  });
+
+  const {
+    displayed,
+    displayIds,
+    replaceDisplayIds,
+    mergeToys,
+    hasMore,
+    loading,
+    loadMore,
+  } = catalog;
+
   const isChromePhase = isPileChromePhase(enterPhase);
   const isTransitioning = isPileTransitioning(enterPhase);
   const showFilterChrome = !pileOn && !isChromePhase;
@@ -77,8 +96,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   usePileEnterTransition();
 
   const revealGateOpen = usePileRevealGate();
-  const pileHeaderActive =
-    pileOn && !isChromePhase && revealGateOpen;
+  const pileHeaderActive = pileOn && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const pileShelfMounted = pileHeaderActive;
   const pileNavSettled = usePileNavSettled(pileHeaderVisible);
@@ -103,7 +121,6 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const [crazyFlash, setCrazyFlash] = useState(false);
   const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
-  const [loadedPages, setLoadedPages] = useState(1);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
   const [compactShelfBlocked, setCompactShelfBlocked] = useState(false);
 
@@ -116,6 +133,10 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const crazyFlashCountRef = useRef(0);
   const displayIdsRef = useRef<string[]>([]);
   const prevToyPileModeRef = useRef(false);
+
+  useEffect(() => {
+    displayIdsRef.current = displayIds;
+  }, [displayIds]);
 
   useEffect(() => {
     const enteringPile = pileOn && !prevToyPileModeRef.current;
@@ -172,6 +193,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
+  const catalogFilters = useMemo(
+    () => ({ category, audience, age, q: query }),
+    [category, audience, age, query],
+  );
+
   useEffect(() => {
     if (isChromePhase || pileOn) {
       blockCompactShelf();
@@ -190,8 +216,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
         if (useToyPileModeStore.getState().enterPhase !== "idle") return;
         if (useToyPileModeStore.getState().toyPileMode) return;
 
-        const want =
-          !entry.isIntersecting || entry.intersectionRatio < 0.08;
+        const want = !entry.isIntersecting || entry.intersectionRatio < 0.08;
         shelfWantedRef.current = want;
         setShelfMode((prev) => {
           if (want) return "shown";
@@ -220,62 +245,25 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
-  const showCompactShelf =
-    !compactShelfBlocked &&
-    enterPhase === "idle" &&
-    !pileOn &&
-    !isChromePhase;
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return toys.filter((t) => {
-      const audienceOk =
-        audience === "all" ||
-        t.audience === "all" ||
-        t.audience === audience;
-      const queryOk =
-        !q ||
-        t.name.toLowerCase().includes(q) ||
-        t.blurb.toLowerCase().includes(q) ||
-        t.category.includes(q);
-      const ageOk = age == null || (t.ageMin <= age && t.ageMax >= age);
-      return audienceOk && queryOk && ageOk;
-    });
-  }, [toys, query, audience, age]);
-
-  const filteredIds = useMemo(() => filtered.map((t) => t.id), [filtered]);
-  const filteredIdsKey = useMemo(() => filteredIds.join("\0"), [filteredIds]);
-  const toyImageById = useMemo(
-    () => new Map(filtered.map((t) => [t.id, t.image])),
-    [filtered],
-  );
-  const toyImageByIdRef = useRef(toyImageById);
-
   useEffect(() => {
-    toyImageByIdRef.current = toyImageById;
-  }, [toyImageById]);
-
-  useEffect(() => {
-    displayIdsRef.current = displayIds;
-  }, [displayIds]);
-
-  useEffect(() => {
-    setDisplayIds(filteredIds);
-    setLoadedPages(1);
     if (!crazyOn) {
-      setShuffleKey(0);
+      setCrazyFlash(false);
       setCrazyFlashSlots([]);
     }
-  }, [filteredIdsKey, filteredIds, crazyOn]);
+  }, [crazyOn]);
 
   useEffect(() => {
     if (!crazyOn || pileOn) return;
 
     let flashTimer: number | undefined;
+    let cancelled = false;
 
-    const flash = () => {
+    const flash = async () => {
       const scroller = scrollerRef.current;
-      if (!scroller) return;
+      if (!scroller || cancelled) return;
+
+      const kart = useKartStore.getState();
+      if (kart.flyBall || kart.kartAddActive > 0) return;
 
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
@@ -289,26 +277,29 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
       if (!plan) return;
 
       const { slotIndices, flashX, flashY } = plan;
-      const prevOrder =
-        displayIdsRef.current.length === filteredIds.length &&
-        displayIdsRef.current.every((id) => filteredIds.includes(id))
-          ? displayIdsRef.current
-          : filteredIds;
-      const nextOrder = assignRandomProductsAt(
-        prevOrder,
-        slotIndices,
-        filteredIds,
+      const currentOrder =
+        displayIdsRef.current.length > 0 ? [...displayIdsRef.current] : displayIds;
+
+      const randomToys = await fetchRandomCatalogToys(
+        catalogFilters,
+        slotIndices.length,
         nextKey,
       );
+      if (cancelled || randomToys.length === 0) return;
 
-      preloadImages(
-        urlsForSwappedSlots(nextOrder, slotIndices, toyImageByIdRef.current),
-      );
+      const nextOrder = [...currentOrder];
+      slotIndices.forEach((slotIndex, index) => {
+        const toy = randomToys[index];
+        if (!toy || slotIndex < 0 || slotIndex >= nextOrder.length) return;
+        nextOrder[slotIndex] = toy.id;
+      });
+
+      mergeToys(randomToys);
+      preloadImages(randomToys.map((toy) => toy.image));
 
       flashScreen(flashX, flashY);
       setCrazyFlash(true);
-      setShuffleKey(nextKey);
-      setDisplayIds(nextOrder);
+      replaceDisplayIds(nextOrder);
       setCrazyFlashSlots(slotIndices);
 
       flashTimer = window.setTimeout(() => {
@@ -318,57 +309,48 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     };
 
     crazyFlashCountRef.current = 0;
-    flash();
-    const id = window.setInterval(flash, CRAZY_FLASH_INTERVAL_MS);
+    void flash();
+    const id = window.setInterval(() => {
+      void flash();
+    }, CRAZY_FLASH_INTERVAL_MS);
+
     return () => {
+      cancelled = true;
       window.clearInterval(id);
       if (flashTimer) window.clearTimeout(flashTimer);
     };
-  }, [crazyOn, pileOn, filteredIdsKey, filteredIds, flashScreen]);
+  }, [
+    crazyOn,
+    pileOn,
+    catalogFilters,
+    displayIds,
+    flashScreen,
+    mergeToys,
+    replaceDisplayIds,
+  ]);
 
-  useEffect(() => {
-    if (!crazyOn) {
-      setCrazyFlash(false);
-      setCrazyFlashSlots([]);
-    }
-  }, [crazyOn]);
-
-  const displayed = useMemo(() => {
-    const byId = new Map(filtered.map((t) => [t.id, t]));
-    const ids =
-      shuffleKey === 0 && !crazyOn
-        ? filteredIds
-        : displayIds.length === filteredIds.length
-          ? displayIds
-          : filteredIds;
-    return ids
-      .map((id) => byId.get(id))
-      .filter((t): t is Toy => t != null);
-  }, [filtered, filteredIds, displayIds, shuffleKey, crazyOn]);
-
-  const totalPages = Math.max(1, Math.ceil(displayed.length / FEED_PAGE_SIZE));
-  const visiblePages = Math.min(loadedPages, totalPages);
-  const hasMore = visiblePages < totalPages;
-
-  const loadNextPage = useCallback(() => {
-    setLoadedPages((pages) => Math.min(pages + 1, totalPages));
-  }, [totalPages]);
+  const handleLoadMore = useCallback(() => {
+    const kart = useKartStore.getState();
+    if (kart.flyBall || kart.kartAddActive > 0) return;
+    void loadMore();
+  }, [loadMore]);
 
   const visibleChunks = useMemo(() => {
     const chunks: Toy[][] = [];
-    const end = visiblePages * FEED_PAGE_SIZE;
-    const visible = displayed.slice(0, end);
-    for (let i = 0; i < visible.length; i += FEED_PAGE_SIZE) {
-      chunks.push(visible.slice(i, i + FEED_PAGE_SIZE));
+    for (let i = 0; i < displayed.length; i += FEED_PAGE_SIZE) {
+      chunks.push(displayed.slice(i, i + FEED_PAGE_SIZE));
     }
     return chunks;
-  }, [displayed, visiblePages]);
+  }, [displayed]);
 
   const gridClassName = ["toy-feed-grid", crazyOn ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
     .join(" ");
 
   const shelfActive = shelfMode === "shown" || shelfMode === "leaving";
+
+  const showCompactShelf =
+    !compactShelfBlocked && enterPhase === "idle" && !pileOn && !isChromePhase;
 
   const filterRowProps = {
     audience,
@@ -378,16 +360,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
     age,
     onAgeChange: setAge,
     onRandomize: () => {
-      setShuffleKey((k) => {
-        const next = k + 1;
-        setDisplayIds((prev) =>
-          shuffleWithSeed(
-            prev.length === filteredIds.length ? prev : filteredIds,
-            next,
-          ),
-        );
-        return next;
-      });
+      replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
     },
     crazyMode: crazyOn,
     onCrazyModeToggle: handleCrazyModeToggle,
@@ -417,9 +390,11 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const showBrowseChrome = !pileOn;
 
   const feedCards = (
-    <div className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4${
-      feedExiting ? " is-exiting" : ""
-    }`}>
+    <div
+      className={`pile-feed-layer scroll-pad-bottom space-y-6 pt-4${
+        feedExiting ? " is-exiting" : ""
+      }`}
+    >
       {visibleChunks.map((chunk, chunkIndex) => (
         <Fragment key={`feed-chunk-${chunkIndex}`}>
           <div className={gridClassName}>
@@ -427,7 +402,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
               return (
                 <FeedCard
-                  key={`feed-slot-${slotIndex}`}
+                  key={toy.id}
                   toy={toy}
                   showText={showText}
                   index={slotIndex}
@@ -441,13 +416,13 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
           {chunkIndex === visibleChunks.length - 1 && hasMore && (
             <FeedAutoLoadMore
               scrollerRef={scrollerRef}
-              active={hasMore}
-              onLoad={loadNextPage}
+              active={hasMore && !loading}
+              onLoad={handleLoadMore}
             />
           )}
         </Fragment>
       ))}
-      {displayed.length === 0 && (
+      {!loading && displayed.length === 0 && (
         <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
           No toys match. Try another search.
         </p>
@@ -527,9 +502,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
               >
                 <FeedHeader query={query} onQueryChange={setQuery} />
                 <div
-                  className={
-                    crazyOn ? "browse-controls" : "browse-chrome-panel"
-                  }
+                  className={crazyOn ? "browse-controls" : "browse-chrome-panel"}
                 >
                   {showFilterChrome && filterRow}
                   <ThumbCarousel />

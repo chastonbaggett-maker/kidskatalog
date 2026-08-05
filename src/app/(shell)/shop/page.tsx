@@ -1,7 +1,8 @@
 import { BrowseFeed } from "@/components/BrowseFeed";
-import { getCatalogToys } from "@/lib/catalog-store";
+import { queryCatalogPage } from "@/lib/catalog-page";
 
 export default async function ShopPage() {
-  const toys = await getCatalogToys();
-  return <BrowseFeed toys={toys} />;
+  const initialPage = await queryCatalogPage({ offset: 0, limit: 20 });
+
+  return <BrowseFeed initialPage={initialPage} />;
 }

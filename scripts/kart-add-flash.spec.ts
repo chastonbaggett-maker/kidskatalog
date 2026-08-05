@@ -35,6 +35,7 @@ test.describe("kart add image flash", () => {
       waitUntil: "networkidle",
     });
     await page.evaluate(() => localStorage.removeItem("kidskatalog-kart"));
+    await page.locator(".add-kart-btn").waitFor({ state: "visible" });
 
     await page.evaluate(() => {
       (window as unknown as { __flashHits: unknown[] }).__flashHits = [];
@@ -62,7 +63,8 @@ test.describe("kart add image flash", () => {
     await page.waitForTimeout(1400);
 
     const hits = await page.evaluate(
-      () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
+      () =>
+        (window as unknown as { __flashHits: unknown[] | undefined }).__flashHits ?? [],
     );
     const early = (hits as Array<{ t: number }>).filter((h) => h.t < 900);
 
@@ -75,6 +77,7 @@ test.describe("kart add image flash", () => {
       waitUntil: "networkidle",
     });
     await page.evaluate(() => localStorage.removeItem("kidskatalog-kart"));
+    await page.locator(".more-toys-feed").waitFor({ state: "visible", timeout: 10000 });
     await page.locator(".more-toys-feed").scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
 
@@ -104,7 +107,8 @@ test.describe("kart add image flash", () => {
     await page.waitForTimeout(1400);
 
     const hits = await page.evaluate(
-      () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
+      () =>
+        (window as unknown as { __flashHits: unknown[] | undefined }).__flashHits ?? [],
     );
     const early = (hits as Array<{ t: number }>).filter((h) => h.t < 900);
 

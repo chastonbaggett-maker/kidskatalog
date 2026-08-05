@@ -10,8 +10,8 @@ import { useKartFlyBallTrigger } from "@/hooks/useKartFlyBall";
 const REMOVE_FILL_MS = 480;
 const REMOVE_POP_MS = 320;
 const REMOVE_TOTAL_MS = REMOVE_FILL_MS + REMOVE_POP_MS + 40;
-/** Keep kart guards up after the ball lands so below-fold images do not flash in. */
-const KART_ADD_SETTLE_MS = 780;
+/** Keep kart guards up after the ball lands so below-fold cards do not mount mid-effect. */
+const KART_ADD_SETTLE_MS = 420;
 
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
@@ -98,7 +98,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     fire(point, GOLD_CONFETTI);
 
     if (!started) {
-      beginKartAdd();
       add(toyId);
       pulseKartNav();
       pingMetrics("kart_add");

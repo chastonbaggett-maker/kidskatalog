@@ -1,26 +1,23 @@
 "use client";
 
-import { useLayoutEffect, useRef, type ImgHTMLAttributes } from "react";
+import { useLayoutEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 
-/** Toy catalog photo — stays hidden until loaded so intrinsic size cannot flash fullscreen. */
+/** Toy catalog photo — clipped by its container; fades in once decoded. */
 export function ToyPhoto({
   src,
   onLoad,
+  className,
+  style,
   ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
   const ref = useRef<HTMLImageElement>(null);
-
-  const markReady = () => {
-    const el = ref.current;
-    if (el) el.dataset.ready = "true";
-  };
+  const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
+    setReady(false);
     const el = ref.current;
-    if (!el) return;
-    delete el.dataset.ready;
-    if (el.complete && el.naturalWidth > 0) {
-      el.dataset.ready = "true";
+    if (el?.complete && el.naturalWidth > 0) {
+      setReady(true);
     }
   }, [src]);
 
@@ -28,9 +25,15 @@ export function ToyPhoto({
     <img
       ref={ref}
       src={src}
+      className={className}
+      style={{
+        ...style,
+        opacity: ready ? 1 : 0,
+        transition: ready ? "opacity 120ms ease-out" : undefined,
+      }}
       {...props}
       onLoad={(event) => {
-        markReady();
+        setReady(true);
         onLoad?.(event);
       }}
     />

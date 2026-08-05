@@ -18,7 +18,6 @@ import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { usePileNavSettled } from "@/hooks/usePileNavSettled";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
-import { useRouteSettled } from "@/hooks/useRouteSettled";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import { pingMetrics } from "@/lib/metrics-client";
 import { fetchRandomCatalogToys } from "@/lib/catalog-client";
@@ -100,7 +99,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const pileShelfMounted = pileHeaderActive;
   const pileNavSettled = usePileNavSettled(pileHeaderVisible);
-  const routeSettled = useRouteSettled();
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
   const [feedExiting, setFeedExiting] = useState(false);
@@ -408,7 +406,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
                   index={slotIndex}
                   slotIndex={slotIndex}
                   crazyStrike={crazyFlashSlots.includes(slotIndex)}
-                  animateEnter={routeSettled}
                 />
               );
             })}

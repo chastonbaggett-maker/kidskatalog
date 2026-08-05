@@ -188,25 +188,24 @@ select {
 }
 
 .feed-card {
-  animation: pop-in 0.45s ease-out both;
   content-visibility: auto;
   contain-intrinsic-size: auto 420px;
+}
+
+.feed-card:not(.feed-card--enter) {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.feed-card--enter {
+  animation: pop-in 0.45s ease-out both;
 }
 
 .feed-card--static {
   animation: none;
   opacity: 1;
   transform: none;
-}
-
-html.route-changing .feed-card__photo,
-html.route-changing .product-gallery__photo,
-html.route-changing .product-gallery__thumb,
-html.route-changing .toy-pile-card__photo,
-html.route-changing .thumb-carousel__photo,
-html.route-changing .kart-row__photo {
-  opacity: 0 !important;
-  visibility: hidden !important;
 }
 
 html.route-changing .page-scroll {
@@ -218,21 +217,24 @@ html.route-changing .page-scroll {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
-  overflow: hidden;
-  contain: layout paint;
+  overflow: clip;
+  contain: layout paint size;
   isolation: isolate;
   background: #fff;
+  transform: translateZ(0);
 }
 
 .feed-card__photo {
   position: absolute;
   inset: 0;
   box-sizing: border-box;
+  display: block;
   width: 100%;
   height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  overflow: clip;
   padding: 0.75rem;
 }
 
@@ -244,18 +246,24 @@ html.route-changing .page-scroll {
 
 .product-gallery__stage {
   aspect-ratio: 1 / 1;
-  contain: layout paint;
+  contain: layout paint size;
   isolation: isolate;
   min-height: 0;
+  overflow: clip;
+  transform: translateZ(0);
 }
 
 .product-gallery__photo {
   position: absolute;
   inset: 0;
   box-sizing: border-box;
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+  overflow: clip;
   user-select: none;
 }
 
@@ -268,11 +276,20 @@ html.route-changing .page-scroll {
   object-position: center;
 }
 
-.thumb-carousel__photo {
+.thumb-carousel__photo,
+.toy-pile-card__photo,
+.kart-row__photo {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: clip;
+}
+
+.thumb-carousel__photo {
   object-fit: cover;
 }
 
@@ -783,7 +800,9 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-card__media {
-  overflow: hidden;
+  overflow: clip;
+  contain: layout paint size;
+  transform: translateZ(0);
   background-color: #fff;
 }
 

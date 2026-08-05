@@ -17,7 +17,6 @@ import {
 import { fetchRandomCatalogToys } from "@/lib/catalog-client";
 import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
 import { useKartStore } from "@/lib/kart-store";
-import { useRouteSettled } from "@/hooks/useRouteSettled";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { FeedCard } from "./FeedCard";
@@ -54,7 +53,6 @@ export function MoreToysFeed({
   const mergedSectionRef = sectionRef ?? localSectionRef;
   const userScrolledRef = useRef(false);
   const loadReadyRef = useRef(false);
-  const routeSettled = useRouteSettled();
 
   const catalog = useCatalogPage({
     excludeId: excludeToyId,
@@ -231,8 +229,6 @@ export function MoreToysFeed({
         .join(" "),
     [crazyMode],
   );
-
-  if (!routeSettled) return null;
 
   return (
     <>

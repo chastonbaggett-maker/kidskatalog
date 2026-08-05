@@ -28,6 +28,7 @@ import {
   preloadImages,
 } from "@/lib/crazy-mode-timing";
 import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 import { useKartStore } from "@/lib/kart-store";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
@@ -260,8 +261,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
       const scroller = scrollerRef.current;
       if (!scroller || cancelled) return;
 
-      const kart = useKartStore.getState();
-      if (kart.flyBall || kart.kartAddActive > 0) return;
+      if (isKartEffectBlocked()) return;
 
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
@@ -283,7 +283,13 @@ export function BrowseFeed({ category, initialPage }: Props) {
         slotIndices.length,
         nextKey,
       );
-      if (cancelled || randomToys.length === 0) return;
+      if (
+        cancelled ||
+        randomToys.length === 0 ||
+        isKartEffectBlocked()
+      ) {
+        return;
+      }
 
       const nextOrder = [...currentOrder];
       slotIndices.forEach((slotIndex, index) => {
@@ -328,8 +334,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
   ]);
 
   const handleLoadMore = useCallback(() => {
-    const kart = useKartStore.getState();
-    if (kart.flyBall || kart.kartAddActive > 0) return;
+    if (isKartEffectBlocked()) return;
     void loadMore();
   }, [loadMore]);
 
@@ -400,7 +405,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
               const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
               return (
                 <FeedCard
-                  key={toy.id}
+                  key={`feed-slot-${slotIndex}`}
                   toy={toy}
                   showText={showText}
                   index={slotIndex}

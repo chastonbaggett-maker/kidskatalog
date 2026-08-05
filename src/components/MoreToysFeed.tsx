@@ -17,6 +17,7 @@ import {
 import { fetchRandomCatalogToys } from "@/lib/catalog-client";
 import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
 import { useKartStore } from "@/lib/kart-store";
+import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { FeedCard } from "./FeedCard";
@@ -100,8 +101,7 @@ export function MoreToysFeed({
   }, [scrollerRef]);
 
   const guardedLoadMore = useCallback(() => {
-    const { flyBall, kartAddActive } = useKartStore.getState();
-    if (flyBall || kartAddActive > 0) return;
+    if (isKartEffectBlocked()) return;
     void loadMore();
   }, [loadMore]);
 
@@ -117,13 +117,11 @@ export function MoreToysFeed({
         if (!entry?.isIntersecting) return;
         if (root && (!loadReadyRef.current || !userScrolledRef.current)) return;
 
-        const { flyBall, kartAddActive } = useKartStore.getState();
-        if (flyBall || kartAddActive > 0) return;
+        if (isKartEffectBlocked()) return;
 
         if (loadTimer) window.clearTimeout(loadTimer);
         loadTimer = window.setTimeout(() => {
-          const state = useKartStore.getState();
-          if (state.flyBall || state.kartAddActive > 0) return;
+          if (isKartEffectBlocked()) return;
           guardedLoadMore();
         }, 150);
       },
@@ -151,8 +149,7 @@ export function MoreToysFeed({
     let cancelled = false;
 
     const flash = async () => {
-      const { flyBall, kartAddActive } = useKartStore.getState();
-      if (flyBall || kartAddActive > 0 || cancelled) return;
+      if (isKartEffectBlocked() || cancelled) return;
 
       crazyFlashCountRef.current += 1;
       const nextKey = crazyFlashCountRef.current;
@@ -174,7 +171,13 @@ export function MoreToysFeed({
         slotIndices.length,
         nextKey,
       );
-      if (cancelled || randomToys.length === 0) return;
+      if (
+        cancelled ||
+        randomToys.length === 0 ||
+        isKartEffectBlocked()
+      ) {
+        return;
+      }
 
       const nextOrder = [...currentOrder];
       slotIndices.forEach((slotIndex, index) => {
@@ -248,7 +251,7 @@ export function MoreToysFeed({
           <div className={gridClassName}>
             {displayed.map((toy, index) => (
               <FeedCard
-                key={toy.id}
+                key={`more-slot-${index}`}
                 toy={toy}
                 showText={showText}
                 index={index}

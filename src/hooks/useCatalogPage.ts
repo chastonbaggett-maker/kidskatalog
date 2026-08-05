@@ -7,6 +7,7 @@ import {
   type CatalogFilters,
   type CatalogPageResult,
 } from "@/lib/catalog-query";
+import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 
 const DEFAULT_LIMIT = 20;
 
@@ -95,6 +96,7 @@ export function useCatalogPage({
 
         const data = (await response.json()) as CatalogPageResult;
         if (requestId !== requestRef.current) return null;
+        if (isKartEffectBlocked()) return null;
 
         mergeToys(data.toys);
         setTotal(data.total);

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { CRAZY_SCREEN_FLASH_MS } from "@/lib/crazy-mode-timing";
+import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 
 type ScreenFlash = {
   id: string;
@@ -200,6 +201,8 @@ export function useCrazyLightning() {
 
   const flash = useCallback(
     (flashX: number, flashY: number) => {
+      if (isKartEffectBlocked()) return;
+
       const stamp = Date.now();
       const entry: ScreenFlash = {
         id: `${uid}-${stamp}`,

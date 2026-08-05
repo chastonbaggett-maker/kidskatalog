@@ -2,6 +2,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  KART_EFFECT_ARM_MS,
+  KART_EFFECT_QUIET_MS,
+} from "@/lib/kart-effect-guard";
 
 export type KartFlyBallFlight = {
   fromX: number;
@@ -20,6 +24,7 @@ type KartState = {
   kartBounceToken: number;
   kartEffectGeneration: number;
   kartAddActive: number;
+  kartQuietUntil: number;
   flyBall: KartFlyBallFlight | null;
   add: (id: string) => void;
   remove: (id: string) => void;
@@ -41,6 +46,7 @@ export const useKartStore = create<KartState>()(
       kartBounceToken: 0,
       kartEffectGeneration: 0,
       kartAddActive: 0,
+      kartQuietUntil: 0,
       flyBall: null,
       add: (id) =>
         set((s) => (s.ids.includes(id) ? s : { ids: [...s.ids, id] })),
@@ -60,9 +66,21 @@ export const useKartStore = create<KartState>()(
       bumpKartEffectGeneration: () =>
         set((s) => ({ kartEffectGeneration: s.kartEffectGeneration + 1 })),
       beginKartAdd: () =>
-        set((s) => ({ kartAddActive: s.kartAddActive + 1 })),
+        set((s) => {
+          const armedUntil = Date.now() + KART_EFFECT_ARM_MS;
+          return {
+            kartAddActive: s.kartAddActive + 1,
+            kartQuietUntil: Math.max(s.kartQuietUntil, armedUntil),
+          };
+        }),
       endKartAdd: () =>
-        set((s) => ({ kartAddActive: Math.max(0, s.kartAddActive - 1) })),
+        set((s) => ({
+          kartAddActive: Math.max(0, s.kartAddActive - 1),
+          kartQuietUntil: Math.max(
+            s.kartQuietUntil,
+            Date.now() + KART_EFFECT_QUIET_MS,
+          ),
+        })),
       startFlyBall: (flight) => set({ flyBall: flight }),
       clearFlyBall: () => set({ flyBall: null }),
     }),

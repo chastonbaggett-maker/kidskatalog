@@ -192,6 +192,14 @@ select {
   contain-intrinsic-size: auto 420px;
 }
 
+html.kart-effect-active .feed-card {
+  content-visibility: visible;
+}
+
+html.kart-effect-active .crazy-screen-flash {
+  display: none !important;
+}
+
 .feed-card:not(.feed-card--enter) {
   animation: none;
   opacity: 1;

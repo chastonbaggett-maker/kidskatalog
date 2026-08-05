@@ -13,6 +13,7 @@ import {
   type RefObject,
 } from "react";
 import type { Toy } from "@/types/toy";
+import { ToyPhoto } from "./ToyPhoto";
 import { useAccentStore } from "@/lib/accent-store";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -20,6 +21,7 @@ import {
   preloadImages,
 } from "@/lib/crazy-mode-timing";
 import { useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { beginRouteChange } from "@/lib/route-change";
 
 const MIN_CHUNK = 6;
 const EDGE_THRESHOLD = 220;
@@ -575,6 +577,7 @@ export function ToyPileGrid({
       if (link) {
         const href = link.getAttribute("href");
         if (href) {
+          beginRouteChange();
           router.push(href);
           return;
         }
@@ -585,7 +588,10 @@ export function ToyPileGrid({
 
       const card = findCardAtClientPoint(viewport, clientX, clientY);
       const toyId = card?.getAttribute("data-toy-id");
-      if (toyId) router.push(`/toy/${toyId}`);
+      if (toyId) {
+        beginRouteChange();
+        router.push(`/toy/${toyId}`);
+      }
     },
     [router],
   );
@@ -1060,12 +1066,12 @@ const ToyPileCard = memo(function ToyPileCard({
             showText ? "toy-pile-card__media--with-text" : "toy-pile-card__media--solo"
           }`}
         >
-          <img
+          <ToyPhoto
             src={toy.image}
             alt={toy.imageAlt}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-contain p-2.5 sm:p-3"
+            className="toy-pile-card__photo absolute inset-0 h-full w-full object-contain p-2.5 sm:p-3"
           />
         </Link>
         {showText ? (

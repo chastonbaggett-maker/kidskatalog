@@ -21,6 +21,7 @@ import {
   useCrazyLightning,
 } from "@/hooks/useCrazyLightning";
 import { useKartStore } from "@/lib/kart-store";
+import { useRouteSettled } from "@/hooks/useRouteSettled";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
@@ -58,6 +59,7 @@ export function MoreToysFeed({
   const mergedSectionRef = sectionRef ?? localSectionRef;
   const userScrolledRef = useRef(false);
   const loadReadyRef = useRef(false);
+  const routeSettled = useRouteSettled();
 
   const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
 
@@ -233,7 +235,7 @@ export function MoreToysFeed({
     .filter(Boolean)
     .join(" ");
 
-  if (seed.length === 0) return null;
+  if (seed.length === 0 || !routeSettled) return null;
 
   return (
     <>
@@ -254,6 +256,7 @@ export function MoreToysFeed({
               index={index}
               slotIndex={index}
               crazyStrike={crazyFlashSlots.includes(index)}
+              animateEnter={false}
             />
           ))}
         </div>

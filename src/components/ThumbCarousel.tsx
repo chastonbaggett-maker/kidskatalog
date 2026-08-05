@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { categories } from "@/data/categories";
+import { ToyPhoto } from "./ToyPhoto";
 
 export function ThumbCarousel() {
   return (
@@ -13,12 +14,12 @@ export function ThumbCarousel() {
             aria-label={cat.label}
             title={cat.label}
           >
-            <img
+            <ToyPhoto
               src={cat.image}
               alt={cat.imageAlt}
               loading="lazy"
               decoding="async"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="thumb-carousel__photo"
             />
           </Link>
         ))}

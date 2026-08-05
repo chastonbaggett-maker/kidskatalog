@@ -191,6 +191,35 @@ select {
   animation: pop-in 0.45s ease-out both;
 }
 
+.feed-card--static {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+html.route-changing .feed-card__photo,
+html.route-changing .product-gallery__photo,
+html.route-changing .product-gallery__thumb,
+html.route-changing .toy-pile-card__photo,
+html.route-changing .thumb-carousel__photo,
+html.route-changing .kart-row__photo {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+html.route-changing .page-scroll {
+  overflow: hidden;
+}
+
+.feed-card__photo:not([data-ready]),
+.product-gallery__photo:not([data-ready]),
+.product-gallery__thumb:not([data-ready]),
+.toy-pile-card__photo:not([data-ready]),
+.thumb-carousel__photo:not([data-ready]),
+.kart-row__photo:not([data-ready]) {
+  opacity: 0;
+}
+
 .feed-card__media {
   position: relative;
   display: block;
@@ -226,9 +255,30 @@ select {
 }
 
 .product-gallery__photo {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.product-gallery__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.thumb-carousel__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .logo-glow {

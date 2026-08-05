@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
 import { ToyPageView } from "@/components/ToyPageView";
 import { getCategory } from "@/data/categories";
 import { getCatalogToy, getMoreCatalogToys } from "@/lib/catalog-store";
@@ -18,13 +17,11 @@ export default async function ToyPage({ params }: Props) {
   const more = await getMoreCatalogToys(toy.id);
 
   return (
-    <AppShell>
-      <ToyPageView
-        toy={toy}
-        categoryLabel={cat?.label ?? "Toy"}
-        gallery={gallery}
-        more={more}
-      />
-    </AppShell>
+    <ToyPageView
+      toy={toy}
+      categoryLabel={cat?.label ?? "Toy"}
+      gallery={gallery}
+      more={more}
+    />
   );
 }

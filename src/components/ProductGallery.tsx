@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ToyPhoto } from "./ToyPhoto";
 
 const SWIPE_THRESHOLD_PX = 48;
 
@@ -71,13 +72,13 @@ export function ProductGallery({
         aria-roledescription={shots.length > 1 ? "carousel" : undefined}
         aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
       >
-        <img
+        <ToyPhoto
           src={current}
           alt={alt}
           loading="eager"
           decoding="async"
           draggable={false}
-          className="product-gallery__photo h-full w-full select-none object-contain"
+          className="product-gallery__photo"
         />
       </div>
 
@@ -99,12 +100,12 @@ export function ProductGallery({
               aria-label={`Photo ${i + 1}`}
               aria-pressed={i === active}
             >
-              <img
+              <ToyPhoto
                 src={src}
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="product-gallery__thumb"
               />
             </button>
           ))}

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
 import { BrowseFeed } from "@/components/BrowseFeed";
 import { getCategory } from "@/data/categories";
 import { getCatalogToysByCategory } from "@/lib/catalog-store";
@@ -15,9 +14,5 @@ export default async function CategoryPage({ params }: Props) {
 
   const list = await getCatalogToysByCategory(cat.id);
 
-  return (
-    <AppShell>
-      <BrowseFeed toys={list} />
-    </AppShell>
-  );
+  return <BrowseFeed toys={list} />;
 }

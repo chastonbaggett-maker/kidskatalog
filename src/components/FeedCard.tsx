@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import { ToyPhoto } from "./ToyPhoto";
 
 export function FeedCard({
   toy,
@@ -10,12 +11,14 @@ export function FeedCard({
   index = 0,
   slotIndex = index,
   crazyStrike = false,
+  animateEnter = true,
 }: {
   toy: Toy;
   showText: boolean;
   index?: number;
   slotIndex?: number;
   crazyStrike?: boolean;
+  animateEnter?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -31,13 +34,17 @@ export function FeedCard({
       data-toy-id={toy.id}
       className={`feed-card relative mx-6 overflow-visible sm:mx-4 lg:mx-2 ${
         crazyStrike ? "feed-card--crazy-strike" : ""
-      }`}
+      }${animateEnter ? "" : " feed-card--static"}`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
-        <Link href={`/toy/${toy.id}`} className="feed-card__media block bg-white">
+        <Link
+          href={`/toy/${toy.id}`}
+          prefetch={false}
+          className="feed-card__media block bg-white"
+        >
           {/* Native img avoids Next/Image fill escaping its box on first paint */}
-          <img
+          <ToyPhoto
             src={toy.image}
             alt={toy.imageAlt}
             loading={index < 2 ? "eager" : "lazy"}

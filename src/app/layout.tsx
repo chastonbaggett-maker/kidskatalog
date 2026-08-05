@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
 import { StandaloneClass } from "@/components/StandaloneClass";
+import { ROUTE_CHANGE_BOOT_SCRIPT } from "@/lib/route-change";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -104,6 +105,7 @@ export default function RootLayout({
             __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');}catch(e){}})();`,
           }}
         />
+        <script dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var raw=localStorage.getItem('kidskatalog-accent');if(!raw)return;var data=JSON.parse(raw);var aud=data&&data.state&&data.state.audience;if(aud==='boys')document.documentElement.dataset.accent='boys';else if(aud==='girls')document.documentElement.dataset.accent='girls';else document.documentElement.dataset.accent='both';}catch(e){}})();`,

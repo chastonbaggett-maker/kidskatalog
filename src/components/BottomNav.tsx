@@ -10,6 +10,7 @@ import { useAccentStore } from "@/lib/accent-store";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { useKartStore } from "@/lib/kart-store";
+import { beginRouteChange } from "@/lib/route-change";
 import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
@@ -126,7 +127,10 @@ export function BottomNav() {
             pathname === "/" ||
             pathname.startsWith("/shop") ||
             pathname.startsWith("/toy");
-          if (!onHome) router.push("/shop");
+          if (!onHome) {
+            beginRouteChange();
+            router.push("/shop");
+          }
         }
         brandNavTimer.current = null;
       }, BRAND_SINGLE_TAP_NAV_MS);

@@ -20,6 +20,7 @@ import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { usePileNavSettled } from "@/hooks/usePileNavSettled";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { useRouteSettled } from "@/hooks/useRouteSettled";
 import { pingMetrics } from "@/lib/metrics-client";
 import {
   CRAZY_CARD_FLASH_MS,
@@ -81,6 +82,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const pileShelfMounted = pileHeaderActive;
   const pileNavSettled = usePileNavSettled(pileHeaderVisible);
+  const routeSettled = useRouteSettled();
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
   const [feedExiting, setFeedExiting] = useState(false);
@@ -431,6 +433,7 @@ export function BrowseFeed({ toys }: { toys: Toy[] }) {
                   index={slotIndex}
                   slotIndex={slotIndex}
                   crazyStrike={crazyFlashSlots.includes(slotIndex)}
+                  animateEnter={routeSettled}
                 />
               );
             })}

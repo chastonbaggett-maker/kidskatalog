@@ -1,9 +1,12 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { InstallPrompt } from "./InstallPrompt";
 import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
 import { KartFlyBallOverlay } from "@/hooks/useKartFlyBall";
+import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
 
 export function AppShell({
   children,
@@ -12,6 +15,8 @@ export function AppShell({
   children: ReactNode;
   hideNav?: boolean;
 }) {
+  useRouteChangeLock();
+
   return (
     <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <KartNavEffectGuard />

@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
+import { ToyPhoto } from "@/components/ToyPhoto";
 import { useKartStore } from "@/lib/kart-store";
 import type { Toy } from "@/types/toy";
 
@@ -31,18 +30,17 @@ export default function KartPage() {
   }, [ids]);
 
   return (
-    <AppShell>
-      <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ShelfHeader
-          title="My Kart"
-          subtitle={
-            toys.length === 0
-              ? "Empty — go find toys!"
-              : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
-          }
-        />
+    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ShelfHeader
+        title="My Kart"
+        subtitle={
+          toys.length === 0
+            ? "Empty — go find toys!"
+            : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
+        }
+      />
 
-        <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
+      <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
         {toys.length > 0 && (
           <div className="flex justify-end">
             <button
@@ -74,26 +72,24 @@ export default function KartPage() {
               >
                 <Link
                   href={`/toy/${toy.id}`}
+                  prefetch={false}
                   className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
                 >
-                  <Image
+                  <ToyPhoto
                     src={toy.image}
                     alt={toy.imageAlt}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
+                    loading="lazy"
+                    decoding="async"
+                    className="kart-row__photo absolute inset-0 h-full w-full object-cover"
                   />
                 </Link>
                 <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/toy/${toy.id}`}
-                    className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]"
-                  >
-                    {toy.name}
+                  <Link href={`/toy/${toy.id}`} prefetch={false}>
+                    <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
+                      {toy.name}
+                    </p>
                   </Link>
-                  <p className="truncate text-sm text-[var(--ink-soft)]">
-                    {toy.blurb}
-                  </p>
+                  <p className="truncate text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
                 </div>
                 <button
                   type="button"
@@ -109,8 +105,7 @@ export default function KartPage() {
         )}
 
         <SendToParentForm toys={toys} />
-        </div>
       </div>
-    </AppShell>
+    </div>
   );
 }

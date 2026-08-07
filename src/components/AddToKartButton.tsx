@@ -8,6 +8,7 @@ import { useKartStore } from "@/lib/kart-store";
 import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
+import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { fireKartFlyBall, notifyKartFlyBallLand } from "@/lib/kart-fly-ball";
 
 const CLICK_PULSE_MS = 420;
@@ -25,6 +26,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const visualReady = useVisualSettled(`${pathname}:${toyId}`);
   const bootInKart = readBootInKart(toyId);
   const reducedEffects = useKartEffectsReduced();
+  const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
   const [pulsing, setPulsing] = useState(false);
   const pulseTimerRef = useRef<number | undefined>(undefined);
 
@@ -62,8 +64,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     pingMetrics("kart_add");
 
     if (!reducedEffects) {
-      // Paint button/badge first; start the ball on the next frame.
+      // Paint button/badge first; start confetti + ball on the next frame.
       requestAnimationFrame(() => {
+        fireConfetti(point, GOLD_CONFETTI);
         if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
       });
     } else {
@@ -72,29 +75,32 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md ${
-        visualReady ? "add-kart-btn--visual-ready" : ""
-      } ${
-        showInKart
-          ? "add-kart-btn--in text-white"
-          : "add-kart-btn--ready bg-[var(--blue)] text-white"
-      } ${pulsing ? "add-kart-btn--pulse" : ""}`}
-      aria-pressed={showInKart}
-      aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
-    >
-      <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
-        {showInKart ? (
-          "Tap to remove"
-        ) : (
-          <>
-            <span className="add-kart-btn__plus">+</span>
-            <span>Add to Kart</span>
-          </>
-        )}
-      </span>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md ${
+          visualReady ? "add-kart-btn--visual-ready" : ""
+        } ${
+          showInKart
+            ? "add-kart-btn--in text-white"
+            : "add-kart-btn--ready bg-[var(--blue)] text-white"
+        } ${pulsing ? "add-kart-btn--pulse" : ""}`}
+        aria-pressed={showInKart}
+        aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
+      >
+        <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
+          {showInKart ? (
+            "Tap to remove"
+          ) : (
+            <>
+              <span className="add-kart-btn__plus">+</span>
+              <span>Add to Kart</span>
+            </>
+          )}
+        </span>
+      </button>
+      {confettiPortal}
+    </>
   );
 }

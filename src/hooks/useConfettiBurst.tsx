@@ -96,8 +96,13 @@ export function useConfettiBurst() {
     [uid],
   );
 
+  const fxRoot =
+    typeof document !== "undefined"
+      ? document.getElementById("kart-fx-root") ?? document.body
+      : null;
+
   const portal =
-    mounted && bits.length > 0
+    mounted && bits.length > 0 && fxRoot
       ? createPortal(
           <div className="add-kart-confetti" aria-hidden>
             {bits.map((bit) => (
@@ -118,7 +123,7 @@ export function useConfettiBurst() {
               />
             ))}
           </div>,
-          document.body,
+          fxRoot,
         )
       : null;
 

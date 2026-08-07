@@ -1981,6 +1981,14 @@ html[data-standalone="true"] .app-shell {
 
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
+.kart-fx-root {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .kart-fly-ball {
   position: fixed;
   left: 0;

@@ -1596,6 +1596,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--ready {
+  --pulse-ring: color-mix(in srgb, var(--blue) 50%, transparent);
   background: var(--blue);
 }
 
@@ -1784,10 +1785,32 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--in {
+  --pulse-ring: color-mix(in srgb, var(--mint) 55%, transparent);
   background: var(--mint);
   box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 40%, transparent);
   transition: none;
   animation: none;
+}
+
+/* Local click feedback — box-shadow ring only (safe with transform:none on touch). */
+.add-kart-btn--pulse {
+  animation: add-kart-click-pulse 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes add-kart-click-pulse {
+  0% {
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--pulse-ring) 70%, transparent),
+      0 0 0 0 var(--pulse-ring);
+  }
+  55% {
+    box-shadow:
+      0 6px 18px color-mix(in srgb, var(--pulse-ring) 55%, transparent),
+      0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--pulse-ring) 70%, transparent);
+  }
 }
 
 @keyframes add-kart-idle-glow {
@@ -2019,6 +2042,10 @@ html[data-standalone="true"] .app-shell {
     animation: none !important;
     isolation: auto;
     transform: none !important;
+  }
+
+  .add-kart-btn--pulse {
+    animation: add-kart-click-pulse 0.34s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
 
   .add-kart-btn__glow,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useVisualSettled } from "@/hooks/useVisualSettled";
@@ -8,6 +9,8 @@ import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
 import { fireKartFlyBall } from "@/lib/kart-fly-ball";
+
+const CLICK_PULSE_MS = 340;
 
 /**
  * Minimal add/remove: click updates the store and button immediately.
@@ -22,10 +25,33 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const visualReady = useVisualSettled(`${pathname}:${toyId}`);
   const bootInKart = readBootInKart(toyId);
   const reducedEffects = useKartEffectsReduced();
+  const [pulsing, setPulsing] = useState(false);
+  const pulseTimerRef = useRef<number | undefined>(undefined);
 
   const showInKart = kartHydrated ? inKart : bootInKart === true;
 
+  useEffect(
+    () => () => {
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+    },
+    [],
+  );
+
+  const triggerPulse = () => {
+    setPulsing(false);
+    window.requestAnimationFrame(() => {
+      setPulsing(true);
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = window.setTimeout(() => {
+        setPulsing(false);
+        pulseTimerRef.current = undefined;
+      }, CLICK_PULSE_MS);
+    });
+  };
+
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    triggerPulse();
+
     if (showInKart) {
       remove(toyId);
       return;
@@ -53,7 +79,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         showInKart
           ? "add-kart-btn--in text-white"
           : "add-kart-btn--ready bg-[var(--blue)] text-white"
-      }`}
+      } ${pulsing ? "add-kart-btn--pulse" : ""}`}
       aria-pressed={showInKart}
       aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
     >

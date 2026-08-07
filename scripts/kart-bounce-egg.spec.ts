@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("five quick kart taps launch bounce balls equal to cart count", async ({
+test("five quick kart taps launch loft balls that burst into confetti", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -21,12 +21,15 @@ test("five quick kart taps launch bounce balls equal to cart count", async ({
     await page.waitForTimeout(60);
   }
 
-  await page.waitForTimeout(120);
-  const ballCount = await page.locator(".kart-bounce-ball").count();
-  expect(ballCount).toBeGreaterThan(0);
-  expect(ballCount).toBeLessThanOrEqual(2);
+  await page.waitForTimeout(80);
+  const launched = await page.locator(".kart-bounce-ball").count();
+  expect(launched).toBeGreaterThan(0);
 
-  await page.waitForTimeout(400);
-  const stillMoving = await page.locator(".kart-bounce-ball").count();
-  expect(stillMoving).toBeGreaterThan(0);
+  await page.waitForFunction(
+    () => document.querySelectorAll(".add-kart-confetti__bit").length > 0,
+    { timeout: 3000 },
+  );
+
+  const confetti = await page.locator(".add-kart-confetti__bit").count();
+  expect(confetti).toBeGreaterThan(0);
 });

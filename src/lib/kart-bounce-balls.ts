@@ -1,30 +1,29 @@
-/** Easter-egg bouncing balls — imperative, no React/store coupling. */
+/** Easter-egg lofted balls — rise under gravity, burst gold confetti at apex. */
 
-const GRAVITY = 0;
-const RESTITUTION = 0.78;
-const AIR_DRAG = 0.995;
+import { fireGoldConfettiAt } from "@/lib/kart-confetti";
+
+const GRAVITY = 1700;
+const AIR_DRAG = 0.998;
 const BALL_RADIUS = 9;
 const MAX_BALLS = 24;
-const MAX_LIFE_MS = 12000;
-/** Don't arm nav-kill until the ball has cleared above the nav. */
+const MAX_LIFE_MS = 4000;
 const ARM_CLEARANCE_PX = 12;
 
-type BounceBall = {
+type LoftBall = {
   el: HTMLSpanElement;
   x: number;
   y: number;
   vx: number;
   vy: number;
   born: number;
-  canDie: boolean;
+  rose: boolean;
 };
 
-let balls: BounceBall[] = [];
+let balls: LoftBall[] = [];
 let rafId = 0;
 
 function getHost(): HTMLElement | null {
   if (typeof document === "undefined") return null;
-  // Body avoids kart-fx-root overflow clipping during big bounces.
   return document.body;
 }
 
@@ -34,9 +33,14 @@ function getNavKillTop(): number {
   return nav.getBoundingClientRect().top;
 }
 
-function removeBall(ball: BounceBall) {
+function removeBall(ball: LoftBall) {
   ball.el.remove();
   balls = balls.filter((b) => b !== ball);
+}
+
+function burstBall(ball: LoftBall) {
+  fireGoldConfettiAt(ball.x, ball.y);
+  removeBall(ball);
 }
 
 export function cancelKartBounceBalls() {
@@ -58,37 +62,45 @@ function tick(now: number) {
 
   for (const ball of [...balls]) {
     if (now - ball.born > MAX_LIFE_MS) {
-      removeBall(ball);
+      burstBall(ball);
       continue;
     }
 
+    const prevVy = ball.vy;
     ball.vy += GRAVITY * dt;
     ball.vx *= AIR_DRAG;
-    ball.vy *= AIR_DRAG;
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
 
+    // Soft side bounce so they stay on screen while rising.
     if (ball.x < r) {
       ball.x = r;
-      ball.vx = Math.abs(ball.vx) * RESTITUTION;
+      ball.vx = Math.abs(ball.vx) * 0.7;
     } else if (ball.x > vw - r) {
       ball.x = vw - r;
-      ball.vx = -Math.abs(ball.vx) * RESTITUTION;
+      ball.vx = -Math.abs(ball.vx) * 0.7;
     }
 
+    // Ceiling: treat as apex and burst.
     if (ball.y < r) {
       ball.y = r;
-      ball.vy = Math.abs(ball.vy) * RESTITUTION;
+      burstBall(ball);
+      continue;
     }
 
-    // Arm kill only after the ball has flown clear of the nav band.
     if (ball.y + r < killTop - ARM_CLEARANCE_PX) {
-      ball.canDie = true;
+      ball.rose = true;
     }
 
-    // Kill when the ball re-enters the bottom nav (any direction; zero gravity).
-    if (ball.canDie && ball.y + r >= killTop) {
-      removeBall(ball);
+    // Apex: was rising, now starting to fall.
+    if (ball.rose && prevVy < 0 && ball.vy >= 0) {
+      burstBall(ball);
+      continue;
+    }
+
+    // Fell back into nav without peaking (shouldn't happen often).
+    if (ball.rose && ball.vy > 0 && ball.y + r >= killTop) {
+      burstBall(ball);
       continue;
     }
 
@@ -115,7 +127,7 @@ function ensureLoop() {
   }
 }
 
-/** Launch `count` mint balls from the kart icon; they bounce until they hit the nav. */
+/** Launch `count` mint balls upward; each bursts into gold confetti at its apex. */
 export function launchKartBounceBalls(count: number, origin?: DOMRect | null) {
   if (typeof window === "undefined" || count <= 0) return;
 
@@ -130,8 +142,7 @@ export function launchKartBounceBalls(count: number, origin?: DOMRect | null) {
 
   const killTop = getNavKillTop();
   const startX = kart ? kart.left + kart.width / 2 : window.innerWidth / 2;
-  // Start just above the nav so balls aren't born already "dead".
-  const rawStartY = kart ? kart.top + kart.height * 0.2 : killTop - 40;
+  const rawStartY = kart ? kart.top + kart.height * 0.15 : killTop - 40;
   const startY = Math.min(rawStartY, killTop - 36);
 
   const n = Math.min(MAX_BALLS, Math.floor(count));
@@ -141,18 +152,19 @@ export function launchKartBounceBalls(count: number, origin?: DOMRect | null) {
     el.setAttribute("aria-hidden", "true");
     host.appendChild(el);
 
-    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
-    const speed = 620 + Math.random() * 480;
-    const x = startX + (Math.random() - 0.5) * 20;
+    // Strong loft, mostly upward with a little spray.
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.55;
+    const speed = 980 + Math.random() * 420;
+    const x = startX + (Math.random() - 0.5) * 16;
     const y = startY;
-    const ball: BounceBall = {
+    const ball: LoftBall = {
       el,
       x,
       y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed, // upward (negative)
+      vy: Math.sin(angle) * speed,
       born: performance.now(),
-      canDie: false,
+      rose: false,
     };
 
     el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;

@@ -7,11 +7,11 @@ import { useKartStore } from "@/lib/kart-store";
 import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
-import { useKartFlyBallTrigger } from "@/hooks/useKartFlyBall";
+import { fireKartFlyBall } from "@/lib/kart-fly-ball";
 
 /**
  * Minimal add/remove: click updates the store and button immediately.
- * Fly-ball is decorative only — no landing callbacks or nav pulses.
+ * Fly-ball is a deferred decorative paint only (no store/React coupling).
  */
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const pathname = usePathname();
@@ -21,7 +21,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const visualReady = useVisualSettled(`${pathname}:${toyId}`);
   const bootInKart = readBootInKart(toyId);
-  const { fire: fireFlyBall } = useKartFlyBallTrigger();
   const reducedEffects = useKartEffectsReduced();
 
   const showInKart = kartHydrated ? inKart : bootInKart === true;
@@ -32,11 +31,15 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       return;
     }
 
+    const point = { x: e.clientX, y: e.clientY };
     add(toyId);
     pingMetrics("kart_add");
 
     if (!reducedEffects) {
-      fireFlyBall({ x: e.clientX, y: e.clientY });
+      // Paint button/badge first; start the ball on the next frame.
+      requestAnimationFrame(() => {
+        fireKartFlyBall(point);
+      });
     }
   };
 
@@ -44,17 +47,16 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     <button
       type="button"
       onClick={handleClick}
-      className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
+      className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md ${
         visualReady ? "add-kart-btn--visual-ready" : ""
       } ${
         showInKart
           ? "add-kart-btn--in text-white"
-          : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
+          : "add-kart-btn--ready bg-[var(--blue)] text-white"
       }`}
       aria-pressed={showInKart}
       aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
     >
-      <span className="add-kart-btn__fill" aria-hidden />
       <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
         {showInKart ? (
           "Tap to remove"

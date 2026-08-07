@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { InstallPrompt } from "./InstallPrompt";
+import { KartFlyBallHost } from "./KartFlyBallHost";
 import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
-import { KartFlyBallOverlay } from "@/hooks/useKartFlyBall";
 import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
 
 export function AppShell({
@@ -23,9 +23,7 @@ export function AppShell({
       <MetricsPing />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
-      {/* Stable overlay host — keeps fly-ball off document.body */}
-      <div id="kart-fx-root" className="kart-fx-root" aria-hidden />
-      <KartFlyBallOverlay />
+      <KartFlyBallHost />
       <InstallPrompt />
     </div>
   );

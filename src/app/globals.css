@@ -1563,42 +1563,18 @@ html[data-standalone="true"] .app-shell {
   }
 }
 
-/* Add to Kart — reactive glow → confetti climax */
+/* Add to Kart — stable color flip only (no layer isolation / glow animations) */
 .add-kart-btn {
-  --mint-fill: linear-gradient(
-    100deg,
-    #79ebe0 0%,
-    #6ee8db 14%,
-    #58ddd0 28%,
-    #48d4c9 42%,
-    #3ecfc0 56%,
-    #36c7b6 72%,
-    #2fc0ae 86%,
-    #2bb8a8 100%
-  );
-  --mint-burst: linear-gradient(
-    100deg,
-    #e8fffb 0%,
-    #b8fff5 18%,
-    #9ef0e6 36%,
-    #6ee8db 58%,
-    #4fd4c8 78%,
-    #3ecfc0 100%
-  );
   position: relative;
-  isolation: isolate;
-  overflow: visible;
-  transform: scale(1);
-  transition:
-    transform 0.35s cubic-bezier(0.25, 0.9, 0.35, 1),
-    box-shadow 0.45s ease;
-  box-shadow:
-    0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent),
-    0 0 0 0 transparent;
+  overflow: hidden;
+  transform: none;
+  transition: none;
+  animation: none;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent);
 }
 
-.add-kart-btn:hover:not(.add-kart-btn--in):not(.add-kart-btn--charging) {
-  animation: add-kart-idle-glow 1.6s ease-in-out infinite;
+.add-kart-btn:hover:not(.add-kart-btn--in) {
+  animation: none;
 }
 
 .add-kart-btn--pill {
@@ -1754,7 +1730,7 @@ html[data-standalone="true"] .app-shell {
   font-size: 1.15em;
   line-height: 1;
   transform-origin: center center;
-  animation: add-kart-plus-fun 2.4s ease-in-out infinite;
+  animation: none;
 }
 
 .add-kart-btn--charging .add-kart-btn__plus {
@@ -1809,13 +1785,9 @@ html[data-standalone="true"] .app-shell {
 
 .add-kart-btn--in {
   background: var(--mint);
-  box-shadow:
-    0 4px 16px color-mix(in srgb, var(--mint) 45%, transparent),
-    0 0 18px color-mix(in srgb, #2bb8a8 30%, transparent);
-  transition:
-    background 0.28s ease,
-    box-shadow 0.28s ease,
-    transform 0.35s cubic-bezier(0.25, 0.9, 0.35, 1);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 40%, transparent);
+  transition: none;
+  animation: none;
 }
 
 @keyframes add-kart-idle-glow {
@@ -1977,23 +1949,20 @@ html[data-standalone="true"] .app-shell {
 
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
-.kart-fx-root {
-  position: fixed;
-  inset: 0;
-  z-index: 150;
-  pointer-events: none;
-  overflow: hidden;
-}
-
 .kart-fly-ball {
-  position: absolute;
+  position: fixed;
+  left: 0;
+  top: 0;
   width: 18px;
   height: 18px;
   border-radius: 9999px;
   background: var(--mint);
   box-shadow: 0 2px 8px rgba(30, 130, 118, 0.4);
   pointer-events: none;
-  will-change: left, top, transform, opacity;
+  z-index: 150;
+  opacity: 0;
+  visibility: hidden;
+  contain: layout style paint;
 }
 
 .bottom-nav__kart-icon {

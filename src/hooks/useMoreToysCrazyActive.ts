@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { useKartStore } from "@/lib/kart-store";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 
 const SCROLL_ARM_PX = 48;

@@ -2,16 +2,15 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useKartStore } from "@/lib/kart-store";
+import { cancelKartFlyBall } from "@/lib/kart-fly-ball";
 
-/** Clear decorative fly-ball when navigating away. */
+/** Cancel decorative fly-ball when navigating away. */
 export function KartNavEffectGuard() {
   const pathname = usePathname();
-  const clearFlyBall = useKartStore((s) => s.clearFlyBall);
 
   useEffect(() => {
-    clearFlyBall();
-  }, [pathname, clearFlyBall]);
+    cancelKartFlyBall();
+  }, [pathname]);
 
   return null;
 }

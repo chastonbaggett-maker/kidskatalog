@@ -24,12 +24,17 @@ export function readBootInKart(toyId: string): boolean | null {
   return raw.split(",").includes(toyId);
 }
 
+/** Defer html dataset writes so they don't share a frame with button/badge paint. */
 export function syncKartBootDataset(ids: string[]) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.kartCount = String(ids.length);
-  if (ids.length > 0) {
-    document.documentElement.dataset.kartIds = ids.join(",");
-  } else {
-    delete document.documentElement.dataset.kartIds;
-  }
+  const count = String(ids.length);
+  const joined = ids.length > 0 ? ids.join(",") : "";
+  requestAnimationFrame(() => {
+    document.documentElement.dataset.kartCount = count;
+    if (joined) {
+      document.documentElement.dataset.kartIds = joined;
+    } else {
+      delete document.documentElement.dataset.kartIds;
+    }
+  });
 }

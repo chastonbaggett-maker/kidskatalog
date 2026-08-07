@@ -15,9 +15,14 @@ test("add is instant; fly ball is decorative only", async ({ page }) => {
   await page.evaluate(() => {
     (window as unknown as { __samples: unknown[] }).__samples = [];
     const id = window.setInterval(() => {
+      const ball = document.querySelector(".kart-fly-ball") as HTMLElement | null;
+      const ballVisible =
+        !!ball &&
+        ball.style.visibility !== "hidden" &&
+        Number.parseFloat(ball.style.opacity || "0") > 0.05;
       (window as unknown as { __samples: unknown[] }).__samples.push({
         t: performance.now(),
-        ball: document.querySelector(".kart-fly-ball") != null,
+        ballVisible,
         landing: document.querySelector(".bottom-nav__kart--land") != null,
         badge:
           document.querySelector(".bottom-nav a[href='/kart']")?.textContent?.trim() ??
@@ -41,7 +46,7 @@ test("add is instant; fly ball is decorative only", async ({ page }) => {
       window as unknown as {
         __samples: Array<{
           t: number;
-          ball: boolean;
+          ballVisible: boolean;
           landing: boolean;
           badge: string;
           pressed: string | null;
@@ -53,8 +58,8 @@ test("add is instant; fly ball is decorative only", async ({ page }) => {
 
   const firstPressed = samples.find((s) => s.pressed === "true");
   const firstInStore = samples.find((s) => s.inStore);
-  const firstBadge = samples.find((s) => s.badge === "1");
-  const firstBall = samples.find((s) => s.ball);
+  const firstBadge = samples.find((s) => s.badge.includes("1"));
+  const firstBall = samples.find((s) => s.ballVisible);
   const anyLanding = samples.some((s) => s.landing);
 
   expect(firstPressed).toBeTruthy();

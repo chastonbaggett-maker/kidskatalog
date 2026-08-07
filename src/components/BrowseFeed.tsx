@@ -29,7 +29,6 @@ import {
 } from "@/lib/crazy-mode-timing";
 import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
-import { useKartStore } from "@/lib/kart-store";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";

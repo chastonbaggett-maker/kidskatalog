@@ -13,7 +13,7 @@ type Props = {
   badgeClass: string;
 };
 
-/** Kart tab + badge — no pulse/landing animations (badge count only). */
+/** Kart tab + badge — badge node always mounted to avoid insert flash on first add. */
 export const KartNavLink = memo(function KartNavLink({
   active,
   accentClass,
@@ -22,14 +22,13 @@ export const KartNavLink = memo(function KartNavLink({
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const count = useKartStore((s) => s.ids.length);
   const displayCount = kartHydrated ? count : readBootKartCount();
-  const showBadge = displayCount > 0;
 
   return (
     <li>
       <Link
         ref={registerKartNavEl}
         href="/kart"
-        className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+        className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
           active ? "opacity-100" : "opacity-80"
         }`}
         aria-label="Kart"
@@ -38,13 +37,16 @@ export const KartNavLink = memo(function KartNavLink({
         <span className="bottom-nav__kart-icon">
           <KartIcon />
         </span>
-        {showBadge && (
-          <span
-            className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
-          >
-            {displayCount}
-          </span>
-        )}
+        <span
+          className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
+          style={{
+            opacity: displayCount > 0 ? 1 : 0,
+            transform: "none",
+          }}
+          aria-hidden={displayCount <= 0}
+        >
+          {displayCount > 0 ? displayCount : 0}
+        </span>
       </Link>
     </li>
   );

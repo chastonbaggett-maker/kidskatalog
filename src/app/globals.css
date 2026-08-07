@@ -1610,6 +1610,21 @@ html[data-standalone="true"] .app-shell {
 .add-kart-btn--ready {
   --pulse-ring: color-mix(in srgb, var(--blue) 75%, white 10%);
   background: var(--blue);
+  color: #fff;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+html[data-accent="both"] .add-kart-btn--ready {
+  --pulse-ring: color-mix(in srgb, var(--mint) 70%, white 15%);
+  background: #fff;
+  color: var(--mint);
+  border-color: var(--mint);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 22%, transparent);
+}
+
+html[data-accent="both"] .add-kart-btn--ready:hover {
+  background: color-mix(in srgb, var(--mint) 10%, #fff);
 }
 
 /* Remove: mint base layer → blue fill wipes R→L → pop → label swap at peak */
@@ -1799,6 +1814,9 @@ html[data-standalone="true"] .app-shell {
 .add-kart-btn--in {
   --pulse-ring: color-mix(in srgb, var(--mint) 70%, white 15%);
   background: var(--mint);
+  color: #fff;
+  border: 2px solid transparent;
+  box-sizing: border-box;
   box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 40%, transparent);
   transition: none;
   animation: none;

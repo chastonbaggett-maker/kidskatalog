@@ -81,11 +81,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onClick={handleClick}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md ${
           visualReady ? "add-kart-btn--visual-ready" : ""
-        } ${
-          showInKart
-            ? "add-kart-btn--in text-white"
-            : "add-kart-btn--ready bg-[var(--blue)] text-white"
-        } ${pulsing ? "add-kart-btn--pulse" : ""}`}
+        } ${showInKart ? "add-kart-btn--in" : "add-kart-btn--ready"} ${
+          pulsing ? "add-kart-btn--pulse" : ""
+        }`}
         aria-pressed={showInKart}
         aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
       >

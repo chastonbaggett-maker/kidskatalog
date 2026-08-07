@@ -90,17 +90,20 @@ export const KartNavLink = memo(function KartNavLink({
       singleTapNavTimerRef.current = undefined;
     }
 
-    if (tapWindowTimerRef.current === undefined) {
-      tapWindowTimerRef.current = window.setTimeout(() => {
-        resetTaps();
-      }, EASTER_TAP_WINDOW_MS);
+    // Refresh the rapid-tap window on every tap.
+    if (tapWindowTimerRef.current) {
+      window.clearTimeout(tapWindowTimerRef.current);
     }
+    tapWindowTimerRef.current = window.setTimeout(() => {
+      resetTaps();
+    }, EASTER_TAP_WINDOW_MS);
 
     if (tapCountRef.current >= EASTER_TAP_TARGET) {
-      const launchCount = displayCount;
+      const launchCount =
+        displayCount > 0 ? displayCount : useKartStore.getState().ids.length;
+      const origin = e.currentTarget.getBoundingClientRect();
       resetTaps();
       if (launchCount > 0) {
-        const origin = e.currentTarget.getBoundingClientRect();
         launchKartBounceBalls(launchCount, origin);
       }
       return;

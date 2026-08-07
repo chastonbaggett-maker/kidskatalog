@@ -277,6 +277,141 @@ async function downloadGallery(
   return saved;
 }
 
+function normalizeKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenSet(value: string): Set<string> {
+  return new Set(normalizeKey(value).split(" ").filter((w) => w.length > 1));
+}
+
+function similarNames(a: string, b: string): boolean {
+  const na = normalizeKey(a);
+  const nb = normalizeKey(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  // Compact form: "brick box" vs "brickbox"
+  if (na.replace(/\s/g, "") === nb.replace(/\s/g, "")) return true;
+
+  const ta = tokenSet(a);
+  const tb = tokenSet(b);
+  if (ta.size === 0 || tb.size === 0) return false;
+  let overlap = 0;
+  for (const t of ta) if (tb.has(t)) overlap += 1;
+  const union = ta.size + tb.size - overlap;
+  const jaccard = overlap / union;
+  // Near-identical short card names / titles
+  if (jaccard >= 0.84 && Math.min(ta.size, tb.size) >= 2) return true;
+  // One name fully contains the other token set (subset)
+  if (overlap === Math.min(ta.size, tb.size) && overlap >= 2) return true;
+  return false;
+}
+
+type ExistingToyIndex = {
+  asins: Set<string>;
+  ids: Set<string>;
+  names: string[];
+  sourceTitles: string[];
+  imageKeys: Set<string>;
+};
+
+function collectImageKeys(toy: { image?: string; images?: string[] }): string[] {
+  const keys: string[] = [];
+  for (const src of [toy.image, ...(toy.images ?? [])]) {
+    if (!src) continue;
+    const amazon = amazonImageKey(src);
+    if (amazon && amazon !== src) keys.push(amazon.toLowerCase());
+    // Local path stem: /toys/lego-large-2.jpg → lego-large
+    const stem = src
+      .split("/")
+      .pop()
+      ?.replace(/\.(jpe?g|png|webp)$/i, "")
+      .replace(/-\d+$/, "");
+    if (stem) keys.push(stem.toLowerCase());
+  }
+  return keys;
+}
+
+function buildExistingToyIndex(
+  live: Array<{
+    id: string;
+    name: string;
+    affiliateUrl: string;
+    image?: string;
+    images?: string[];
+  }>,
+  drafts: DraftToy[],
+): ExistingToyIndex {
+  const index: ExistingToyIndex = {
+    asins: new Set(),
+    ids: new Set(),
+    names: [],
+    sourceTitles: [],
+    imageKeys: new Set(),
+  };
+
+  for (const toy of [...live, ...drafts]) {
+    index.ids.add(toy.id);
+    index.names.push(toy.name);
+    const draftTitle = (toy as DraftToy).sourceTitle;
+    if (draftTitle) index.sourceTitles.push(draftTitle);
+
+    const asin = parseAsin(toy.affiliateUrl) || (toy as DraftToy).asin;
+    if (asin) index.asins.add(asin.toUpperCase());
+
+    for (const key of collectImageKeys(toy)) index.imageKeys.add(key);
+  }
+  return index;
+}
+
+function isDuplicateAgainstIndex(
+  index: ExistingToyIndex,
+  candidate: {
+    asin: string;
+    id: string;
+    name: string;
+    sourceTitle?: string;
+    images?: string[];
+    image?: string;
+  },
+): boolean {
+  if (index.asins.has(candidate.asin.toUpperCase())) return true;
+  if (index.ids.has(candidate.id)) return true;
+
+  for (const name of index.names) {
+    if (similarNames(name, candidate.name)) return true;
+    if (candidate.sourceTitle && similarNames(name, candidate.sourceTitle)) {
+      return true;
+    }
+  }
+  for (const title of index.sourceTitles) {
+    if (similarNames(title, candidate.name)) return true;
+    if (candidate.sourceTitle && similarNames(title, candidate.sourceTitle)) {
+      return true;
+    }
+  }
+
+  for (const key of collectImageKeys(candidate)) {
+    if (index.imageKeys.has(key)) return true;
+  }
+  return false;
+}
+
+function rememberToyInIndex(index: ExistingToyIndex, toy: DraftToy) {
+  index.ids.add(toy.id);
+  index.names.push(toy.name);
+  if (toy.sourceTitle) index.sourceTitles.push(toy.sourceTitle);
+  if (toy.asin) index.asins.add(toy.asin.toUpperCase());
+  const asin = parseAsin(toy.affiliateUrl);
+  if (asin) index.asins.add(asin.toUpperCase());
+  for (const key of collectImageKeys(toy)) index.imageKeys.add(key);
+}
+
 async function buildDraftFromAsin(
   asin: string,
   usedIds: Set<string>,
@@ -391,14 +526,8 @@ export async function generateDraftListings(
   });
 
   const [live, drafts] = await Promise.all([getCatalogToys(), getDraftToys()]);
-  const existingAsins = new Set<string>();
-  const usedIds = new Set<string>();
-
-  for (const toy of [...live, ...drafts]) {
-    usedIds.add(toy.id);
-    const asin = parseAsin(toy.affiliateUrl) || (toy as DraftToy).asin;
-    if (asin) existingAsins.add(asin.toUpperCase());
-  }
+  const index = buildExistingToyIndex(live, drafts);
+  const usedIds = index.ids;
 
   const searched = await searchAmazonAsins(count * 4, options);
   const searchHits = searched.length;
@@ -407,7 +536,7 @@ export async function generateDraftListings(
 
   for (const asin of [...searched, ...FALLBACK_ASINS]) {
     const a = asin.toUpperCase();
-    if (existingAsins.has(a) || seen.has(a)) continue;
+    if (index.asins.has(a) || seen.has(a)) continue;
     seen.add(a);
     candidates.push(a);
   }
@@ -422,10 +551,15 @@ export async function generateDraftListings(
 
   const generated: DraftToy[] = [];
   let failed = 0;
-  const skippedExisting = existingAsins.size;
+  let skippedExisting = index.asins.size;
 
   for (const asin of candidates) {
     if (generated.length >= count) break;
+    // Re-check ASIN in case a concurrent draft was added mid-run.
+    if (index.asins.has(asin.toUpperCase())) {
+      skippedExisting += 1;
+      continue;
+    }
     await sleep(450);
     try {
       const draft = await buildDraftFromAsin(asin, usedIds, options);
@@ -440,8 +574,21 @@ export async function generateDraftListings(
         });
         continue;
       }
+
+      if (isDuplicateAgainstIndex(index, draft)) {
+        skippedExisting += 1;
+        emit({
+          type: "stage",
+          stage: "import",
+          message: `Skipped duplicate ${draft.name}`,
+          current: generated.length,
+          total: count,
+        });
+        continue;
+      }
+
       generated.push(draft);
-      existingAsins.add(asin);
+      rememberToyInIndex(index, draft);
       emit({
         type: "item",
         current: generated.length,

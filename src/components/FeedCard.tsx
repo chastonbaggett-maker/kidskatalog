@@ -35,12 +35,12 @@ export function FeedCard({
     <article
       data-feed-slot={slotIndex}
       data-toy-id={toy.id}
-      className={`feed-card relative mx-6 overflow-hidden sm:mx-4 lg:mx-2 ${
+      className={`feed-card relative mx-6 sm:mx-4 lg:mx-2 ${
         crazyStrike ? "feed-card--crazy-strike" : ""
       }${animateEnter ? " feed-card--enter" : ""}`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
-      <div className="relative overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
+      <div className="feed-card__surface relative bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}

@@ -188,11 +188,19 @@ select {
 }
 
 .feed-card {
-  overflow: hidden;
+  /* Keep overflow visible so shadows aren't clipped to a square box. */
+  overflow: visible;
 }
 
+.feed-card__surface,
 .feed-card > div:first-child {
+  border-radius: 2rem;
   overflow: hidden;
+  background: #fff;
+  /* Avoid contain:paint here — it clips to a rectangle and leaves square corner artifacts. */
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
 }
 
 .feed-card__view-btn {
@@ -1032,6 +1040,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 1;
 }
 
+.page-scroll--crazy .feed-card__surface,
 .page-scroll--crazy .feed-card > div:first-child {
   background: #fff;
   box-shadow:
@@ -2242,20 +2251,26 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
     animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1) !important;
   }
 
+  .feed-card__surface,
   .feed-card > div:first-child {
-    contain: paint layout;
+    /* Radius + overflow already clips; paint containment makes square corners. */
+    contain: layout;
   }
 
   .feed-card__photo,
   .feed-card__view-btn,
   .product-gallery__photo,
   .product-gallery__thumb {
-    contain: strict;
+    contain: layout;
     max-width: 100%;
     max-height: 100%;
   }
 
-  .feed-card__photo,
+  .feed-card__photo {
+    /* Only round the top of the photo; card surface owns the outer corners. */
+    clip-path: inset(0 round 2rem 2rem 0 0);
+  }
+
   .product-gallery__photo {
     clip-path: inset(0 round 2rem);
   }
@@ -2296,7 +2311,11 @@ html[data-kart-effects-reduced="true"] .add-kart-btn__glow {
   display: none !important;
 }
 
-html[data-kart-effects-reduced="true"] .feed-card > div:first-child,
+html[data-kart-effects-reduced="true"] .feed-card__surface,
+html[data-kart-effects-reduced="true"] .feed-card > div:first-child {
+  contain: layout;
+}
+
 html[data-kart-effects-reduced="true"] .product-gallery__stage {
   contain: paint layout;
 }
@@ -2305,12 +2324,15 @@ html[data-kart-effects-reduced="true"] .feed-card__photo,
 html[data-kart-effects-reduced="true"] .feed-card__view-btn,
 html[data-kart-effects-reduced="true"] .product-gallery__photo,
 html[data-kart-effects-reduced="true"] .product-gallery__thumb {
-  contain: strict;
+  contain: layout;
   max-width: 100%;
   max-height: 100%;
 }
 
-html[data-kart-effects-reduced="true"] .feed-card__photo,
+html[data-kart-effects-reduced="true"] .feed-card__photo {
+  clip-path: inset(0 round 2rem 2rem 0 0);
+}
+
 html[data-kart-effects-reduced="true"] .product-gallery__photo {
   clip-path: inset(0 round 2rem);
 }

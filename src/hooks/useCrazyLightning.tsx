@@ -4,11 +4,16 @@ import {
   useCallback,
   useEffect,
   useId,
+  useRef,
   useState,
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { CRAZY_SCREEN_FLASH_MS } from "@/lib/crazy-mode-timing";
+import {
+  CRAZY_CARD_FLASH_MS,
+  CRAZY_SCREEN_FLASH_MS,
+  nextCrazyIntervalMs,
+} from "@/lib/crazy-mode-timing";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 
 type ScreenFlash = {
@@ -19,177 +24,30 @@ type ScreenFlash = {
 
 const FLASH_MS = CRAZY_SCREEN_FLASH_MS;
 
-/** Minimum visible overlap before a card counts as on-screen. */
-const MIN_VISIBLE_PX = 8;
-
-function isElementVisible(el: HTMLElement, viewport: DOMRect) {
-  const rect = el.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return false;
-  if (!rectsIntersect(rect, viewport)) return false;
+function isOnscreen(rect: DOMRect) {
   return (
-    rect.bottom > viewport.top &&
-    rect.top < viewport.bottom &&
-    rect.right > viewport.left &&
-    rect.left < viewport.right
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom > 0 &&
+    rect.right > 0 &&
+    rect.top < window.innerHeight &&
+    rect.left < window.innerWidth
   );
 }
 
-function rectsIntersect(a: DOMRect, b: DOMRect) {
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-}
-
-function intersectionRect(a: DOMRect, b: DOMRect): DOMRect {
-  const left = Math.max(a.left, b.left);
-  const top = Math.max(a.top, b.top);
-  const right = Math.min(a.right, b.right);
-  const bottom = Math.min(a.bottom, b.bottom);
-  return {
-    x: left,
-    y: top,
-    left,
-    top,
-    right,
-    bottom,
-    width: Math.max(0, right - left),
-    height: Math.max(0, bottom - top),
-    toJSON: () => ({}),
-  };
-}
-
-/** Full window — used for header/shelf controls outside the scroller. */
-function getWindowViewport(): DOMRect {
-  return {
-    x: 0,
-    y: 0,
-    left: 0,
-    top: 0,
-    right: window.innerWidth,
-    bottom: window.innerHeight,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    toJSON: () => ({}),
-  };
-}
-
-/** Visible feed area — scroller pane clipped to the window. */
-export function getStrikeViewport(scroller: HTMLElement): DOMRect {
-  const scrollerRect = scroller.getBoundingClientRect();
-  return intersectionRect(scrollerRect, {
-    x: 0,
-    y: 0,
-    left: 0,
-    top: 0,
-    right: window.innerWidth,
-    bottom: window.innerHeight,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    toJSON: () => ({}),
-  });
-}
-
-function getCardSurfaceRect(card: HTMLElement): DOMRect {
-  const surface = card.querySelector<HTMLElement>(":scope > div:first-child");
-  return (surface ?? card).getBoundingClientRect();
-}
-
-function isCardVisibleInViewport(surfaceRect: DOMRect, viewport: DOMRect) {
-  if (!rectsIntersect(surfaceRect, viewport)) return false;
-  const overlap = intersectionRect(surfaceRect, viewport);
-  return overlap.width >= MIN_VISIBLE_PX && overlap.height >= MIN_VISIBLE_PX;
-}
-
 function pickVisibleCrazyButton(
-  filterRef: RefObject<HTMLButtonElement | null>,
-  shelfRef: RefObject<HTMLButtonElement | null>,
-  viewport: DOMRect,
+  refs: Array<RefObject<HTMLButtonElement | null> | null | undefined>,
 ) {
-  if (filterRef.current && isElementVisible(filterRef.current, viewport)) {
-    return filterRef.current;
+  let fallback: HTMLButtonElement | null = null;
+  for (const ref of refs) {
+    const button = ref?.current;
+    if (!button) continue;
+    const rect = button.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    if (!fallback) fallback = button;
+    if (isOnscreen(rect)) return button;
   }
-  if (shelfRef.current && isElementVisible(shelfRef.current, viewport)) {
-    return shelfRef.current;
-  }
-  return null;
-}
-
-function getStrikeCandidates(scroller: HTMLElement, viewport: DOMRect) {
-  const seen = new Set<number>();
-  const candidates: { slotIndex: number }[] = [];
-
-  scroller.querySelectorAll<HTMLElement>("[data-feed-slot]").forEach((card) => {
-    const slot = Number(card.dataset.feedSlot);
-    if (Number.isNaN(slot) || seen.has(slot)) return;
-
-    const surfaceRect = getCardSurfaceRect(card);
-    if (surfaceRect.width <= 0 || surfaceRect.height <= 0) return;
-    if (!isCardVisibleInViewport(surfaceRect, viewport)) return;
-
-    seen.add(slot);
-    candidates.push({ slotIndex: slot });
-  });
-
-  return candidates;
-}
-
-function pickRandomVisibleSlot(slots: number[], seed: number): number[] {
-  if (slots.length === 0) return [];
-  let s = (seed * 1664525 + 1013904223) >>> 0;
-  return [slots[s % slots.length]!];
-}
-
-export function planCrazyFlash(
-  scroller: HTMLElement,
-  filterRef: RefObject<HTMLButtonElement | null>,
-  shelfRef: RefObject<HTMLButtonElement | null>,
-  seed: number,
-): {
-  slotIndices: number[];
-  flashX: number;
-  flashY: number;
-} | null {
-  const viewport = getStrikeViewport(scroller);
-  if (viewport.width <= 0 || viewport.height <= 0) return null;
-
-  const button = pickVisibleCrazyButton(filterRef, shelfRef, getWindowViewport());
-  if (!button) return null;
-
-  const candidates = getStrikeCandidates(scroller, viewport);
-  if (candidates.length === 0) return null;
-
-  const visibleSlots = candidates.map((c) => c.slotIndex);
-  const slotIndices = pickRandomVisibleSlot(visibleSlots, seed);
-  const btnRect = button.getBoundingClientRect();
-
-  return {
-    slotIndices,
-    flashX: btnRect.left + btnRect.width / 2,
-    flashY: btnRect.top + btnRect.height / 2,
-  };
-}
-
-export function assignRandomProductsAt(
-  ids: string[],
-  slotIndices: number[],
-  pool: string[],
-  seed: number,
-) {
-  if (pool.length === 0 || slotIndices.length === 0) return ids;
-
-  const next = [...ids];
-  let s = seed;
-
-  for (const slotIndex of slotIndices) {
-    if (slotIndex < 0 || slotIndex >= next.length) continue;
-
-    const currentId = next[slotIndex];
-    let candidates = pool.filter((id) => id !== currentId);
-    if (candidates.length === 0) candidates = pool;
-
-    s = (s * 1664525 + 1013904223) >>> 0;
-    next[slotIndex] = candidates[s % candidates.length]!;
-  }
-
-  return next;
+  return fallback;
 }
 
 export function useCrazyLightning() {
@@ -240,4 +98,87 @@ export function useCrazyLightning() {
       : null;
 
   return { flash, portal };
+}
+
+/**
+ * Crazy mode = Randomize on a random 3–7s timer, with a flash from the Crazy button.
+ */
+export function useCrazyRandomizeLoop({
+  active,
+  buttonRefs,
+  onRandomize,
+  onButtonFlash,
+}: {
+  active: boolean;
+  buttonRefs: Array<RefObject<HTMLButtonElement | null> | null | undefined>;
+  onRandomize: () => void;
+  onButtonFlash?: (active: boolean) => void;
+}) {
+  const { flash, portal } = useCrazyLightning();
+  const onRandomizeRef = useRef(onRandomize);
+  const onButtonFlashRef = useRef(onButtonFlash);
+  const buttonRefsRef = useRef(buttonRefs);
+
+  useEffect(() => {
+    onRandomizeRef.current = onRandomize;
+  }, [onRandomize]);
+
+  useEffect(() => {
+    onButtonFlashRef.current = onButtonFlash;
+  }, [onButtonFlash]);
+
+  useEffect(() => {
+    buttonRefsRef.current = buttonRefs;
+  }, [buttonRefs]);
+
+  useEffect(() => {
+    if (!active) {
+      onButtonFlashRef.current?.(false);
+      return;
+    }
+
+    let cancelled = false;
+    let flashClearTimer: number | undefined;
+    let scheduleTimer: number | undefined;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      scheduleTimer = window.setTimeout(run, nextCrazyIntervalMs());
+    };
+
+    const run = () => {
+      if (cancelled) return;
+
+      if (isKartEffectBlocked()) {
+        scheduleNext();
+        return;
+      }
+
+      onRandomizeRef.current();
+
+      const button = pickVisibleCrazyButton(buttonRefsRef.current);
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        flash(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        onButtonFlashRef.current?.(true);
+        if (flashClearTimer) window.clearTimeout(flashClearTimer);
+        flashClearTimer = window.setTimeout(() => {
+          onButtonFlashRef.current?.(false);
+        }, CRAZY_CARD_FLASH_MS);
+      }
+
+      scheduleNext();
+    };
+
+    scheduleNext();
+
+    return () => {
+      cancelled = true;
+      if (scheduleTimer) window.clearTimeout(scheduleTimer);
+      if (flashClearTimer) window.clearTimeout(flashClearTimer);
+      onButtonFlashRef.current?.(false);
+    };
+  }, [active, flash]);
+
+  return { portal };
 }

@@ -16,19 +16,13 @@ import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
-import { usePileNavSettled } from "@/hooks/usePileNavSettled";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import { pingMetrics } from "@/lib/metrics-client";
-import { fetchRandomCatalogToys } from "@/lib/catalog-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
-import {
-  CRAZY_CARD_FLASH_MS,
-  CRAZY_FLASH_INTERVAL_MS,
-  preloadImages,
-} from "@/lib/crazy-mode-timing";
-import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { useCrazyRandomizeLoop } from "@/hooks/useCrazyLightning";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
+import { shuffleWithSeed } from "@/lib/shuffle";
 import { FeedHeader } from "./FeedHeader";
 import { FilterRow } from "./FilterRow";
 import { ThumbCarousel } from "./ThumbCarousel";
@@ -82,7 +76,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
     displayed,
     displayIds,
     replaceDisplayIds,
-    mergeToys,
     hasMore,
     loading,
     loadMore,
@@ -98,7 +91,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const pileHeaderActive = pileOn && !isChromePhase && revealGateOpen;
   const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
   const pileShelfMounted = pileHeaderActive;
-  const pileNavSettled = usePileNavSettled(pileHeaderVisible);
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
   const [feedExiting, setFeedExiting] = useState(false);
@@ -118,7 +110,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
   }, [isChromePhase]);
 
   const [crazyFlash, setCrazyFlash] = useState(false);
-  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
   const [compactShelfBlocked, setCompactShelfBlocked] = useState(false);
 
@@ -128,7 +119,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
   const shelfWantedRef = useRef(false);
   const blockCompactShelfRef = useRef(false);
-  const crazyFlashCountRef = useRef(0);
   const displayIdsRef = useRef<string[]>([]);
   const prevToyPileModeRef = useRef(false);
 
@@ -189,12 +179,21 @@ export function BrowseFeed({ category, initialPage }: Props) {
     toggleCrazyMode();
   }, [crazyOn, toggleCrazyMode]);
 
-  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
+  const handleRandomize = useCallback(() => {
+    replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+  }, [replaceDisplayIds]);
 
-  const catalogFilters = useMemo(
-    () => ({ category, audience, age, q: query }),
-    [category, audience, age, query],
+  const crazyButtonRefs = useMemo(
+    () => [filterCrazyBtnRef, shelfCrazyBtnRef],
+    [],
   );
+
+  const { portal: flashPortal } = useCrazyRandomizeLoop({
+    active: crazyOn,
+    buttonRefs: crazyButtonRefs,
+    onRandomize: handleRandomize,
+    onButtonFlash: setCrazyFlash,
+  });
 
   useEffect(() => {
     if (isChromePhase || pileOn) {
@@ -243,95 +242,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
-  useEffect(() => {
-    if (!crazyOn) {
-      setCrazyFlash(false);
-      setCrazyFlashSlots([]);
-    }
-  }, [crazyOn]);
-
-  useEffect(() => {
-    if (!crazyOn || pileOn) return;
-
-    let flashTimer: number | undefined;
-    let cancelled = false;
-
-    const flash = async () => {
-      const scroller = scrollerRef.current;
-      if (!scroller || cancelled) return;
-
-      if (isKartEffectBlocked()) return;
-
-      crazyFlashCountRef.current += 1;
-      const nextKey = crazyFlashCountRef.current;
-
-      const plan = planCrazyFlash(
-        scroller,
-        filterCrazyBtnRef,
-        shelfCrazyBtnRef,
-        nextKey,
-      );
-      if (!plan) return;
-
-      const { slotIndices, flashX, flashY } = plan;
-      const currentOrder =
-        displayIdsRef.current.length > 0 ? [...displayIdsRef.current] : displayIds;
-
-      const randomToys = await fetchRandomCatalogToys(
-        catalogFilters,
-        slotIndices.length,
-        nextKey,
-      );
-      if (
-        cancelled ||
-        randomToys.length === 0 ||
-        isKartEffectBlocked()
-      ) {
-        return;
-      }
-
-      const nextOrder = [...currentOrder];
-      slotIndices.forEach((slotIndex, index) => {
-        const toy = randomToys[index];
-        if (!toy || slotIndex < 0 || slotIndex >= nextOrder.length) return;
-        nextOrder[slotIndex] = toy.id;
-      });
-
-      mergeToys(randomToys);
-      preloadImages(randomToys.map((toy) => toy.image));
-
-      flashScreen(flashX, flashY);
-      setCrazyFlash(true);
-      replaceDisplayIds(nextOrder);
-      setCrazyFlashSlots(slotIndices);
-
-      flashTimer = window.setTimeout(() => {
-        setCrazyFlash(false);
-        setCrazyFlashSlots([]);
-      }, CRAZY_CARD_FLASH_MS);
-    };
-
-    crazyFlashCountRef.current = 0;
-    void flash();
-    const id = window.setInterval(() => {
-      void flash();
-    }, CRAZY_FLASH_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      if (flashTimer) window.clearTimeout(flashTimer);
-    };
-  }, [
-    crazyOn,
-    pileOn,
-    catalogFilters,
-    displayIds,
-    flashScreen,
-    mergeToys,
-    replaceDisplayIds,
-  ]);
-
   const handleLoadMore = useCallback(() => {
     if (isKartEffectBlocked()) return;
     void loadMore();
@@ -361,9 +271,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
     onShowTextChange: setShowText,
     age,
     onAgeChange: setAge,
-    onRandomize: () => {
-      replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
-    },
+    onRandomize: handleRandomize,
     crazyMode: crazyOn,
     onCrazyModeToggle: handleCrazyModeToggle,
     crazyFlash,
@@ -409,7 +317,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
                   showText={showText}
                   index={slotIndex}
                   slotIndex={slotIndex}
-                  crazyStrike={crazyFlashSlots.includes(slotIndex)}
                 />
               );
             })}
@@ -482,13 +389,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
       >
         {pileOn && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
-            <ToyPileGrid
-              toys={displayed}
-              showText={showText}
-              crazyMode={crazyOn && pileNavSettled}
-              crazyBtnRef={filterCrazyBtnRef}
-              onCrazyFlash={setCrazyFlash}
-            />
+            <ToyPileGrid toys={displayed} showText={showText} />
           </div>
         )}
 
@@ -520,18 +421,4 @@ export function BrowseFeed({ category, initialPage }: Props) {
         createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>
   );
-}
-
-function shuffleWithSeed<T>(items: T[], seed: number): T[] {
-  const arr = [...items];
-  let s = seed;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 0xffffffff;
-  };
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }

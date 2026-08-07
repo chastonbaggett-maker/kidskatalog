@@ -1,26 +1,14 @@
-/** Keep in sync with crazy-card-flash / crazy-btn-strike-pulse in globals.css (0.28s). */
+/** Keep in sync with crazy-btn-strike-pulse in globals.css (0.28s). */
 export const CRAZY_CARD_FLASH_MS = 280;
 
 /** Full-screen flash duration — matches .crazy-screen-flash (0.45s). */
 export const CRAZY_SCREEN_FLASH_MS = 450;
 
-/** Time between crazy flash cycles. */
-export const CRAZY_FLASH_INTERVAL_MS = 2200;
+/** Random delay between crazy-mode randomize pulses. */
+export const CRAZY_FLASH_MIN_MS = 3000;
+export const CRAZY_FLASH_MAX_MS = 7000;
 
-export function preloadImages(urls: string[]) {
-  if (typeof window === "undefined") return;
-  for (const src of urls) {
-    const img = new window.Image();
-    img.src = src;
-  }
-}
-
-export function urlsForSwappedSlots(
-  nextOrder: string[],
-  slotIndices: number[],
-  imageById: Map<string, string>,
-) {
-  return slotIndices
-    .map((slot) => imageById.get(nextOrder[slot] ?? ""))
-    .filter((src): src is string => Boolean(src));
+export function nextCrazyIntervalMs() {
+  const span = CRAZY_FLASH_MAX_MS - CRAZY_FLASH_MIN_MS;
+  return CRAZY_FLASH_MIN_MS + Math.floor(Math.random() * (span + 1));
 }

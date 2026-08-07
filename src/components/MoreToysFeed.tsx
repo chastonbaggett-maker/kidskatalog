@@ -5,25 +5,17 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type RefObject,
 } from "react";
-import type { Toy } from "@/types/toy";
-import {
-  CRAZY_CARD_FLASH_MS,
-  CRAZY_FLASH_INTERVAL_MS,
-  preloadImages,
-} from "@/lib/crazy-mode-timing";
-import { fetchRandomCatalogToys } from "@/lib/catalog-client";
-import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
+import { useCrazyRandomizeLoop } from "@/hooks/useCrazyLightning";
 import { useNearViewportMount } from "@/hooks/useNearViewportMount";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
+import { shuffleWithSeed } from "@/lib/shuffle";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { FeedCard } from "./FeedCard";
 
 const PAGE = 6;
-const emptyBtnRef = { current: null } as RefObject<HTMLButtonElement | null>;
 
 export function MoreToysFeed({
   excludeToyId,
@@ -46,9 +38,7 @@ export function MoreToysFeed({
   crazyBtnRef?: RefObject<HTMLButtonElement | null>;
   onCrazyFlash?: (active: boolean) => void;
 }) {
-  const [crazyFlashSlots, setCrazyFlashSlots] = useState<number[]>([]);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const crazyFlashCountRef = useRef(0);
   const displayIdsRef = useRef<string[]>([]);
   const localSectionRef = useRef<HTMLElement>(null);
   const mergedSectionRef = sectionRef ?? localSectionRef;
@@ -65,17 +55,27 @@ export function MoreToysFeed({
     displayed,
     displayIds,
     replaceDisplayIds,
-    mergeToys,
     hasMore,
     loading,
     loadMore,
   } = catalog;
 
-  const { flash: flashScreen, portal: flashPortal } = useCrazyLightning();
-
   useEffect(() => {
     displayIdsRef.current = displayIds;
   }, [displayIds]);
+
+  const handleRandomize = useCallback(() => {
+    replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+  }, [replaceDisplayIds]);
+
+  const crazyButtonRefs = useMemo(() => [crazyBtnRef], [crazyBtnRef]);
+
+  const { portal: flashPortal } = useCrazyRandomizeLoop({
+    active: crazyMode && crazyEffectsActive,
+    buttonRefs: crazyButtonRefs,
+    onRandomize: handleRandomize,
+    onButtonFlash: onCrazyFlash,
+  });
 
   useEffect(() => {
     const root = scrollerRef?.current;
@@ -135,96 +135,6 @@ export function MoreToysFeed({
     };
   }, [guardedLoadMore, scrollerRef]);
 
-  useEffect(() => {
-    if (!crazyMode || !crazyEffectsActive) {
-      onCrazyFlash?.(false);
-      setCrazyFlashSlots([]);
-      return;
-    }
-
-    const scroller = scrollerRef?.current;
-    if (!scroller) return;
-
-    let flashTimer: number | undefined;
-    let cancelled = false;
-
-    const flash = async () => {
-      if (isKartEffectBlocked() || cancelled) return;
-
-      crazyFlashCountRef.current += 1;
-      const nextKey = crazyFlashCountRef.current;
-
-      const plan = planCrazyFlash(
-        scroller,
-        emptyBtnRef,
-        crazyBtnRef ?? emptyBtnRef,
-        nextKey,
-      );
-      if (!plan) return;
-
-      const { slotIndices, flashX, flashY } = plan;
-      const currentOrder =
-        displayIdsRef.current.length > 0 ? [...displayIdsRef.current] : displayIds;
-
-      const randomToys = await fetchRandomCatalogToys(
-        { excludeId: excludeToyId },
-        slotIndices.length,
-        nextKey,
-      );
-      if (
-        cancelled ||
-        randomToys.length === 0 ||
-        isKartEffectBlocked()
-      ) {
-        return;
-      }
-
-      const nextOrder = [...currentOrder];
-      slotIndices.forEach((slotIndex, index) => {
-        const toy = randomToys[index];
-        if (!toy || slotIndex < 0 || slotIndex >= nextOrder.length) return;
-        nextOrder[slotIndex] = toy.id;
-      });
-
-      mergeToys(randomToys);
-      preloadImages(randomToys.map((toy) => toy.image));
-
-      flashScreen(flashX, flashY);
-      onCrazyFlash?.(true);
-      replaceDisplayIds(nextOrder);
-      setCrazyFlashSlots(slotIndices);
-
-      flashTimer = window.setTimeout(() => {
-        onCrazyFlash?.(false);
-        setCrazyFlashSlots([]);
-      }, CRAZY_CARD_FLASH_MS);
-    };
-
-    crazyFlashCountRef.current = 0;
-    const id = window.setInterval(() => {
-      void flash();
-    }, CRAZY_FLASH_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      if (flashTimer) window.clearTimeout(flashTimer);
-      onCrazyFlash?.(false);
-      setCrazyFlashSlots([]);
-    };
-  }, [
-    crazyMode,
-    crazyEffectsActive,
-    scrollerRef,
-    crazyBtnRef,
-    displayIds,
-    excludeToyId,
-    flashScreen,
-    mergeToys,
-    onCrazyFlash,
-    replaceDisplayIds,
-  ]);
-
   const gridClassName = useMemo(
     () =>
       ["toy-feed-grid", crazyMode ? "toy-feed-grid--crazy" : ""]
@@ -258,7 +168,6 @@ export function MoreToysFeed({
                 showText={showText}
                 index={index}
                 slotIndex={index}
-                crazyStrike={crazyFlashSlots.includes(index)}
                 animateEnter={false}
                 photoLoading="eager"
               />

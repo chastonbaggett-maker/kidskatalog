@@ -8,7 +8,7 @@ import { useKartStore } from "@/lib/kart-store";
 import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
-import { fireKartFlyBall } from "@/lib/kart-fly-ball";
+import { fireKartFlyBall, notifyKartFlyBallLand } from "@/lib/kart-fly-ball";
 
 const CLICK_PULSE_MS = 340;
 
@@ -64,8 +64,10 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     if (!reducedEffects) {
       // Paint button/badge first; start the ball on the next frame.
       requestAnimationFrame(() => {
-        fireKartFlyBall(point);
+        if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
       });
+    } else {
+      notifyKartFlyBallLand();
     }
   };
 

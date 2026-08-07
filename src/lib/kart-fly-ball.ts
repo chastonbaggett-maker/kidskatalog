@@ -10,6 +10,21 @@ let ballEl: HTMLSpanElement | null = null;
 let rafId = 0;
 let finishTimer: number | undefined;
 
+type LandListener = () => void;
+const landListeners = new Set<LandListener>();
+
+/** Subscribe to decorative ball landing (or instant pulse when ball is skipped). */
+export function onKartFlyBallLand(listener: LandListener) {
+  landListeners.add(listener);
+  return () => {
+    landListeners.delete(listener);
+  };
+}
+
+export function notifyKartFlyBallLand() {
+  for (const listener of landListeners) listener();
+}
+
 export function registerKartFlyBallEl(el: HTMLSpanElement | null) {
   ballEl = el;
   if (el) {
@@ -86,6 +101,7 @@ export function fireKartFlyBall(
       el.style.top = `${toY}px`;
       el.style.transform = "translate(-50%, -50%) scale(0.7)";
       el.style.opacity = "0";
+      notifyKartFlyBallLand();
       finishTimer = window.setTimeout(() => {
         el.style.visibility = "hidden";
         finishTimer = undefined;

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 import { readBootKartCount } from "@/lib/kart-boot";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { onKartFlyBallLand } from "@/lib/kart-fly-ball";
 
 type Props = {
   active: boolean;
@@ -13,7 +14,9 @@ type Props = {
   badgeClass: string;
 };
 
-/** Kart tab + badge — badge node always mounted to avoid insert flash on first add. */
+const LAND_PULSE_MS = 520;
+
+/** Kart tab + badge — pulses when the decorative fly ball lands. */
 export const KartNavLink = memo(function KartNavLink({
   active,
   accentClass,
@@ -22,6 +25,26 @@ export const KartNavLink = memo(function KartNavLink({
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const count = useKartStore((s) => s.ids.length);
   const displayCount = kartHydrated ? count : readBootKartCount();
+  const [landing, setLanding] = useState(false);
+
+  useEffect(() => {
+    let clearTimer: number | undefined;
+    const unsubscribe = onKartFlyBallLand(() => {
+      setLanding(false);
+      window.requestAnimationFrame(() => {
+        setLanding(true);
+        if (clearTimer) window.clearTimeout(clearTimer);
+        clearTimer = window.setTimeout(() => {
+          setLanding(false);
+          clearTimer = undefined;
+        }, LAND_PULSE_MS);
+      });
+    });
+    return () => {
+      unsubscribe();
+      if (clearTimer) window.clearTimeout(clearTimer);
+    };
+  }, []);
 
   return (
     <li>
@@ -30,7 +53,7 @@ export const KartNavLink = memo(function KartNavLink({
         href="/kart"
         className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
           active ? "opacity-100" : "opacity-80"
-        }`}
+        } ${landing ? "bottom-nav__kart--land" : ""}`}
         aria-label="Kart"
         aria-current={active ? "page" : undefined}
       >
@@ -38,10 +61,11 @@ export const KartNavLink = memo(function KartNavLink({
           <KartIcon />
         </span>
         <span
-          className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
+          className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
+            landing ? "bottom-nav__kart-badge--pop" : ""
+          }`}
           style={{
             opacity: displayCount > 0 ? 1 : 0,
-            transform: "none",
           }}
           aria-hidden={displayCount <= 0}
         >

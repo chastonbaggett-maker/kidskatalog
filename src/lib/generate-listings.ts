@@ -332,9 +332,34 @@ export type GenerateListingsResult = {
   searchHits: number;
 };
 
+export type GenerateProgressEvent =
+  | { type: "stage"; stage: "search" | "import" | "save"; message: string; current: number; total: number }
+  | { type: "item"; current: number; total: number; name: string; ok: boolean }
+  | { type: "done"; result: GenerateListingsResult }
+  | { type: "error"; error: string };
+
+export type GenerateProgressHandler = (event: GenerateProgressEvent) => void;
+
 export async function generateDraftListings(
   count = 10,
+  onProgress?: GenerateProgressHandler,
 ): Promise<GenerateListingsResult> {
+  const emit = (event: GenerateProgressEvent) => {
+    try {
+      onProgress?.(event);
+    } catch {
+      // ignore UI callback errors
+    }
+  };
+
+  emit({
+    type: "stage",
+    stage: "search",
+    message: "Searching Amazon for popular toys…",
+    current: 0,
+    total: count,
+  });
+
   const [live, drafts] = await Promise.all([getCatalogToys(), getDraftToys()]);
   const existingAsins = new Set<string>();
   const usedIds = new Set<string>();
@@ -357,9 +382,17 @@ export async function generateDraftListings(
     candidates.push(a);
   }
 
+  emit({
+    type: "stage",
+    stage: "import",
+    message: `Importing listings (0/${count})…`,
+    current: 0,
+    total: count,
+  });
+
   const generated: DraftToy[] = [];
   let failed = 0;
-  let skippedExisting = existingAsins.size;
+  const skippedExisting = existingAsins.size;
 
   for (const asin of candidates) {
     if (generated.length >= count) break;
@@ -368,24 +401,62 @@ export async function generateDraftListings(
       const draft = await buildDraftFromAsin(asin, usedIds);
       if (!draft) {
         failed += 1;
+        emit({
+          type: "item",
+          current: generated.length,
+          total: count,
+          name: asin,
+          ok: false,
+        });
         continue;
       }
       generated.push(draft);
       existingAsins.add(asin);
+      emit({
+        type: "item",
+        current: generated.length,
+        total: count,
+        name: draft.name,
+        ok: true,
+      });
+      emit({
+        type: "stage",
+        stage: "import",
+        message: `Imported ${draft.name} (${generated.length}/${count})`,
+        current: generated.length,
+        total: count,
+      });
     } catch {
       failed += 1;
+      emit({
+        type: "item",
+        current: generated.length,
+        total: count,
+        name: asin,
+        ok: false,
+      });
     }
   }
 
   if (generated.length > 0) {
+    emit({
+      type: "stage",
+      stage: "save",
+      message: "Saving drafts for review…",
+      current: generated.length,
+      total: count,
+    });
     await addDraftToys(generated);
   }
 
-  return {
+  const result: GenerateListingsResult = {
     generated,
     attempted: Math.min(candidates.length, count + failed),
     skippedExisting,
     failed,
     searchHits,
   };
+
+  emit({ type: "done", result });
+  return result;
 }

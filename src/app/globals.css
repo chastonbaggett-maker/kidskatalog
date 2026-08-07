@@ -2690,3 +2690,13 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   width: 100%;
   background: #fff;
 }
+
+@keyframes admin-generate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-generate-spinner {
+  animation: admin-generate-spin 0.7s linear infinite;
+}

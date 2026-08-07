@@ -26,6 +26,11 @@ export function AdminPanel({ open, onClose }: Props) {
   const [editSource, setEditSource] = useState<EditSource>("live");
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState<{
+    current: number;
+    total: number;
+    message: string;
+  } | null>(null);
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -122,26 +127,99 @@ export function AdminPanel({ open, onClose }: Props) {
     ) {
       return;
     }
+    const total = 10;
     setGenerating(true);
+    setGenerateProgress({
+      current: 0,
+      total,
+      message: "Starting…",
+    });
+
+    let createdCount = 0;
     try {
       const res = await fetch("/api/admin/drafts/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 10 }),
+        body: JSON.stringify({ count: total }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generate failed");
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Generate failed");
+      }
+      if (!res.body) throw new Error("Generate stream unavailable");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          let event: {
+            type: string;
+            current?: number;
+            total?: number;
+            message?: string;
+            name?: string;
+            ok?: boolean;
+            error?: string;
+            result?: { generated?: unknown[] };
+          };
+          try {
+            event = JSON.parse(trimmed) as typeof event;
+          } catch {
+            continue;
+          }
+
+          if (event.type === "stage") {
+            setGenerateProgress({
+              current: event.current ?? 0,
+              total: event.total ?? total,
+              message: event.message || "Working…",
+            });
+          } else if (event.type === "item" && event.ok) {
+            createdCount = event.current ?? createdCount + 1;
+            setGenerateProgress({
+              current: createdCount,
+              total: event.total ?? total,
+              message: event.name
+                ? `Imported ${event.name}`
+                : `Imported ${createdCount}/${event.total ?? total}`,
+            });
+          } else if (event.type === "done") {
+            createdCount = Array.isArray(event.result?.generated)
+              ? event.result.generated.length
+              : createdCount;
+            setGenerateProgress({
+              current: createdCount,
+              total,
+              message: "Finishing…",
+            });
+          } else if (event.type === "error") {
+            throw new Error(event.error || "Generate failed");
+          }
+        }
+      }
+
       await refresh();
-      const n = Array.isArray(data.generated) ? data.generated.length : 0;
       alert(
-        n > 0
-          ? `Created ${n} draft listing${n === 1 ? "" : "s"} in Review.`
+        createdCount > 0
+          ? `Created ${createdCount} draft listing${createdCount === 1 ? "" : "s"} in Review.`
           : "No new drafts were created. Amazon may have blocked the search — try again.",
       );
     } catch (e) {
       alert(e instanceof Error ? e.message : "Generate failed");
     } finally {
       setGenerating(false);
+      setGenerateProgress(null);
     }
   }
 
@@ -235,6 +313,7 @@ export function AdminPanel({ open, onClose }: Props) {
           onGenerate={() => void handleGenerate()}
           onPublish={(ids) => void handlePublish(ids)}
           generating={generating}
+          generateProgress={generateProgress}
           publishing={publishing}
           busyId={deleteBusyId}
           editingId={editing?.id ?? null}

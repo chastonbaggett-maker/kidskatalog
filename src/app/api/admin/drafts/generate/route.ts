@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
-import { generateDraftListings } from "@/lib/generate-listings";
+import {
+  generateDraftListings,
+  type GenerateProgressEvent,
+} from "@/lib/generate-listings";
 
 export const maxDuration = 300;
 
@@ -19,13 +22,31 @@ export async function POST(req: NextRequest) {
     // default 10
   }
 
-  try {
-    const result = await generateDraftListings(count);
-    return NextResponse.json(result);
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Generate failed" },
-      { status: 500 },
-    );
-  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      const send = (event: GenerateProgressEvent) => {
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      };
+
+      void generateDraftListings(count, send)
+        .then(() => {
+          controller.close();
+        })
+        .catch((e) => {
+          send({
+            type: "error",
+            error: e instanceof Error ? e.message : "Generate failed",
+          });
+          controller.close();
+        });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+    },
+  });
 }

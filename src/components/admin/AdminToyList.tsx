@@ -14,10 +14,71 @@ type Props = {
   onGenerate: () => void;
   onPublish: (ids: string[]) => void;
   generating: boolean;
+  generateProgress?: {
+    current: number;
+    total: number;
+    message: string;
+  } | null;
   publishing: boolean;
   busyId: string | null;
   editingId?: string | null;
 };
+
+function GenerateListingsButton({
+  generating,
+  generateProgress,
+  onGenerate,
+  className = "",
+}: {
+  generating: boolean;
+  generateProgress?: {
+    current: number;
+    total: number;
+    message: string;
+  } | null;
+  onGenerate: () => void;
+  className?: string;
+}) {
+  const total = generateProgress?.total || 10;
+  const current = Math.min(generateProgress?.current ?? 0, total);
+  const pct = generating ? Math.max(4, Math.round((current / total) * 100)) : 0;
+
+  return (
+    <div className={`flex min-w-[12.5rem] flex-col gap-1.5 ${className}`}>
+      <button
+        type="button"
+        disabled={generating}
+        onClick={onGenerate}
+        className="relative overflow-hidden rounded-full bg-[var(--purple-deep)] px-3.5 py-2 text-sm font-bold text-white transition disabled:opacity-100 active:scale-[0.98]"
+        aria-busy={generating}
+      >
+        {generating ? (
+          <span
+            className="absolute inset-y-0 left-0 bg-white/20 transition-[width] duration-300 ease-out"
+            style={{ width: `${pct}%` }}
+            aria-hidden
+          />
+        ) : null}
+        <span className="relative z-[1] inline-flex items-center justify-center gap-2">
+          {generating ? (
+            <span
+              className="admin-generate-spinner h-3.5 w-3.5 shrink-0 rounded-full border-2 border-white/35 border-t-white"
+              aria-hidden
+            />
+          ) : null}
+          {generating
+            ? `Generating ${current}/${total}`
+            : "Generate 10 new listings"}
+        </span>
+      </button>
+      {generating && generateProgress ? (
+        <p className="max-w-[18rem] truncate px-1 text-[11px] font-semibold text-[var(--ink-soft)]">
+          {generateProgress.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function AdminToyList({
   toys,
@@ -27,6 +88,7 @@ export function AdminToyList({
   onGenerate,
   onPublish,
   generating,
+  generateProgress = null,
   publishing,
   busyId,
   editingId = null,
@@ -89,14 +151,11 @@ export function AdminToyList({
           Manage toys
         </h3>
         <p className="mb-3 text-sm text-[var(--ink-soft)]">No toys in catalog yet.</p>
-        <button
-          type="button"
-          disabled={generating}
-          onClick={onGenerate}
-          className="rounded-full bg-[var(--purple-deep)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-        >
-          {generating ? "Generating…" : "Generate 10 new listings"}
-        </button>
+        <GenerateListingsButton
+          generating={generating}
+          generateProgress={generateProgress}
+          onGenerate={onGenerate}
+        />
       </section>
     );
   }
@@ -112,18 +171,16 @@ export function AdminToyList({
           Manage toys
         </h3>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={generating}
-            onClick={onGenerate}
-            className="rounded-full bg-[var(--purple-deep)] px-3.5 py-2 text-sm font-bold text-white transition disabled:opacity-50 active:scale-[0.98]"
-          >
-            {generating ? "Generating…" : "Generate 10 new listings"}
-          </button>
+          <GenerateListingsButton
+            generating={generating}
+            generateProgress={generateProgress}
+            onGenerate={onGenerate}
+          />
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="hidden rounded-full bg-[var(--lavender)] px-3.5 py-2 text-sm font-bold text-[var(--purple-deep)] transition active:scale-[0.98] lg:inline-flex"
+            disabled={generating}
+            className="hidden rounded-full bg-[var(--lavender)] px-3.5 py-2 text-sm font-bold text-[var(--purple-deep)] transition active:scale-[0.98] disabled:opacity-50 lg:inline-flex"
             aria-expanded={expanded}
           >
             {expanded ? "Collapse grid" : "Expand grid"}

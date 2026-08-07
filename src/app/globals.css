@@ -669,6 +669,12 @@ html[data-accent="both"] .kart-go-btn:hover {
   background-image: var(--pile-header-grad);
 }
 
+.browse-feed--toy-pile.browse-feed--crazy .shelf-header--pile::before,
+.app-shell--crazy .shelf-header--pile::before {
+  background-color: rgba(20, 20, 24, 0.88);
+  background-image: var(--header-grad);
+}
+
 .browse-feed--toy-pile .shelf-header--pile > * {
   position: relative;
   z-index: 1;

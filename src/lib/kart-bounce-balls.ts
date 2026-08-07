@@ -1,6 +1,6 @@
 /** Easter-egg bouncing balls — imperative, no React/store coupling. */
 
-const GRAVITY = 1650;
+const GRAVITY = 0;
 const RESTITUTION = 0.78;
 const AIR_DRAG = 0.995;
 const BALL_RADIUS = 9;
@@ -86,8 +86,8 @@ function tick(now: number) {
       ball.canDie = true;
     }
 
-    // Kill when falling back into the bottom nav.
-    if (ball.canDie && ball.vy > 0 && ball.y + r >= killTop) {
+    // Kill when the ball re-enters the bottom nav (any direction; zero gravity).
+    if (ball.canDie && ball.y + r >= killTop) {
       removeBall(ball);
       continue;
     }

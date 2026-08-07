@@ -439,6 +439,9 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 .kart-go-btn {
   background: var(--girls-chip);
+  color: #fff;
+  border: 2px solid transparent;
+  box-sizing: border-box;
 }
 
 .kart-go-btn:hover {
@@ -447,6 +450,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 html[data-accent="boys"] .kart-go-btn {
   background: var(--boys-chip);
+  color: #fff;
+  border-color: transparent;
 }
 
 html[data-accent="boys"] .kart-go-btn:hover {
@@ -455,6 +460,8 @@ html[data-accent="boys"] .kart-go-btn:hover {
 
 html[data-accent="girls"] .kart-go-btn {
   background: var(--girls-chip);
+  color: #fff;
+  border-color: transparent;
 }
 
 html[data-accent="girls"] .kart-go-btn:hover {
@@ -462,11 +469,16 @@ html[data-accent="girls"] .kart-go-btn:hover {
 }
 
 html[data-accent="both"] .kart-go-btn {
-  background: var(--girls-chip);
+  background: #fff;
+  color: var(--mint);
+  border-color: var(--mint);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 22%, transparent);
 }
 
 html[data-accent="both"] .kart-go-btn:hover {
-  background: var(--pink-deep);
+  background: color-mix(in srgb, var(--mint) 10%, #fff);
+  color: var(--mint);
+  border-color: var(--mint);
 }
 
 @keyframes back-fun-bob {

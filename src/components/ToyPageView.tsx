@@ -87,7 +87,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
                 <Link
                   href="/kart"
                   aria-label="Go to Kart"
-                  className={`kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-[0.98] ${
+                  className={`kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-[0.98] ${
                     kartGoReady ? "kart-go-btn--visual-ready" : ""
                   }`}
                 >

@@ -2660,6 +2660,7 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
 }
 
 .admin-toy-list__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100%;

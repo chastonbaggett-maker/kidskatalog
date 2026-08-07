@@ -29,6 +29,13 @@ export type Toy = {
   featured?: boolean;
 };
 
+/** Unpublished listing awaiting admin review before going live. */
+export type DraftToy = Toy & {
+  asin?: string;
+  createdAt?: string;
+  sourceTitle?: string;
+};
+
 export type Category = {
   id: CategoryId;
   label: string;

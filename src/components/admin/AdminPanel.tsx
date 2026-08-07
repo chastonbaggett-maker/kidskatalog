@@ -6,30 +6,37 @@ import { AdminMetrics, type MetricsSummary } from "./AdminMetrics";
 import { AdminPinManager, type PinRecord } from "./AdminPinManager";
 import { AdminToyForm } from "./AdminToyForm";
 import { AdminToyList } from "./AdminToyList";
-import type { Toy } from "@/types/toy";
+import type { DraftToy, Toy } from "@/types/toy";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
 
+type EditSource = "live" | "review";
+
 export function AdminPanel({ open, onClose }: Props) {
   const [mounted, setMounted] = useState(false);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [toys, setToys] = useState<Toy[]>([]);
+  const [drafts, setDrafts] = useState<DraftToy[]>([]);
   const [pins, setPins] = useState<PinRecord[]>([]);
   const [editing, setEditing] = useState<Toy | null>(null);
+  const [editSource, setEditSource] = useState<EditSource>("live");
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   const refresh = useCallback(async () => {
     setMetricsLoading(true);
     try {
-      const [metricsRes, toysRes, pinsRes] = await Promise.all([
+      const [metricsRes, toysRes, draftsRes, pinsRes] = await Promise.all([
         fetch("/api/admin/metrics"),
         fetch("/api/admin/toys"),
+        fetch("/api/admin/drafts"),
         fetch("/api/admin/pins"),
       ]);
 
@@ -39,6 +46,10 @@ export function AdminPanel({ open, onClose }: Props) {
       if (toysRes.ok) {
         const data = (await toysRes.json()) as { toys: Toy[] };
         setToys(data.toys);
+      }
+      if (draftsRes.ok) {
+        const data = (await draftsRes.json()) as { drafts: DraftToy[] };
+        setDrafts(data.drafts);
       }
       if (pinsRes.ok) {
         const data = (await pinsRes.json()) as { pins: PinRecord[] };
@@ -72,23 +83,98 @@ export function AdminPanel({ open, onClose }: Props) {
     onClose();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this toy from the catalog?")) return;
+  function handleEdit(toy: Toy, source: EditSource) {
+    setEditSource(source);
+    setEditing(toy);
+  }
+
+  async function handleDelete(id: string, source: EditSource) {
+    const label = source === "review" ? "draft" : "toy from the catalog";
+    if (!confirm(`Delete this ${label}?`)) return;
     setDeleteBusyId(id);
     try {
-      const res = await fetch(`/api/admin/toys?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
+      const url =
+        source === "review"
+          ? `/api/admin/drafts?id=${encodeURIComponent(id)}`
+          : `/api/admin/toys?id=${encodeURIComponent(id)}`;
+      const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Delete failed");
       }
-      if (editing?.id === id) setEditing(null);
+      if (editing?.id === id) {
+        setEditing(null);
+        setEditSource("live");
+      }
       await refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setDeleteBusyId(null);
+    }
+  }
+
+  async function handleGenerate() {
+    if (
+      !confirm(
+        "Search Amazon for popular toys (ages 3–13) and create 10 draft listings for review?",
+      )
+    ) {
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/admin/drafts/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 10 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generate failed");
+      await refresh();
+      const n = Array.isArray(data.generated) ? data.generated.length : 0;
+      alert(
+        n > 0
+          ? `Created ${n} draft listing${n === 1 ? "" : "s"} in Review.`
+          : "No new drafts were created. Amazon may have blocked the search — try again.",
+      );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Generate failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handlePublish(ids: string[]) {
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `Publish ${ids.length} draft${ids.length === 1 ? "" : "s"} to the live shop?`,
+      )
+    ) {
+      return;
+    }
+    setPublishing(true);
+    try {
+      const res = await fetch("/api/admin/drafts/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Publish failed");
+      await refresh();
+      const n = typeof data.count === "number" ? data.count : 0;
+      const conflicts = Array.isArray(data.conflicts) ? data.conflicts.length : 0;
+      alert(
+        conflicts > 0
+          ? `Published ${n}. ${conflicts} skipped (id conflict).`
+          : `Published ${n} toy${n === 1 ? "" : "s"} to the live shop.`,
+      );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Publish failed");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -134,13 +220,22 @@ export function AdminPanel({ open, onClose }: Props) {
         <AdminMetrics metrics={metrics} loading={metricsLoading} />
         <AdminToyForm
           editing={editing}
+          editSource={editSource}
           onSaved={() => void refresh()}
-          onCancelEdit={() => setEditing(null)}
+          onCancelEdit={() => {
+            setEditing(null);
+            setEditSource("live");
+          }}
         />
         <AdminToyList
           toys={toys}
-          onEdit={setEditing}
-          onDelete={(id) => void handleDelete(id)}
+          drafts={drafts}
+          onEdit={handleEdit}
+          onDelete={(id, source) => void handleDelete(id, source)}
+          onGenerate={() => void handleGenerate()}
+          onPublish={(ids) => void handlePublish(ids)}
+          generating={generating}
+          publishing={publishing}
           busyId={deleteBusyId}
           editingId={editing?.id ?? null}
         />

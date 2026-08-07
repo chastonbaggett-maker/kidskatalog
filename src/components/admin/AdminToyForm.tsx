@@ -19,6 +19,8 @@ type ImportPreview = {
 
 type Props = {
   editing: Toy | null;
+  /** Where an edit should be saved — live catalog or review drafts. */
+  editSource?: "live" | "review";
   onSaved: () => void;
   onCancelEdit: () => void;
 };
@@ -36,13 +38,19 @@ const emptyForm = {
   imageUrl: "",
 };
 
-export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
+export function AdminToyForm({
+  editing,
+  editSource = "live",
+  onSaved,
+  onCancelEdit,
+}: Props) {
   const [amazonUrl, setAmazonUrl] = useState("");
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (editing) {
@@ -65,6 +73,7 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
       setPreview(null);
       setAmazonUrl("");
     }
+    setGalleryIndex(0);
     setError("");
   }, [editing]);
 
@@ -123,13 +132,17 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
     }
 
     try {
-      const res = await fetch("/api/admin/toys", {
-        method: editing ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          editing ? { id: editing.id, patch: toy } : toy,
-        ),
-      });
+      const savingDraft = Boolean(editing && editSource === "review");
+      const res = await fetch(
+        savingDraft ? "/api/admin/drafts" : "/api/admin/toys",
+        {
+          method: editing ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editing ? { id: editing.id, patch: toy } : toy,
+          ),
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
 
@@ -152,12 +165,6 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
     return primary ? [primary] : [];
   })();
 
-  const [galleryIndex, setGalleryIndex] = useState(0);
-
-  useEffect(() => {
-    setGalleryIndex(0);
-  }, [editing?.id, preview?.asin, form.image]);
-
   const activeImage =
     galleryImages[Math.min(galleryIndex, Math.max(galleryImages.length - 1, 0))] ??
     "";
@@ -165,7 +172,11 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
   return (
     <section id="admin-toy-form" className="admin-panel__section scroll-mt-4 p-4">
       <h3 className="mb-3 font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
-        {editing ? "Edit toy" : "Add toy"}
+        {editing
+          ? editSource === "review"
+            ? "Edit draft"
+            : "Edit toy"
+          : "Add toy"}
       </h3>
 
       {!editing && (
@@ -381,7 +392,13 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
             disabled={saving}
             className="flex-1 rounded-full bg-[image:var(--header-grad-alt)] py-3 text-sm font-bold text-white disabled:opacity-50"
           >
-            {saving ? "Saving…" : editing ? "Update toy" : "Save toy"}
+            {saving
+              ? "Saving…"
+              : editing
+                ? editSource === "review"
+                  ? "Update draft"
+                  : "Update toy"
+                : "Save toy"}
           </button>
         </div>
       </form>

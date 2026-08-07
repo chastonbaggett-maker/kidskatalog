@@ -90,7 +90,7 @@ export default function KartPage() {
                     alt={toy.imageAlt}
                     loading="lazy"
                     decoding="async"
-                    className="kart-row__photo absolute inset-0 h-full w-full object-cover"
+                    className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
                   />
                 </Link>
                 <div className="min-w-0 flex-1">

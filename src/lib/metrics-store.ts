@@ -25,11 +25,27 @@ const DEFAULT_METRICS: MetricsData = {
 
 const MAX_SESSION_IDS = 5000;
 
+/** Dev-only in-memory metrics — avoids writing data/metrics.json under `next dev`. */
+let devMetricsMemory: MetricsData | null = null;
+
 async function loadMetrics(): Promise<MetricsData> {
-  return readStore("metrics", DEFAULT_METRICS);
+  if (process.env.NODE_ENV === "development" && devMetricsMemory) {
+    return devMetricsMemory;
+  }
+  const data = await readStore("metrics", DEFAULT_METRICS);
+  if (process.env.NODE_ENV === "development") {
+    devMetricsMemory = data;
+  }
+  return data;
 }
 
 async function saveMetrics(data: MetricsData): Promise<void> {
+  // In `next dev`, writing into data/ trips the file watcher and hot-reloads CSS
+  // (brief unstyled-text FOUC) on every kart_add ping. Keep memory-only there.
+  if (process.env.NODE_ENV === "development") {
+    devMetricsMemory = data;
+    return;
+  }
   await writeStore("metrics", data);
 }
 

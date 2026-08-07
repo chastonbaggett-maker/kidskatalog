@@ -39,6 +39,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // metrics.json / test artifacts live in-repo; watching them causes CSS HMR FOUC on kart add
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: /node_modules|\.git|data\/.*\.json|test-results/,
+      };
+    }
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);

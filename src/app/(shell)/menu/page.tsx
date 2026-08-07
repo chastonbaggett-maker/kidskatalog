@@ -1,14 +1,27 @@
+"use client";
+
 import Link from "next/link";
 import { categories } from "@/data/categories";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { ShelfHeader } from "@/components/ShelfHeader";
+import {
+  useCrazyModeStore,
+  crazyModeRootClass,
+  crazyModeScrollClass,
+} from "@/lib/crazy-mode-store";
 import type { CategoryId } from "@/types/toy";
 
 export default function MenuPage() {
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+
   return (
-    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className={`shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden ${crazyModeRootClass(crazyMode)}`}
+    >
       <ShelfHeader title="Piles" subtitle="Pick a toy group" />
-      <div className="page-scroll star-field grid min-h-0 flex-1 grid-cols-2 gap-3 px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6">
+      <div
+        className={`page-scroll star-field grid min-h-0 flex-1 grid-cols-2 gap-3 px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6 ${crazyModeScrollClass(crazyMode)}`}
+      >
         {categories.map((cat) => (
           <Link
             key={cat.id}

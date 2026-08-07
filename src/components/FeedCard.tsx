@@ -40,7 +40,7 @@ export function FeedCard({
       }${animateEnter ? " feed-card--enter" : ""}`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
-      <div className="feed-card__surface relative bg-white shadow-[0_12px_30px_-18px_rgba(60,70,120,0.45)] ring-1 ring-black/[0.03]">
+      <div className="feed-card__surface relative bg-white">
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}

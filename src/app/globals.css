@@ -188,8 +188,11 @@ select {
 }
 
 .feed-card {
-  /* Keep overflow visible so shadows aren't clipped to a square box. */
+  /* Shadow lives on the article so clip-path on the surface cannot square it off. */
   overflow: visible;
+  border-radius: 2rem;
+  background: transparent;
+  box-shadow: 0 12px 30px -18px rgba(60, 70, 120, 0.45);
 }
 
 .feed-card__surface,
@@ -197,10 +200,14 @@ select {
   border-radius: 2rem;
   overflow: hidden;
   background: #fff;
-  /* Avoid contain:paint here — it clips to a rectangle and leaves square corner artifacts. */
   isolation: isolate;
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
-  mask-image: radial-gradient(white, black);
+  /* Hard-clip to the rounded rect — kills square corner hairlines from
+     rings, containment, or compositor tiles bleeding past the curve. */
+  -webkit-clip-path: inset(0 round 2rem);
+  clip-path: inset(0 round 2rem);
+  /* No ring/outline — those paint on the border box and show square corners. */
+  outline: none;
+  box-shadow: none;
 }
 
 .feed-card__view-btn {
@@ -281,6 +288,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: #fff;
+  border-radius: 2rem 2rem 0 0;
 }
 
 .feed-card__photo {
@@ -294,6 +302,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
   max-height: 100%;
   overflow: hidden;
   padding: 0.75rem;
+  border-radius: 2rem 2rem 0 0;
   /* Inset background into the padded content box — never crop/fill. */
   background-size: contain;
   background-position: center;
@@ -1040,13 +1049,17 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 1;
 }
 
-.page-scroll--crazy .feed-card__surface,
-.page-scroll--crazy .feed-card > div:first-child {
-  background: #fff;
+.page-scroll--crazy .feed-card {
   box-shadow:
     0 12px 30px -18px rgba(60, 70, 120, 0.45),
     0 0 22px rgba(255, 229, 102, 0.26),
     0 0 44px rgba(255, 252, 220, 0.12);
+}
+
+.page-scroll--crazy .feed-card__surface,
+.page-scroll--crazy .feed-card > div:first-child {
+  background: #fff;
+  box-shadow: none;
 }
 
 .page-scroll--crazy.star-field {
@@ -1074,9 +1087,11 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .page-scroll--crazy :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
 .page-scroll--crazy .feed-card,
+.page-scroll--crazy .feed-card__surface,
 .page-scroll--crazy .feed-card > div:first-child,
 .app-shell--crazy .page-scroll :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
 .app-shell--crazy .page-scroll .feed-card,
+.app-shell--crazy .page-scroll .feed-card__surface,
 .app-shell--crazy .page-scroll .feed-card > div:first-child {
   --ink: #2c2c3a;
   --ink-soft: #7a7a8c;

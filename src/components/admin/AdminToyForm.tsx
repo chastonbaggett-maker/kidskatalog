@@ -145,7 +145,22 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
     }
   }
 
-  const previewImage = form.image || preview?.image;
+  const galleryImages = (() => {
+    const fromEditing = editing?.images?.filter(Boolean) ?? [];
+    if (fromEditing.length > 0) return fromEditing;
+    const primary = form.image || preview?.image || editing?.image;
+    return primary ? [primary] : [];
+  })();
+
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [editing?.id, preview?.asin, form.image]);
+
+  const activeImage =
+    galleryImages[Math.min(galleryIndex, Math.max(galleryImages.length - 1, 0))] ??
+    "";
 
   return (
     <section id="admin-toy-form" className="admin-panel__section scroll-mt-4 p-4">
@@ -182,24 +197,60 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
         </div>
       )}
 
-      {(preview || editing) && previewImage ? (
-        <div className="mb-4 flex items-center gap-3 rounded-xl bg-[var(--lavender)]/40 p-3">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+      {(preview || editing) && galleryImages.length > 0 ? (
+        <div className="mb-4 rounded-xl bg-[var(--lavender)]/40 p-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-[var(--ink)]">
+                {form.name || "Preview"}
+              </p>
+              <p className="truncate text-xs text-[var(--ink-soft)]">{form.blurb}</p>
+            </div>
+            <p className="shrink-0 text-xs font-bold text-[var(--ink-soft)]">
+              {galleryIndex + 1}/{galleryImages.length}
+            </p>
+          </div>
+
+          <div className="relative mb-3 aspect-[4/5] w-full max-w-[16rem] overflow-hidden rounded-xl bg-white sm:max-w-[18rem]">
             <Image
-              src={previewImage}
-              alt={form.imageAlt || form.name}
+              src={activeImage}
+              alt={form.imageAlt || form.name || "Toy image"}
               fill
-              className="object-cover"
-              sizes="64px"
-              unoptimized={previewImage.startsWith("http")}
+              className="object-contain"
+              sizes="288px"
+              unoptimized={activeImage.startsWith("http")}
             />
           </div>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-[var(--ink)]">
-              {form.name || "Preview"}
-            </p>
-            <p className="truncate text-xs text-[var(--ink-soft)]">{form.blurb}</p>
-          </div>
+
+          <ul className="flex gap-2 overflow-x-auto pb-1">
+            {galleryImages.map((src, index) => {
+              const selected = index === galleryIndex;
+              return (
+                <li key={`${src}-${index}`} className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setGalleryIndex(index)}
+                    aria-label={`Show image ${index + 1}`}
+                    aria-pressed={selected}
+                    className={`relative h-16 w-16 overflow-hidden rounded-lg bg-white ring-2 transition ${
+                      selected
+                        ? "ring-[var(--purple)]"
+                        : "ring-transparent hover:ring-[var(--purple)]/35"
+                    }`}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      className="object-contain"
+                      sizes="64px"
+                      unoptimized={src.startsWith("http")}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       ) : null}
 

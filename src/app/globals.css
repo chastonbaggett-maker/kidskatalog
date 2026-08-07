@@ -1072,28 +1072,70 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 1;
 }
 
-.product-detail--crazy .product-detail__info > p {
+/*
+ * Crazy mode text: light ink on the dark star field.
+ * White cards / galleries / forms restore normal dark ink for readability.
+ */
+.page-scroll--crazy,
+.app-shell--crazy .page-scroll {
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.78);
+  --foreground: #ffffff;
+  color: #ffffff;
+}
+
+.page-scroll--crazy :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
+.page-scroll--crazy .feed-card,
+.page-scroll--crazy .feed-card > div:first-child,
+.app-shell--crazy .page-scroll :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
+.app-shell--crazy .page-scroll .feed-card,
+.app-shell--crazy .page-scroll .feed-card > div:first-child {
+  --ink: #2c2c3a;
+  --ink-soft: #7a7a8c;
+  --foreground: #2c2c3a;
+  color: #2c2c3a;
+}
+
+.product-detail--crazy .product-detail__info,
+.page-scroll--crazy .product-detail__info {
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.82);
+  --blue: #ffe566;
+  --purple-deep: #fff176;
+  color: #ffffff;
+}
+
+.product-detail--crazy .product-detail__info > p,
+.page-scroll--crazy .product-detail__info > p {
   color: #fff;
 }
 
-.product-detail--crazy .product-detail__info > p:first-child {
+.product-detail--crazy .product-detail__info > p:first-child,
+.page-scroll--crazy .product-detail__info > p:first-child {
   color: #ffe566;
 }
 
-.product-detail--crazy .product-detail__info > p.font-semibold {
+.product-detail--crazy .product-detail__info > p.font-semibold,
+.page-scroll--crazy .product-detail__info > p.font-semibold {
   color: rgba(255, 241, 118, 0.9);
 }
 
-.product-detail--crazy .product-detail__info h2 {
+.product-detail--crazy .product-detail__info h2,
+.page-scroll--crazy .product-detail__info h2 {
   color: #fff;
 }
 
-.browse-feed--crazy .more-toys-feed {
+.browse-feed--crazy .more-toys-feed,
+.page-scroll--crazy .more-toys-feed {
   border-color: rgba(255, 229, 102, 0.12);
 }
 
 .browse-feed--crazy .more-toys-feed h3,
-.browse-feed--crazy .more-toys-feed__hint {
+.browse-feed--crazy .more-toys-feed__hint,
+.browse-feed--crazy .more-toys-feed > p,
+.page-scroll--crazy .more-toys-feed h3,
+.page-scroll--crazy .more-toys-feed__hint,
+.page-scroll--crazy .more-toys-feed > p {
   color: #fff;
 }
 

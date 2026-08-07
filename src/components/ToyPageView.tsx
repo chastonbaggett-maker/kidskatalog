@@ -65,7 +65,11 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
         ref={scrollerRef}
         className={`page-scroll star-field min-h-0 flex-1 py-4 ${crazyModeScrollClass(crazyOn)}`}
       >
-        <div className="product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8${
+            crazyOn ? " product-detail--crazy" : ""
+          }`}
+        >
           <div ref={productAreaRef} className="product-detail__layout">
             <ProductGallery images={gallery} alt={toy.imageAlt} />
 

@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
+import {
+  useCrazyModeStore,
+  crazyModeRootClass,
+  crazyModeScrollClass,
+} from "@/lib/crazy-mode-store";
 import { useKartStore } from "@/lib/kart-store";
 import type { Toy } from "@/types/toy";
 
@@ -12,6 +17,7 @@ export default function KartPage() {
   const ids = useKartStore((s) => s.ids);
   const remove = useKartStore((s) => s.remove);
   const clear = useKartStore((s) => s.clear);
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
 
   useEffect(() => {
@@ -30,7 +36,9 @@ export default function KartPage() {
   }, [ids]);
 
   return (
-    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className={`shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden ${crazyModeRootClass(crazyMode)}`}
+    >
       <ShelfHeader
         title="My Kart"
         subtitle={
@@ -40,7 +48,9 @@ export default function KartPage() {
         }
       />
 
-      <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
+      <div
+        className={`page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom ${crazyModeScrollClass(crazyMode)}`}
+      >
         {toys.length > 0 && (
           <div className="flex justify-end">
             <button

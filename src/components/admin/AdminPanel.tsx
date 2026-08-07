@@ -6,6 +6,7 @@ import { AdminMetrics, type MetricsSummary } from "./AdminMetrics";
 import { AdminPinManager, type PinRecord } from "./AdminPinManager";
 import { AdminToyForm } from "./AdminToyForm";
 import { AdminToyList } from "./AdminToyList";
+import type { GenerateListingsOptions } from "@/lib/generate-options";
 import type { DraftToy, Toy } from "@/types/toy";
 
 type Props = {
@@ -119,15 +120,8 @@ export function AdminPanel({ open, onClose }: Props) {
     }
   }
 
-  async function handleGenerate() {
-    if (
-      !confirm(
-        "Search Amazon for popular toys (ages 3–13) and create 10 draft listings for review?",
-      )
-    ) {
-      return;
-    }
-    const total = 10;
+  async function handleGenerate(options: GenerateListingsOptions) {
+    const total = options.count || 10;
     setGenerating(true);
     setGenerateProgress({
       current: 0,
@@ -140,7 +134,7 @@ export function AdminPanel({ open, onClose }: Props) {
       const res = await fetch("/api/admin/drafts/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: total }),
+        body: JSON.stringify(options),
       });
 
       if (!res.ok) {
@@ -310,7 +304,7 @@ export function AdminPanel({ open, onClose }: Props) {
           drafts={drafts}
           onEdit={handleEdit}
           onDelete={(id, source) => void handleDelete(id, source)}
-          onGenerate={() => void handleGenerate()}
+          onGenerate={(options) => void handleGenerate(options)}
           onPublish={(ids) => void handlePublish(ids)}
           generating={generating}
           generateProgress={generateProgress}

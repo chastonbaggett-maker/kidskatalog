@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
-import type { DraftToy, Toy } from "@/types/toy";
+import { categories } from "@/data/categories";
+import {
+  AGE_PRESETS,
+  DEFAULT_GENERATE_OPTIONS,
+  type GenerateListingsOptions,
+} from "@/lib/generate-options";
+import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
 
 type Tab = "live" | "review";
 
@@ -11,7 +17,7 @@ type Props = {
   drafts: DraftToy[];
   onEdit: (toy: Toy, source: Tab) => void;
   onDelete: (id: string, source: Tab) => void;
-  onGenerate: () => void;
+  onGenerate: (options: GenerateListingsOptions) => void;
   onPublish: (ids: string[]) => void;
   generating: boolean;
   generateProgress?: {
@@ -36,21 +42,43 @@ function GenerateListingsButton({
     total: number;
     message: string;
   } | null;
-  onGenerate: () => void;
+  onGenerate: (options: GenerateListingsOptions) => void;
   className?: string;
 }) {
-  const total = generateProgress?.total || 10;
+  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<GenerateListingsOptions>(
+    DEFAULT_GENERATE_OPTIONS,
+  );
+
+  const total = generateProgress?.total || options.count || 10;
   const current = Math.min(generateProgress?.current ?? 0, total);
   const pct = generating ? Math.max(4, Math.round((current / total) * 100)) : 0;
 
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  function startGenerate() {
+    setOpen(false);
+    onGenerate(options);
+  }
+
   return (
-    <div className={`flex min-w-[12.5rem] flex-col gap-1.5 ${className}`}>
+    <div className={`relative flex min-w-[12.5rem] flex-col gap-1.5 ${className}`}>
       <button
         type="button"
         disabled={generating}
-        onClick={onGenerate}
+        onClick={() => setOpen(true)}
         className="relative overflow-hidden rounded-full bg-[var(--purple-deep)] px-3.5 py-2 text-sm font-bold text-white transition disabled:opacity-100 active:scale-[0.98]"
         aria-busy={generating}
+        aria-haspopup="dialog"
+        aria-expanded={open}
       >
         {generating ? (
           <span
@@ -75,6 +103,164 @@ function GenerateListingsButton({
         <p className="max-w-[18rem] truncate px-1 text-[11px] font-semibold text-[var(--ink-soft)]">
           {generateProgress.message}
         </p>
+      ) : null}
+
+      {open && !generating ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 px-4 backdrop-blur-[2px]"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className="w-full max-w-md rounded-[1.5rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <h4
+                  id={titleId}
+                  className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]"
+                >
+                  Target listings
+                </h4>
+                <p className="text-xs font-semibold text-[var(--ink-soft)]">
+                  Defaults search general toys for ages 3–13.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f4f8] text-[var(--ink-soft)]"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">
+                  Age
+                </span>
+                <select
+                  value={options.agePreset}
+                  onChange={(e) =>
+                    setOptions((o) => ({
+                      ...o,
+                      agePreset: e.target.value as GenerateListingsOptions["agePreset"],
+                    }))
+                  }
+                  className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm font-semibold text-[var(--ink)] outline-none"
+                >
+                  {AGE_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <fieldset>
+                <legend className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">
+                  Gender
+                </legend>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["any", "Any"],
+                      ["all", "Unisex"],
+                      ["boys", "Boys"],
+                      ["girls", "Girls"],
+                    ] as const
+                  ).map(([value, label]) => {
+                    const selected = options.audience === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setOptions((o) => ({
+                            ...o,
+                            audience: value as Audience | "any",
+                          }))
+                        }
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                          selected
+                            ? "bg-[var(--mint)] text-white"
+                            : "bg-[var(--lavender)]/70 text-[var(--ink)]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">
+                  Toy type
+                </legend>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setOptions((o) => ({ ...o, category: "any" }))}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                      options.category === "any"
+                        ? "bg-[var(--mint)] text-white"
+                        : "bg-[var(--lavender)]/70 text-[var(--ink)]"
+                    }`}
+                  >
+                    Any type
+                  </button>
+                  {categories.map((cat) => {
+                    const selected = options.category === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() =>
+                          setOptions((o) => ({
+                            ...o,
+                            category: cat.id as CategoryId,
+                          }))
+                        }
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                          selected
+                            ? "bg-[var(--mint)] text-white"
+                            : "bg-[var(--lavender)]/70 text-[var(--ink)]"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOptions(DEFAULT_GENERATE_OPTIONS);
+                }}
+                className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm font-bold text-[var(--ink-soft)]"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={startGenerate}
+                className="flex-1 rounded-full bg-[var(--purple-deep)] py-2.5 text-sm font-bold text-white"
+              >
+                Generate 10
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

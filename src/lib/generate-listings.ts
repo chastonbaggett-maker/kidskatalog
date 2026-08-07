@@ -7,6 +7,12 @@ import { addDraftToys, getDraftToys } from "@/lib/draft-store";
 import type { DraftToy } from "@/types/toy";
 import { slugify } from "@/lib/slugify";
 import {
+  buildSearchQueries,
+  normalizeGenerateOptions,
+  resolveAgePreset,
+  type GenerateListingsOptions,
+} from "@/lib/generate-options";
+import {
   categoryColor,
   inferToyMeta,
   kidBlurb,
@@ -175,16 +181,11 @@ async function fetchHtml(url: string): Promise<string> {
   }
 }
 
-async function searchAmazonAsins(limit: number): Promise<string[]> {
-  const ages = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-  const queries = [
-    ...ages.map((age) => `best toys for ${age} year olds`),
-    "popular kids toys ages 3-13",
-    "top rated STEM toys kids",
-    "best outdoor toys kids",
-    "best board games kids",
-    "LEGO sets kids",
-  ];
+async function searchAmazonAsins(
+  limit: number,
+  options: GenerateListingsOptions,
+): Promise<string[]> {
+  const queries = buildSearchQueries(options);
 
   const found: string[] = [];
   const seen = new Set<string>();
@@ -279,6 +280,7 @@ async function downloadGallery(
 async function buildDraftFromAsin(
   asin: string,
   usedIds: Set<string>,
+  options: GenerateListingsOptions,
 ): Promise<DraftToy | null> {
   const html =
     (await fetchHtml(`https://www.amazon.com/dp/${asin}?th=1&psc=1`)) ||
@@ -296,7 +298,28 @@ async function buildDraftFromAsin(
 
   const name = shortCardName(sourceTitle);
   const blurb = kidBlurb(sourceTitle, ogDesc);
-  const meta = inferToyMeta(sourceTitle, `${ogDesc} age`);
+  const inferred = inferToyMeta(sourceTitle, `${ogDesc} age`);
+  const ageTarget = resolveAgePreset(options.agePreset);
+
+  const category =
+    options.category === "any" ? inferred.category : options.category;
+  const audience =
+    options.audience === "any"
+      ? inferred.audience
+      : options.audience === "all"
+        ? "all"
+        : options.audience;
+
+  // Prefer admin age targeting; keep a sensible range width from inference when "all".
+  let ageMin = ageTarget.min;
+  let ageMax = ageTarget.max;
+  if (options.agePreset === "all") {
+    ageMin = Math.max(3, Math.min(inferred.ageMin, 13));
+    ageMax = Math.max(ageMin, Math.min(inferred.ageMax, 13));
+  } else if (ageMin === ageMax) {
+    ageMin = Math.max(0, ageTarget.min - 1);
+    ageMax = Math.min(13, ageTarget.max + 2);
+  }
 
   let id = slugify(name) || `toy-${asin.toLowerCase()}`;
   if (usedIds.has(id)) id = `${id}-${asin.slice(-4).toLowerCase()}`;
@@ -309,15 +332,15 @@ async function buildDraftFromAsin(
     id,
     name,
     blurb,
-    category: meta.category,
-    audience: meta.audience,
-    ageMin: meta.ageMin,
-    ageMax: meta.ageMax,
+    category,
+    audience,
+    ageMin,
+    ageMax,
     image: images[0]!,
     images,
     imageAlt: `${name} toy`,
     affiliateUrl: buildAffiliateUrl(asin),
-    color: categoryColor(meta.category),
+    color: categoryColor(category),
     asin,
     createdAt: new Date().toISOString(),
     sourceTitle,
@@ -341,9 +364,15 @@ export type GenerateProgressEvent =
 export type GenerateProgressHandler = (event: GenerateProgressEvent) => void;
 
 export async function generateDraftListings(
-  count = 10,
+  optionsInput: Partial<GenerateListingsOptions> | number = 10,
   onProgress?: GenerateProgressHandler,
 ): Promise<GenerateListingsResult> {
+  const options =
+    typeof optionsInput === "number"
+      ? normalizeGenerateOptions({ count: optionsInput })
+      : normalizeGenerateOptions(optionsInput);
+  const count = options.count;
+
   const emit = (event: GenerateProgressEvent) => {
     try {
       onProgress?.(event);
@@ -352,10 +381,11 @@ export async function generateDraftListings(
     }
   };
 
+  const age = resolveAgePreset(options.agePreset);
   emit({
     type: "stage",
     stage: "search",
-    message: "Searching Amazon for popular toys…",
+    message: `Searching Amazon (${age.label})…`,
     current: 0,
     total: count,
   });
@@ -370,7 +400,7 @@ export async function generateDraftListings(
     if (asin) existingAsins.add(asin.toUpperCase());
   }
 
-  const searched = await searchAmazonAsins(count * 4);
+  const searched = await searchAmazonAsins(count * 4, options);
   const searchHits = searched.length;
   const candidates: string[] = [];
   const seen = new Set<string>();
@@ -398,7 +428,7 @@ export async function generateDraftListings(
     if (generated.length >= count) break;
     await sleep(450);
     try {
-      const draft = await buildDraftFromAsin(asin, usedIds);
+      const draft = await buildDraftFromAsin(asin, usedIds, options);
       if (!draft) {
         failed += 1;
         emit({

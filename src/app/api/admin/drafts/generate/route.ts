@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
+import { normalizeGenerateOptions } from "@/lib/generate-options";
 import {
   generateDraftListings,
   type GenerateProgressEvent,
@@ -12,14 +13,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let count = 10;
+  let options = normalizeGenerateOptions({ count: 10 });
   try {
-    const body = (await req.json()) as { count?: number };
-    if (typeof body.count === "number" && body.count > 0) {
-      count = Math.min(20, Math.floor(body.count));
-    }
+    const body = (await req.json()) as Partial<typeof options>;
+    options = normalizeGenerateOptions(body);
   } catch {
-    // default 10
+    // defaults
   }
 
   const encoder = new TextEncoder();
@@ -29,7 +28,7 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       };
 
-      void generateDraftListings(count, send)
+      void generateDraftListings(options, send)
         .then(() => {
           controller.close();
         })

@@ -614,7 +614,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   z-index: 1;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 0 0 2rem 2rem;
+  border-radius: 0 0 var(--shelf-radius) var(--shelf-radius);
   background-color: #fff;
   box-shadow:
     0 10px 28px -10px rgba(60, 70, 120, 0.28),
@@ -727,7 +727,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   position: relative;
   z-index: 1;
   overflow: hidden;
-  border-radius: 0 0 2rem 2rem;
+  border-radius: 0 0 var(--shelf-radius) var(--shelf-radius);
   background: transparent;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1rem;

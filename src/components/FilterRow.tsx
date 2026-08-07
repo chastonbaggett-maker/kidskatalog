@@ -124,8 +124,9 @@ export function FilterRow({
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className="age-pop w-[min(18.5rem,calc(100vw-2rem))] rounded-[1.75rem] bg-white p-4 shadow-[0_18px_50px_-18px_rgba(80,60,140,0.55)] ring-1 ring-black/5"
+              className="age-pop shelf-panel w-[min(18.5rem,calc(100vw-2rem))]"
             >
+              <div className="shelf-panel__surface p-4">
               <div className="mb-3 flex items-start justify-between gap-2">
                 <div>
                   <p
@@ -181,6 +182,7 @@ export function FilterRow({
               >
                 Show all ages
               </button>
+              </div>
             </div>
           </div>,
           document.body,

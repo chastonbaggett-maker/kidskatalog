@@ -62,27 +62,29 @@ export function ProductGallery({
 
   return (
     <div className="mb-4">
-      <div
-        className="product-gallery__stage relative mb-3 w-full touch-pan-y overflow-hidden rounded-[2rem] bg-white shadow-md"
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onPointerLeave={handlePointerCancel}
-        role={shots.length > 1 ? "region" : undefined}
-        aria-roledescription={shots.length > 1 ? "carousel" : undefined}
-        aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
-      >
-        <ToyPhoto
-          src={current}
-          alt={alt}
-          loading="eager"
-          decoding="sync"
-          fetchPriority="high"
-          draggable={false}
-          width={800}
-          height={800}
-          className="product-gallery__photo"
-        />
+      <div className="product-gallery__frame mb-3">
+        <div
+          className="product-gallery__stage relative w-full touch-pan-y bg-white"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onPointerLeave={handlePointerCancel}
+          role={shots.length > 1 ? "region" : undefined}
+          aria-roledescription={shots.length > 1 ? "carousel" : undefined}
+          aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
+        >
+          <ToyPhoto
+            src={current}
+            alt={alt}
+            loading="eager"
+            decoding="sync"
+            fetchPriority="high"
+            draggable={false}
+            width={800}
+            height={800}
+            className="product-gallery__photo"
+          />
+        </div>
       </div>
 
       {shots.length > 1 && (

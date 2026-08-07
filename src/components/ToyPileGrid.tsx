@@ -790,9 +790,11 @@ export function ToyPileGrid({ toys, showText }: Props) {
   if (pool.length === 0) {
     return (
       <div className="toy-pile-empty scroll-pad-bottom flex flex-1 items-center justify-center px-6">
-        <p className="rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
-          No toys match. Try another search.
-        </p>
+        <div className="shelf-panel w-full max-w-md">
+          <p className="shelf-panel__surface px-6 py-12 text-center text-[var(--ink-soft)]">
+            No toys match. Try another search.
+          </p>
+        </div>
       </div>
     );
   }

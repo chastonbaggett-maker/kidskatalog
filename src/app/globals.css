@@ -33,6 +33,10 @@
   --pile-nav-stack-height: calc(var(--bottom-nav-offset) + var(--pile-shelf-height));
   --pile-chrome-duration: 680ms;
   --pile-chrome-ease: ease-in-out;
+  /* Shared shelf card language — match regular browse FeedCard */
+  --shelf-radius: 2rem;
+  --shelf-shadow: 0 12px 30px -18px rgba(60, 70, 120, 0.45);
+  --shelf-shadow-soft: 0 8px 18px -16px rgba(60, 70, 120, 0.24);
 }
 
 /* Boys tab — site accents go blue */
@@ -131,6 +135,32 @@ select {
   isolation: isolate;
 }
 
+/*
+ * Shared rounded shelf panels (match regular-mode FeedCard).
+ * Host holds the shadow; surface hard-clips so corners never square off.
+ */
+.shelf-panel {
+  border-radius: var(--shelf-radius);
+  overflow: visible;
+  background: transparent;
+  box-shadow: var(--shelf-shadow);
+}
+
+.shelf-panel--soft {
+  box-shadow: var(--shelf-shadow-soft);
+}
+
+.shelf-panel__surface {
+  border-radius: var(--shelf-radius);
+  overflow: hidden;
+  background: #fff;
+  isolation: isolate;
+  -webkit-clip-path: inset(0 round var(--shelf-radius));
+  clip-path: inset(0 round var(--shelf-radius));
+  outline: none;
+  box-shadow: none;
+}
+
 /* Mirror bottom-nav: rounded shell clips a full-bleed frosted fill layer */
 .shelf-header {
   position: relative;
@@ -139,7 +169,7 @@ select {
 }
 
 .shelf-header--rounded {
-  border-radius: 0 0 2rem 2rem;
+  border-radius: 0 0 var(--shelf-radius) var(--shelf-radius);
   overflow: hidden;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1.25rem;
@@ -190,21 +220,21 @@ select {
 .feed-card {
   /* Shadow lives on the article so clip-path on the surface cannot square it off. */
   overflow: visible;
-  border-radius: 2rem;
+  border-radius: var(--shelf-radius);
   background: transparent;
-  box-shadow: 0 12px 30px -18px rgba(60, 70, 120, 0.45);
+  box-shadow: var(--shelf-shadow);
 }
 
 .feed-card__surface,
 .feed-card > div:first-child {
-  border-radius: 2rem;
+  border-radius: var(--shelf-radius);
   overflow: hidden;
   background: #fff;
   isolation: isolate;
   /* Hard-clip to the rounded rect — kills square corner hairlines from
      rings, containment, or compositor tiles bleeding past the curve. */
-  -webkit-clip-path: inset(0 round 2rem);
-  clip-path: inset(0 round 2rem);
+  -webkit-clip-path: inset(0 round var(--shelf-radius));
+  clip-path: inset(0 round var(--shelf-radius));
   /* No ring/outline — those paint on the border box and show square corners. */
   outline: none;
   box-shadow: none;
@@ -288,7 +318,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: #fff;
-  border-radius: 2rem 2rem 0 0;
+  border-radius: var(--shelf-radius) var(--shelf-radius) 0 0;
 }
 
 .feed-card__photo {
@@ -302,7 +332,10 @@ html.route-changing .bottom-nav__kart-badge--pop {
   max-height: 100%;
   overflow: hidden;
   padding: 0.75rem;
-  border-radius: 2rem 2rem 0 0;
+  border-radius: var(--shelf-radius) var(--shelf-radius) 0 0;
+  /* Match top curve so photo paint never squares off above the surface clip. */
+  -webkit-clip-path: inset(0 round var(--shelf-radius) var(--shelf-radius) 0 0);
+  clip-path: inset(0 round var(--shelf-radius) var(--shelf-radius) 0 0);
   /* Inset background into the padded content box — never crop/fill. */
   background-size: contain;
   background-position: center;
@@ -317,11 +350,24 @@ html.route-changing .bottom-nav__kart-badge--pop {
   }
 }
 
+.product-gallery__frame {
+  border-radius: var(--shelf-radius);
+  overflow: visible;
+  background: transparent;
+  box-shadow: 0 4px 14px -6px rgba(60, 70, 120, 0.35);
+}
+
 .product-gallery__stage {
   aspect-ratio: 1 / 1;
   min-height: 0;
   overflow: hidden;
   background: #fff;
+  border-radius: var(--shelf-radius);
+  isolation: isolate;
+  -webkit-clip-path: inset(0 round var(--shelf-radius));
+  clip-path: inset(0 round var(--shelf-radius));
+  outline: none;
+  box-shadow: none;
 }
 
 .product-gallery__photo {
@@ -336,6 +382,9 @@ html.route-changing .bottom-nav__kart-badge--pop {
   overflow: hidden;
   user-select: none;
   padding: 0.75rem;
+  border-radius: var(--shelf-radius);
+  -webkit-clip-path: inset(0 round var(--shelf-radius));
+  clip-path: inset(0 round var(--shelf-radius));
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -885,36 +934,46 @@ html[data-accent="both"] .kart-go-btn:hover {
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-cell);
   transform: translateY(calc((var(--pile-cell) + var(--pile-gap)) * var(--pile-col-shift, 0)));
+  border-radius: var(--shelf-radius);
+  overflow: visible;
+  background: transparent;
+  /* Shadow on host — same recipe as regular FeedCard */
+  box-shadow: var(--shelf-shadow-soft);
 }
 
 .toy-pile-card__body {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 1.35rem;
+  border-radius: var(--shelf-radius);
   background-color: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.045);
-  /* Vertical, tight spread — depth without edge glow or corner halos */
-  box-shadow: 0 8px 18px -16px rgba(60, 70, 120, 0.24);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  isolation: isolate;
+  -webkit-clip-path: inset(0 round var(--shelf-radius));
+  clip-path: inset(0 round var(--shelf-radius));
 }
 
 .toy-pile-card__media {
-  overflow: clip;
-  contain: layout paint size;
+  overflow: hidden;
+  contain: layout;
   transform: translateZ(0);
   background-color: #fff;
 }
 
 .toy-pile-card__media--solo {
-  border-radius: calc(1.35rem - 1px);
+  border-radius: var(--shelf-radius);
 }
 
 .toy-pile-card__media--with-text {
-  border-radius: calc(1.35rem - 1px) calc(1.35rem - 1px) 0 0;
+  border-radius: var(--shelf-radius) var(--shelf-radius) 0 0;
 }
 
-.toy-pile-card__media img {
+.toy-pile-card__media img,
+.toy-pile-card__photo {
   background-color: #fff;
+  border-radius: inherit;
 }
 
 .toy-pile-card__eye {
@@ -1051,15 +1110,23 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .page-scroll--crazy .feed-card {
   box-shadow:
-    0 12px 30px -18px rgba(60, 70, 120, 0.45),
+    var(--shelf-shadow),
     0 0 22px rgba(255, 229, 102, 0.26),
     0 0 44px rgba(255, 252, 220, 0.12);
 }
 
 .page-scroll--crazy .feed-card__surface,
-.page-scroll--crazy .feed-card > div:first-child {
+.page-scroll--crazy .feed-card > div:first-child,
+.page-scroll--crazy .toy-pile-card__body,
+.page-scroll--crazy .shelf-panel__surface {
   background: #fff;
   box-shadow: none;
+}
+
+.page-scroll--crazy .toy-pile-card {
+  box-shadow:
+    var(--shelf-shadow-soft),
+    0 0 18px rgba(255, 229, 102, 0.22);
 }
 
 .page-scroll--crazy.star-field {
@@ -1085,14 +1152,16 @@ html[data-accent="both"] .kart-go-btn:hover {
   color: #ffffff;
 }
 
-.page-scroll--crazy :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
+.page-scroll--crazy :is(.bg-white, form, .product-gallery__stage, .shelf-panel__surface, .age-pop, .feed-load-more),
 .page-scroll--crazy .feed-card,
 .page-scroll--crazy .feed-card__surface,
 .page-scroll--crazy .feed-card > div:first-child,
-.app-shell--crazy .page-scroll :is(.bg-white, form, .product-gallery__stage, .age-pop, .feed-load-more),
+.page-scroll--crazy .toy-pile-card__body,
+.app-shell--crazy .page-scroll :is(.bg-white, form, .product-gallery__stage, .shelf-panel__surface, .age-pop, .feed-load-more),
 .app-shell--crazy .page-scroll .feed-card,
 .app-shell--crazy .page-scroll .feed-card__surface,
-.app-shell--crazy .page-scroll .feed-card > div:first-child {
+.app-shell--crazy .page-scroll .feed-card > div:first-child,
+.app-shell--crazy .page-scroll .toy-pile-card__body {
   --ink: #2c2c3a;
   --ink-soft: #7a7a8c;
   --foreground: #2c2c3a;
@@ -2283,11 +2352,11 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
 
   .feed-card__photo {
     /* Only round the top of the photo; card surface owns the outer corners. */
-    clip-path: inset(0 round 2rem 2rem 0 0);
+    clip-path: inset(0 round var(--shelf-radius) var(--shelf-radius) 0 0);
   }
 
   .product-gallery__photo {
-    clip-path: inset(0 round 2rem);
+    clip-path: inset(0 round var(--shelf-radius));
   }
 
   .feed-card__view-btn {
@@ -2295,7 +2364,12 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   }
 
   .product-gallery__stage {
-    contain: paint layout;
+    /* Avoid paint containment — it clips to a square border box. */
+    contain: layout;
+  }
+
+  .toy-pile-card__body {
+    contain: layout;
   }
 
   .kart-go-arrow {
@@ -2331,8 +2405,9 @@ html[data-kart-effects-reduced="true"] .feed-card > div:first-child {
   contain: layout;
 }
 
-html[data-kart-effects-reduced="true"] .product-gallery__stage {
-  contain: paint layout;
+html[data-kart-effects-reduced="true"] .product-gallery__stage,
+html[data-kart-effects-reduced="true"] .toy-pile-card__body {
+  contain: layout;
 }
 
 html[data-kart-effects-reduced="true"] .feed-card__photo,
@@ -2345,11 +2420,11 @@ html[data-kart-effects-reduced="true"] .product-gallery__thumb {
 }
 
 html[data-kart-effects-reduced="true"] .feed-card__photo {
-  clip-path: inset(0 round 2rem 2rem 0 0);
+  clip-path: inset(0 round var(--shelf-radius) var(--shelf-radius) 0 0);
 }
 
 html[data-kart-effects-reduced="true"] .product-gallery__photo {
-  clip-path: inset(0 round 2rem);
+  clip-path: inset(0 round var(--shelf-radius));
 }
 
 html[data-kart-effects-reduced="true"] .feed-card__view-btn {

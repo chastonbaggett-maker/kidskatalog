@@ -23,21 +23,25 @@ export default function MenuPage() {
         className={`page-scroll star-field grid min-h-0 flex-1 grid-cols-2 gap-3 px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6 ${crazyModeScrollClass(crazyMode)}`}
       >
         {categories.map((cat) => (
-          <Link
+          <div
             key={cat.id}
-            href={`/shop/${cat.id}`}
-            className="flex flex-col items-center gap-2 rounded-[1.75rem] bg-white px-3 py-6 text-[var(--ink)] shadow-sm ring-1 ring-black/[0.03] transition active:scale-[0.98]"
+            className="shelf-panel shelf-panel--soft transition active:scale-[0.98]"
           >
-            <span
-              className="rounded-2xl p-3 text-white"
-              style={{ background: cat.hue }}
+            <Link
+              href={`/shop/${cat.id}`}
+              className="shelf-panel__surface flex flex-col items-center gap-2 px-3 py-6 text-[var(--ink)]"
             >
-              <CategoryIcon id={cat.id as CategoryId} className="h-8 w-8" />
-            </span>
-            <span className="font-[family-name:var(--font-display)] text-lg font-bold">
-              {cat.label}
-            </span>
-          </Link>
+              <span
+                className="rounded-2xl p-3 text-white"
+                style={{ background: cat.hue }}
+              >
+                <CategoryIcon id={cat.id as CategoryId} className="h-8 w-8" />
+              </span>
+              <span className="font-[family-name:var(--font-display)] text-lg font-bold">
+                {cat.label}
+              </span>
+            </Link>
+          </div>
         ))}
       </div>
     </div>

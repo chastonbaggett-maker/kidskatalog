@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CategoryId, Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
@@ -314,9 +314,11 @@ export function BrowseFeed({ category, initialPage }: Props) {
         />
       )}
       {!loading && displayed.length === 0 && (
-        <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
-          No toys match. Try another search.
-        </p>
+        <div className="shelf-panel col-span-full mx-4">
+          <p className="shelf-panel__surface px-6 py-12 text-center text-[var(--ink-soft)]">
+            No toys match. Try another search.
+          </p>
+        </div>
       )}
     </div>
   );

@@ -64,51 +64,52 @@ export default function KartPage() {
         )}
 
         {toys.length === 0 ? (
-          <div className="rounded-[2rem] bg-white px-6 py-14 text-center shadow-sm">
-            <p className="mb-4 text-[var(--ink-soft)]">Your Kart is waiting.</p>
-            <Link
-              href="/shop"
-              className="inline-flex rounded-full bg-[var(--blue)] px-6 py-3 font-bold text-white"
-            >
-              Browse toys
-            </Link>
+          <div className="shelf-panel">
+            <div className="shelf-panel__surface px-6 py-14 text-center">
+              <p className="mb-4 text-[var(--ink-soft)]">Your Kart is waiting.</p>
+              <Link
+                href="/shop"
+                className="inline-flex rounded-full bg-[var(--blue)] px-6 py-3 font-bold text-white"
+              >
+                Browse toys
+              </Link>
+            </div>
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
             {toys.map((toy) => (
-              <li
-                key={toy.id}
-                className="flex items-center gap-3 rounded-[1.5rem] bg-white p-3 shadow-sm"
-              >
-                <Link
-                  href={`/toy/${toy.id}`}
-                  prefetch={false}
-                  className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
-                >
-                  <ToyPhoto
-                    src={toy.image}
-                    alt={toy.imageAlt}
-                    loading="lazy"
-                    decoding="async"
-                    className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
-                  />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/toy/${toy.id}`} prefetch={false}>
-                    <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
-                      {toy.name}
-                    </p>
+              <li key={toy.id} className="shelf-panel shelf-panel--soft">
+                <div className="shelf-panel__surface flex items-center gap-3 p-3">
+                  <Link
+                    href={`/toy/${toy.id}`}
+                    prefetch={false}
+                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
+                  >
+                    <ToyPhoto
+                      src={toy.image}
+                      alt={toy.imageAlt}
+                      loading="lazy"
+                      decoding="async"
+                      className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
+                    />
                   </Link>
-                  <p className="truncate text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/toy/${toy.id}`} prefetch={false}>
+                      <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
+                        {toy.name}
+                      </p>
+                    </Link>
+                    <p className="truncate text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(toy.id)}
+                    className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                    aria-label={`Remove ${toy.name}`}
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(toy.id)}
-                  className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-                  aria-label={`Remove ${toy.name}`}
-                >
-                  Remove
-                </button>
               </li>
             ))}
           </ul>

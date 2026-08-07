@@ -142,6 +142,7 @@ export function AdminPanel({ open, onClose }: Props) {
           onEdit={setEditing}
           onDelete={(id) => void handleDelete(id)}
           busyId={deleteBusyId}
+          editingId={editing?.id ?? null}
         />
         <AdminPinManager pins={pins} onRefresh={() => void refresh()} />
       </div>

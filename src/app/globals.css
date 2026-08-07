@@ -1951,6 +1951,11 @@ html[data-standalone="true"] .app-shell {
 }
 
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
+.app-shell__fx {
+  isolation: isolate;
+  overflow: hidden;
+}
+
 .kart-fly-ball {
   position: fixed;
   width: 18px;
@@ -1974,11 +1979,11 @@ html[data-standalone="true"] .app-shell {
 }
 
 .bottom-nav__kart--land .bottom-nav__kart-icon {
-  animation: kart-nav-icon-mint 0.52s ease forwards;
+  animation: none;
 }
 
 .bottom-nav__kart-badge--pop {
-  animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1);
+  animation: none;
   transform-origin: center;
 }
 

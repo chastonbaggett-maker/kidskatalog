@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { getAppFxRoot } from "@/lib/app-fx-root";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 
 type ConfettiBit = {
@@ -54,6 +55,11 @@ export function useConfettiBurst() {
     const t = window.setTimeout(() => setBits([]), 1100);
     return () => window.clearTimeout(t);
   }, [bits]);
+
+  const clear = useCallback(() => {
+    setBursting(false);
+    setBits([]);
+  }, []);
 
   const fire = useCallback(
     (
@@ -113,9 +119,9 @@ export function useConfettiBurst() {
               />
             ))}
           </div>,
-          document.body,
+          getAppFxRoot() ?? document.body,
         )
       : null;
 
-  return { fire, portal, bursting };
+  return { fire, clear, portal, bursting };
 }

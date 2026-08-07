@@ -7,6 +7,7 @@ import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
 import { KartFlyBallOverlay } from "@/hooks/useKartFlyBall";
 import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
+import { registerAppFxRoot } from "@/lib/app-fx-root";
 
 export function AppShell({
   children,
@@ -23,7 +24,13 @@ export function AppShell({
       <MetricsPing />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
-      <KartFlyBallOverlay />
+      <div
+        ref={registerAppFxRoot}
+        className="app-shell__fx pointer-events-none fixed inset-0 z-[120] overflow-hidden"
+        aria-hidden
+      >
+        <KartFlyBallOverlay />
+      </div>
       <InstallPrompt />
     </div>
   );

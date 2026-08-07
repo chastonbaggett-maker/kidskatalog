@@ -17,6 +17,7 @@ const KART_ADD_SETTLE_MS = 480;
 export function AddToKartButton({ toyId }: { toyId: string }) {
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const add = useKartStore((s) => s.add);
+  const addWithNavPulse = useKartStore((s) => s.addWithNavPulse);
   const toggle = useKartStore((s) => s.toggle);
   const beginKartAdd = useKartStore((s) => s.beginKartAdd);
   const endKartAdd = useKartStore((s) => s.endKartAdd);
@@ -26,8 +27,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [adding, setAdding] = useState(false);
-  const { fire, portal, bursting } = useConfettiBurst();
-  const { fire: fireFlyBall, pulseKartNav } = useKartFlyBallTrigger();
+  const { fire, clear: clearConfetti, portal, bursting } = useConfettiBurst();
+  const { fire: fireFlyBall } = useKartFlyBallTrigger();
   const reducedEffects = useKartEffectsReduced();
 
   const clearRemoveTimers = () => {
@@ -97,14 +98,15 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {
-      add(toyId);
+      clearConfetti();
+      addWithNavPulse(toyId);
       pingMetrics("kart_add");
       finishKartAdd();
     });
 
     if (!started) {
-      add(toyId);
-      pulseKartNav();
+      clearConfetti();
+      addWithNavPulse(toyId);
       pingMetrics("kart_add");
       finishKartAdd();
       return;

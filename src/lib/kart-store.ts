@@ -28,6 +28,7 @@ type KartState = {
   kartQuietUntil: number;
   flyBall: KartFlyBallFlight | null;
   add: (id: string) => void;
+  addWithNavPulse: (id: string) => void;
   remove: (id: string) => void;
   toggle: (id: string) => void;
   clear: () => void;
@@ -51,6 +52,19 @@ export const useKartStore = create<KartState>()(
       flyBall: null,
       add: (id) =>
         set((s) => (s.ids.includes(id) ? s : { ids: [...s.ids, id] })),
+      addWithNavPulse: (id) =>
+        set((s) => {
+          const now = Date.now();
+          const nextIds = s.ids.includes(id) ? s.ids : [...s.ids, id];
+          return {
+            ids: nextIds,
+            kartBounceToken: s.kartBounceToken + 1,
+            kartQuietUntil: Math.max(
+              s.kartQuietUntil,
+              now + KART_NAV_PULSE_MS,
+            ),
+          };
+        }),
       remove: (id) => set((s) => ({ ids: s.ids.filter((x) => x !== id) })),
       toggle: (id) => {
         const { ids } = get();

@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { getKartNavRect } from "@/lib/kart-nav-target";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 import { useKartStore, type KartFlyBallFlight } from "@/lib/kart-store";
@@ -77,7 +76,6 @@ export function KartFlyBallOverlay() {
   const [mounted, setMounted] = useState(false);
   const flyBall = useKartStore((s) => s.flyBall);
   const clearFlyBall = useKartStore((s) => s.clearFlyBall);
-  const pulseKartNav = useKartStore((s) => s.pulseKartNav);
 
   useEffect(() => setMounted(true), []);
 
@@ -106,19 +104,13 @@ export function KartFlyBallOverlay() {
 
     const finish = () => {
       window.setTimeout(() => {
+        if (cancelled) return;
         clearFlyBall();
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (
-              useKartStore.getState().kartEffectGeneration === effectGeneration
-            ) {
-              pulseKartNav();
-            }
-            requestAnimationFrame(() => {
-              onComplete();
-            });
-          });
-        });
+        if (
+          useKartStore.getState().kartEffectGeneration === effectGeneration
+        ) {
+          onComplete();
+        }
       }, 90);
     };
 
@@ -180,15 +172,9 @@ export function KartFlyBallOverlay() {
       cancelled = true;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [flyBall, clearFlyBall, pulseKartNav]);
+  }, [flyBall, clearFlyBall]);
 
-  const portal =
-    mounted && flyBall
-      ? createPortal(
-          <span ref={ballRef} className="kart-fly-ball" aria-hidden />,
-          document.body,
-        )
-      : null;
+  if (!mounted || !flyBall) return null;
 
-  return portal;
+  return <span ref={ballRef} className="kart-fly-ball" aria-hidden />;
 }

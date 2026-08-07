@@ -7,10 +7,12 @@ import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { beginRouteChange } from "@/lib/route-change";
 import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { KartNavLink } from "@/components/KartNavLink";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
@@ -42,6 +44,9 @@ export function BottomNav() {
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
+  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const crazyOn = crazyHydrated && crazyMode;
   const onShopBrowse =
     pathname === "/" ||
     pathname.startsWith("/shop") ||
@@ -143,7 +148,7 @@ export function BottomNav() {
           pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
         }${pileShelfMounted ? " is-shelf-raised" : ""}${
           pileNavEnterVisible ? " is-enter-visible" : ""
-        }`}
+        }${pileNavActive && crazyOn ? " bottom-nav--crazy" : ""}`}
       >
         {showFrostFill && (
           <div className="bottom-nav__frost" aria-hidden="true" />

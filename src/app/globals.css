@@ -1332,6 +1332,20 @@ html[data-accent="both"] .kart-go-btn:hover {
   transition: min-height var(--pile-chrome-duration) ease-in-out;
 }
 
+/* Match crazy browse-controls chrome when pile + crazy are both on */
+.bottom-nav--pile.bottom-nav--crazy .bottom-nav__frost {
+  background-color: #25252e;
+  background-image: none;
+  border-top: 1px solid rgba(255, 229, 102, 0.1);
+  box-shadow:
+    0 -10px 28px -10px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 229, 102, 0.06);
+}
+
+.bottom-nav--pile.bottom-nav--crazy .bottom-nav__mode-row .filter-row-pile-pill {
+  background-color: transparent;
+}
+
 .bottom-nav__mode-row {
   position: relative;
   z-index: 1;

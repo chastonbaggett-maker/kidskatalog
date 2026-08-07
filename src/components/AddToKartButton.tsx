@@ -10,7 +10,7 @@ import { pingMetrics } from "@/lib/metrics-client";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
 import { fireKartFlyBall, notifyKartFlyBallLand } from "@/lib/kart-fly-ball";
 
-const CLICK_PULSE_MS = 340;
+const CLICK_PULSE_MS = 420;
 
 /**
  * Minimal add/remove: click updates the store and button immediately.

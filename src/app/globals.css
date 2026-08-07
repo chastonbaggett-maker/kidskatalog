@@ -1596,7 +1596,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--ready {
-  --pulse-ring: color-mix(in srgb, var(--blue) 50%, transparent);
+  --pulse-ring: color-mix(in srgb, var(--blue) 75%, white 10%);
   background: var(--blue);
 }
 
@@ -1785,31 +1785,40 @@ html[data-standalone="true"] .app-shell {
 }
 
 .add-kart-btn--in {
-  --pulse-ring: color-mix(in srgb, var(--mint) 55%, transparent);
+  --pulse-ring: color-mix(in srgb, var(--mint) 70%, white 15%);
   background: var(--mint);
   box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 40%, transparent);
   transition: none;
   animation: none;
 }
 
-/* Local click feedback — box-shadow ring only (safe with transform:none on touch). */
+/* Local click feedback — bright ring + flash (overflow visible so ring isn't clipped). */
 .add-kart-btn--pulse {
-  animation: add-kart-click-pulse 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: visible;
+  animation: add-kart-click-pulse 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes add-kart-click-pulse {
   0% {
+    filter: brightness(1);
     box-shadow:
-      0 4px 14px color-mix(in srgb, var(--pulse-ring) 70%, transparent),
-      0 0 0 0 var(--pulse-ring);
+      0 4px 14px color-mix(in srgb, var(--pulse-ring) 55%, transparent),
+      0 0 0 0 var(--pulse-ring),
+      0 0 0 0 color-mix(in srgb, var(--pulse-ring) 40%, transparent);
   }
-  55% {
+  28% {
+    filter: brightness(1.18);
     box-shadow:
-      0 6px 18px color-mix(in srgb, var(--pulse-ring) 55%, transparent),
-      0 0 0 10px transparent;
+      0 8px 22px color-mix(in srgb, var(--pulse-ring) 70%, transparent),
+      0 0 0 8px color-mix(in srgb, var(--pulse-ring) 55%, transparent),
+      0 0 28px 4px color-mix(in srgb, var(--pulse-ring) 45%, transparent);
   }
   100% {
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--pulse-ring) 70%, transparent);
+    filter: brightness(1);
+    box-shadow:
+      0 4px 14px color-mix(in srgb, var(--pulse-ring) 55%, transparent),
+      0 0 0 16px transparent,
+      0 0 0 0 transparent;
   }
 }
 
@@ -2055,7 +2064,8 @@ html[data-standalone="true"] .app-shell {
   }
 
   .add-kart-btn--pulse {
-    animation: add-kart-click-pulse 0.34s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    overflow: visible !important;
+    animation: add-kart-click-pulse 0.42s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
 
   .add-kart-btn__glow,
@@ -2132,7 +2142,8 @@ html[data-kart-effects-reduced="true"] .add-kart-btn--in {
 }
 
 html[data-kart-effects-reduced="true"] .add-kart-btn--pulse {
-  animation: add-kart-click-pulse 0.34s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  overflow: visible !important;
+  animation: add-kart-click-pulse 0.42s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 html[data-kart-effects-reduced="true"] .add-kart-btn__glow {

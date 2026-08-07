@@ -1,8 +1,8 @@
 /** Keep in sync with crazy-card-flash / crazy-btn-strike-pulse in globals.css (0.28s). */
 export const CRAZY_CARD_FLASH_MS = 280;
 
-/** Full-screen flash duration — matches .crazy-screen-flash (0.6s). */
-export const CRAZY_SCREEN_FLASH_MS = 600;
+/** Full-screen flash duration — matches .crazy-screen-flash (0.45s). */
+export const CRAZY_SCREEN_FLASH_MS = 450;
 
 /** Time between crazy flash cycles. */
 export const CRAZY_FLASH_INTERVAL_MS = 2200;

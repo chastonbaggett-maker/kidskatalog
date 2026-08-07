@@ -210,11 +210,12 @@ export function useCrazyLightning() {
         flashY,
       };
 
-      setFlashes((prev) => [...prev, entry]);
+      // One flash at a time — stacking made crazy mode look manic.
+      setFlashes([entry]);
 
       window.setTimeout(() => {
         setFlashes((prev) => prev.filter((f) => f.id !== entry.id));
-      }, FLASH_MS + 80);
+      }, FLASH_MS + 40);
     },
     [uid],
   );

@@ -1951,11 +1951,7 @@ html[data-standalone="true"] .app-shell {
 }
 
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
-.app-shell__fx {
-  isolation: isolate;
-  overflow: hidden;
-}
-
+/* Mint ball flies from Add to Kart → bottom nav Kart tab */
 .kart-fly-ball {
   position: fixed;
   width: 18px;

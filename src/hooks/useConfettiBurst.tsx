@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { getAppFxRoot } from "@/lib/app-fx-root";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 
 type ConfettiBit = {
@@ -119,7 +118,7 @@ export function useConfettiBurst() {
               />
             ))}
           </div>,
-          getAppFxRoot() ?? document.body,
+          document.body,
         )
       : null;
 

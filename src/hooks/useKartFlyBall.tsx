@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { getKartNavRect } from "@/lib/kart-nav-target";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
 import { useKartStore, type KartFlyBallFlight } from "@/lib/kart-store";
@@ -65,14 +66,13 @@ export function useKartFlyBallTrigger() {
     [startFlyBall],
   );
 
-  const pulseKartNav = useKartStore((s) => s.pulseKartNav);
-
-  return { fire, pulseKartNav };
+  return { fire };
 }
 
 export function KartFlyBallOverlay() {
   const ballRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef(0);
+  const onCompleteRef = useRef<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
   const flyBall = useKartStore((s) => s.flyBall);
   const clearFlyBall = useKartStore((s) => s.clearFlyBall);
@@ -89,7 +89,10 @@ export function KartFlyBallOverlay() {
   useLayoutEffect(() => {
     if (!flyBall) return;
 
-    let cancelled = false;
+    let rafCancelled = false;
+    let landed = false;
+    onCompleteRef.current = flyBall.onComplete;
+
     const {
       fromX,
       fromY,
@@ -98,26 +101,23 @@ export function KartFlyBallOverlay() {
       toX,
       toY,
       duration,
-      effectGeneration,
-      onComplete,
     } = flyBall;
 
     const finish = () => {
       window.setTimeout(() => {
-        if (cancelled) return;
-        clearFlyBall();
-        if (
-          useKartStore.getState().kartEffectGeneration === effectGeneration
-        ) {
-          onComplete();
+        if (!landed) {
+          landed = true;
+          onCompleteRef.current?.();
+          onCompleteRef.current = null;
         }
+        clearFlyBall();
       }, 90);
     };
 
     const run = () => {
       const el = ballRef.current;
       if (!el) {
-        if (!cancelled) rafRef.current = requestAnimationFrame(run);
+        if (!rafCancelled) rafRef.current = requestAnimationFrame(run);
         return;
       }
 
@@ -130,7 +130,7 @@ export function KartFlyBallOverlay() {
       const durationMs = duration * 1000;
 
       const tick = (now: number) => {
-        if (cancelled) return;
+        if (rafCancelled) return;
 
         const elapsedMs = now - start;
         const elapsed = elapsedMs / 1000;
@@ -169,12 +169,18 @@ export function KartFlyBallOverlay() {
     run();
 
     return () => {
-      cancelled = true;
+      rafCancelled = true;
       cancelAnimationFrame(rafRef.current);
     };
   }, [flyBall, clearFlyBall]);
 
-  if (!mounted || !flyBall) return null;
+  const portal =
+    mounted && flyBall
+      ? createPortal(
+          <span ref={ballRef} className="kart-fly-ball" aria-hidden />,
+          document.body,
+        )
+      : null;
 
-  return <span ref={ballRef} className="kart-fly-ball" aria-hidden />;
+  return portal;
 }

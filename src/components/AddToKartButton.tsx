@@ -87,13 +87,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     clearCharge();
 
     if (reducedEffects) {
-      // Let iOS finish the tap compositor frame before any store/nav repaint.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          add(toyId);
-          pingMetrics("kart_add");
-        });
-      });
+      add(toyId);
+      pingMetrics("kart_add");
       return;
     }
 

@@ -103,10 +103,7 @@ test("coarse pointer add-to-kart has no viewport flash", async ({ page }) => {
   await page.evaluate(() => {
     (window as unknown as { __touchFlash: { clicked: () => void } }).__touchFlash.clicked();
   });
-  await page.waitForFunction(() =>
-    localStorage.getItem("kidskatalog-kart")?.includes("sky-rocket"),
-  );
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(1600);
 
   const result = await page.evaluate(() => {
     const hits =

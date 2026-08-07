@@ -16,7 +16,7 @@ import {
 } from "@/lib/crazy-mode-timing";
 import { fetchRandomCatalogToys } from "@/lib/catalog-client";
 import { planCrazyFlash, useCrazyLightning } from "@/hooks/useCrazyLightning";
-import { useKartStore } from "@/lib/kart-store";
+import { useNearViewportMount } from "@/hooks/useNearViewportMount";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import type { CatalogPageResult } from "@/lib/catalog-query";
@@ -233,6 +233,8 @@ export function MoreToysFeed({
     [crazyMode],
   );
 
+  const cardsMounted = useNearViewportMount(mergedSectionRef, scrollerRef);
+
   return (
     <>
       <section
@@ -247,7 +249,7 @@ export function MoreToysFeed({
           <p className="px-4 text-sm text-[var(--ink-soft)] sm:px-6 lg:px-8">
             More toys coming soon.
           </p>
-        ) : (
+        ) : cardsMounted ? (
           <div className={gridClassName}>
             {displayed.map((toy, index) => (
               <FeedCard
@@ -262,6 +264,8 @@ export function MoreToysFeed({
               />
             ))}
           </div>
+        ) : (
+          <div className="more-toys-feed__placeholder h-[28rem] w-full" aria-hidden />
         )}
         <div ref={sentinelRef} className="h-10 w-full" aria-hidden />
         {hasMore && (

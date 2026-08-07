@@ -7,12 +7,10 @@ import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
-import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
-import { useKartStore } from "@/lib/kart-store";
 import { beginRouteChange } from "@/lib/route-change";
 import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
-import { useDeferredKartBadgeCount } from "@/hooks/useDeferredKartBadgeCount";
+import { KartNavLink } from "@/components/KartNavLink";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
@@ -38,8 +36,6 @@ function useViewBadgeClass() {
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const kartBadgeCount = useDeferredKartBadgeCount();
-  const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
@@ -59,7 +55,6 @@ export function BottomNav() {
     revealGateOpen;
   const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
   const pileShelfMounted = pileNavActive;
-  const [landing, setLanding] = useState(false);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
@@ -70,13 +65,6 @@ export function BottomNav() {
     setPinGateOpen(false);
     setAdminOpen(true);
   }, []);
-
-  useEffect(() => {
-    if (kartBounceToken === 0) return;
-    setLanding(true);
-    const t = window.setTimeout(() => setLanding(false), 520);
-    return () => window.clearTimeout(t);
-  }, [kartBounceToken]);
 
   useEffect(() => {
     if (!onPileBrowseRoute) {
@@ -138,9 +126,8 @@ export function BottomNav() {
     }
   }
 
-  const items = [
+  const navItems = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/kart", label: "Kart", icon: KartIcon, badge: kartBadgeCount },
     { href: "/menu", label: "Menu", icon: MenuIcon },
   ] as const;
 
@@ -153,49 +140,54 @@ export function BottomNav() {
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          landing ? " bottom-nav--kart-landing" : ""
-        }${pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""}${
-          pileShelfMounted ? " is-shelf-raised" : ""
-        }${pileNavEnterVisible ? " is-enter-visible" : ""}`}
+          pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
+        }${pileShelfMounted ? " is-shelf-raised" : ""}${
+          pileNavEnterVisible ? " is-enter-visible" : ""
+        }`}
       >
         {showFrostFill && (
           <div className="bottom-nav__frost" aria-hidden="true" />
         )}
         <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
-          {items.map((item) => {
+          {navItems.slice(0, 1).map((item) => {
             const active =
-              item.href === "/shop"
-                ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              pathname.startsWith("/shop") || pathname.startsWith("/toy");
             const Icon = item.icon;
-            const isKart = item.href === "/kart";
             return (
               <li key={item.href}>
                 <Link
-                  ref={isKart ? registerKartNavEl : undefined}
                   href={item.href}
                   className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
                     active ? "opacity-100" : "opacity-80"
-                  } ${isKart && landing ? "bottom-nav__kart--land" : ""}`}
+                  }`}
                   aria-label={item.label}
                   aria-current={active ? "page" : undefined}
                 >
-                  {isKart ? (
-                    <span className="bottom-nav__kart-icon">
-                      <Icon active={active} />
-                    </span>
-                  ) : (
-                    <Icon active={active} />
-                  )}
-                  {"badge" in item && item.badge > 0 && (
-                    <span
-                      className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
-                        isKart && landing ? "bottom-nav__kart-badge--pop" : ""
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
+                  <Icon active={active} />
+                </Link>
+              </li>
+            );
+          })}
+          <KartNavLink
+            active={pathname === "/kart" || pathname.startsWith("/kart/")}
+            accentClass={accentClass}
+            badgeClass={badgeClass}
+          />
+          {navItems.slice(1).map((item) => {
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                    active ? "opacity-100" : "opacity-80"
+                  }`}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon active={active} />
                 </Link>
               </li>
             );
@@ -241,22 +233,6 @@ function HomeIcon({ active }: { active?: boolean }) {
         strokeWidth={active ? 2.4 : 2}
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function KartIcon() {
-  return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="20" r="1.4" fill="currentColor" />
-      <circle cx="18" cy="20" r="1.4" fill="currentColor" />
     </svg>
   );
 }

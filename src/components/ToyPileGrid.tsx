@@ -233,18 +233,6 @@ function panToFocusPoint(
   };
 }
 
-function panToCenterStagePoint(
-  viewport: HTMLElement,
-  stage: StagePoint,
-  zoom: number,
-): Pan {
-  const { clientWidth, clientHeight } = viewport;
-  return {
-    x: clientWidth / 2 - stage.x * zoom,
-    y: clientHeight / 2 - stage.y * zoom,
-  };
-}
-
 function getGridPadding(grid: HTMLElement) {
   const style = getComputedStyle(grid);
   return {
@@ -372,8 +360,11 @@ export function ToyPileGrid({ toys, showText }: Props) {
     dist: number;
     zoom: number;
     lock: StagePoint;
+    focus: StagePoint;
   } | null>(null);
-  const wheelLockRef = useRef<StagePoint | null>(null);
+  const wheelLockRef = useRef<{ lock: StagePoint; focus: StagePoint } | null>(
+    null,
+  );
   const wheelLockTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const centeredRef = useRef(false);
@@ -429,7 +420,13 @@ export function ToyPileGrid({ toys, showText }: Props) {
   );
 
   const zoomToLockedPoint = useCallback(
-    (targetZoom: number, lock: StagePoint, live = false) => {
+    (
+      targetZoom: number,
+      lock: StagePoint,
+      live = false,
+      /** Screen point (viewport-local) that should stay fixed — defaults to lock’s current screen pos. */
+      focusScreen?: StagePoint,
+    ) => {
       const viewport = viewportRef.current;
       if (!viewport) return;
 
@@ -437,7 +434,12 @@ export function ToyPileGrid({ toys, showText }: Props) {
       const prevZoom = zoomRef.current;
       if (Math.abs(clamped - prevZoom) < 0.0001 && !live) return;
 
-      const nextPan = panToCenterStagePoint(viewport, lock, clamped);
+      // Keep the lock under the pinch/cursor — never re-center the viewport.
+      const focus = focusScreen ?? {
+        x: panRef.current.x + lock.x * prevZoom,
+        y: panRef.current.y + lock.y * prevZoom,
+      };
+      const nextPan = panToFocusPoint(viewport, lock, clamped, focus);
       if (live) {
         applyStageTransform(nextPan, clamped);
         return;
@@ -597,18 +599,31 @@ export function ToyPileGrid({ toys, showText }: Props) {
     const cx = (a.x + b.x) / 2;
     const cy = (a.y + b.y) / 2;
 
+    const viewportRect = viewport.getBoundingClientRect();
+    const focus = {
+      x: cx - viewportRect.left,
+      y: cy - viewportRect.top,
+    };
+
     if (!pinchRef.current) {
       dragRef.current = null;
       pinchRef.current = {
         dist,
         zoom: zoomRef.current,
         lock: resolveStageLock(viewport, cx, cy),
+        focus,
       };
       return;
     }
 
     const ratio = dist / pinchRef.current.dist;
-    zoomToLockedPoint(pinchRef.current.zoom * ratio, pinchRef.current.lock, true);
+    // Keep the original pinch midpoint fixed in screen space (no center snap).
+    zoomToLockedPoint(
+      pinchRef.current.zoom * ratio,
+      pinchRef.current.lock,
+      true,
+      pinchRef.current.focus,
+    );
   }, [resolveStageLock, zoomToLockedPoint]);
 
   const onPointerDown = useCallback(
@@ -753,7 +768,14 @@ export function ToyPileGrid({ toys, showText }: Props) {
         if (!isPileZoomEnabled(viewport)) return;
 
         if (!wheelLockRef.current) {
-          wheelLockRef.current = resolveStageLock(viewport, e.clientX, e.clientY);
+          const viewportRect = viewport.getBoundingClientRect();
+          wheelLockRef.current = {
+            lock: resolveStageLock(viewport, e.clientX, e.clientY),
+            focus: {
+              x: e.clientX - viewportRect.left,
+              y: e.clientY - viewportRect.top,
+            },
+          };
         }
 
         if (wheelLockTimerRef.current !== null) {
@@ -765,7 +787,8 @@ export function ToyPileGrid({ toys, showText }: Props) {
         }, WHEEL_LOCK_IDLE_MS);
 
         const factor = Math.exp(-e.deltaY * 0.0025);
-        zoomToLockedPoint(zoomRef.current * factor, wheelLockRef.current);
+        const { lock, focus } = wheelLockRef.current;
+        zoomToLockedPoint(zoomRef.current * factor, lock, false, focus);
         return;
       }
 

@@ -241,6 +241,13 @@ html.route-changing .page-scroll {
   overflow: hidden;
 }
 
+html.route-changing .add-kart-btn,
+html.route-changing .bottom-nav__kart-icon,
+html.route-changing .bottom-nav__kart-badge--pop {
+  transition: none !important;
+  animation: none !important;
+}
+
 .feed-card__media {
   position: relative;
   display: block;
@@ -1975,11 +1982,11 @@ html[data-standalone="true"] .app-shell {
 }
 
 .bottom-nav__kart--land .bottom-nav__kart-icon {
-  animation: none;
+  animation: kart-nav-icon-mint 0.52s ease forwards;
 }
 
 .bottom-nav__kart-badge--pop {
-  animation: none;
+  animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1);
   transform-origin: center;
 }
 

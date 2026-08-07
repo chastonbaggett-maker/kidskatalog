@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useKartStore } from "@/lib/kart-store";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
@@ -24,9 +25,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const removeTimersRef = useRef<number[]>([]);
   const kartAddEndTimerRef = useRef<number | undefined>(undefined);
+  const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [adding, setAdding] = useState(false);
+  /** Blocks double-add during fly-ball; does not change button visuals until landing. */
+  const [flying, setFlying] = useState(false);
   const { fire, clear: clearConfetti, portal, bursting } = useConfettiBurst();
   const { fire: fireFlyBall } = useKartFlyBallTrigger();
   const reducedEffects = useKartEffectsReduced();
@@ -55,20 +58,20 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       window.clearTimeout(kartAddEndTimerRef.current);
     }
     kartAddEndTimerRef.current = window.setTimeout(() => {
-      setAdding(false);
+      setFlying(false);
       endKartAdd();
       kartAddEndTimerRef.current = undefined;
     }, KART_ADD_SETTLE_MS);
   };
 
   const handlePointerDown = () => {
-    if (!inKart && !removing && !adding) setCharging(true);
+    if (!inKart && !removing && !flying) setCharging(true);
   };
 
   const clearCharge = () => setCharging(false);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (removing || adding) return;
+    if (removing || flying) return;
 
     if (inKart) {
       setRemoving(true);
@@ -94,7 +97,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     }
 
     beginKartAdd();
-    setAdding(true);
+    setFlying(true);
 
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {
@@ -115,8 +118,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     fire(point, GOLD_CONFETTI);
   };
 
-  const showMint = inKart || adding || removing;
-  const showInKartLabel = (inKart || adding) && !removing;
+  const showMint = (kartHydrated && inKart) || removing;
+  const showInKartLabel = kartHydrated && inKart && !removing;
 
   return (
     <>
@@ -133,11 +136,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
         } ${charging && !showMint ? "add-kart-btn--charging" : ""} ${
-          bursting && !adding && !inKart ? "add-kart-btn--burst" : ""
+          bursting && !flying && !inKart ? "add-kart-btn--burst" : ""
         } ${removing ? "add-kart-btn--removing" : ""}`}
+        aria-busy={removing || flying}
         aria-pressed={showInKartLabel}
         aria-label={inKart ? "Remove from Kart" : "Add to Kart"}
-        aria-busy={removing}
       >
         <span className="add-kart-btn__fill" aria-hidden />
         <span

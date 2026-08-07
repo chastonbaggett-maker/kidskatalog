@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 
 type Props = {
   active: boolean;
@@ -17,16 +18,23 @@ export const KartNavLink = memo(function KartNavLink({
   accentClass,
   badgeClass,
 }: Props) {
+  const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const count = useKartStore((s) => s.ids.length);
   const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const [landing, setLanding] = useState(false);
+  const seenBounceTokenRef = useRef(kartBounceToken);
 
   useEffect(() => {
+    if (!kartHydrated) return;
+    if (kartBounceToken === seenBounceTokenRef.current) return;
+    seenBounceTokenRef.current = kartBounceToken;
     if (kartBounceToken === 0) return;
     setLanding(true);
     const t = window.setTimeout(() => setLanding(false), 520);
     return () => window.clearTimeout(t);
-  }, [kartBounceToken]);
+  }, [kartBounceToken, kartHydrated]);
+
+  const showBadge = kartHydrated && count > 0;
 
   return (
     <li>
@@ -42,7 +50,7 @@ export const KartNavLink = memo(function KartNavLink({
         <span className="bottom-nav__kart-icon">
           <KartIcon />
         </span>
-        {count > 0 && (
+        {showBadge && (
           <span
             className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
               landing ? "bottom-nav__kart-badge--pop" : ""

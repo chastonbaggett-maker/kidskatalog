@@ -113,6 +113,7 @@ export function AdminToyForm({
     setError("");
 
     const cat = categories.find((c) => c.id === form.category);
+    const primaryImage = form.image.trim() || "/categories/plush.svg";
     const toy: Toy & { imageUrl?: string } = {
       id: editing?.id ?? (slugify(form.name) || `toy-${Date.now()}`),
       name: form.name.trim(),
@@ -122,7 +123,13 @@ export function AdminToyForm({
       ageMin: form.ageMin,
       ageMax: form.ageMax,
       affiliateUrl: form.affiliateUrl.trim(),
-      image: form.image.trim() || "/categories/plush.svg",
+      image: primaryImage,
+      images:
+        editing?.images && editing.images.length > 0
+          ? [primaryImage, ...editing.images.filter((src) => src !== primaryImage)]
+          : editing
+            ? [primaryImage]
+            : undefined,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
       color: cat?.hue ?? "#B19CD9",
     };

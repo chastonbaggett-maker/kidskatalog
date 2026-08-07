@@ -667,7 +667,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .filter-crazy-btn {
-  background: var(--ink);
+  /* Fixed colors — do not use var(--ink); crazy mode remaps --ink to white
+     inside page-scroll and washed out the filter-row active pill. Match the
+     simple shelf-header Crazy Mode button always. */
+  background: #2c2c3a;
   color: #ffe566;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
@@ -679,7 +682,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .filter-crazy-btn--active {
   background: #ffe566;
-  color: var(--ink);
+  color: #2c2c3a;
   text-shadow: none;
   position: relative;
   z-index: 1;

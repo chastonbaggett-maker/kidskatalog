@@ -237,8 +237,86 @@ function getGridPadding(grid: HTMLElement) {
   const style = getComputedStyle(grid);
   return {
     top: parseFloat(style.paddingTop) || 0,
+    right: parseFloat(style.paddingRight) || 0,
+    bottom: parseFloat(style.paddingBottom) || 0,
     left: parseFloat(style.paddingLeft) || 0,
   };
+}
+
+/** Stage-space size of the card grid, including stagger overhang on odd columns. */
+function getPileContentSize(
+  viewport: HTMLElement,
+  colCount: number,
+  rowCount: number,
+) {
+  const { cell, gap, stride } = getMetrics(viewport);
+  const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
+  const padding = grid
+    ? getGridPadding(grid)
+    : { top: 24, right: 16, bottom: 40, left: 16 };
+  const cols = Math.max(0, colCount);
+  const rows = Math.max(0, rowCount);
+
+  return {
+    width:
+      padding.left +
+      padding.right +
+      cols * cell +
+      Math.max(0, cols - 1) * gap,
+    // Odd columns are shifted down by half a stride via transform (not in layout).
+    height:
+      padding.top +
+      padding.bottom +
+      rows * cell +
+      Math.max(0, rows - 1) * gap +
+      stride * 0.5,
+  };
+}
+
+/**
+ * Keep the visible pile band over card content — hit a wall at empty edges.
+ * If the grid is smaller than the band, pin it centered in the band.
+ */
+function clampPanToContent(
+  viewport: HTMLElement,
+  pan: Pan,
+  zoom: number,
+  contentW: number,
+  contentH: number,
+): Pan {
+  if (contentW <= 0 || contentH <= 0 || zoom <= 0) return pan;
+
+  const band = getPileVisibleBand(viewport);
+  const bandLeft = 0;
+  const bandRight = band.width;
+  const bandTop = band.centerY - band.height / 2;
+  const bandBottom = band.centerY + band.height / 2;
+
+  const scaledW = contentW * zoom;
+  const scaledH = contentH * zoom;
+  const bandW = bandRight - bandLeft;
+  const bandH = bandBottom - bandTop;
+
+  let x = pan.x;
+  let y = pan.y;
+
+  if (scaledW <= bandW) {
+    x = bandLeft + (bandW - scaledW) / 2;
+  } else {
+    const minX = bandRight - scaledW;
+    const maxX = bandLeft;
+    x = Math.min(maxX, Math.max(minX, x));
+  }
+
+  if (scaledH <= bandH) {
+    y = bandTop + (bandH - scaledH) / 2;
+  } else {
+    const minY = bandBottom - scaledH;
+    const maxY = bandTop;
+    y = Math.min(maxY, Math.max(minY, y));
+  }
+
+  return { x, y };
 }
 
 function getCellStageCenter(
@@ -370,16 +448,37 @@ export function ToyPileGrid({ toys, showText }: Props) {
   const centeredRef = useRef(false);
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
+  const colCountRef = useRef(colCount);
+  const rowCountRef = useRef(rowCount);
+
+  colCountRef.current = colCount;
+  rowCountRef.current = rowCount;
 
   const pool = useMemo(() => (toys.length === 0 ? [] : toys), [toys]);
   const slots = colCount * rowCount;
 
   const applyStageTransform = useCallback((nextPan: Pan, nextZoom: number) => {
-    panRef.current = nextPan;
+    const viewport = viewportRef.current;
+    let clampedPan = nextPan;
+    if (viewport) {
+      const { width, height } = getPileContentSize(
+        viewport,
+        colCountRef.current,
+        rowCountRef.current,
+      );
+      clampedPan = clampPanToContent(
+        viewport,
+        nextPan,
+        nextZoom,
+        width,
+        height,
+      );
+    }
+    panRef.current = clampedPan;
     zoomRef.current = nextZoom;
     const stage = stageRef.current;
     if (stage) {
-      stage.style.transform = `translate3d(${nextPan.x}px, ${nextPan.y}px, 0) scale(${nextZoom})`;
+      stage.style.transform = `translate3d(${clampedPan.x}px, ${clampedPan.y}px, 0) scale(${nextZoom})`;
     }
   }, []);
 
@@ -497,47 +596,63 @@ export function ToyPileGrid({ toys, showText }: Props) {
     const { stride } = getMetrics(viewport);
     const chunkPx = MIN_CHUNK * stride * scale;
     const { x, y } = panRef.current;
-    const { clientWidth, clientHeight } = viewport;
+    const band = getPileVisibleBand(viewport);
     const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
-    const gridW = colCount * stride - gap;
-    const gridH = rowCount * stride - gap;
+    let cols = colCountRef.current;
+    let rows = rowCountRef.current;
+    const gridW = cols * stride - gap;
+    const gridH = rows * stride - gap;
 
     const viewLeft = -x / scale;
     const viewTop = -y / scale;
-    const viewRight = viewLeft + clientWidth / scale;
-    const viewBottom = viewTop + clientHeight / scale;
+    const viewRight = viewLeft + band.width / scale;
+    const viewBottom = viewTop + band.height / scale;
 
     let expanded = false;
+    let shiftX = 0;
+    let shiftY = 0;
 
     if (viewLeft < EDGE_THRESHOLD) {
       setColMin((min) => min - MIN_CHUNK);
-      setColCount((count) => count + MIN_CHUNK);
-      shiftPan(-chunkPx, 0);
+      cols += MIN_CHUNK;
+      colCountRef.current = cols;
+      setColCount(cols);
+      shiftX -= chunkPx;
       expanded = true;
     }
     if (viewTop < EDGE_THRESHOLD) {
       setRowMin((min) => min - MIN_CHUNK);
-      setRowCount((count) => count + MIN_CHUNK);
-      shiftPan(0, -chunkPx);
+      rows += MIN_CHUNK;
+      rowCountRef.current = rows;
+      setRowCount(rows);
+      shiftY -= chunkPx;
       expanded = true;
     }
     if (viewRight > gridW - EDGE_THRESHOLD) {
-      setColCount((count) => count + MIN_CHUNK);
+      cols += MIN_CHUNK;
+      colCountRef.current = cols;
+      setColCount(cols);
       expanded = true;
     }
     if (viewBottom > gridH - EDGE_THRESHOLD) {
-      setRowCount((count) => count + MIN_CHUNK);
+      rows += MIN_CHUNK;
+      rowCountRef.current = rows;
+      setRowCount(rows);
       expanded = true;
     }
 
     if (!expanded) return;
+
+    if (shiftX !== 0 || shiftY !== 0) {
+      shiftPan(shiftX, shiftY);
+    }
 
     expandLockRef.current = true;
     expandCooldownRef.current = Date.now();
     window.setTimeout(() => {
       expandLockRef.current = false;
     }, EXPAND_COOLDOWN_MS);
-  }, [colCount, rowCount, pool.length, shiftPan]);
+  }, [pool.length, shiftPan]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -698,8 +813,10 @@ export function ToyPileGrid({ toys, showText }: Props) {
         },
         zoomRef.current,
       );
+      // Grow the pile before the wall if the drag is pressing an edge.
+      maybeExpand();
     },
-    [applyStageTransform, syncPinch],
+    [applyStageTransform, maybeExpand, syncPinch],
   );
 
   const endPointer = useCallback(
@@ -799,8 +916,9 @@ export function ToyPileGrid({ toys, showText }: Props) {
         },
         zoomRef.current,
       );
+      maybeExpand();
     },
-    [commitTransform, resolveStageLock, zoomToLockedPoint],
+    [commitTransform, maybeExpand, resolveStageLock, zoomToLockedPoint],
   );
 
   useEffect(() => {

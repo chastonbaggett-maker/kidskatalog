@@ -3,7 +3,7 @@
  * - short catchy names
  * - ~5–8 word blurbs
  * - category / audience / age metadata
- * - 4:5 white-padded product images (sharp)
+ * - edge-filled product images (trim white; CSS contain frames the card)
  */
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -283,7 +283,12 @@ async function fetchImageUrl(asin) {
   return "";
 }
 
-/** Resize to 1200×1500 (4:5) on white — matches feed-card contain framing. */
+const TARGET_LONG = 1500;
+
+/**
+ * Match seed toys: product fills the bitmap (trim white, no 4:5 letterbox).
+ * Feed/gallery CSS already applies contain + padding.
+ */
 async function saveCardImage(imageUrl, id) {
   if (!imageUrl) return null;
   const res = await fetch(imageUrl, {
@@ -298,14 +303,37 @@ async function saveCardImage(imageUrl, id) {
   const fileName = `${id}.jpg`;
   const outPath = path.join(toysDir, fileName);
 
-  await sharp(input)
+  const flattened = await sharp(input)
     .rotate()
-    .resize(1200, 1500, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-      withoutEnlargement: false,
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .png()
+    .toBuffer();
+
+  let trimmed;
+  try {
+    trimmed = await sharp(flattened)
+      .trim({
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+        threshold: 12,
+      })
+      .toBuffer();
+  } catch {
+    trimmed = flattened;
+  }
+
+  const meta = await sharp(trimmed).metadata();
+  const w = meta.width || 1;
+  const h = meta.height || 1;
+  const scale = TARGET_LONG / Math.max(w, h);
+
+  await sharp(trimmed)
+    .resize({
+      width: Math.max(1, Math.round(w * scale)),
+      height: Math.max(1, Math.round(h * scale)),
+      fit: "fill",
+      kernel: "lanczos3",
     })
-    .jpeg({ quality: 82, progressive: true, mozjpeg: true })
+    .jpeg({ quality: 85, progressive: true, mozjpeg: true })
     .toFile(outPath);
 
   return `/toys/${fileName}`;

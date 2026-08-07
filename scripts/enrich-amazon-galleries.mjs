@@ -147,13 +147,38 @@ async function saveCardImage(imageUrl, fileStem) {
   await mkdir(toysDir, { recursive: true });
   const fileName = `${fileStem}.jpg`;
   const outPath = path.join(toysDir, fileName);
-  await sharp(input)
+  const TARGET_LONG = 1500;
+  const flattened = await sharp(input)
     .rotate()
-    .resize(1200, 1500, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .png()
+    .toBuffer();
+
+  let trimmed;
+  try {
+    trimmed = await sharp(flattened)
+      .trim({
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+        threshold: 12,
+      })
+      .toBuffer();
+  } catch {
+    trimmed = flattened;
+  }
+
+  const meta = await sharp(trimmed).metadata();
+  const w = meta.width || 1;
+  const h = meta.height || 1;
+  const scale = TARGET_LONG / Math.max(w, h);
+
+  await sharp(trimmed)
+    .resize({
+      width: Math.max(1, Math.round(w * scale)),
+      height: Math.max(1, Math.round(h * scale)),
+      fit: "fill",
+      kernel: "lanczos3",
     })
-    .jpeg({ quality: 82, progressive: true, mozjpeg: true })
+    .jpeg({ quality: 85, progressive: true, mozjpeg: true })
     .toFile(outPath);
   return `/toys/${fileName}`;
 }

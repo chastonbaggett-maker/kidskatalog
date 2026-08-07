@@ -244,14 +244,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
     void loadMore();
   }, [loadMore]);
 
-  const visibleChunks = useMemo(() => {
-    const chunks: Toy[][] = [];
-    for (let i = 0; i < displayed.length; i += FEED_PAGE_SIZE) {
-      chunks.push(displayed.slice(i, i + FEED_PAGE_SIZE));
-    }
-    return chunks;
-  }, [displayed]);
-
   const gridClassName = ["toy-feed-grid", crazyOn ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
     .join(" ");
@@ -302,31 +294,25 @@ export function BrowseFeed({ category, initialPage }: Props) {
         feedExiting ? " is-exiting" : ""
       }`}
     >
-      {visibleChunks.map((chunk, chunkIndex) => (
-        <Fragment key={`feed-chunk-${chunkIndex}`}>
-          <div className={gridClassName}>
-            {chunk.map((toy, indexInChunk) => {
-              const slotIndex = chunkIndex * FEED_PAGE_SIZE + indexInChunk;
-              return (
-                <FeedCard
-                  key={`feed-slot-${slotIndex}`}
-                  toy={toy}
-                  showText={showText}
-                  index={slotIndex}
-                  slotIndex={slotIndex}
-                />
-              );
-            })}
-          </div>
-          {chunkIndex === visibleChunks.length - 1 && hasMore && (
-            <FeedAutoLoadMore
-              scrollerRef={scrollerRef}
-              active={hasMore && !loading}
-              onLoad={handleLoadMore}
-            />
-          )}
-        </Fragment>
-      ))}
+      {/* One continuous grid so load-more fills empty cells on 2/3-col layouts. */}
+      <div className={gridClassName}>
+        {displayed.map((toy, index) => (
+          <FeedCard
+            key={`feed-slot-${toy.id}`}
+            toy={toy}
+            showText={showText}
+            index={index}
+            slotIndex={index}
+          />
+        ))}
+      </div>
+      {hasMore && (
+        <FeedAutoLoadMore
+          scrollerRef={scrollerRef}
+          active={hasMore && !loading}
+          onLoad={handleLoadMore}
+        />
+      )}
       {!loading && displayed.length === 0 && (
         <p className="col-span-full mx-4 rounded-[2rem] bg-white px-6 py-12 text-center text-[var(--ink-soft)] shadow-sm">
           No toys match. Try another search.

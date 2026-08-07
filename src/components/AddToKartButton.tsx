@@ -22,7 +22,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const pathname = usePathname();
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const add = useKartStore((s) => s.add);
-  const addWithNavPulse = useKartStore((s) => s.addWithNavPulse);
+  const pulseKartNav = useKartStore((s) => s.pulseKartNav);
   const toggle = useKartStore((s) => s.toggle);
   const beginKartAdd = useKartStore((s) => s.beginKartAdd);
   const endKartAdd = useKartStore((s) => s.endKartAdd);
@@ -34,7 +34,7 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const bootInKart = readBootInKart(toyId);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
-  /** Blocks double-add during fly-ball; does not change button visuals until landing. */
+  /** Blocks double-add during fly-ball; also forces mint button chrome immediately. */
   const [flying, setFlying] = useState(false);
   const { fire, clear: clearConfetti, portal, bursting } = useConfettiBurst();
   const { fire: fireFlyBall } = useKartFlyBallTrigger();
@@ -113,19 +113,19 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
     beginKartAdd();
     setFlying(true);
+    add(toyId);
+    pingMetrics("kart_add");
 
     const point = { x: e.clientX, y: e.clientY };
     const started = fireFlyBall(point, () => {
       clearConfetti();
-      addWithNavPulse(toyId);
-      pingMetrics("kart_add");
+      pulseKartNav();
       finishKartAdd();
     });
 
     if (!started) {
       clearConfetti();
-      addWithNavPulse(toyId);
-      pingMetrics("kart_add");
+      pulseKartNav();
       finishKartAdd();
       return;
     }
@@ -134,8 +134,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   };
 
   const resolvedInKart = kartHydrated ? inKart : bootInKart === true;
-  const showMint = resolvedInKart || removing;
-  const showInKartLabel = resolvedInKart && !removing;
+  const showMint = resolvedInKart || removing || flying;
+  const showInKartLabel = (resolvedInKart || flying) && !removing;
 
   return (
     <>

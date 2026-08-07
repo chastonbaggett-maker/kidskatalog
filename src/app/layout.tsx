@@ -98,6 +98,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
+      // Boot script may set data-accent from localStorage before hydrate.
+      suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
       <body className="flex h-full min-h-0 flex-col overflow-hidden">

@@ -18,7 +18,6 @@ export type KartFlyBallFlight = {
   toY: number;
   duration: number;
   effectGeneration: number;
-  onComplete: () => void;
 };
 
 type KartState = {

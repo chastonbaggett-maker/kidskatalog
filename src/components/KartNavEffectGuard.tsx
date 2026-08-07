@@ -4,18 +4,14 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useKartStore } from "@/lib/kart-store";
 
-/** Cancel in-flight kart effects when route changes (e.g. opening a toy from a card). */
+/** Clear decorative fly-ball when navigating away. */
 export function KartNavEffectGuard() {
   const pathname = usePathname();
-  const bumpKartEffectGeneration = useKartStore(
-    (s) => s.bumpKartEffectGeneration,
-  );
-  const cancelKartAddEffects = useKartStore((s) => s.cancelKartAddEffects);
+  const clearFlyBall = useKartStore((s) => s.clearFlyBall);
 
   useEffect(() => {
-    cancelKartAddEffects();
-    bumpKartEffectGeneration();
-  }, [pathname, bumpKartEffectGeneration, cancelKartAddEffects]);
+    clearFlyBall();
+  }, [pathname, clearFlyBall]);
 
   return null;
 }

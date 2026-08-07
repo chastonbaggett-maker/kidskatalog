@@ -23,6 +23,8 @@ export function AppShell({
       <MetricsPing />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
+      {/* Stable overlay host — keeps fly-ball off document.body */}
+      <div id="kart-fx-root" className="kart-fx-root" aria-hidden />
       <KartFlyBallOverlay />
       <InstallPrompt />
     </div>

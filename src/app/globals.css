@@ -1977,15 +1977,23 @@ html[data-standalone="true"] .app-shell {
 
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
 /* Mint ball flies from Add to Kart → bottom nav Kart tab */
-.kart-fly-ball {
+.kart-fx-root {
   position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.kart-fly-ball {
+  position: absolute;
   width: 18px;
   height: 18px;
   border-radius: 9999px;
   background: var(--mint);
   box-shadow: 0 2px 8px rgba(30, 130, 118, 0.4);
   pointer-events: none;
-  z-index: 150;
+  will-change: left, top, transform, opacity;
 }
 
 .bottom-nav__kart-icon {
@@ -1995,17 +2003,10 @@ html[data-standalone="true"] .app-shell {
   justify-content: center;
 }
 
-.bottom-nav__kart--land {
-  animation: none;
-}
-
-.bottom-nav__kart--land .bottom-nav__kart-icon {
-  animation: kart-nav-icon-mint 0.52s ease forwards;
-}
-
+.bottom-nav__kart--land,
+.bottom-nav__kart--land .bottom-nav__kart-icon,
 .bottom-nav__kart-badge--pop {
-  animation: kart-nav-badge-pop 0.48s cubic-bezier(0.34, 1.35, 0.64, 1);
-  transform-origin: center;
+  animation: none !important;
 }
 
 @keyframes kart-nav-icon-mint {

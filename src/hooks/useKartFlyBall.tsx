@@ -18,12 +18,17 @@ const POP_MS = 110;
 /** Minimum height the ball rises above the button before falling. */
 const APEX_LIFT_PX = 76;
 
+function getFxRoot(): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  return document.getElementById("kart-fx-root") ?? document.body;
+}
+
 function computeFlight(
   fromX: number,
   fromY: number,
   toX: number,
   toY: number,
-): Omit<KartFlyBallFlight, "effectGeneration" | "onComplete"> | null {
+): Omit<KartFlyBallFlight, "effectGeneration"> | null {
   const vy0 = -Math.sqrt(2 * GRAVITY * APEX_LIFT_PX);
   const c = fromY - toY;
   const discriminant = vy0 * vy0 - 2 * GRAVITY * c;
@@ -36,14 +41,12 @@ function computeFlight(
   return { fromX, fromY, vx, vy: vy0, toX, toY, duration };
 }
 
+/** Decorative toss toward the kart tab — no completion side effects. */
 export function useKartFlyBallTrigger() {
   const startFlyBall = useKartStore((s) => s.startFlyBall);
 
   const fire = useCallback(
-    (
-      origin: BurstPoint | DOMRect | null | undefined,
-      onComplete: () => void,
-    ): boolean => {
+    (origin: BurstPoint | DOMRect | null | undefined): boolean => {
       const point = resolveBurstPoint(origin);
       const toRect = getKartNavRect();
       if (!point || !toRect) return false;
@@ -59,7 +62,6 @@ export function useKartFlyBallTrigger() {
       startFlyBall({
         ...path,
         effectGeneration: useKartStore.getState().kartEffectGeneration,
-        onComplete,
       });
       return true;
     },
@@ -72,7 +74,6 @@ export function useKartFlyBallTrigger() {
 export function KartFlyBallOverlay() {
   const ballRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef(0);
-  const onCompleteRef = useRef<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
   const flyBall = useKartStore((s) => s.flyBall);
   const clearFlyBall = useKartStore((s) => s.clearFlyBall);
@@ -90,26 +91,10 @@ export function KartFlyBallOverlay() {
     if (!flyBall) return;
 
     let rafCancelled = false;
-    let landed = false;
-    onCompleteRef.current = flyBall.onComplete;
-
-    const {
-      fromX,
-      fromY,
-      vx,
-      vy,
-      toX,
-      toY,
-      duration,
-    } = flyBall;
+    const { fromX, fromY, vx, vy, toX, toY, duration } = flyBall;
 
     const finish = () => {
       window.setTimeout(() => {
-        if (!landed) {
-          landed = true;
-          onCompleteRef.current?.();
-          onCompleteRef.current = null;
-        }
         clearFlyBall();
       }, 90);
     };
@@ -174,11 +159,12 @@ export function KartFlyBallOverlay() {
     };
   }, [flyBall, clearFlyBall]);
 
+  const root = mounted ? getFxRoot() : null;
   const portal =
-    mounted && flyBall
+    root && flyBall
       ? createPortal(
           <span ref={ballRef} className="kart-fly-ball" aria-hidden />,
-          document.body,
+          root,
         )
       : null;
 

@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo } from "react";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 import { readBootKartCount } from "@/lib/kart-boot";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
-import { useRouteChanging } from "@/hooks/useRouteChanging";
 
 type Props = {
   active: boolean;
@@ -14,33 +13,14 @@ type Props = {
   badgeClass: string;
 };
 
-/** Kart tab + badge — isolated so bottom-nav frost never re-renders on count change. */
+/** Kart tab + badge — no pulse/landing animations (badge count only). */
 export const KartNavLink = memo(function KartNavLink({
   active,
   accentClass,
   badgeClass,
 }: Props) {
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
-  const routeChanging = useRouteChanging();
   const count = useKartStore((s) => s.ids.length);
-  const kartBounceToken = useKartStore((s) => s.kartBounceToken);
-  const [landing, setLanding] = useState(false);
-  const seenBounceTokenRef = useRef(kartBounceToken);
-
-  useEffect(() => {
-    if (!kartHydrated || routeChanging) return;
-    if (kartBounceToken === seenBounceTokenRef.current) return;
-    seenBounceTokenRef.current = kartBounceToken;
-    if (kartBounceToken === 0) return;
-    setLanding(true);
-    const t = window.setTimeout(() => setLanding(false), 520);
-    return () => window.clearTimeout(t);
-  }, [kartBounceToken, kartHydrated, routeChanging]);
-
-  useEffect(() => {
-    if (routeChanging) setLanding(false);
-  }, [routeChanging]);
-
   const displayCount = kartHydrated ? count : readBootKartCount();
   const showBadge = displayCount > 0;
 
@@ -51,7 +31,7 @@ export const KartNavLink = memo(function KartNavLink({
         href="/kart"
         className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
           active ? "opacity-100" : "opacity-80"
-        } ${landing ? "bottom-nav__kart--land" : ""}`}
+        }`}
         aria-label="Kart"
         aria-current={active ? "page" : undefined}
       >
@@ -60,9 +40,7 @@ export const KartNavLink = memo(function KartNavLink({
         </span>
         {showBadge && (
           <span
-            className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
-              landing ? "bottom-nav__kart-badge--pop" : ""
-            }`}
+            className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
           >
             {displayCount}
           </span>

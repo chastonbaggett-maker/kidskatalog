@@ -148,7 +148,7 @@ export function AdminToyForm({ editing, onSaved, onCancelEdit }: Props) {
   const previewImage = form.image || preview?.image;
 
   return (
-    <section className="admin-panel__section p-4">
+    <section id="admin-toy-form" className="admin-panel__section scroll-mt-4 p-4">
       <h3 className="mb-3 font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
         {editing ? "Edit toy" : "Add toy"}
       </h3>

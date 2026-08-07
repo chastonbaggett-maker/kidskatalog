@@ -2630,3 +2630,62 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   letter-spacing: 0.06em;
   color: var(--ink-soft);
 }
+
+/* Desktop manage-toys expandable grid */
+.admin-toy-list--expanded {
+  display: flex;
+  flex-direction: column;
+  min-height: min(78vh, 56rem);
+}
+
+.admin-toy-list__grid-host {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -0.25rem;
+  padding: 0.25rem;
+}
+
+.admin-toy-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 1280px) {
+  .admin-toy-list__grid {
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: 0.9rem;
+  }
+}
+
+.admin-toy-list__card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--lavender) 40%, white);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-toy-list__card:hover {
+  box-shadow: 0 10px 24px -16px rgba(80, 60, 140, 0.35);
+}
+
+.admin-toy-list__card--selected {
+  background: color-mix(in srgb, var(--lavender) 70%, white);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--purple) 45%, transparent),
+    0 10px 24px -16px rgba(80, 60, 140, 0.35);
+}
+
+.admin-toy-list__card-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  background: #fff;
+}

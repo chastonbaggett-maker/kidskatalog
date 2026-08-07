@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { ShelfCrazyTrailing } from "./ShelfCrazyTrailing";
 
 type ShelfHeaderProps = {
   /** Optional page title under the icon */
@@ -66,7 +67,7 @@ export function ShelfHeader({
         ) : null}
 
         <Logo variant="icon" light glow href="/shop" size={44} />
-        {trailing}
+        {trailing ?? <ShelfCrazyTrailing />}
       </div>
 
       {title ? (

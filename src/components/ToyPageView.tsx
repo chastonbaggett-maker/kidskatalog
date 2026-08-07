@@ -5,9 +5,9 @@ import { useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import {
   useCrazyModeStore,
+  crazyModeRootClass,
   crazyModeScrollClass,
 } from "@/lib/crazy-mode-store";
-import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useMoreToysCrazyActive } from "@/hooks/useMoreToysCrazyActive";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { ProductGallery } from "./ProductGallery";
@@ -25,10 +25,9 @@ type Props = {
 };
 
 export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Props) {
-  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
-  const crazyOn = crazyHydrated && crazyMode;
+  const crazyOn = crazyMode;
   const [crazyFlash, setCrazyFlash] = useState(false);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +43,9 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
   const kartGoReady = useVisualSettled(toy.id);
 
   return (
-    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
+    <div
+      className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyOn)}`}
+    >
       <ShelfHeader
         backHref="/shop"
         trailing={
@@ -62,9 +63,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
 
       <div
         ref={scrollerRef}
-        className={`page-scroll star-field min-h-0 flex-1 py-4 ${
-          moreToysCrazyActive ? crazyModeScrollClass(true) : ""
-        }`}
+        className={`page-scroll star-field min-h-0 flex-1 py-4 ${crazyModeScrollClass(crazyOn)}`}
       >
         <div className="product-detail mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div ref={productAreaRef} className="product-detail__layout">

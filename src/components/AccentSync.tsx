@@ -41,15 +41,5 @@ export function AccentSync() {
     applyAccent(audience);
   }, [audience]);
 
-  useEffect(() => {
-    const unsub = useAccentStore.persist.onFinishHydration((state) => {
-      applyAccent(state.audience);
-    });
-    if (useAccentStore.persist.hasHydrated()) {
-      applyAccent(useAccentStore.getState().audience);
-    }
-    return unsub;
-  }, []);
-
   return null;
 }

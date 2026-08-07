@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export type PileEnterPhase = "idle" | "chrome" | "reveal";
 
@@ -19,26 +18,18 @@ type ToyPileModeState = {
 export const PILE_CHROME_MS = 680;
 export const PILE_CHROME_EASE = "ease-in-out";
 
-export const useToyPileModeStore = create<ToyPileModeState>()(
-  persist(
-    (set) => ({
-      toyPileMode: false,
-      enterPhase: "idle",
-      setToyPileMode: (toyPileMode) => set({ toyPileMode }),
-      toggleToyPileMode: () => set((s) => ({ toyPileMode: !s.toyPileMode })),
-      startEnterTransition: () => set({ enterPhase: "chrome" }),
-      advanceToRevealPhase: () =>
-        set({ toyPileMode: true, enterPhase: "reveal" }),
-      resetTransition: () => set({ enterPhase: "idle" }),
-      skipToPileResting: () =>
-        set({ toyPileMode: true, enterPhase: "idle" }),
-    }),
-    {
-      name: "kidskatalog-toy-pile-mode",
-      partialize: (state) => ({ toyPileMode: state.toyPileMode }),
-    },
-  ),
-);
+/** Session-only — resets on full page load; kept across in-app navigations. */
+export const useToyPileModeStore = create<ToyPileModeState>((set) => ({
+  toyPileMode: false,
+  enterPhase: "idle",
+  setToyPileMode: (toyPileMode) => set({ toyPileMode }),
+  toggleToyPileMode: () => set((s) => ({ toyPileMode: !s.toyPileMode })),
+  startEnterTransition: () => set({ enterPhase: "chrome" }),
+  advanceToRevealPhase: () =>
+    set({ toyPileMode: true, enterPhase: "reveal" }),
+  resetTransition: () => set({ enterPhase: "idle" }),
+  skipToPileResting: () => set({ toyPileMode: true, enterPhase: "idle" }),
+}));
 
 export function toyPileRootClass(active: boolean) {
   return active ? "browse-feed--toy-pile" : "";

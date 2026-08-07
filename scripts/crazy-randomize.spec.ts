@@ -10,17 +10,14 @@ test("crazy mode randomizes feed order and flashes from the crazy button", async
     if (req.url().includes("/api/catalog/random")) randomRequests.push(req.url());
   });
 
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "kidskatalog-crazy-mode",
-      JSON.stringify({ state: { crazyMode: true }, version: 0 }),
-    );
-  });
-
   await page.goto("/shop", { waitUntil: "networkidle" });
 
-  const crazyBtn = page.locator(".filter-crazy-btn--active").first();
-  await expect(crazyBtn).toBeVisible();
+  const crazyToggle = page.getByRole("button", { name: /Crazy Mode/i }).first();
+  await expect(crazyToggle).toBeVisible();
+  await crazyToggle.click();
+
+  await expect(page.locator(".app-shell--crazy")).toBeVisible();
+  await expect(page.locator(".filter-crazy-btn--active").first()).toBeVisible();
 
   const beforeIds = await page.evaluate(() =>
     Array.from(document.querySelectorAll("[data-feed-slot]")).map(
@@ -80,4 +77,22 @@ test("crazy mode randomizes feed order and flashes from the crazy button", async
   );
 
   expect(randomRequests, "crazy mode must not call catalog/random").toEqual([]);
+});
+
+test("crazy chrome persists on product page within the session", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/shop", { waitUntil: "networkidle" });
+
+  await page.getByRole("button", { name: /Crazy Mode/i }).first().click();
+  await expect(page.locator(".app-shell--crazy")).toBeVisible();
+
+  const firstCard = page.locator("[data-feed-slot] a").first();
+  await firstCard.click();
+  await page.waitForURL(/\/toy\//, { timeout: 8000 });
+
+  await expect(page.locator(".app-shell--crazy")).toBeVisible();
+  await expect(page.locator(".bottom-nav--crazy")).toBeVisible();
+  await expect(page.locator(".shelf-header .filter-crazy-btn--active")).toBeVisible();
 });

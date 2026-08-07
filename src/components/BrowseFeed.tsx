@@ -16,7 +16,6 @@ import { usePileEnterTransition } from "@/hooks/usePileEnterTransition";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
-import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
 import { pingMetrics } from "@/lib/metrics-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
@@ -48,8 +47,6 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const [query, setQuery] = useState("");
   const [age, setAge] = useState<number | null>(null);
   const [showText, setShowText] = useState(true);
-  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
-  const pileHydrated = usePersistHydrated(getStorePersist(useToyPileModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
@@ -60,8 +57,8 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const resetTransition = useToyPileModeStore((s) => s.resetTransition);
   const skipToPileResting = useToyPileModeStore((s) => s.skipToPileResting);
 
-  const crazyOn = crazyHydrated && crazyMode;
-  const pileOn = pileHydrated && toyPileMode;
+  const crazyOn = crazyMode;
+  const pileOn = toyPileMode;
 
   const catalog = useCatalogPage({
     category,

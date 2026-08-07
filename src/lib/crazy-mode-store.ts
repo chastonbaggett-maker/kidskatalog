@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 type CrazyModeState = {
   crazyMode: boolean;
@@ -9,16 +8,12 @@ type CrazyModeState = {
   toggleCrazyMode: () => void;
 };
 
-export const useCrazyModeStore = create<CrazyModeState>()(
-  persist(
-    (set) => ({
-      crazyMode: false,
-      setCrazyMode: (crazyMode) => set({ crazyMode }),
-      toggleCrazyMode: () => set((s) => ({ crazyMode: !s.crazyMode })),
-    }),
-    { name: "kidskatalog-crazy-mode" },
-  ),
-);
+/** Session-only — resets on full page load; kept across in-app navigations. */
+export const useCrazyModeStore = create<CrazyModeState>((set) => ({
+  crazyMode: false,
+  setCrazyMode: (crazyMode) => set({ crazyMode }),
+  toggleCrazyMode: () => set((s) => ({ crazyMode: !s.crazyMode })),
+}));
 
 export function crazyModeRootClass(active: boolean) {
   return active ? "browse-feed--crazy" : "";

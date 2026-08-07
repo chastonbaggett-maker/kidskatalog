@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
@@ -12,7 +12,6 @@ import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { beginRouteChange } from "@/lib/route-change";
 import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { KartNavLink } from "@/components/KartNavLink";
-import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 
@@ -42,24 +41,17 @@ export function BottomNav() {
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
-  const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
-  const resetTransition = useToyPileModeStore((s) => s.resetTransition);
-  const crazyHydrated = usePersistHydrated(getStorePersist(useCrazyModeStore));
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
-  const crazyOn = crazyHydrated && crazyMode;
-  const onShopBrowse =
-    pathname === "/" ||
-    pathname.startsWith("/shop") ||
-    pathname.startsWith("/toy");
   const onPileBrowseRoute = isPileBrowseRoute(pathname);
   const revealGateOpen = usePileRevealGate();
-  const pileNavActive =
+  // Raised shelf with mode filters only on browse routes; mode itself stays session-wide.
+  const pileNavShelf =
     onPileBrowseRoute &&
     toyPileMode &&
     enterPhase !== "chrome" &&
     revealGateOpen;
-  const pileNavEnterVisible = usePileEnterReveal(pileNavActive);
-  const pileShelfMounted = pileNavActive;
+  const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
+  const pileShelfMounted = pileNavShelf;
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
@@ -70,15 +62,6 @@ export function BottomNav() {
     setPinGateOpen(false);
     setAdminOpen(true);
   }, []);
-
-  useEffect(() => {
-    if (!onPileBrowseRoute) {
-      resetTransition();
-      if (useToyPileModeStore.getState().toyPileMode) {
-        setToyPileMode(false);
-      }
-    }
-  }, [onPileBrowseRoute, resetTransition, setToyPileMode]);
 
   function resetBrandTaps() {
     brandTapCount.current = 0;
@@ -139,16 +122,16 @@ export function BottomNav() {
   const brandActive =
     pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
 
-  const showFrostFill = !pileNavActive || pileShelfMounted;
+  const showFrostFill = !pileNavShelf || pileShelfMounted;
 
   return (
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileNavActive ? " bottom-nav--pile bottom-nav-enter" : ""
+          pileNavShelf ? " bottom-nav--pile bottom-nav-enter" : ""
         }${pileShelfMounted ? " is-shelf-raised" : ""}${
           pileNavEnterVisible ? " is-enter-visible" : ""
-        }${pileNavActive && crazyOn ? " bottom-nav--crazy" : ""}`}
+        }${crazyMode ? " bottom-nav--crazy" : ""}`}
       >
         {showFrostFill && (
           <div className="bottom-nav__frost" aria-hidden="true" />

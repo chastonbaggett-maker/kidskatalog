@@ -6,6 +6,8 @@ import { InstallPrompt } from "./InstallPrompt";
 import { KartFlyBallHost } from "./KartFlyBallHost";
 import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
+import { useCrazyModeStore } from "@/lib/crazy-mode-store";
+import { useToyPileModeStore } from "@/lib/toy-pile-store";
 import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
 
 export function AppShell({
@@ -16,9 +18,19 @@ export function AppShell({
   hideNav?: boolean;
 }) {
   useRouteChangeLock();
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const pileMode = useToyPileModeStore((s) => s.toyPileMode);
+
+  const shellClass = [
+    "app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden",
+    crazyMode ? "app-shell--crazy" : "",
+    pileMode ? "app-shell--pile" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+    <div className={shellClass}>
       <KartNavEffectGuard />
       <MetricsPing />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>

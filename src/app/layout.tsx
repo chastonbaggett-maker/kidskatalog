@@ -98,7 +98,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
-      // Boot script may set data-accent from localStorage before hydrate.
+      // Boot scripts may set data-* on <html> before hydrate (standalone/touch).
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
@@ -112,7 +112,8 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: KART_BOOT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var raw=localStorage.getItem('kidskatalog-accent');if(!raw)return;var data=JSON.parse(raw);var aud=data&&data.state&&data.state.audience;if(aud==='boys')document.documentElement.dataset.accent='boys';else if(aud==='girls')document.documentElement.dataset.accent='girls';else document.documentElement.dataset.accent='both';}catch(e){}})();`,
+            // Drop legacy persisted mode/accent keys — modes are session-only; load is always unisex.
+            __html: `(function(){try{localStorage.removeItem('kidskatalog-accent');localStorage.removeItem('kidskatalog-crazy-mode');localStorage.removeItem('kidskatalog-toy-pile-mode');document.documentElement.dataset.accent='both';}catch(e){}})();`,
           }}
         />
         <StandaloneClass />

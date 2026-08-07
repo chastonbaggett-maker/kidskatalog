@@ -939,7 +939,7 @@ html[data-accent="both"] .kart-go-btn:hover {
     drop-shadow(0 0 32px rgba(255, 193, 7, 0.4));
 }
 
-/* Align shelf header actions with feed-card outer edge (row uses px-3). */
+/* Keep shelf header actions inset from the screen edge (same as mobile). */
 .shelf-back-btn {
   position: absolute;
   top: 50%;
@@ -952,36 +952,6 @@ html[data-accent="both"] .kart-go-btn:hover {
   top: 50%;
   right: 0.75rem;
   transform: translateY(-50%);
-}
-
-@media (min-width: 640px) {
-  .shelf-back-btn {
-    left: 0.25rem;
-  }
-
-  .shelf-crazy-btn {
-    right: 0.25rem;
-  }
-}
-
-@media (min-width: 720px) {
-  .shelf-back-btn {
-    left: 0.75rem;
-  }
-
-  .shelf-crazy-btn {
-    right: 0.75rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .shelf-back-btn {
-    left: 0.25rem;
-  }
-
-  .shelf-crazy-btn {
-    right: 0.25rem;
-  }
 }
 
 .browse-feed--crazy .browse-controls {

@@ -47,9 +47,42 @@ function metaContent(html: string, key: string, attr: "property" | "name" = "pro
 
 function cleanTitle(title: string) {
   return title
+    .replace(/^Amazon\.com\s*[:|-]\s*/i, "")
     .replace(/\s*[:\|–-]\s*Amazon\.com.*$/i, "")
     .replace(/\s*\|\s*Toys & Games.*$/i, "")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+function pickAmazonImage(html: string) {
+  const patterns = [
+    /"hiRes"\s*:\s*"(https:\/\/[^"]+?media-amazon\.com\/images\/I\/[^"]+)"/,
+    /"landingImageUrl"\s*:\s*"(https:\/\/[^"]+?media-amazon\.com\/images\/I\/[^"]+)"/,
+    /data-old-hires="(https:\/\/[^"]+)"/,
+    /property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /content=["'](https:\/\/[^"']+)["'][^>]+property=["']og:image["']/i,
+  ];
+  for (const re of patterns) {
+    const match = re.exec(html);
+    if (match?.[1]) return match[1].replace(/\\u002F/g, "/");
+  }
+  return "";
+}
+
+function pickAmazonTitle(html: string) {
+  const patterns = [
+    /id="productTitle"[^>]*>\s*([^<]+)\s*</i,
+    /property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
+    /content=["']([^"']+)["'][^>]+property=["']og:title["']/i,
+    /<title[^>]*>([^<]+)<\/title>/i,
+  ];
+  for (const re of patterns) {
+    const match = re.exec(html);
+    if (!match?.[1]) continue;
+    const title = cleanTitle(decodeHtml(match[1]));
+    if (title && !/^amazon\.com$/i.test(title)) return title;
+  }
+  return "";
 }
 
 function conciseBlurb(text: string, maxWords = 8) {
@@ -93,16 +126,16 @@ export async function previewAmazonImport(url: string): Promise<AmazonImportPrev
 
     if (res.ok) {
       const html = await res.text();
-      const ogTitle = metaContent(html, "og:title") || metaContent(html, "title", "name");
+      const scrapedTitle = pickAmazonTitle(html);
       const ogDesc =
         metaContent(html, "og:description") ||
         metaContent(html, "description", "name");
-      const ogImage = metaContent(html, "og:image");
+      const scrapedImage = pickAmazonImage(html);
 
-      if (ogTitle) name = cleanTitle(ogTitle);
+      if (scrapedTitle) name = scrapedTitle;
       if (ogDesc) blurb = conciseBlurb(ogDesc);
-      if (ogImage) {
-        imageUrl = ogImage;
+      if (scrapedImage) {
+        imageUrl = scrapedImage;
         manualFieldsRequired = false;
       }
     }

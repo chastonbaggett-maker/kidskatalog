@@ -96,7 +96,7 @@ export function AdminPanel({ open, onClose }: Props) {
 
   return createPortal(
     <div className="admin-panel fixed inset-0 z-[190] flex flex-col">
-      <header className="flex shrink-0 items-center justify-between border-b border-black/5 px-4 py-3">
+      <header className="flex shrink-0 items-end justify-between border-b border-black/5 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] min-h-[5.75rem] sm:min-h-0 sm:items-center sm:py-3 sm:pt-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
             Hidden admin
@@ -105,7 +105,7 @@ export function AdminPanel({ open, onClose }: Props) {
             KidsKatalog
           </h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 pb-0.5 sm:pb-0">
           <button
             type="button"
             onClick={() => void refresh()}

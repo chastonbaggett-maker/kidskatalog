@@ -4,7 +4,9 @@ import Link from "next/link";
 import { memo, useEffect, useRef, useState } from "react";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
+import { readBootKartCount } from "@/lib/kart-boot";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { useRouteChanging } from "@/hooks/useRouteChanging";
 
 type Props = {
   active: boolean;
@@ -19,22 +21,28 @@ export const KartNavLink = memo(function KartNavLink({
   badgeClass,
 }: Props) {
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
+  const routeChanging = useRouteChanging();
   const count = useKartStore((s) => s.ids.length);
   const kartBounceToken = useKartStore((s) => s.kartBounceToken);
   const [landing, setLanding] = useState(false);
   const seenBounceTokenRef = useRef(kartBounceToken);
 
   useEffect(() => {
-    if (!kartHydrated) return;
+    if (!kartHydrated || routeChanging) return;
     if (kartBounceToken === seenBounceTokenRef.current) return;
     seenBounceTokenRef.current = kartBounceToken;
     if (kartBounceToken === 0) return;
     setLanding(true);
     const t = window.setTimeout(() => setLanding(false), 520);
     return () => window.clearTimeout(t);
-  }, [kartBounceToken, kartHydrated]);
+  }, [kartBounceToken, kartHydrated, routeChanging]);
 
-  const showBadge = kartHydrated && count > 0;
+  useEffect(() => {
+    if (routeChanging) setLanding(false);
+  }, [routeChanging]);
+
+  const displayCount = kartHydrated ? count : readBootKartCount();
+  const showBadge = displayCount > 0;
 
   return (
     <li>
@@ -56,7 +64,7 @@ export const KartNavLink = memo(function KartNavLink({
               landing ? "bottom-nav__kart-badge--pop" : ""
             }`}
           >
-            {count}
+            {displayCount}
           </span>
         )}
       </Link>

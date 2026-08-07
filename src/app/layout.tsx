@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
 import { StandaloneClass } from "@/components/StandaloneClass";
+import { KART_BOOT_SCRIPT } from "@/lib/kart-boot";
 import { ROUTE_CHANGE_BOOT_SCRIPT } from "@/lib/route-change";
 import "./globals.css";
 
@@ -106,6 +107,7 @@ export default function RootLayout({
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: KART_BOOT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var raw=localStorage.getItem('kidskatalog-accent');if(!raw)return;var data=JSON.parse(raw);var aud=data&&data.state&&data.state.audience;if(aud==='boys')document.documentElement.dataset.accent='boys';else if(aud==='girls')document.documentElement.dataset.accent='girls';else document.documentElement.dataset.accent='both';}catch(e){}})();`,

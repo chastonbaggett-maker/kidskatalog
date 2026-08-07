@@ -7,6 +7,7 @@ import {
   KART_EFFECT_QUIET_MS,
   KART_NAV_PULSE_MS,
 } from "@/lib/kart-effect-guard";
+import { syncKartBootDataset } from "@/lib/kart-boot";
 
 export type KartFlyBallFlight = {
   fromX: number;
@@ -37,6 +38,7 @@ type KartState = {
   bumpKartEffectGeneration: () => void;
   beginKartAdd: () => void;
   endKartAdd: () => void;
+  cancelKartAddEffects: () => void;
   startFlyBall: (flight: KartFlyBallFlight) => void;
   clearFlyBall: () => void;
 };
@@ -51,11 +53,17 @@ export const useKartStore = create<KartState>()(
       kartQuietUntil: 0,
       flyBall: null,
       add: (id) =>
-        set((s) => (s.ids.includes(id) ? s : { ids: [...s.ids, id] })),
+        set((s) => {
+          if (s.ids.includes(id)) return s;
+          const ids = [...s.ids, id];
+          syncKartBootDataset(ids);
+          return { ids };
+        }),
       addWithNavPulse: (id) =>
         set((s) => {
           const now = Date.now();
           const nextIds = s.ids.includes(id) ? s.ids : [...s.ids, id];
+          syncKartBootDataset(nextIds);
           return {
             ids: nextIds,
             kartBounceToken: s.kartBounceToken + 1,
@@ -65,16 +73,28 @@ export const useKartStore = create<KartState>()(
             ),
           };
         }),
-      remove: (id) => set((s) => ({ ids: s.ids.filter((x) => x !== id) })),
+      remove: (id) =>
+        set((s) => {
+          const ids = s.ids.filter((x) => x !== id);
+          syncKartBootDataset(ids);
+          return { ids };
+        }),
       toggle: (id) => {
         const { ids } = get();
         if (ids.includes(id)) {
-          set({ ids: ids.filter((x) => x !== id) });
+          const next = ids.filter((x) => x !== id);
+          syncKartBootDataset(next);
+          set({ ids: next });
         } else {
-          set({ ids: [...ids, id] });
+          const next = [...ids, id];
+          syncKartBootDataset(next);
+          set({ ids: next });
         }
       },
-      clear: () => set({ ids: [] }),
+      clear: () => {
+        syncKartBootDataset([]);
+        set({ ids: [] });
+      },
       has: (id) => get().ids.includes(id),
       pulseKartNav: () =>
         set((s) => ({
@@ -102,6 +122,11 @@ export const useKartStore = create<KartState>()(
             Date.now() + KART_EFFECT_QUIET_MS,
           ),
         })),
+      cancelKartAddEffects: () =>
+        set({
+          flyBall: null,
+          kartAddActive: 0,
+        }),
       startFlyBall: (flight) => set({ flyBall: flight }),
       clearFlyBall: () => set({ flyBall: null }),
     }),

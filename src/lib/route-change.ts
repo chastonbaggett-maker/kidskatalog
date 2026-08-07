@@ -1,5 +1,5 @@
 /** Shared route-transition lock — hides toy photos during client navigations. */
-export const ROUTE_CHANGE_LOCK_MS = 450;
+export const ROUTE_CHANGE_LOCK_MS = 650;
 
 let lockTimer: ReturnType<typeof setTimeout> | undefined;
 

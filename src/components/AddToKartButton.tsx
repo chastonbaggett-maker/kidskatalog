@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { useVisualSettled } from "@/hooks/useVisualSettled";
 import { useKartStore } from "@/lib/kart-store";
+import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
@@ -16,6 +19,7 @@ const REMOVE_TOTAL_MS = REMOVE_FILL_MS + REMOVE_POP_MS + 40;
 const KART_ADD_SETTLE_MS = 480;
 
 export function AddToKartButton({ toyId }: { toyId: string }) {
+  const pathname = usePathname();
   const inKart = useKartStore((s) => s.ids.includes(toyId));
   const add = useKartStore((s) => s.add);
   const addWithNavPulse = useKartStore((s) => s.addWithNavPulse);
@@ -26,6 +30,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const removeTimersRef = useRef<number[]>([]);
   const kartAddEndTimerRef = useRef<number | undefined>(undefined);
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
+  const visualReady = useVisualSettled(`${pathname}:${toyId}`);
+  const bootInKart = readBootInKart(toyId);
   const [charging, setCharging] = useState(false);
   const [removing, setRemoving] = useState(false);
   /** Blocks double-add during fly-ball; does not change button visuals until landing. */
@@ -52,6 +58,15 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
       window.clearTimeout(kartAddEndTimerRef.current);
     }
   }, []);
+
+  useEffect(() => {
+    setFlying(false);
+    setCharging(false);
+    if (kartAddEndTimerRef.current) {
+      window.clearTimeout(kartAddEndTimerRef.current);
+      kartAddEndTimerRef.current = undefined;
+    }
+  }, [pathname, toyId]);
 
   const finishKartAdd = () => {
     if (kartAddEndTimerRef.current) {
@@ -118,8 +133,9 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     fire(point, GOLD_CONFETTI);
   };
 
-  const showMint = (kartHydrated && inKart) || removing;
-  const showInKartLabel = kartHydrated && inKart && !removing;
+  const resolvedInKart = kartHydrated ? inKart : bootInKart === true;
+  const showMint = resolvedInKart || removing;
+  const showInKartLabel = resolvedInKart && !removing;
 
   return (
     <>
@@ -132,6 +148,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
         onPointerLeave={clearCharge}
         onPointerCancel={clearCharge}
         className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md transition active:scale-[0.98] ${
+          visualReady ? "add-kart-btn--visual-ready" : ""
+        } ${
           showMint
             ? "add-kart-btn--in text-white"
             : "add-kart-btn--ready bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"

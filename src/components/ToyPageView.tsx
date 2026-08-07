@@ -15,6 +15,7 @@ import { ShelfHeader } from "./ShelfHeader";
 import { MoreToysFeed } from "./MoreToysFeed";
 import { AddToKartButton } from "./AddToKartButton";
 import { CrazyModeButton } from "./CrazyModeButton";
+import { useVisualSettled } from "@/hooks/useVisualSettled";
 
 type Props = {
   toy: Toy;
@@ -40,6 +41,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
     scrollerRef,
     moreToysRef,
   );
+  const kartGoReady = useVisualSettled(toy.id);
 
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
@@ -85,7 +87,9 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
                 <Link
                   href="/kart"
                   aria-label="Go to Kart"
-                  className="kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-[0.98]"
+                  className={`kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-[0.98] ${
+                    kartGoReady ? "kart-go-btn--visual-ready" : ""
+                  }`}
                 >
                   <svg
                     className="kart-go-arrow shrink-0"

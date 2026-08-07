@@ -242,9 +242,27 @@ html.route-changing .page-scroll {
 }
 
 html.route-changing .add-kart-btn,
+html.route-changing .add-kart-btn__plus,
+html.route-changing .add-kart-btn__glow,
+html.route-changing .kart-go-btn,
+html.route-changing .kart-go-arrow,
+html.route-changing .bottom-nav a[href='/kart'],
 html.route-changing .bottom-nav__kart-icon,
+html.route-changing .bottom-nav__kart--land,
+html.route-changing .bottom-nav__kart--land .bottom-nav__kart-icon,
 html.route-changing .bottom-nav__kart-badge--pop {
   transition: none !important;
+  animation: none !important;
+}
+
+.add-kart-btn:not(.add-kart-btn--visual-ready),
+.add-kart-btn:not(.add-kart-btn--visual-ready) .add-kart-btn__plus,
+.add-kart-btn:not(.add-kart-btn--visual-ready) .add-kart-btn__glow {
+  transition: none !important;
+  animation: none !important;
+}
+
+.kart-go-btn:not(.kart-go-btn--visual-ready) .kart-go-arrow {
   animation: none !important;
 }
 

@@ -2019,7 +2019,8 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   overflow: hidden;
 }
 
-.kart-fly-ball {
+.kart-fly-ball,
+.kart-bounce-ball {
   position: fixed;
   left: 0;
   top: 0;
@@ -2033,6 +2034,12 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   opacity: 0;
   visibility: hidden;
   contain: layout style paint;
+  transform: translate(-50%, -50%);
+}
+
+.kart-bounce-ball {
+  opacity: 1;
+  visibility: visible;
 }
 
 .bottom-nav__kart-icon {
@@ -2088,6 +2095,8 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   .kart-fly-ball {
     display: none !important;
   }
+
+  /* Easter-egg bounce balls stay available on touch. */
 
   .add-kart-btn,
   .add-kart-btn--in,
@@ -2172,6 +2181,8 @@ html[data-kart-effects-reduced="true"] .kart-fly-ball {
   display: none !important;
 }
 
+/* Bounce easter egg still runs when fly-ball/confetti are reduced. */
+
 html[data-kart-effects-reduced="true"] .add-kart-btn,
 html[data-kart-effects-reduced="true"] .add-kart-btn--in {
   transition: none !important;
@@ -2226,7 +2237,8 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
     animation: none !important;
   }
 
-  .kart-fly-ball {
+  .kart-fly-ball,
+  .kart-bounce-ball {
     display: none;
   }
 

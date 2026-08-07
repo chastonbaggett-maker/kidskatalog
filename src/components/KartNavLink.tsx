@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { registerKartNavEl } from "@/lib/kart-nav-target";
 import { useKartStore } from "@/lib/kart-store";
 import { readBootKartCount } from "@/lib/kart-boot";
 import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
 import { onKartFlyBallLand } from "@/lib/kart-fly-ball";
+import { launchKartBounceBalls } from "@/lib/kart-bounce-balls";
+import { beginRouteChange } from "@/lib/route-change";
 
 type Props = {
   active: boolean;
@@ -15,6 +18,10 @@ type Props = {
 };
 
 const LAND_PULSE_MS = 520;
+const EASTER_TAP_TARGET = 5;
+const EASTER_TAP_WINDOW_MS = 900;
+/** Wait before treating tap 1 as normal navigation. */
+const EASTER_SINGLE_TAP_NAV_MS = 380;
 
 /** Kart tab + badge — pulses when the decorative fly ball lands. */
 export const KartNavLink = memo(function KartNavLink({
@@ -22,10 +29,14 @@ export const KartNavLink = memo(function KartNavLink({
   accentClass,
   badgeClass,
 }: Props) {
+  const router = useRouter();
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const count = useKartStore((s) => s.ids.length);
   const displayCount = kartHydrated ? count : readBootKartCount();
   const [landing, setLanding] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapWindowTimerRef = useRef<number | undefined>(undefined);
+  const singleTapNavTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     let clearTimer: number | undefined;
@@ -46,11 +57,72 @@ export const KartNavLink = memo(function KartNavLink({
     };
   }, []);
 
+  useEffect(
+    () => () => {
+      if (tapWindowTimerRef.current) window.clearTimeout(tapWindowTimerRef.current);
+      if (singleTapNavTimerRef.current) {
+        window.clearTimeout(singleTapNavTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const resetTaps = () => {
+    tapCountRef.current = 0;
+    if (tapWindowTimerRef.current) {
+      window.clearTimeout(tapWindowTimerRef.current);
+      tapWindowTimerRef.current = undefined;
+    }
+    if (singleTapNavTimerRef.current) {
+      window.clearTimeout(singleTapNavTimerRef.current);
+      singleTapNavTimerRef.current = undefined;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    e.preventDefault();
+    tapCountRef.current += 1;
+
+    if (singleTapNavTimerRef.current) {
+      window.clearTimeout(singleTapNavTimerRef.current);
+      singleTapNavTimerRef.current = undefined;
+    }
+
+    if (tapWindowTimerRef.current === undefined) {
+      tapWindowTimerRef.current = window.setTimeout(() => {
+        resetTaps();
+      }, EASTER_TAP_WINDOW_MS);
+    }
+
+    if (tapCountRef.current >= EASTER_TAP_TARGET) {
+      const launchCount = displayCount;
+      resetTaps();
+      if (launchCount > 0) {
+        const origin = e.currentTarget.getBoundingClientRect();
+        launchKartBounceBalls(launchCount, origin);
+      }
+      return;
+    }
+
+    if (tapCountRef.current === 1) {
+      singleTapNavTimerRef.current = window.setTimeout(() => {
+        if (tapCountRef.current === 1) {
+          beginRouteChange();
+          router.push("/kart");
+        }
+        singleTapNavTimerRef.current = undefined;
+      }, EASTER_SINGLE_TAP_NAV_MS);
+    }
+  };
+
   return (
     <li>
       <Link
         ref={registerKartNavEl}
         href="/kart"
+        onClick={handleClick}
         className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
           active ? "opacity-100" : "opacity-80"
         } ${landing ? "bottom-nav__kart--land" : ""}`}

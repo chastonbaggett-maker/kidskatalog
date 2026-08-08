@@ -931,6 +931,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-card {
   width: var(--pile-cell);
+  height: var(--pile-row);
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-row);
   transform: translateY(calc((var(--pile-row) + var(--pile-gap)) * var(--pile-col-shift, 0)));
@@ -945,7 +946,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   margin-inline: 0;
 }
 
-/* Fixed card box: title slot always reserved; media absorbs the space when text is off. */
+/* Fixed card box: media fills leftover space when the title slot is hidden. */
 .toy-pile-card .feed-card--stable-text .feed-card__surface--stable-text {
   display: flex;
   height: 100%;
@@ -954,7 +955,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-card .feed-card__media--stable-text {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: calc(var(--pile-cell) * 1.25);
+  width: 100%;
   aspect-ratio: auto;
 }
 

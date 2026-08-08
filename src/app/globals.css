@@ -1236,6 +1236,12 @@ html[data-accent="both"] .kart-go-btn:hover {
   color: #fff;
 }
 
+/* Crazy remaps --blue to yellow — keep Add to Kart label dark for contrast. */
+.product-detail--crazy .add-kart-btn--ready,
+.page-scroll--crazy .add-kart-btn--ready {
+  color: #2c2c3a;
+}
+
 .browse-feed--crazy .more-toys-feed,
 .page-scroll--crazy .more-toys-feed {
   border-color: rgba(255, 229, 102, 0.12);

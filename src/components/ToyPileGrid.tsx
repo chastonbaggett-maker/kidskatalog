@@ -1175,11 +1175,14 @@ const ToyPileCard = memo(function ToyPileCard({
           />
         </Link>
         {showText ? (
-          <div className="px-2.5 pb-2.5 pt-1 pr-11 sm:px-3 sm:pb-3 sm:pt-2 sm:pr-12">
+          <div className="toy-pile-card__text px-4 pb-4 pt-3 pr-12">
             <Link href={`/toy/${toy.id}`}>
-              <h2 className="truncate font-[family-name:var(--font-display)] text-sm font-bold text-[var(--ink)] sm:text-base">
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold leading-snug text-[var(--ink)]">
                 {toy.name}
               </h2>
+              <p className="text-sm leading-snug text-[var(--ink-soft)]">
+                {toy.blurb}
+              </p>
             </Link>
           </div>
         ) : null}

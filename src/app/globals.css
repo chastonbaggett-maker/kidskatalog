@@ -902,8 +902,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport--text {
-  /* title line + compact padding under the media */
-  --pile-row: calc(var(--pile-cell) * 1.25 + 2.75rem);
+  /* Match feed-card text block: text-xl title + text-sm blurb + px-4/pt-3/pb-4 */
+  --pile-row: calc(var(--pile-cell) * 1.25 + 6.25rem);
 }
 
 @media (min-width: 640px) {
@@ -981,6 +981,25 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-card__media--with-text {
   border-radius: var(--shelf-radius) var(--shelf-radius) 0 0;
+}
+
+.toy-pile-card__text {
+  /* Same type scale as FeedCard; clamp so fixed pile rows stay even. */
+  min-height: 5.5rem;
+}
+
+.toy-pile-card__text h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.toy-pile-card__text p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .toy-pile-card__media img,

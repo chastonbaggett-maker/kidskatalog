@@ -576,9 +576,17 @@ export function ToyPileGrid({
   colMinRef.current = colMin;
   rowMinRef.current = rowMin;
 
+  const toysRef = useRef(toys);
+  toysRef.current = toys;
+  // Primitive deps only — keep useEffect arity stable across HMR / prop adds.
+  const toysKey = useMemo(
+    () => toys.map((toy) => toy.id).join("\0"),
+    [toys],
+  );
+
   // Unique-first order: reshuffle on filter / Randomize; append pages without reshuffling.
   useEffect(() => {
-    const unique = dedupeToys(toys);
+    const unique = dedupeToys(toysRef.current);
     const meta = orderedMetaRef.current;
     const orderSeed = (filterSeed + shuffleNonce * 9973) >>> 0;
 
@@ -603,7 +611,7 @@ export function ToyPileGrid({
     const shuffledNew = shuffleWithSeed(newcomers, appendSeed);
     for (const toy of shuffledNew) meta.ids.add(toy.id);
     setOrdered((prev) => [...prev, ...shuffledNew]);
-  }, [toys, filterSeed, shuffleNonce]);
+  }, [toysKey, filterSeed, shuffleNonce]);
 
   // Fresh bounds when filters change so the spiral centers on the new set.
   useEffect(() => {

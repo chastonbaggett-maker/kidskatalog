@@ -28,10 +28,12 @@ const DRAG_CLICK_THRESHOLD_PX = 8;
  * Opening framing — focused card fills this fraction of the visible band so
  * neighbors peek on every edge (matches the Toy Pile load reference).
  */
-const OPEN_CARD_WIDTH_RATIO = 0.7;
-const OPEN_CARD_HEIGHT_RATIO = 0.58;
+const OPEN_CARD_WIDTH_RATIO = 0.55;
+const OPEN_CARD_HEIGHT_RATIO = 0.48;
 /** Random focus stays near spiral origin so the first view is dense with uniques. */
 const OPEN_FOCUS_RADIUS = 2;
+/** Mount at least this many cells around the opening focus before framing. */
+const OPEN_FOCUS_PAD = 2;
 /** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
 const MIN_ZOOM_OUT_ROWS = 6;
@@ -299,16 +301,20 @@ function getPileFocusCenter(viewport: HTMLElement) {
   };
 }
 
-function getCardStageCenterFromLayout(viewport: HTMLElement, card: Element): StagePoint | null {
+function getCardStageCenterFromLayout(
+  viewport: HTMLElement,
+  card: Element,
+  zoom = 1,
+): StagePoint | null {
   const stage = viewport.querySelector<HTMLElement>(".toy-pile-stage");
-  if (!stage) return null;
+  if (!stage || !(zoom > 0)) return null;
 
   const cardRect = card.getBoundingClientRect();
   const stageRect = stage.getBoundingClientRect();
-
+  // getBoundingClientRect is screen-space; convert back to unscaled stage coords.
   return {
-    x: cardRect.left + cardRect.width / 2 - stageRect.left,
-    y: cardRect.top + cardRect.height / 2 - stageRect.top,
+    x: (cardRect.left + cardRect.width / 2 - stageRect.left) / zoom,
+    y: (cardRect.top + cardRect.height / 2 - stageRect.top) / zoom,
   };
 }
 
@@ -356,6 +362,22 @@ function getCellStageCenter(
   };
 }
 
+function windowAroundFocus(
+  focus: { col: number; row: number },
+  colMin: number,
+  rowMin: number,
+  colCount: number,
+  rowCount: number,
+  pad = OPEN_FOCUS_PAD,
+): CellWindow {
+  return {
+    c0: Math.max(colMin, focus.col - pad),
+    c1: Math.min(colMin + colCount - 1, focus.col + pad),
+    r0: Math.max(rowMin, focus.row - pad),
+    r1: Math.min(rowMin + rowCount - 1, focus.row + pad),
+  };
+}
+
 function getInitialPileView(
   viewport: HTMLElement,
   colMin: number,
@@ -363,12 +385,14 @@ function getInitialPileView(
   focus: { col: number; row: number },
 ) {
   const zoom = getOpenPileZoom(viewport);
-  const centerCard = viewport.querySelector(
-    `[data-pile-col="${focus.col}"][data-pile-row="${focus.row}"]`,
+  // Use grid math (not transformed layout rects) so framing stays correct at any zoom.
+  const lock = getCellStageCenter(
+    viewport,
+    focus.col,
+    focus.row,
+    colMin,
+    rowMin,
   );
-  const lock =
-    (centerCard && getCardStageCenterFromLayout(viewport, centerCard)) ||
-    getCellStageCenter(viewport, focus.col, focus.row, colMin, rowMin);
 
   return {
     zoom,
@@ -816,6 +840,16 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     if (!centeredRef.current) {
       const focus = focusCellRef.current ?? pickRandomFocusCell();
       focusCellRef.current = focus;
+      // Ensure the focus card (and neighbors) are mounted before framing.
+      setVisibleWindow(
+        windowAroundFocus(
+          focus,
+          colMinRef.current,
+          rowMinRef.current,
+          colCountRef.current,
+          rowCountRef.current,
+        ),
+      );
       const opening = getInitialPileView(
         viewport,
         colMinRef.current,

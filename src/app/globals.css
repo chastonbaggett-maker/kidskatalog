@@ -543,16 +543,16 @@ html[data-accent="girls"] .kart-go-btn:hover {
 }
 
 html[data-accent="both"] .kart-go-btn {
-  background: #fff;
-  color: var(--mint);
-  border-color: var(--mint);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 22%, transparent);
+  background: var(--mint);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 35%, transparent);
 }
 
 html[data-accent="both"] .kart-go-btn:hover {
-  background: color-mix(in srgb, var(--mint) 10%, #fff);
-  color: var(--mint);
-  border-color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 88%, #0f766e);
+  color: #fff;
+  border-color: transparent;
 }
 
 @keyframes back-fun-bob {

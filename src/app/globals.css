@@ -904,7 +904,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport--text {
-  --pile-row: 32rem;
+  /* title-only strip under 4/5 media (JS overwrites with measured height) */
+  --pile-row: 29rem;
 }
 
 .toy-pile-viewport:active {

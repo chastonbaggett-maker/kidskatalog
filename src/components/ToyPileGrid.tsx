@@ -68,9 +68,32 @@ type StagePoint = { x: number; y: number };
 type CellWindow = { c0: number; c1: number; r0: number; r1: number };
 
 function getMetrics(viewport: HTMLElement) {
-  const cell = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-cell")) || 160;
-  const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
-  return { cell, gap, stride: cell + gap };
+  const style = getComputedStyle(viewport);
+  // Custom props may be calc()/clamp() strings — prefer used grid track sizes.
+  let cell = parseFloat(style.getPropertyValue("--pile-cell"));
+  let row = parseFloat(style.getPropertyValue("--pile-row"));
+  const gap = parseFloat(style.getPropertyValue("--pile-gap")) || 14;
+
+  const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
+  if (grid) {
+    const gridStyle = getComputedStyle(grid);
+    const colTrack = parseFloat(gridStyle.gridTemplateColumns);
+    const rowTrack = parseFloat(gridStyle.gridTemplateRows);
+    if (colTrack > 0) cell = colTrack;
+    if (rowTrack > 0) row = rowTrack;
+  }
+
+  if (!(cell > 0)) cell = 160;
+  if (!(row > 0)) row = cell * 1.25;
+
+  return {
+    cell,
+    row,
+    gap,
+    colStride: cell + gap,
+    rowStride: row + gap,
+    stride: cell + gap,
+  };
 }
 
 function getPileFormFactor(viewport: HTMLElement) {
@@ -85,21 +108,21 @@ function isPileZoomEnabled(viewport: HTMLElement) {
 }
 
 function getMaxPileZoom(viewport: HTMLElement) {
-  const { cell, stride } = getMetrics(viewport);
+  const { cell, colStride, rowStride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
   const formFactor = getPileFormFactor(viewport);
 
   if (formFactor === "desktop") {
     return Math.max(
-      band.width / (DESKTOP_VISIBLE_COLUMNS * stride),
-      band.height / (DESKTOP_VISIBLE_ROWS * stride),
+      band.width / (DESKTOP_VISIBLE_COLUMNS * colStride),
+      band.height / (DESKTOP_VISIBLE_ROWS * rowStride),
     );
   }
 
   if (formFactor === "tablet") {
     return Math.max(
-      band.width / (TABLET_MAX_ZOOM_IN_COLUMNS * stride),
-      band.height / (TABLET_MAX_ZOOM_IN_ROWS * stride),
+      band.width / (TABLET_MAX_ZOOM_IN_COLUMNS * colStride),
+      band.height / (TABLET_MAX_ZOOM_IN_ROWS * rowStride),
     );
   }
 
@@ -162,12 +185,12 @@ function getPileVisibleBand(viewport: HTMLElement) {
 }
 
 function getMinPileZoom(viewport: HTMLElement) {
-  const { stride } = getMetrics(viewport);
+  const { colStride, rowStride } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
   const { columns, rows } = getMinZoomOutCounts(viewport);
   return Math.max(
-    band.width / (columns * stride),
-    band.height / (rows * stride),
+    band.width / (columns * colStride),
+    band.height / (rows * rowStride),
   );
 }
 
@@ -278,7 +301,7 @@ function getCellStageCenter(
   rowMin: number,
 ) {
   const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
-  const { cell, stride } = getMetrics(viewport);
+  const { cell, row: rowH, colStride, rowStride } = getMetrics(viewport);
   const padding = grid
     ? getGridPadding(grid)
     : { top: 0, left: 0 };
@@ -287,8 +310,8 @@ function getCellStageCenter(
   const colShift = relCol % 2 === 1 ? 0.5 : 0;
 
   return {
-    x: padding.left + relCol * stride + cell / 2,
-    y: padding.top + relRow * stride + cell / 2 + colShift * stride,
+    x: padding.left + relCol * colStride + cell / 2,
+    y: padding.top + relRow * rowStride + rowH / 2 + colShift * rowStride,
   };
 }
 
@@ -372,7 +395,7 @@ function computeVisibleWindow(
   colCount: number,
   rowCount: number,
 ): CellWindow {
-  const { stride } = getMetrics(viewport);
+  const { colStride, rowStride } = getMetrics(viewport);
   const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
   const padding = grid
     ? getGridPadding(grid)
@@ -385,13 +408,13 @@ function computeVisibleWindow(
   const viewBottom = viewTop + viewport.clientHeight / zoom;
 
   const minRelCol =
-    Math.floor((viewLeft - padding.left) / stride) - CULL_PAD_CELLS;
+    Math.floor((viewLeft - padding.left) / colStride) - CULL_PAD_CELLS;
   const maxRelCol =
-    Math.ceil((viewRight - padding.left) / stride) + CULL_PAD_CELLS;
+    Math.ceil((viewRight - padding.left) / colStride) + CULL_PAD_CELLS;
   const minRelRow =
-    Math.floor((viewTop - padding.top) / stride) - CULL_PAD_CELLS;
+    Math.floor((viewTop - padding.top) / rowStride) - CULL_PAD_CELLS;
   const maxRelRow =
-    Math.ceil((viewBottom - padding.top) / stride) + CULL_PAD_CELLS;
+    Math.ceil((viewBottom - padding.top) / rowStride) + CULL_PAD_CELLS;
 
   return {
     c0: Math.max(colMin, colMin + minRelCol),
@@ -659,15 +682,15 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     if (Date.now() - expandCooldownRef.current < EXPAND_COOLDOWN_MS) return;
 
     const scale = zoomRef.current;
-    const { stride } = getMetrics(viewport);
-    const chunkPx = MIN_CHUNK * stride * scale;
+    const { gap, colStride, rowStride } = getMetrics(viewport);
+    const chunkPxX = MIN_CHUNK * colStride * scale;
+    const chunkPxY = MIN_CHUNK * rowStride * scale;
     const { x, y } = panRef.current;
     const band = getPileVisibleBand(viewport);
-    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
     let cols = colCountRef.current;
     let rows = rowCountRef.current;
-    const gridW = cols * stride - gap;
-    const gridH = rows * stride - gap;
+    const gridW = cols * colStride - gap;
+    const gridH = rows * rowStride - gap;
 
     const viewLeft = -x / scale;
     const viewTop = -y / scale;
@@ -684,7 +707,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
       cols += MIN_CHUNK;
       colCountRef.current = cols;
       setColCount(cols);
-      shiftX -= chunkPx;
+      shiftX -= chunkPxX;
       expanded = true;
     }
     if (viewTop < EDGE_THRESHOLD) {
@@ -693,7 +716,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
       rows += MIN_CHUNK;
       rowCountRef.current = rows;
       setRowCount(rows);
-      shiftY -= chunkPx;
+      shiftY -= chunkPxY;
       expanded = true;
     }
     if (viewRight > gridW - EDGE_THRESHOLD) {
@@ -776,6 +799,11 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
       }
     };
   }, []);
+
+  // Row tracks grow/shrink with the text toggle — refresh cull + expand metrics.
+  useLayoutEffect(() => {
+    scheduleVisibleWindow();
+  }, [showText, scheduleVisibleWindow]);
 
   const syncPinch = useCallback(() => {
     const viewport = viewportRef.current;
@@ -1043,7 +1071,9 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     <>
       <div
         ref={viewportRef}
-        className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
+        className={`toy-pile-viewport scroll-pad-bottom min-h-0 flex-1${
+          showText ? " toy-pile-viewport--text" : ""
+        }`}
         aria-label={
           zoomEnabled
             ? "Toy grid — drag to explore, pinch to zoom"

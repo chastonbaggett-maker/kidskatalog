@@ -888,6 +888,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .toy-pile-viewport {
   --pile-cell: clamp(8.75rem, 26vw, 11.5rem);
+  /* Solo cards are 4/5 media; text mode adds the title strip under the photo. */
+  --pile-row: calc(var(--pile-cell) * 1.25);
   --pile-gap: 1rem;
   position: relative;
   overflow: hidden;
@@ -897,6 +899,11 @@ html[data-accent="both"] .kart-go-btn:hover {
   padding: 0;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.toy-pile-viewport--text {
+  /* title line + compact padding under the media */
+  --pile-row: calc(var(--pile-cell) * 1.25 + 2.75rem);
 }
 
 @media (min-width: 640px) {
@@ -927,7 +934,9 @@ html[data-accent="both"] .kart-go-btn:hover {
 .toy-pile-grid {
   display: grid;
   grid-template-columns: repeat(var(--pile-cols, 6), var(--pile-cell));
-  grid-template-rows: repeat(var(--pile-rows, 6), var(--pile-cell));
+  grid-template-rows: repeat(var(--pile-rows, 6), var(--pile-row));
+  justify-items: start;
+  align-items: start;
   gap: var(--pile-gap);
   width: max-content;
   padding: 1.5rem 1rem 2.5rem;
@@ -936,8 +945,8 @@ html[data-accent="both"] .kart-go-btn:hover {
 .toy-pile-card {
   width: var(--pile-cell);
   content-visibility: auto;
-  contain-intrinsic-size: auto var(--pile-cell);
-  transform: translateY(calc((var(--pile-cell) + var(--pile-gap)) * var(--pile-col-shift, 0)));
+  contain-intrinsic-size: auto var(--pile-row);
+  transform: translateY(calc((var(--pile-row) + var(--pile-gap)) * var(--pile-col-shift, 0)));
   border-radius: var(--shelf-radius);
   overflow: visible;
   background: transparent;

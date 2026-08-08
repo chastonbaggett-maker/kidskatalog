@@ -1236,9 +1236,27 @@ html[data-accent="both"] .kart-go-btn:hover {
   color: #fff;
 }
 
-/* Crazy remaps --blue to yellow — keep Add to Kart label dark for contrast. */
+/* Crazy Mode Add to Kart — yellow pill + dark text (beats accent="both" mint outline). */
 .product-detail--crazy .add-kart-btn--ready,
-.page-scroll--crazy .add-kart-btn--ready {
+.page-scroll--crazy .add-kart-btn--ready,
+.app-shell--crazy .add-kart-btn--ready,
+html[data-accent="both"] .product-detail--crazy .add-kart-btn--ready,
+html[data-accent="both"] .page-scroll--crazy .add-kart-btn--ready,
+html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready {
+  --pulse-ring: color-mix(in srgb, #ffe566 75%, white 10%);
+  background: #ffe566;
+  color: #2c2c3a;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(255, 229, 102, 0.35);
+}
+
+html[data-accent="both"] .product-detail--crazy .add-kart-btn--ready:hover,
+html[data-accent="both"] .page-scroll--crazy .add-kart-btn--ready:hover,
+html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
+.product-detail--crazy .add-kart-btn--ready:hover,
+.page-scroll--crazy .add-kart-btn--ready:hover,
+.app-shell--crazy .add-kart-btn--ready:hover {
+  background: #ffe566;
   color: #2c2c3a;
 }
 

@@ -1,0 +1,15 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.autoForwardPortsSource": "hybrid",
+  "remote.portsAttributes": {
+    "3456": {
+      "label": "KidsKatalog",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "elevateIfNeeded": false
+    }
+  },
+  "remote.otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  }
+}

@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
   // next-pwa uses webpack; keep an empty turbopack config for Next 16
   turbopack: {},
   serverExternalPackages: ["@libsql/client", "libsql"],
+  // Allow Cloud Agent / Cloudflare quick-tunnel hosts in dev HMR
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "explosion-supervisors-hampton-cole.trycloudflare.com",
+  ],
   images: {
     remotePatterns: [
       {

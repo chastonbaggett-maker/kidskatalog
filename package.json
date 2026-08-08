@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -H 0.0.0.0 -p 3456",
+    "dev:public": "bash scripts/dev-public.sh",
     "build": "next build --webpack",
     "start": "next start -H 0.0.0.0 -p 3456",
     "lint": "eslint",

@@ -139,7 +139,8 @@ function applyFeedCardMetrics(viewport: HTMLElement, showText: boolean) {
   if (card && card.offsetHeight > 0) {
     viewport.style.setProperty("--pile-row", `${card.offsetHeight}px`);
   } else {
-    const textBlock = showText ? 7.5 * 16 : 0;
+    // Title-only strip in pile text mode (no blurb).
+    const textBlock = showText ? 4.25 * 16 : 0;
     viewport.style.setProperty("--pile-row", `${cell * 1.25 + textBlock}px`);
   }
 
@@ -1269,6 +1270,8 @@ const ToyPileCard = memo(function ToyPileCard({
       <FeedCard
         toy={toy}
         showText={showText}
+        showBlurb={false}
+        titleClassName="text-2xl leading-snug"
         photoLoading="lazy"
         className="w-full"
       />

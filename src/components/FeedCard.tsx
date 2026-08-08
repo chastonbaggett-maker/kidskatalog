@@ -14,6 +14,8 @@ export function FeedCard({
   animateEnter = false,
   photoLoading,
   className,
+  showBlurb = true,
+  titleClassName = "text-xl",
 }: {
   toy: Toy;
   showText: boolean;
@@ -25,6 +27,9 @@ export function FeedCard({
   photoLoading?: "lazy" | "eager";
   /** Replaces default horizontal margins when set (pile mode uses flush width). */
   className?: string;
+  /** When false, text mode shows only the title (pile mode). */
+  showBlurb?: boolean;
+  titleClassName?: string;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -62,12 +67,16 @@ export function FeedCard({
           />
         </Link>
         {showText && (
-          <div className="px-4 pb-4 pt-3">
+          <div className={`px-4 pt-3 ${showBlurb ? "pb-4" : "pb-3 pr-14"}`}>
             <Link href={`/toy/${toy.id}`}>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-[var(--ink)]">
+              <h2
+                className={`font-[family-name:var(--font-display)] font-bold text-[var(--ink)] ${titleClassName}`}
+              >
                 {toy.name}
               </h2>
-              <p className="text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
+              {showBlurb ? (
+                <p className="text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
+              ) : null}
             </Link>
           </div>
         )}

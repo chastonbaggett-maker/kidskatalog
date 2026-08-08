@@ -24,6 +24,14 @@ const EXPAND_COOLDOWN_MS = 450;
 const CULL_PAD_CELLS = 2;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
+/**
+ * Opening framing — focused card fills this fraction of the visible band so
+ * neighbors peek on every edge (matches the Toy Pile load reference).
+ */
+const OPEN_CARD_WIDTH_RATIO = 0.7;
+const OPEN_CARD_HEIGHT_RATIO = 0.58;
+/** Random focus stays near spiral origin so the first view is dense with uniques. */
+const OPEN_FOCUS_RADIUS = 2;
 /** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
 const MIN_ZOOM_OUT_ROWS = 6;
@@ -142,6 +150,24 @@ function getMaxPileZoom(viewport: HTMLElement) {
   // Cards are real feed-card size — never scale above 1:1; only zoom out for perspective.
   if (!(cell > 0)) return 1;
   return Math.min(1, band.width / cell);
+}
+
+/** Zoomed-out open framing — center card prominent, neighbors clipped at the edges. */
+function getOpenPileZoom(viewport: HTMLElement) {
+  const { cell, row } = getMetrics(viewport);
+  const band = getPileVisibleBand(viewport);
+  if (!(cell > 0) || !(row > 0)) return getMaxPileZoom(viewport);
+
+  const byWidth = (band.width * OPEN_CARD_WIDTH_RATIO) / cell;
+  const byHeight = (band.height * OPEN_CARD_HEIGHT_RATIO) / row;
+  return clampZoom(viewport, Math.min(byWidth, byHeight));
+}
+
+function pickRandomFocusCell() {
+  const diameter = OPEN_FOCUS_RADIUS * 2 + 1;
+  const col = Math.floor(Math.random() * diameter) - OPEN_FOCUS_RADIUS;
+  const row = Math.floor(Math.random() * diameter) - OPEN_FOCUS_RADIUS;
+  return { col, row };
 }
 
 function getMinZoomOutCounts(viewport: HTMLElement) {
@@ -332,24 +358,22 @@ function getCellStageCenter(
 
 function getInitialPileView(
   viewport: HTMLElement,
-  colCount: number,
-  rowCount: number,
   colMin: number,
   rowMin: number,
+  focus: { col: number; row: number },
 ) {
-  const zoom = clampZoom(viewport, getMaxPileZoom(viewport));
-  const centerCol = colMin + Math.floor(colCount / 2);
-  const centerRow = rowMin + Math.floor(rowCount / 2);
+  const zoom = getOpenPileZoom(viewport);
   const centerCard = viewport.querySelector(
-    `[data-pile-col="${centerCol}"][data-pile-row="${centerRow}"]`,
+    `[data-pile-col="${focus.col}"][data-pile-row="${focus.row}"]`,
   );
   const lock =
     (centerCard && getCardStageCenterFromLayout(viewport, centerCard)) ||
-    getCellStageCenter(viewport, centerCol, centerRow, colMin, rowMin);
+    getCellStageCenter(viewport, focus.col, focus.row, colMin, rowMin);
 
   return {
     zoom,
     pan: panToFocusPoint(viewport, lock, zoom),
+    focus,
   };
 }
 
@@ -499,6 +523,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
   const rafRef = useRef<number | null>(null);
   const visibleRafRef = useRef<number | null>(null);
   const centeredRef = useRef(false);
+  const focusCellRef = useRef<{ col: number; row: number } | null>(null);
   const expandCooldownRef = useRef(0);
   const expandLockRef = useRef(false);
   const colCountRef = useRef(colCount);
@@ -558,6 +583,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     colMinRef.current = INITIAL_ORIGIN;
     rowMinRef.current = INITIAL_ORIGIN;
     centeredRef.current = false;
+    focusCellRef.current = null;
   }, [filterSeed]);
 
   const syncVisibleWindow = useCallback(() => {
@@ -788,35 +814,38 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     applyFeedCardMetrics(viewport, showText);
 
     if (!centeredRef.current) {
-      const { pan: nextPan, zoom: nextZoom } = getInitialPileView(
+      const focus = focusCellRef.current ?? pickRandomFocusCell();
+      focusCellRef.current = focus;
+      const opening = getInitialPileView(
         viewport,
-        colCount,
-        rowCount,
-        colMin,
-        rowMin,
+        colMinRef.current,
+        rowMinRef.current,
+        focus,
       );
-      commitTransform(nextPan, nextZoom);
+      commitTransform(opening.pan, opening.zoom);
       centeredRef.current = true;
-    } else {
-      scheduleVisibleWindow();
+
+      // Refine metrics after paint, then re-frame the same random card.
+      const raf = requestAnimationFrame(() => {
+        applyFeedCardMetrics(viewport, showText);
+        const refined = getInitialPileView(
+          viewport,
+          colMinRef.current,
+          rowMinRef.current,
+          focus,
+        );
+        commitTransform(refined.pan, refined.zoom);
+      });
+      return () => cancelAnimationFrame(raf);
     }
 
-    // Refine row height after FeedCard paints its text block.
+    scheduleVisibleWindow();
     const raf = requestAnimationFrame(() => {
       applyFeedCardMetrics(viewport, showText);
       scheduleVisibleWindow();
     });
     return () => cancelAnimationFrame(raf);
-  }, [
-    showText,
-    ordered.length,
-    colCount,
-    rowCount,
-    colMin,
-    rowMin,
-    scheduleVisibleWindow,
-    commitTransform,
-  ]);
+  }, [showText, ordered.length, scheduleVisibleWindow, commitTransform]);
 
   useEffect(() => {
     const viewport = viewportRef.current;

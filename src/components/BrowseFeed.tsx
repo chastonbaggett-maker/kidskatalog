@@ -132,6 +132,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
   }, [isChromePhase]);
 
   const [crazyFlash, setCrazyFlash] = useState(false);
+  const [shuffleNonce, setShuffleNonce] = useState(0);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
   const [compactShelfBlocked, setCompactShelfBlocked] = useState(false);
 
@@ -203,6 +204,8 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
   const handleRandomize = useCallback(() => {
     replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+    // Pile keeps its own spiral order — bump so it reshuffles with the feed.
+    setShuffleNonce((n) => n + 1);
   }, [replaceDisplayIds]);
 
   const crazyButtonRefs = useMemo(
@@ -403,6 +406,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
               toys={displayed}
               showText={showText}
               filterSeed={filterSeed}
+              shuffleNonce={shuffleNonce}
             />
           </div>
         )}

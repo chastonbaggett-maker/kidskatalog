@@ -48,6 +48,8 @@ type Props = {
   showText: boolean;
   /** Stable seed from active filters — reshuffles only when filters change. */
   filterSeed: number;
+  /** Bumped by Randomize / Crazy Mode so the pile reshuffles with the feed. */
+  shuffleNonce?: number;
 };
 
 type Pan = { x: number; y: number };
@@ -509,7 +511,12 @@ function toyForCell(col: number, row: number, ordered: Toy[]) {
   return ordered[spiralIndex(col, row) % ordered.length]!;
 }
 
-export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
+export function ToyPileGrid({
+  toys,
+  showText,
+  filterSeed,
+  shuffleNonce = 0,
+}: Props) {
   const router = useRouter();
   const [colMin, setColMin] = useState(INITIAL_ORIGIN);
   const [rowMin, setRowMin] = useState(INITIAL_ORIGIN);
@@ -554,8 +561,13 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
   const rowCountRef = useRef(rowCount);
   const colMinRef = useRef(colMin);
   const rowMinRef = useRef(rowMin);
-  const orderedMetaRef = useRef<{ seed: number; ids: Set<string> }>({
+  const orderedMetaRef = useRef<{
+    seed: number;
+    shuffleNonce: number;
+    ids: Set<string>;
+  }>({
     seed: -1,
+    shuffleNonce: -1,
     ids: new Set(),
   });
 
@@ -564,37 +576,34 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
   colMinRef.current = colMin;
   rowMinRef.current = rowMin;
 
-  // Unique-first order: reshuffle on filter change; append new pages without reshuffling.
+  // Unique-first order: reshuffle on filter / Randomize; append pages without reshuffling.
   useEffect(() => {
     const unique = dedupeToys(toys);
     const meta = orderedMetaRef.current;
+    const orderSeed = (filterSeed + shuffleNonce * 9973) >>> 0;
 
-    if (meta.seed !== filterSeed) {
+    if (
+      meta.seed !== filterSeed ||
+      meta.shuffleNonce !== shuffleNonce ||
+      unique.length < meta.ids.size
+    ) {
       orderedMetaRef.current = {
         seed: filterSeed,
+        shuffleNonce,
         ids: new Set(unique.map((toy) => toy.id)),
       };
-      setOrdered(shuffleWithSeed(unique, filterSeed));
-      return;
-    }
-
-    if (unique.length < meta.ids.size) {
-      orderedMetaRef.current = {
-        seed: filterSeed,
-        ids: new Set(unique.map((toy) => toy.id)),
-      };
-      setOrdered(shuffleWithSeed(unique, filterSeed));
+      setOrdered(shuffleWithSeed(unique, orderSeed));
       return;
     }
 
     const newcomers = unique.filter((toy) => !meta.ids.has(toy.id));
     if (newcomers.length === 0) return;
 
-    const appendSeed = (filterSeed + meta.ids.size * 9973) >>> 0;
+    const appendSeed = (orderSeed + meta.ids.size * 9973) >>> 0;
     const shuffledNew = shuffleWithSeed(newcomers, appendSeed);
     for (const toy of shuffledNew) meta.ids.add(toy.id);
     setOrdered((prev) => [...prev, ...shuffledNew]);
-  }, [toys, filterSeed]);
+  }, [toys, filterSeed, shuffleNonce]);
 
   // Fresh bounds when filters change so the spiral centers on the new set.
   useEffect(() => {

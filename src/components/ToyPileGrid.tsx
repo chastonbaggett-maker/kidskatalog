@@ -378,21 +378,26 @@ function computeVisibleWindow(
     ? getGridPadding(grid)
     : { top: 24, right: 16, bottom: 40, left: 16 };
 
+  // Stage space maps to *relative* grid indices (col - colMin), not absolute spiral coords.
   const viewLeft = -pan.x / zoom;
   const viewTop = -pan.y / zoom;
   const viewRight = viewLeft + viewport.clientWidth / zoom;
   const viewBottom = viewTop + viewport.clientHeight / zoom;
 
-  const minCol = Math.floor((viewLeft - padding.left) / stride) - CULL_PAD_CELLS;
-  const maxCol = Math.ceil((viewRight - padding.left) / stride) + CULL_PAD_CELLS;
-  const minRow = Math.floor((viewTop - padding.top) / stride) - CULL_PAD_CELLS;
-  const maxRow = Math.ceil((viewBottom - padding.top) / stride) + CULL_PAD_CELLS;
+  const minRelCol =
+    Math.floor((viewLeft - padding.left) / stride) - CULL_PAD_CELLS;
+  const maxRelCol =
+    Math.ceil((viewRight - padding.left) / stride) + CULL_PAD_CELLS;
+  const minRelRow =
+    Math.floor((viewTop - padding.top) / stride) - CULL_PAD_CELLS;
+  const maxRelRow =
+    Math.ceil((viewBottom - padding.top) / stride) + CULL_PAD_CELLS;
 
   return {
-    c0: Math.max(colMin, minCol),
-    c1: Math.min(colMin + colCount - 1, maxCol),
-    r0: Math.max(rowMin, minRow),
-    r1: Math.min(rowMin + rowCount - 1, maxRow),
+    c0: Math.max(colMin, colMin + minRelCol),
+    c1: Math.min(colMin + colCount - 1, colMin + maxRelCol),
+    r0: Math.max(rowMin, rowMin + minRelRow),
+    r1: Math.min(rowMin + rowCount - 1, rowMin + maxRelRow),
   };
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   memo,
@@ -13,9 +12,8 @@ import {
 } from "react";
 import type { Toy } from "@/types/toy";
 import { shuffleWithSeed } from "@/lib/shuffle";
-import { ToyPhoto } from "./ToyPhoto";
-import { useAccentStore } from "@/lib/accent-store";
 import { beginRouteChange } from "@/lib/route-change";
+import { FeedCard } from "./FeedCard";
 
 const MIN_CHUNK = 6;
 const INITIAL_SPAN = MIN_CHUNK * 3;
@@ -26,20 +24,12 @@ const EXPAND_COOLDOWN_MS = 450;
 const CULL_PAD_CELLS = 2;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
-/** Mobile focus card width as a fraction of the visible pile band — also caps max zoom. */
-const INITIAL_CENTER_CARD_WIDTH_RATIO = 0.64;
 /** Visible grid span at min zoom on the reference mobile band. */
 const MIN_ZOOM_OUT_COLUMNS = 3;
 const MIN_ZOOM_OUT_ROWS = 6;
 /** Tablet max zoom-out reference — ~6 columns × ~4.5 rows in the visible band. */
 const TABLET_MIN_ZOOM_OUT_COLUMNS = 6;
 const TABLET_MIN_ZOOM_OUT_ROWS = 4.5;
-/** Tablet max zoom-in reference — ~3 columns × ~2.5 rows in the visible band. */
-const TABLET_MAX_ZOOM_IN_COLUMNS = 3;
-const TABLET_MAX_ZOOM_IN_ROWS = 2.5;
-/** Desktop locked view — roughly 25 cards (5×5) in the visible band. */
-const DESKTOP_VISIBLE_COLUMNS = 5;
-const DESKTOP_VISIBLE_ROWS = 5;
 const TABLET_MIN_WIDTH_PX = 640;
 const DESKTOP_MIN_WIDTH_PX = 1024;
 
@@ -108,25 +98,11 @@ function isPileZoomEnabled(viewport: HTMLElement) {
 }
 
 function getMaxPileZoom(viewport: HTMLElement) {
-  const { cell, colStride, rowStride } = getMetrics(viewport);
+  const { cell } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
-  const formFactor = getPileFormFactor(viewport);
-
-  if (formFactor === "desktop") {
-    return Math.max(
-      band.width / (DESKTOP_VISIBLE_COLUMNS * colStride),
-      band.height / (DESKTOP_VISIBLE_ROWS * rowStride),
-    );
-  }
-
-  if (formFactor === "tablet") {
-    return Math.max(
-      band.width / (TABLET_MAX_ZOOM_IN_COLUMNS * colStride),
-      band.height / (TABLET_MAX_ZOOM_IN_ROWS * rowStride),
-    );
-  }
-
-  return (band.width * INITIAL_CENTER_CARD_WIDTH_RATIO) / cell;
+  // Cards are real feed-card size — never scale above 1:1; only zoom out for perspective.
+  if (!(cell > 0)) return 1;
+  return Math.min(1, band.width / cell);
 }
 
 function getMinZoomOutCounts(viewport: HTMLElement) {
@@ -800,10 +776,16 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     };
   }, []);
 
-  // Row tracks grow/shrink with the text toggle — refresh cull + expand metrics.
+  // Match row track to the real FeedCard height (text on/off) so spacing stays exact.
   useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const card = viewport.querySelector<HTMLElement>(".toy-pile-card .feed-card");
+    if (card && card.offsetHeight > 0) {
+      viewport.style.setProperty("--pile-row", `${card.offsetHeight}px`);
+    }
     scheduleVisibleWindow();
-  }, [showText, scheduleVisibleWindow]);
+  }, [showText, ordered.length, scheduleVisibleWindow]);
 
   const syncPinch = useCallback(() => {
     const viewport = viewportRef.current;
@@ -1137,16 +1119,8 @@ const ToyPileCard = memo(function ToyPileCard({
   showText: boolean;
   colShift?: number;
 }) {
-  const audience = useAccentStore((s) => s.audience);
-  const viewBtnClass =
-    audience === "boys"
-      ? "bg-[var(--boys-chip)]"
-      : audience === "girls"
-        ? "bg-[var(--girls-chip)]"
-        : "bg-[var(--mint)]";
-
   return (
-    <article
+    <div
       className="toy-pile-card"
       data-pile-col={col}
       data-pile-row={row}
@@ -1159,49 +1133,12 @@ const ToyPileCard = memo(function ToyPileCard({
         } as React.CSSProperties
       }
     >
-      <div className="toy-pile-card__body transition-transform active:scale-[0.97]">
-        <Link
-          href={`/toy/${toy.id}`}
-          className={`toy-pile-card__media relative block aspect-[4/5] overflow-hidden ${
-            showText ? "toy-pile-card__media--with-text" : "toy-pile-card__media--solo"
-          }`}
-        >
-          <ToyPhoto
-            src={toy.image}
-            alt={toy.imageAlt}
-            loading="lazy"
-            decoding="async"
-            className="toy-pile-card__photo absolute inset-0 h-full w-full object-contain p-2.5 sm:p-3"
-          />
-        </Link>
-        {showText ? (
-          <div className="toy-pile-card__text px-4 pb-4 pt-3 pr-12">
-            <Link href={`/toy/${toy.id}`}>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold leading-snug text-[var(--ink)]">
-                {toy.name}
-              </h2>
-              <p className="text-sm leading-snug text-[var(--ink-soft)]">
-                {toy.blurb}
-              </p>
-            </Link>
-          </div>
-        ) : null}
-        <Link
-          href={`/toy/${toy.id}`}
-          aria-label={`View ${toy.name}`}
-          className={`toy-pile-card__eye absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 sm:h-10 sm:w-10 ${viewBtnClass}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-4 w-4 sm:h-5 sm:w-5">
-            <path
-              d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            <circle cx="12" cy="12" r="2.75" fill="currentColor" />
-          </svg>
-        </Link>
-      </div>
-    </article>
+      <FeedCard
+        toy={toy}
+        showText={showText}
+        photoLoading="lazy"
+        className="w-full"
+      />
+    </div>
   );
 });

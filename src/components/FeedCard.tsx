@@ -13,6 +13,7 @@ export function FeedCard({
   crazyStrike = false,
   animateEnter = false,
   photoLoading,
+  className,
 }: {
   toy: Toy;
   showText: boolean;
@@ -22,6 +23,8 @@ export function FeedCard({
   animateEnter?: boolean;
   /** Override lazy/eager — more-toys uses eager for all cards to avoid decode flash on add. */
   photoLoading?: "lazy" | "eager";
+  /** Replaces default horizontal margins when set (pile mode uses flush width). */
+  className?: string;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -35,9 +38,11 @@ export function FeedCard({
     <article
       data-feed-slot={slotIndex}
       data-toy-id={toy.id}
-      className={`feed-card relative mx-6 sm:mx-4 lg:mx-2 ${
-        crazyStrike ? "feed-card--crazy-strike" : ""
-      }${animateEnter ? " feed-card--enter" : ""}`}
+      className={`feed-card relative ${
+        className ?? "mx-6 sm:mx-4 lg:mx-2"
+      } ${crazyStrike ? "feed-card--crazy-strike" : ""}${
+        animateEnter ? " feed-card--enter" : ""
+      }`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="feed-card__surface relative bg-white">

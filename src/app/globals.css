@@ -404,7 +404,6 @@ html.route-changing .bottom-nav__kart-badge--pop {
 }
 
 .thumb-carousel__photo,
-.toy-pile-card__photo,
 .kart-row__photo {
   position: absolute;
   inset: 0;
@@ -887,10 +886,10 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport {
-  --pile-cell: clamp(8.75rem, 26vw, 11.5rem);
-  /* Solo cards are 4/5 media; text mode adds the title strip under the photo. */
+  /* True feed-card width (1-col + mx-6). Zoom scales perspective only — never a smaller card design. */
+  --pile-cell: calc(100% - 3rem);
   --pile-row: calc(var(--pile-cell) * 1.25);
-  --pile-gap: 1rem;
+  --pile-gap: 2.5rem;
   position: relative;
   overflow: hidden;
   overscroll-behavior: none;
@@ -902,19 +901,23 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport--text {
-  /* Match feed-card text block: text-xl title + text-sm blurb + px-4/pt-3/pb-4 */
-  --pile-row: calc(var(--pile-cell) * 1.25 + 6.25rem);
+  /* title + blurb + feed-card padding under 4/5 media */
+  --pile-row: calc(var(--pile-cell) * 1.25 + 7.5rem);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 720px) {
   .toy-pile-viewport {
-    --pile-cell: clamp(8.75rem, 22vw, 12rem);
+    /* 2-col feed: padding-inline 0.5rem, column gap 1.25rem, card mx-4 */
+    --pile-cell: calc((100% - 2.25rem) / 2 - 2rem);
+    --pile-gap: 2rem;
   }
 }
 
 @media (min-width: 1024px) {
   .toy-pile-viewport {
-    --pile-cell: clamp(9rem, 18vw, 13rem);
+    /* 3-col feed: column gap 1.5rem, card mx-2 */
+    --pile-cell: calc((100% - 3rem) / 3 - 1rem);
+    --pile-gap: 2.25rem;
   }
 }
 
@@ -947,73 +950,14 @@ html[data-accent="both"] .kart-go-btn:hover {
   content-visibility: auto;
   contain-intrinsic-size: auto var(--pile-row);
   transform: translateY(calc((var(--pile-row) + var(--pile-gap)) * var(--pile-col-shift, 0)));
-  border-radius: var(--shelf-radius);
   overflow: visible;
   background: transparent;
-  /* Shadow on host — same recipe as regular FeedCard */
-  box-shadow: var(--shelf-shadow-soft);
 }
 
-.toy-pile-card__body {
-  position: relative;
+/* Pile hosts the real FeedCard — same chrome, type, eye button as regular mode. */
+.toy-pile-card .feed-card {
   width: 100%;
-  overflow: hidden;
-  border-radius: var(--shelf-radius);
-  background-color: #fff;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  isolation: isolate;
-  -webkit-clip-path: inset(0 round var(--shelf-radius));
-  clip-path: inset(0 round var(--shelf-radius));
-}
-
-.toy-pile-card__media {
-  overflow: hidden;
-  contain: layout;
-  transform: translateZ(0);
-  background-color: #fff;
-}
-
-.toy-pile-card__media--solo {
-  border-radius: var(--shelf-radius);
-}
-
-.toy-pile-card__media--with-text {
-  border-radius: var(--shelf-radius) var(--shelf-radius) 0 0;
-}
-
-.toy-pile-card__text {
-  /* Same type scale as FeedCard; clamp so fixed pile rows stay even. */
-  min-height: 5.5rem;
-}
-
-.toy-pile-card__text h2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.toy-pile-card__text p {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.toy-pile-card__media img,
-.toy-pile-card__photo {
-  background-color: #fff;
-  border-radius: inherit;
-}
-
-.toy-pile-card__eye {
-  z-index: 2;
-}
-
-.toy-pile-card--crazy-strike .toy-pile-card__body {
-  animation: crazy-card-flash 0.28s ease-out forwards;
+  margin-inline: 0;
 }
 
 .browse-feed--crazy {
@@ -1149,16 +1093,9 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 .page-scroll--crazy .feed-card__surface,
 .page-scroll--crazy .feed-card > div:first-child,
-.page-scroll--crazy .toy-pile-card__body,
 .page-scroll--crazy .shelf-panel__surface {
   background: #fff;
   box-shadow: none;
-}
-
-.page-scroll--crazy .toy-pile-card {
-  box-shadow:
-    var(--shelf-shadow-soft),
-    0 0 18px rgba(255, 229, 102, 0.22);
 }
 
 .page-scroll--crazy.star-field {
@@ -1188,16 +1125,27 @@ html[data-accent="both"] .kart-go-btn:hover {
 .page-scroll--crazy .feed-card,
 .page-scroll--crazy .feed-card__surface,
 .page-scroll--crazy .feed-card > div:first-child,
-.page-scroll--crazy .toy-pile-card__body,
 .app-shell--crazy .page-scroll :is(.bg-white, form, .product-gallery__stage, .shelf-panel__surface, .age-pop, .feed-load-more),
 .app-shell--crazy .page-scroll .feed-card,
 .app-shell--crazy .page-scroll .feed-card__surface,
 .app-shell--crazy .page-scroll .feed-card > div:first-child,
-.app-shell--crazy .page-scroll .toy-pile-card__body {
+.app-shell--crazy .toy-pile-grid-host .feed-card,
+.app-shell--crazy .toy-pile-grid-host .feed-card__surface,
+.app-shell--crazy .toy-pile-grid-host .feed-card > div:first-child,
+.browse-feed--crazy .toy-pile-grid-host .feed-card,
+.browse-feed--crazy .toy-pile-grid-host .feed-card__surface,
+.browse-feed--crazy .toy-pile-grid-host .feed-card > div:first-child {
   --ink: #2c2c3a;
   --ink-soft: #7a7a8c;
   --foreground: #2c2c3a;
   color: #2c2c3a;
+}
+
+.browse-feed--crazy .toy-pile-grid-host .feed-card {
+  box-shadow:
+    var(--shelf-shadow),
+    0 0 22px rgba(255, 229, 102, 0.26),
+    0 0 44px rgba(255, 252, 220, 0.12);
 }
 
 .product-detail--crazy .product-detail__info,
@@ -2400,10 +2348,6 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
     contain: layout;
   }
 
-  .toy-pile-card__body {
-    contain: layout;
-  }
-
   .kart-go-arrow {
     animation: none !important;
   }
@@ -2437,8 +2381,7 @@ html[data-kart-effects-reduced="true"] .feed-card > div:first-child {
   contain: layout;
 }
 
-html[data-kart-effects-reduced="true"] .product-gallery__stage,
-html[data-kart-effects-reduced="true"] .toy-pile-card__body {
+html[data-kart-effects-reduced="true"] .product-gallery__stage {
   contain: layout;
 }
 

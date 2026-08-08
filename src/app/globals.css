@@ -691,6 +691,60 @@ html[data-accent="both"] .kart-go-btn:hover {
   animation: crazy-btn-strike-pulse 0.28s ease-out;
 }
 
+.filter-crazy-btn__bolt {
+  display: block;
+  flex-shrink: 0;
+  transform-origin: center;
+}
+
+.filter-crazy-btn__bolt--strike {
+  animation: crazy-bolt-lightning 0.32s ease-out;
+}
+
+@keyframes crazy-bolt-lightning {
+  0% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  12% {
+    opacity: 1;
+    filter: brightness(2.4) drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #ffe566);
+    transform: scale(1.35);
+  }
+  22% {
+    opacity: 0.35;
+    filter: brightness(1);
+    transform: scale(0.95);
+  }
+  38% {
+    opacity: 1;
+    filter: brightness(2.8) drop-shadow(0 0 5px #fff) drop-shadow(0 0 10px #ffe566);
+    transform: scale(1.4);
+  }
+  55% {
+    opacity: 0.5;
+    filter: brightness(1.2);
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    filter: brightness(1.9) drop-shadow(0 0 3px #fff);
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-crazy-btn__bolt--strike {
+    animation: none;
+  }
+}
+
 /* Toy Pile mode — 2D pannable grid */
 .filter-pile-btn {
   background: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 48%, #ffc107 100%);

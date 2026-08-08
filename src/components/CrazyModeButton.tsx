@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 
 type Props = {
   crazyMode: boolean;
@@ -30,16 +30,62 @@ export const CrazyModeButton = forwardRef<HTMLButtonElement, Props>(
           }`}
         >
           Crazy Mode
-          <CrazyIcon />
+          <CrazyIcon active={crazyMode} />
         </button>
       </div>
     );
   },
 );
 
-function CrazyIcon() {
+function CrazyIcon({ active }: { active: boolean }) {
+  const [striking, setStriking] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setStriking(false);
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId = 0;
+    let clearFlashId = 0;
+
+    const scheduleNext = () => {
+      const delay = 2000 + Math.random() * 2000; // 2–4s
+      timeoutId = window.setTimeout(() => {
+        if (cancelled) return;
+        setStriking(true);
+        clearFlashId = window.setTimeout(() => {
+          if (!cancelled) setStriking(false);
+        }, 320);
+        scheduleNext();
+      }, delay);
+    };
+
+    scheduleNext();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      window.clearTimeout(clearFlashId);
+    };
+  }, [active]);
+
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+      className={`filter-crazy-btn__bolt${
+        striking ? " filter-crazy-btn__bolt--strike" : ""
+      }`}
+    >
       <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
     </svg>
   );

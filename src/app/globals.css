@@ -886,9 +886,12 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport {
-  /* True feed-card width (1-col + mx-6). Zoom scales perspective only — never a smaller card design. */
-  --pile-cell: calc(100% - 3rem);
-  --pile-row: calc(var(--pile-cell) * 1.25);
+  /*
+   * Pixel sizes are set from JS to match regular feed cards.
+   * Avoid % here — grid is width:max-content, so % tracks collapse to 0.
+   */
+  --pile-cell: 20rem;
+  --pile-row: 25rem;
   --pile-gap: 2.5rem;
   position: relative;
   overflow: hidden;
@@ -901,24 +904,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .toy-pile-viewport--text {
-  /* title + blurb + feed-card padding under 4/5 media */
-  --pile-row: calc(var(--pile-cell) * 1.25 + 7.5rem);
-}
-
-@media (min-width: 720px) {
-  .toy-pile-viewport {
-    /* 2-col feed: padding-inline 0.5rem, column gap 1.25rem, card mx-4 */
-    --pile-cell: calc((100% - 2.25rem) / 2 - 2rem);
-    --pile-gap: 2rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .toy-pile-viewport {
-    /* 3-col feed: column gap 1.5rem, card mx-2 */
-    --pile-cell: calc((100% - 3rem) / 3 - 1rem);
-    --pile-gap: 2.25rem;
-  }
+  --pile-row: 32rem;
 }
 
 .toy-pile-viewport:active {

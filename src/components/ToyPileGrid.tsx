@@ -97,6 +97,45 @@ function isPileZoomEnabled(viewport: HTMLElement) {
   return getPileFormFactor(viewport) !== "desktop";
 }
 
+/** Match regular-mode FeedCard width at the current breakpoint. */
+function feedCardMetricsForWidth(width: number) {
+  if (width >= DESKTOP_MIN_WIDTH_PX) {
+    // 3-col feed: two 1.5rem gaps, card mx-2 (0.5rem each side)
+    return {
+      cell: Math.max(12 * 16, (width - 3 * 16) / 3 - 1 * 16),
+      gap: 2.25 * 16,
+    };
+  }
+  if (width >= 720) {
+    // 2-col feed: padding-inline 0.5rem + 1.25rem gap, card mx-4
+    return {
+      cell: Math.max(12 * 16, (width - 2.25 * 16) / 2 - 2 * 16),
+      gap: 2 * 16,
+    };
+  }
+  // 1-col feed: card mx-6 (1.5rem each side), grid gap 2.5rem
+  return {
+    cell: Math.max(12 * 16, width - 3 * 16),
+    gap: 2.5 * 16,
+  };
+}
+
+function applyFeedCardMetrics(viewport: HTMLElement, showText: boolean) {
+  const { cell, gap } = feedCardMetricsForWidth(viewport.clientWidth);
+  viewport.style.setProperty("--pile-cell", `${cell}px`);
+  viewport.style.setProperty("--pile-gap", `${gap}px`);
+
+  const card = viewport.querySelector<HTMLElement>(".toy-pile-card .feed-card");
+  if (card && card.offsetHeight > 0) {
+    viewport.style.setProperty("--pile-row", `${card.offsetHeight}px`);
+  } else {
+    const textBlock = showText ? 7.5 * 16 : 0;
+    viewport.style.setProperty("--pile-row", `${cell * 1.25 + textBlock}px`);
+  }
+
+  return { cell, gap };
+}
+
 function getMaxPileZoom(viewport: HTMLElement) {
   const { cell } = getMetrics(viewport);
   const band = getPileVisibleBand(viewport);
@@ -392,12 +431,30 @@ function computeVisibleWindow(
   const maxRelRow =
     Math.ceil((viewBottom - padding.top) / rowStride) + CULL_PAD_CELLS;
 
-  return {
-    c0: Math.max(colMin, colMin + minRelCol),
-    c1: Math.min(colMin + colCount - 1, colMin + maxRelCol),
-    r0: Math.max(rowMin, rowMin + minRelRow),
-    r1: Math.min(rowMin + rowCount - 1, rowMin + maxRelRow),
-  };
+  const c0 = Math.max(colMin, colMin + minRelCol);
+  const c1 = Math.min(colMin + colCount - 1, colMin + maxRelCol);
+  const r0 = Math.max(rowMin, rowMin + minRelRow);
+  const r1 = Math.min(rowMin + rowCount - 1, rowMin + maxRelRow);
+
+  // Never cull to an empty set — keep a seed window around the spiral origin.
+  if (c1 < c0 || r1 < r0 || !(colStride > 0) || !(rowStride > 0)) {
+    const midC = Math.min(
+      colMin + colCount - 1,
+      Math.max(colMin, 0),
+    );
+    const midR = Math.min(
+      rowMin + rowCount - 1,
+      Math.max(rowMin, 0),
+    );
+    return {
+      c0: Math.max(colMin, midC - 1),
+      c1: Math.min(colMin + colCount - 1, midC + 1),
+      r0: Math.max(rowMin, midR - 1),
+      r1: Math.min(rowMin + rowCount - 1, midR + 1),
+    };
+  }
+
+  return { c0, c1, r0, r1 };
 }
 
 function toyForCell(col: number, row: number, ordered: Toy[]) {
@@ -723,26 +780,50 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     }, EXPAND_COOLDOWN_MS);
   }, [ordered.length, scheduleVisibleWindow, shiftPan]);
 
+  // Size cells like regular feed cards (px — % tracks collapse on max-content grids).
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport || centeredRef.current || ordered.length === 0) return;
+    if (!viewport || ordered.length === 0) return;
 
-    const { pan: nextPan, zoom: nextZoom } = getInitialPileView(
-      viewport,
-      colCount,
-      rowCount,
-      colMin,
-      rowMin,
-    );
-    commitTransform(nextPan, nextZoom);
-    centeredRef.current = true;
-  }, [colCount, rowCount, colMin, rowMin, ordered.length, commitTransform]);
+    applyFeedCardMetrics(viewport, showText);
+
+    if (!centeredRef.current) {
+      const { pan: nextPan, zoom: nextZoom } = getInitialPileView(
+        viewport,
+        colCount,
+        rowCount,
+        colMin,
+        rowMin,
+      );
+      commitTransform(nextPan, nextZoom);
+      centeredRef.current = true;
+    } else {
+      scheduleVisibleWindow();
+    }
+
+    // Refine row height after FeedCard paints its text block.
+    const raf = requestAnimationFrame(() => {
+      applyFeedCardMetrics(viewport, showText);
+      scheduleVisibleWindow();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [
+    showText,
+    ordered.length,
+    colCount,
+    rowCount,
+    colMin,
+    rowMin,
+    scheduleVisibleWindow,
+    commitTransform,
+  ]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
     const onResize = () => {
+      applyFeedCardMetrics(viewport, showText);
       setZoomEnabled(isPileZoomEnabled(viewport));
 
       const clamped = clampZoom(viewport, zoomRef.current);
@@ -760,7 +841,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     const observer = new ResizeObserver(onResize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [scheduleVisibleWindow, zoomToLockedPoint]);
+  }, [scheduleVisibleWindow, showText, zoomToLockedPoint]);
 
   useEffect(() => {
     return () => {
@@ -775,17 +856,6 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
       }
     };
   }, []);
-
-  // Match row track to the real FeedCard height (text on/off) so spacing stays exact.
-  useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const card = viewport.querySelector<HTMLElement>(".toy-pile-card .feed-card");
-    if (card && card.offsetHeight > 0) {
-      viewport.style.setProperty("--pile-row", `${card.offsetHeight}px`);
-    }
-    scheduleVisibleWindow();
-  }, [showText, ordered.length, scheduleVisibleWindow]);
 
   const syncPinch = useCallback(() => {
     const viewport = viewportRef.current;

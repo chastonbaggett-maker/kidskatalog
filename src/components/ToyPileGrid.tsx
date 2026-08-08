@@ -12,10 +12,18 @@ import {
   useState,
 } from "react";
 import type { Toy } from "@/types/toy";
+import { shuffleWithSeed } from "@/lib/shuffle";
 import { ToyPhoto } from "./ToyPhoto";
 import { useAccentStore } from "@/lib/accent-store";
 import { beginRouteChange } from "@/lib/route-change";
 
+const MIN_CHUNK = 6;
+const INITIAL_SPAN = MIN_CHUNK * 3;
+/** Keep spiral origin (0,0) near the middle of the starting shelf. */
+const INITIAL_ORIGIN = -Math.floor(INITIAL_SPAN / 2);
+const EDGE_THRESHOLD = 220;
+const EXPAND_COOLDOWN_MS = 450;
+const CULL_PAD_CELLS = 2;
 const WHEEL_LOCK_IDLE_MS = 180;
 const DRAG_CLICK_THRESHOLD_PX = 8;
 /** Mobile focus card width as a fraction of the visible pile band — also caps max zoom. */
@@ -38,6 +46,8 @@ const DESKTOP_MIN_WIDTH_PX = 1024;
 type Props = {
   toys: Toy[];
   showText: boolean;
+  /** Stable seed from active filters — reshuffles only when filters change. */
+  filterSeed: number;
 };
 
 type Pan = { x: number; y: number };
@@ -54,6 +64,8 @@ type DragState = {
 };
 
 type StagePoint = { x: number; y: number };
+
+type CellWindow = { c0: number; c1: number; r0: number; r1: number };
 
 function getMetrics(viewport: HTMLElement) {
   const cell = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-cell")) || 160;
@@ -177,42 +189,42 @@ function clampZoom(viewport: HTMLElement, value: number) {
   return Math.min(maxZoom, Math.max(minZoom, value));
 }
 
-/** One unique card per toy — finite shelf, no recycling. */
-function layoutUniquePile(pool: Toy[]) {
-  const n = pool.length;
-  if (n === 0) {
-    return {
-      colCount: 0,
-      rowCount: 0,
-      cells: [] as Array<{ col: number; row: number; toy: Toy }>,
-    };
+/**
+ * Ulam-style spiral index from absolute cell coords.
+ * (0,0)=0, then right → up → left → down, delaying duplicates near the center.
+ */
+function spiralIndex(col: number, row: number): number {
+  if (col === 0 && row === 0) return 0;
+  const layer = Math.max(Math.abs(col), Math.abs(row));
+  const prevMax = (2 * (layer - 1) + 1) ** 2;
+  const t = 2 * layer;
+  if (col === layer && row > -layer) {
+    return prevMax + (row - (1 - layer));
   }
+  if (row === layer && col < layer) {
+    return prevMax + t + (layer - col) - 1;
+  }
+  if (col === -layer && row < layer) {
+    return prevMax + 2 * t + (layer - row) - 1;
+  }
+  return prevMax + 3 * t + (col + layer) - 1;
+}
 
-  // Slightly wider than tall so the pile reads like a shelf, not a tower.
-  const colCount = Math.max(1, Math.ceil(Math.sqrt(n * 1.15)));
-  const rowCount = Math.ceil(n / colCount);
-  const cells = pool.map((toy, index) => ({
-    col: index % colCount,
-    row: Math.floor(index / colCount),
-    toy,
-  }));
-
-  return { colCount, rowCount, cells };
+function dedupeToys(toys: Toy[]) {
+  const seen = new Set<string>();
+  const unique: Toy[] = [];
+  for (const toy of toys) {
+    if (seen.has(toy.id)) continue;
+    seen.add(toy.id);
+    unique.push(toy);
+  }
+  return unique;
 }
 
 function pointerDistance(a: StagePoint, b: StagePoint) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   return Math.hypot(dx, dy);
-}
-
-function intersectionArea(a: DOMRect, b: DOMRect) {
-  const left = Math.max(a.left, b.left);
-  const top = Math.max(a.top, b.top);
-  const right = Math.min(a.right, b.right);
-  const bottom = Math.min(a.bottom, b.bottom);
-  if (right <= left || bottom <= top) return 0;
-  return (right - left) * (bottom - top);
 }
 
 function getPileFocusCenter(viewport: HTMLElement) {
@@ -256,82 +268,6 @@ function getGridPadding(grid: HTMLElement) {
     bottom: parseFloat(style.paddingBottom) || 0,
     left: parseFloat(style.paddingLeft) || 0,
   };
-}
-
-/** Stage-space size of the card grid, including stagger overhang on odd columns. */
-function getPileContentSize(
-  viewport: HTMLElement,
-  colCount: number,
-  rowCount: number,
-) {
-  const { cell, gap, stride } = getMetrics(viewport);
-  const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
-  const padding = grid
-    ? getGridPadding(grid)
-    : { top: 24, right: 16, bottom: 40, left: 16 };
-  const cols = Math.max(0, colCount);
-  const rows = Math.max(0, rowCount);
-
-  return {
-    width:
-      padding.left +
-      padding.right +
-      cols * cell +
-      Math.max(0, cols - 1) * gap,
-    // Odd columns are shifted down by half a stride via transform (not in layout).
-    height:
-      padding.top +
-      padding.bottom +
-      rows * cell +
-      Math.max(0, rows - 1) * gap +
-      stride * 0.5,
-  };
-}
-
-/**
- * Keep the visible pile band over card content — hit a wall at empty edges.
- * If the grid is smaller than the band, pin it centered in the band.
- */
-function clampPanToContent(
-  viewport: HTMLElement,
-  pan: Pan,
-  zoom: number,
-  contentW: number,
-  contentH: number,
-): Pan {
-  if (contentW <= 0 || contentH <= 0 || zoom <= 0) return pan;
-
-  const band = getPileVisibleBand(viewport);
-  const bandLeft = 0;
-  const bandRight = band.width;
-  const bandTop = band.centerY - band.height / 2;
-  const bandBottom = band.centerY + band.height / 2;
-
-  const scaledW = contentW * zoom;
-  const scaledH = contentH * zoom;
-  const bandW = bandRight - bandLeft;
-  const bandH = bandBottom - bandTop;
-
-  let x = pan.x;
-  let y = pan.y;
-
-  if (scaledW <= bandW) {
-    x = bandLeft + (bandW - scaledW) / 2;
-  } else {
-    const minX = bandRight - scaledW;
-    const maxX = bandLeft;
-    x = Math.min(maxX, Math.max(minX, x));
-  }
-
-  if (scaledH <= bandH) {
-    y = bandTop + (bandH - scaledH) / 2;
-  } else {
-    const minY = bandBottom - scaledH;
-    const maxY = bandTop;
-    y = Math.min(maxY, Math.max(minY, y));
-  }
-
-  return { x, y };
 }
 
 function getCellStageCenter(
@@ -427,11 +363,59 @@ function findNearestCard(viewport: HTMLElement, clientX: number, clientY: number
   return bestEl;
 }
 
-export function ToyPileGrid({ toys, showText }: Props) {
+function computeVisibleWindow(
+  viewport: HTMLElement,
+  pan: Pan,
+  zoom: number,
+  colMin: number,
+  rowMin: number,
+  colCount: number,
+  rowCount: number,
+): CellWindow {
+  const { stride } = getMetrics(viewport);
+  const grid = viewport.querySelector<HTMLElement>(".toy-pile-grid");
+  const padding = grid
+    ? getGridPadding(grid)
+    : { top: 24, right: 16, bottom: 40, left: 16 };
+
+  const viewLeft = -pan.x / zoom;
+  const viewTop = -pan.y / zoom;
+  const viewRight = viewLeft + viewport.clientWidth / zoom;
+  const viewBottom = viewTop + viewport.clientHeight / zoom;
+
+  const minCol = Math.floor((viewLeft - padding.left) / stride) - CULL_PAD_CELLS;
+  const maxCol = Math.ceil((viewRight - padding.left) / stride) + CULL_PAD_CELLS;
+  const minRow = Math.floor((viewTop - padding.top) / stride) - CULL_PAD_CELLS;
+  const maxRow = Math.ceil((viewBottom - padding.top) / stride) + CULL_PAD_CELLS;
+
+  return {
+    c0: Math.max(colMin, minCol),
+    c1: Math.min(colMin + colCount - 1, maxCol),
+    r0: Math.max(rowMin, minRow),
+    r1: Math.min(rowMin + rowCount - 1, maxRow),
+  };
+}
+
+function toyForCell(col: number, row: number, ordered: Toy[]) {
+  return ordered[spiralIndex(col, row) % ordered.length]!;
+}
+
+export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
   const router = useRouter();
+  const [colMin, setColMin] = useState(INITIAL_ORIGIN);
+  const [rowMin, setRowMin] = useState(INITIAL_ORIGIN);
+  const [colCount, setColCount] = useState(INITIAL_SPAN);
+  const [rowCount, setRowCount] = useState(INITIAL_SPAN);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [zoomEnabled, setZoomEnabled] = useState(true);
+  const [visibleWindow, setVisibleWindow] = useState<CellWindow>({
+    c0: INITIAL_ORIGIN,
+    c1: INITIAL_ORIGIN + INITIAL_SPAN - 1,
+    r0: INITIAL_ORIGIN,
+    r1: INITIAL_ORIGIN + INITIAL_SPAN - 1,
+  });
+  const [ordered, setOrdered] = useState<Toy[]>([]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -452,60 +436,117 @@ export function ToyPileGrid({ toys, showText }: Props) {
   );
   const wheelLockTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const visibleRafRef = useRef<number | null>(null);
   const centeredRef = useRef(false);
-  const colCountRef = useRef(0);
-  const rowCountRef = useRef(0);
-
-  const pool = useMemo(() => {
-    const seen = new Set<string>();
-    const unique: Toy[] = [];
-    for (const toy of toys) {
-      if (seen.has(toy.id)) continue;
-      seen.add(toy.id);
-      unique.push(toy);
-    }
-    return unique;
-  }, [toys]);
-
-  const { colCount, rowCount, cells } = useMemo(
-    () => layoutUniquePile(pool),
-    [pool],
-  );
+  const expandCooldownRef = useRef(0);
+  const expandLockRef = useRef(false);
+  const colCountRef = useRef(colCount);
+  const rowCountRef = useRef(rowCount);
+  const colMinRef = useRef(colMin);
+  const rowMinRef = useRef(rowMin);
+  const orderedMetaRef = useRef<{ seed: number; ids: Set<string> }>({
+    seed: -1,
+    ids: new Set(),
+  });
 
   colCountRef.current = colCount;
   rowCountRef.current = rowCount;
+  colMinRef.current = colMin;
+  rowMinRef.current = rowMin;
 
-  const poolKey = useMemo(() => pool.map((toy) => toy.id).join("\0"), [pool]);
+  // Unique-first order: reshuffle on filter change; append new pages without reshuffling.
+  useEffect(() => {
+    const unique = dedupeToys(toys);
+    const meta = orderedMetaRef.current;
 
-  const applyStageTransform = useCallback((nextPan: Pan, nextZoom: number) => {
+    if (meta.seed !== filterSeed) {
+      orderedMetaRef.current = {
+        seed: filterSeed,
+        ids: new Set(unique.map((toy) => toy.id)),
+      };
+      setOrdered(shuffleWithSeed(unique, filterSeed));
+      return;
+    }
+
+    if (unique.length < meta.ids.size) {
+      orderedMetaRef.current = {
+        seed: filterSeed,
+        ids: new Set(unique.map((toy) => toy.id)),
+      };
+      setOrdered(shuffleWithSeed(unique, filterSeed));
+      return;
+    }
+
+    const newcomers = unique.filter((toy) => !meta.ids.has(toy.id));
+    if (newcomers.length === 0) return;
+
+    const appendSeed = (filterSeed + meta.ids.size * 9973) >>> 0;
+    const shuffledNew = shuffleWithSeed(newcomers, appendSeed);
+    for (const toy of shuffledNew) meta.ids.add(toy.id);
+    setOrdered((prev) => [...prev, ...shuffledNew]);
+  }, [toys, filterSeed]);
+
+  // Fresh bounds when filters change so the spiral centers on the new set.
+  useEffect(() => {
+    setColMin(INITIAL_ORIGIN);
+    setRowMin(INITIAL_ORIGIN);
+    setColCount(INITIAL_SPAN);
+    setRowCount(INITIAL_SPAN);
+    colCountRef.current = INITIAL_SPAN;
+    rowCountRef.current = INITIAL_SPAN;
+    colMinRef.current = INITIAL_ORIGIN;
+    rowMinRef.current = INITIAL_ORIGIN;
+    centeredRef.current = false;
+  }, [filterSeed]);
+
+  const syncVisibleWindow = useCallback(() => {
     const viewport = viewportRef.current;
-    let clampedPan = nextPan;
-    if (viewport) {
-      const { width, height } = getPileContentSize(
-        viewport,
-        colCountRef.current,
-        rowCountRef.current,
-      );
-      clampedPan = clampPanToContent(
-        viewport,
-        nextPan,
-        nextZoom,
-        width,
-        height,
-      );
-    }
-    panRef.current = clampedPan;
-    zoomRef.current = nextZoom;
-    const stage = stageRef.current;
-    if (stage) {
-      stage.style.transform = `translate3d(${clampedPan.x}px, ${clampedPan.y}px, 0) scale(${nextZoom})`;
-    }
+    if (!viewport) return;
+    const next = computeVisibleWindow(
+      viewport,
+      panRef.current,
+      zoomRef.current,
+      colMinRef.current,
+      rowMinRef.current,
+      colCountRef.current,
+      rowCountRef.current,
+    );
+    setVisibleWindow((prev) =>
+      prev.c0 === next.c0 &&
+      prev.c1 === next.c1 &&
+      prev.r0 === next.r0 &&
+      prev.r1 === next.r1
+        ? prev
+        : next,
+    );
   }, []);
+
+  const scheduleVisibleWindow = useCallback(() => {
+    if (visibleRafRef.current !== null) return;
+    visibleRafRef.current = requestAnimationFrame(() => {
+      visibleRafRef.current = null;
+      syncVisibleWindow();
+    });
+  }, [syncVisibleWindow]);
+
+  const applyStageTransform = useCallback(
+    (nextPan: Pan, nextZoom: number) => {
+      panRef.current = nextPan;
+      zoomRef.current = nextZoom;
+      const stage = stageRef.current;
+      if (stage) {
+        stage.style.transform = `translate3d(${nextPan.x}px, ${nextPan.y}px, 0) scale(${nextZoom})`;
+      }
+      scheduleVisibleWindow();
+    },
+    [scheduleVisibleWindow],
+  );
 
   const syncTransformState = useCallback(() => {
     setPan({ ...panRef.current });
     setZoom(zoomRef.current);
-  }, []);
+    syncVisibleWindow();
+  }, [syncVisibleWindow]);
 
   const commitTransform = useCallback(
     (nextPan: Pan, nextZoom: number) => {
@@ -529,10 +570,10 @@ export function ToyPileGrid({ toys, showText }: Props) {
       const viewportRect = viewport.getBoundingClientRect();
       const px = clientX - viewportRect.left;
       const py = clientY - viewportRect.top;
-      const zoom = zoomRef.current;
+      const nextZoom = zoomRef.current;
       return {
-        x: (px - panRef.current.x) / zoom,
-        y: (py - panRef.current.y) / zoom,
+        x: (px - panRef.current.x) / nextZoom,
+        y: (py - panRef.current.y) / nextZoom,
       };
     },
     [],
@@ -569,6 +610,19 @@ export function ToyPileGrid({ toys, showText }: Props) {
     [applyStageTransform, commitTransform],
   );
 
+  const shiftPan = useCallback(
+    (dx: number, dy: number) => {
+      commitTransform(
+        {
+          x: panRef.current.x + dx,
+          y: panRef.current.y + dy,
+        },
+        zoomRef.current,
+      );
+    },
+    [commitTransform],
+  );
+
   const navigateToToyAtPoint = useCallback(
     (clientX: number, clientY: number) => {
       const link = findToyLinkAtClientPoint(clientX, clientY);
@@ -594,27 +648,91 @@ export function ToyPileGrid({ toys, showText }: Props) {
     [router],
   );
 
-  // Re-center when the unique toy set changes (filters / search).
-  useEffect(() => {
-    centeredRef.current = false;
-  }, [poolKey]);
+  const maybeExpand = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || expandLockRef.current || ordered.length === 0) return;
+    if (Date.now() - expandCooldownRef.current < EXPAND_COOLDOWN_MS) return;
+
+    const scale = zoomRef.current;
+    const { stride } = getMetrics(viewport);
+    const chunkPx = MIN_CHUNK * stride * scale;
+    const { x, y } = panRef.current;
+    const band = getPileVisibleBand(viewport);
+    const gap = parseFloat(getComputedStyle(viewport).getPropertyValue("--pile-gap")) || 14;
+    let cols = colCountRef.current;
+    let rows = rowCountRef.current;
+    const gridW = cols * stride - gap;
+    const gridH = rows * stride - gap;
+
+    const viewLeft = -x / scale;
+    const viewTop = -y / scale;
+    const viewRight = viewLeft + band.width / scale;
+    const viewBottom = viewTop + band.height / scale;
+
+    let expanded = false;
+    let shiftX = 0;
+    let shiftY = 0;
+
+    if (viewLeft < EDGE_THRESHOLD) {
+      setColMin((min) => min - MIN_CHUNK);
+      colMinRef.current -= MIN_CHUNK;
+      cols += MIN_CHUNK;
+      colCountRef.current = cols;
+      setColCount(cols);
+      shiftX -= chunkPx;
+      expanded = true;
+    }
+    if (viewTop < EDGE_THRESHOLD) {
+      setRowMin((min) => min - MIN_CHUNK);
+      rowMinRef.current -= MIN_CHUNK;
+      rows += MIN_CHUNK;
+      rowCountRef.current = rows;
+      setRowCount(rows);
+      shiftY -= chunkPx;
+      expanded = true;
+    }
+    if (viewRight > gridW - EDGE_THRESHOLD) {
+      cols += MIN_CHUNK;
+      colCountRef.current = cols;
+      setColCount(cols);
+      expanded = true;
+    }
+    if (viewBottom > gridH - EDGE_THRESHOLD) {
+      rows += MIN_CHUNK;
+      rowCountRef.current = rows;
+      setRowCount(rows);
+      expanded = true;
+    }
+
+    if (!expanded) return;
+
+    if (shiftX !== 0 || shiftY !== 0) {
+      shiftPan(shiftX, shiftY);
+    } else {
+      scheduleVisibleWindow();
+    }
+
+    expandLockRef.current = true;
+    expandCooldownRef.current = Date.now();
+    window.setTimeout(() => {
+      expandLockRef.current = false;
+    }, EXPAND_COOLDOWN_MS);
+  }, [ordered.length, scheduleVisibleWindow, shiftPan]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport || centeredRef.current || colCount === 0 || rowCount === 0) {
-      return;
-    }
+    if (!viewport || centeredRef.current || ordered.length === 0) return;
 
-    const { pan, zoom } = getInitialPileView(
+    const { pan: nextPan, zoom: nextZoom } = getInitialPileView(
       viewport,
       colCount,
       rowCount,
-      0,
-      0,
+      colMin,
+      rowMin,
     );
-    commitTransform(pan, zoom);
+    commitTransform(nextPan, nextZoom);
     centeredRef.current = true;
-  }, [colCount, rowCount, poolKey, commitTransform]);
+  }, [colCount, rowCount, colMin, rowMin, ordered.length, commitTransform]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -630,18 +748,26 @@ export function ToyPileGrid({ toys, showText }: Props) {
           y: (viewport.clientHeight / 2 - panRef.current.y) / zoomRef.current,
         };
         zoomToLockedPoint(clamped, lock);
+      } else {
+        scheduleVisibleWindow();
       }
     };
 
     const observer = new ResizeObserver(onResize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [zoomToLockedPoint]);
+  }, [scheduleVisibleWindow, zoomToLockedPoint]);
 
   useEffect(() => {
     return () => {
       if (wheelLockTimerRef.current !== null) {
         window.clearTimeout(wheelLockTimerRef.current);
+      }
+      if (visibleRafRef.current !== null) {
+        cancelAnimationFrame(visibleRafRef.current);
+      }
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
       }
     };
   }, []);
@@ -760,11 +886,9 @@ export function ToyPileGrid({ toys, showText }: Props) {
         },
         zoomRef.current,
       );
-      // Absorb overscroll against the wall so reversing doesn't feel sticky.
-      drag.originX = panRef.current.x - dx;
-      drag.originY = panRef.current.y - dy;
+      maybeExpand();
     },
-    [applyStageTransform, syncPinch],
+    [applyStageTransform, maybeExpand, syncPinch],
   );
 
   const endPointer = useCallback(
@@ -787,6 +911,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
         }
         dragRef.current = null;
         syncTransformState();
+        maybeExpand();
       }
 
       if (pointersRef.current.size === 0) {
@@ -810,7 +935,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
         }
       }
     },
-    [navigateToToyAtPoint, syncTransformState],
+    [maybeExpand, navigateToToyAtPoint, syncTransformState],
   );
 
   const onViewportClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -853,6 +978,7 @@ export function ToyPileGrid({ toys, showText }: Props) {
         const factor = Math.exp(-e.deltaY * 0.0025);
         const { lock, focus } = wheelLockRef.current;
         zoomToLockedPoint(zoomRef.current * factor, lock, false, focus);
+        maybeExpand();
         return;
       }
 
@@ -863,8 +989,9 @@ export function ToyPileGrid({ toys, showText }: Props) {
         },
         zoomRef.current,
       );
+      maybeExpand();
     },
-    [commitTransform, resolveStageLock, zoomToLockedPoint],
+    [commitTransform, maybeExpand, resolveStageLock, zoomToLockedPoint],
   );
 
   useEffect(() => {
@@ -874,7 +1001,28 @@ export function ToyPileGrid({ toys, showText }: Props) {
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
 
-  if (pool.length === 0) {
+  const visibleCells = useMemo(() => {
+    if (ordered.length === 0) return [];
+    const { c0, c1, r0, r1 } = visibleWindow;
+    if (c1 < c0 || r1 < r0) return [];
+
+    const cells: Array<{ col: number; row: number; toy: Toy; colShift: number }> =
+      [];
+    for (let row = r0; row <= r1; row++) {
+      for (let col = c0; col <= c1; col++) {
+        const relCol = col - colMin;
+        cells.push({
+          col,
+          row,
+          toy: toyForCell(col, row, ordered),
+          colShift: relCol % 2 === 1 ? 0.5 : 0,
+        });
+      }
+    }
+    return cells;
+  }, [ordered, visibleWindow, colMin]);
+
+  if (ordered.length === 0) {
     return (
       <div className="toy-pile-empty scroll-pad-bottom flex flex-1 items-center justify-center px-6">
         <div className="shelf-panel w-full max-w-md">
@@ -911,16 +1059,23 @@ export function ToyPileGrid({ toys, showText }: Props) {
         >
           <div
             className="toy-pile-grid"
-            style={{ "--pile-cols": colCount } as React.CSSProperties}
+            style={
+              {
+                "--pile-cols": colCount,
+                "--pile-rows": rowCount,
+              } as React.CSSProperties
+            }
           >
-            {cells.map(({ col, row, toy }) => (
+            {visibleCells.map(({ col, row, toy, colShift }) => (
               <ToyPileCard
-                key={toy.id}
+                key={`pile-${col}-${row}`}
                 col={col}
                 row={row}
+                relCol={col - colMin}
+                relRow={row - rowMin}
                 toy={toy}
                 showText={showText}
-                colShift={col % 2 === 1 ? 0.5 : 0}
+                colShift={colShift}
               />
             ))}
           </div>
@@ -933,12 +1088,16 @@ export function ToyPileGrid({ toys, showText }: Props) {
 const ToyPileCard = memo(function ToyPileCard({
   col,
   row,
+  relCol,
+  relRow,
   toy,
   showText,
   colShift = 0,
 }: {
   col: number;
   row: number;
+  relCol: number;
+  relRow: number;
   toy: Toy;
   showText: boolean;
   colShift?: number;
@@ -957,7 +1116,13 @@ const ToyPileCard = memo(function ToyPileCard({
       data-pile-col={col}
       data-pile-row={row}
       data-toy-id={toy.id}
-      style={{ "--pile-col-shift": colShift } as React.CSSProperties}
+      style={
+        {
+          gridColumn: relCol + 1,
+          gridRow: relRow + 1,
+          "--pile-col-shift": colShift,
+        } as React.CSSProperties
+      }
     >
       <div className="toy-pile-card__body transition-transform active:scale-[0.97]">
         <Link

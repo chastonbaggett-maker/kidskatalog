@@ -36,6 +36,21 @@ type ShelfMode = "hidden" | "shown" | "leaving";
 
 const FEED_PAGE_SIZE = 20;
 
+function pileFilterSeed(
+  category: CategoryId | undefined,
+  audience: string,
+  age: number | null,
+  query: string,
+) {
+  const key = `${category ?? ""}|${audience}|${age ?? ""}|${query}`;
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 type Props = {
   category?: CategoryId;
   initialPage?: CatalogPageResult;
@@ -59,6 +74,10 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
   const crazyOn = crazyMode;
   const pileOn = toyPileMode;
+  const filterSeed = useMemo(
+    () => pileFilterSeed(category, audience, age, query),
+    [category, audience, age, query],
+  );
 
   const catalog = useCatalogPage({
     category,
@@ -77,6 +96,12 @@ export function BrowseFeed({ category, initialPage }: Props) {
     loading,
     loadMore,
   } = catalog;
+
+  // Drain every filter-matching toy into the pile (full catalog when unfiltered).
+  useEffect(() => {
+    if (!pileOn || loading || !hasMore) return;
+    void loadMore();
+  }, [pileOn, loading, hasMore, loadMore, displayIds.length]);
 
   const isChromePhase = isPileChromePhase(enterPhase);
   const isTransitioning = isPileTransitioning(enterPhase);
@@ -374,7 +399,11 @@ export function BrowseFeed({ category, initialPage }: Props) {
       >
         {pileOn && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
-            <ToyPileGrid toys={displayed} showText={showText} />
+            <ToyPileGrid
+              toys={displayed}
+              showText={showText}
+              filterSeed={filterSeed}
+            />
           </div>
         )}
 

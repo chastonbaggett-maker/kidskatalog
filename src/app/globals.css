@@ -927,6 +927,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 .toy-pile-grid {
   display: grid;
   grid-template-columns: repeat(var(--pile-cols, 6), var(--pile-cell));
+  grid-template-rows: repeat(var(--pile-rows, 6), var(--pile-cell));
   gap: var(--pile-gap);
   width: max-content;
   padding: 1.5rem 1rem 2.5rem;

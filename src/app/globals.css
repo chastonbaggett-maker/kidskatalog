@@ -891,7 +891,8 @@ html[data-accent="both"] .kart-go-btn:hover {
    * Avoid % here — grid is width:max-content, so % tracks collapse to 0.
    */
   --pile-cell: 20rem;
-  --pile-row: 25rem;
+  /* Always title-slot tall so text toggle doesn't reflow the shelf */
+  --pile-row: 29rem;
   --pile-gap: 2.5rem;
   position: relative;
   overflow: hidden;
@@ -903,10 +904,6 @@ html[data-accent="both"] .kart-go-btn:hover {
   -webkit-user-select: none;
 }
 
-.toy-pile-viewport--text {
-  /* title-only strip under 4/5 media (JS overwrites with measured height) */
-  --pile-row: 29rem;
-}
 
 .toy-pile-viewport:active {
   cursor: grabbing;
@@ -944,7 +941,26 @@ html[data-accent="both"] .kart-go-btn:hover {
 /* Pile hosts the real FeedCard — same chrome, type, eye button as regular mode. */
 .toy-pile-card .feed-card {
   width: 100%;
+  height: 100%;
   margin-inline: 0;
+}
+
+/* Fixed card box: title slot always reserved; media absorbs the space when text is off. */
+.toy-pile-card .feed-card--stable-text .feed-card__surface--stable-text {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.toy-pile-card .feed-card__media--stable-text {
+  flex: 1 1 auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.toy-pile-card .feed-card__title-slot--stable {
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
 
 .browse-feed--crazy {

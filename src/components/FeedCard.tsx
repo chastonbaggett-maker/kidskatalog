@@ -16,6 +16,8 @@ export function FeedCard({
   className,
   showBlurb = true,
   titleClassName = "text-xl",
+  /** Pile: keep card height fixed while toggling text so the shelf doesn't jump. */
+  stableTextLayout = false,
 }: {
   toy: Toy;
   showText: boolean;
@@ -30,6 +32,7 @@ export function FeedCard({
   /** When false, text mode shows only the title (pile mode). */
   showBlurb?: boolean;
   titleClassName?: string;
+  stableTextLayout?: boolean;
 }) {
   const audience = useAccentStore((s) => s.audience);
   const viewBtnClass =
@@ -47,14 +50,20 @@ export function FeedCard({
         className ?? "mx-6 sm:mx-4 lg:mx-2"
       } ${crazyStrike ? "feed-card--crazy-strike" : ""}${
         animateEnter ? " feed-card--enter" : ""
-      }`}
+      }${stableTextLayout ? " feed-card--stable-text" : ""}`}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
-      <div className="feed-card__surface relative bg-white">
+      <div
+        className={`feed-card__surface relative bg-white${
+          stableTextLayout ? " feed-card__surface--stable-text" : ""
+        }`}
+      >
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}
-          className="feed-card__media block bg-white"
+          className={`feed-card__media block bg-white${
+            stableTextLayout ? " feed-card__media--stable-text" : ""
+          }`}
         >
           <ToyPhoto
             src={toy.image}
@@ -66,8 +75,12 @@ export function FeedCard({
             className="feed-card__photo"
           />
         </Link>
-        {showText && (
-          <div className={`px-4 pt-3 ${showBlurb ? "pb-4" : "pb-3 pr-14"}`}>
+        {showText ? (
+          <div
+            className={`feed-card__title-slot px-4 pt-3 ${
+              showBlurb ? "pb-4" : "pb-3 pr-14"
+            }${stableTextLayout ? " feed-card__title-slot--stable" : ""}`}
+          >
             <Link href={`/toy/${toy.id}`}>
               <h2
                 className={`font-[family-name:var(--font-display)] font-bold text-[var(--ink)] ${titleClassName}`}
@@ -79,7 +92,7 @@ export function FeedCard({
               ) : null}
             </Link>
           </div>
-        )}
+        ) : null}
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}

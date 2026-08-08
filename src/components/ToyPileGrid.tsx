@@ -130,19 +130,18 @@ function feedCardMetricsForWidth(width: number) {
   };
 }
 
-function applyFeedCardMetrics(viewport: HTMLElement, showText: boolean) {
+/** Title-only strip reserved in pile so toggling text doesn't resize rows. */
+const PILE_TITLE_SLOT_PX = 4.25 * 16;
+
+function applyFeedCardMetrics(viewport: HTMLElement) {
   const { cell, gap } = feedCardMetricsForWidth(viewport.clientWidth);
   viewport.style.setProperty("--pile-cell", `${cell}px`);
   viewport.style.setProperty("--pile-gap", `${gap}px`);
-
-  const card = viewport.querySelector<HTMLElement>(".toy-pile-card .feed-card");
-  if (card && card.offsetHeight > 0) {
-    viewport.style.setProperty("--pile-row", `${card.offsetHeight}px`);
-  } else {
-    // Title-only strip in pile text mode (no blurb).
-    const textBlock = showText ? 4.25 * 16 : 0;
-    viewport.style.setProperty("--pile-row", `${cell * 1.25 + textBlock}px`);
-  }
+  // Always size rows for title-on height — media fills the extra space when text is off.
+  viewport.style.setProperty(
+    "--pile-row",
+    `${cell * 1.25 + PILE_TITLE_SLOT_PX}px`,
+  );
 
   return { cell, gap };
 }
@@ -836,7 +835,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     const viewport = viewportRef.current;
     if (!viewport || ordered.length === 0) return;
 
-    applyFeedCardMetrics(viewport, showText);
+    applyFeedCardMetrics(viewport);
 
     if (!centeredRef.current) {
       const focus = focusCellRef.current ?? pickRandomFocusCell();
@@ -862,7 +861,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
 
       // Refine metrics after paint, then re-frame the same random card.
       const raf = requestAnimationFrame(() => {
-        applyFeedCardMetrics(viewport, showText);
+        applyFeedCardMetrics(viewport);
         const refined = getInitialPileView(
           viewport,
           colMinRef.current,
@@ -876,18 +875,18 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
 
     scheduleVisibleWindow();
     const raf = requestAnimationFrame(() => {
-      applyFeedCardMetrics(viewport, showText);
+      applyFeedCardMetrics(viewport);
       scheduleVisibleWindow();
     });
     return () => cancelAnimationFrame(raf);
-  }, [showText, ordered.length, scheduleVisibleWindow, commitTransform]);
+  }, [ordered.length, scheduleVisibleWindow, commitTransform]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
     const onResize = () => {
-      applyFeedCardMetrics(viewport, showText);
+      applyFeedCardMetrics(viewport);
       setZoomEnabled(isPileZoomEnabled(viewport));
 
       const clamped = clampZoom(viewport, zoomRef.current);
@@ -905,7 +904,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     const observer = new ResizeObserver(onResize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [scheduleVisibleWindow, showText, zoomToLockedPoint]);
+  }, [scheduleVisibleWindow, zoomToLockedPoint]);
 
   useEffect(() => {
     return () => {
@@ -1187,9 +1186,7 @@ export function ToyPileGrid({ toys, showText, filterSeed }: Props) {
     <>
       <div
         ref={viewportRef}
-        className={`toy-pile-viewport scroll-pad-bottom min-h-0 flex-1${
-          showText ? " toy-pile-viewport--text" : ""
-        }`}
+        className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
         aria-label={
           zoomEnabled
             ? "Toy grid — drag to explore, pinch to zoom"
@@ -1271,6 +1268,7 @@ const ToyPileCard = memo(function ToyPileCard({
         toy={toy}
         showText={showText}
         showBlurb={false}
+        stableTextLayout
         titleClassName="text-2xl leading-snug"
         photoLoading="lazy"
         className="w-full"

@@ -63,10 +63,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     add(toyId);
     pingMetrics("kart_add");
 
+    // Confetti + SFX stay on for mobile; only skip the fly-ball layer there.
+    // Play SFX in this click turn (iOS), then paint confetti on the next frame.
+    fireConfetti(point, GOLD_CONFETTI);
     if (!reducedEffects) {
-      // Paint button/badge first; start confetti + ball on the next frame.
       requestAnimationFrame(() => {
-        fireConfetti(point, GOLD_CONFETTI);
         if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
       });
     } else {

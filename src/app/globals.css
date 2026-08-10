@@ -2342,9 +2342,8 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   }
 }
 
-/* Touch / PWA: no fullscreen fixed layers or transform pulses during kart add */
+/* Touch / PWA: skip fly-ball layer (compositor flash); keep confetti */
 @media (pointer: coarse) {
-  .add-kart-confetti,
   .kart-fly-ball {
     display: none !important;
   }
@@ -2436,7 +2435,6 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   }
 }
 
-html[data-kart-effects-reduced="true"] .add-kart-confetti,
 html[data-kart-effects-reduced="true"] .kart-fly-ball {
   display: none !important;
 }

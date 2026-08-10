@@ -1,45 +1,34 @@
 import { useClickMelodyStore } from "@/lib/click-melody-store";
-
-let ctx: AudioContext | null = null;
-
-function getCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const AC =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-  if (!AC) return null;
-  if (!ctx || ctx.state === "closed") ctx = new AC();
-  return ctx;
-}
+import { unlockSharedAudio } from "@/lib/shared-audio";
 
 function noiseBuffer(audio: AudioContext, seconds: number) {
   const len = Math.floor(audio.sampleRate * seconds);
   const buffer = audio.createBuffer(1, len, audio.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < len; i += 1) {
-    // Soften the tail so the burst doesn't rasp.
     const env = 1 - i / len;
     data[i] = (Math.random() * 2 - 1) * env;
   }
   return buffer;
 }
 
-/** Short celebratory pop for confetti bursts. Respects tap-music mute. */
+/**
+ * Short celebratory pop for confetti bursts.
+ * Call directly from a click/tap handler (not after await/rAF) on iOS.
+ */
 export function playConfettiBurstSound() {
   if (typeof window === "undefined") return;
   if (!useClickMelodyStore.getState().enabled) return;
 
-  const audio = getCtx();
+  const audio = unlockSharedAudio();
   if (!audio) return;
 
-  void audio.resume().then(() => {
+  const schedule = () => {
     const now = audio.currentTime;
     const master = audio.createGain();
     master.gain.value = 0.55;
     master.connect(audio.destination);
 
-    // Airy noise bloom
     const noise = audio.createBufferSource();
     noise.buffer = noiseBuffer(audio, 0.28);
     const band = audio.createBiquadFilter();
@@ -57,7 +46,6 @@ export function playConfettiBurstSound() {
     noise.start(now);
     noise.stop(now + 0.3);
 
-    // Sparkly tone sprinkles
     const tones = [523.25, 659.25, 783.99, 1046.5];
     tones.forEach((freq, i) => {
       const t = now + i * 0.028;
@@ -74,5 +62,12 @@ export function playConfettiBurstSound() {
       osc.start(t);
       osc.stop(t + 0.16);
     });
-  });
+  };
+
+  // Schedule immediately in the gesture; also after resume settles.
+  try {
+    schedule();
+  } catch {
+    void audio.resume().then(schedule).catch(() => undefined);
+  }
 }

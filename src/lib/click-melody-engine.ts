@@ -3,6 +3,11 @@
  * looping phrase. Loop voices decay each cycle so the bed never piles up.
  */
 
+import {
+  getSharedAudioContext,
+  unlockSharedAudio,
+} from "@/lib/shared-audio";
+
 const STEPS = 16;
 const BPM = 92;
 const STEP_S = 60 / BPM / 2; // eighth notes
@@ -47,17 +52,22 @@ export class ClickMelodyEngine {
     return this.unlocked;
   }
 
-  async unlock(): Promise<boolean> {
-    const ctx = this.ensureContext();
+  /** Must run inside a user gesture on iOS — do not await before scheduling. */
+  unlock(): boolean {
+    const ctx = unlockSharedAudio();
     if (!ctx) return false;
-    try {
-      if (ctx.state === "suspended") await ctx.resume();
-      this.unlocked = ctx.state === "running";
-      if (this.unlocked) this.ensureClock();
-      return this.unlocked;
-    } catch {
-      return false;
-    }
+    this.ctx = ctx;
+    this.ensureMaster();
+    this.unlocked = ctx.state === "running" || ctx.state === "suspended";
+    if (ctx.state === "running") this.ensureClock();
+    // If still suspended, resume is in flight from unlockSharedAudio.
+    void ctx.resume().then(() => {
+      if (ctx.state === "running") {
+        this.unlocked = true;
+        this.ensureClock();
+      }
+    });
+    return true;
   }
 
   setMuted(muted: boolean) {
@@ -69,10 +79,10 @@ export class ClickMelodyEngine {
   }
 
   /** Play the next melody note and stamp it into the decaying loop. */
-  async note() {
-    if (this.muted) return;
-    const ok = await this.unlock();
-    if (!ok || !this.ctx || !this.master) return;
+  note() {
+    if (this.muted) return false;
+    // Sync unlock + schedule in the same gesture (iOS Safari).
+    if (!this.unlock() || !this.ctx || !this.master) return false;
 
     const degree = PHRASE[this.phrasePos % PHRASE.length]!;
     this.phrasePos += 1;
@@ -84,6 +94,7 @@ export class ClickMelodyEngine {
     this.steps[this.writeHead] = { freq, amp: LOOP_LEVEL };
     this.writeHead = (this.writeHead + 1) % STEPS;
     this.ensureClock();
+    return true;
   }
 
   clearLoop() {
@@ -95,33 +106,29 @@ export class ClickMelodyEngine {
       window.clearInterval(this.timer);
       this.timer = null;
     }
-    try {
-      void this.ctx?.close();
-    } catch {
-      /* ignore */
+    if (this.master) {
+      try {
+        this.master.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
-    this.ctx = null;
+    // Keep the shared AudioContext alive for confetti SFX.
     this.master = null;
+    this.ctx = null;
     this.unlocked = false;
   }
 
-  private ensureContext(): AudioContext | null {
-    if (typeof window === "undefined") return null;
-    const AC =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AC) return null;
-
-    if (!this.ctx || this.ctx.state === "closed") {
-      this.ctx = new AC();
-      this.master = this.ctx.createGain();
+  private ensureMaster() {
+    const ctx = this.ctx ?? getSharedAudioContext();
+    if (!ctx) return;
+    this.ctx = ctx;
+    if (!this.master) {
+      this.master = ctx.createGain();
       this.master.gain.value = this.muted ? 0 : MASTER_LEVEL;
-      this.master.connect(this.ctx.destination);
-      this.unlocked = false;
+      this.master.connect(ctx.destination);
       this.nextTickAt = 0;
     }
-    return this.ctx;
   }
 
   private ensureClock() {
@@ -134,7 +141,6 @@ export class ClickMelodyEngine {
     const ctx = this.ctx;
     if (!ctx || this.muted) return;
 
-    // Schedule a little ahead so plucks stay tight.
     while (this.nextTickAt < ctx.currentTime + 0.12) {
       this.scheduleTick(this.nextTickAt);
       this.nextTickAt += STEP_S;
@@ -166,7 +172,7 @@ export class ClickMelodyEngine {
   private pluck(when: number, freq: number, amp: number) {
     if (!this.ctx || !this.master || amp < MIN_AMP) return;
     const ctx = this.ctx;
-    const t = Math.max(when, ctx.currentTime + 0.01);
+    const t = Math.max(when, ctx.currentTime + 0.005);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();

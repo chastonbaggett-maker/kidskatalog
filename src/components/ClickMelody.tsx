@@ -95,14 +95,15 @@ export function ClickMelody() {
 
     const onUnlock = () => {
       if (!useClickMelodyStore.getState().enabled) return;
-      void engine.unlock();
+      engine.unlock();
     };
 
     const onClick = (event: MouseEvent) => {
       if (!useClickMelodyStore.getState().enabled) return;
       if (event.button !== 0) return;
       if (!isMusicalTarget(event.target)) return;
-      void engine.note();
+      // Sync note() — never await across the iOS gesture boundary.
+      engine.note();
     };
 
     const unsub = useClickMelodyStore.subscribe((state, prev) => {
@@ -177,7 +178,9 @@ export function ClickMelody() {
             for (const t of floatTimers.values()) window.clearTimeout(t);
             floatTimers.clear();
             setFloatNotes([]);
-          } else void engine.unlock();
+          } else {
+            engine.unlock();
+          }
         }}
       >
         <span className="site-music-toggle__icon" aria-hidden>

@@ -2850,10 +2850,10 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   animation: admin-generate-spin 0.7s linear infinite;
 }
 
-/* Tap-melody mute — button only; grav lens is an SVG filter on app content */
+/* Tap-melody mute control */
 .site-music-toggle-wrap {
   position: fixed;
-  z-index: 60;
+  z-index: 45;
   left: max(0.75rem, env(safe-area-inset-left, 0px));
   bottom: calc(var(--bottom-nav-offset) + 0.65rem);
   width: 2.75rem;
@@ -2867,20 +2867,6 @@ body:has(.app-shell--pile) .site-music-toggle-wrap {
 
 .site-music-toggle-wrap > .site-music-toggle {
   pointer-events: auto;
-}
-
-.site-music-toggle__svgdefs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.app-shell__lens-root {
-  min-height: 0;
-  width: 100%;
-  /* filter is applied inline by ClickMelody — warps real pixels */
 }
 
 .site-music-toggle {
@@ -2972,9 +2958,5 @@ html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
   .site-music-toggle:hover,
   .site-music-toggle:active {
     transform: none;
-  }
-
-  .app-shell__lens-root {
-    filter: none !important;
   }
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { ClickMelodyEngine } from "@/lib/click-melody-engine";
 import { useClickMelodyStore } from "@/lib/click-melody-store";
 
@@ -15,93 +14,18 @@ function isMusicalTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Compact RG displacement patch — warp only in a thin ring outside the button. */
-function buildGravLensPatch(size: number): string {
-  const s = Math.max(32, Math.round(size));
-  const canvas = document.createElement("canvas");
-  canvas.width = s;
-  canvas.height = s;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-
-  const img = ctx.createImageData(s, s);
-  const data = img.data;
-  const cx = (s - 1) / 2;
-  const cy = (s - 1) / 2;
-  const maxR = s * 0.5;
-  // Patch covers button + half-radius halo.
-  // Button edge sits at (2/3) of patch radius; warp only beyond that.
-  const inner = 2 / 3;
-  const ringCenter = (inner + 1) / 2;
-  const ringWidth = (1 - inner) * 0.55;
-
-  for (let y = 0; y < s; y += 1) {
-    for (let x = 0; x < s; x += 1) {
-      const dx = x - cx;
-      const dy = y - cy;
-      const dist = Math.hypot(dx, dy);
-      const r = dist / maxR;
-      const i = (y * s + x) * 4;
-
-      let rx = 128;
-      let gy = 128;
-
-      if (r > inner && r < 1) {
-        const nx = dx / (dist || 1);
-        const ny = dy / (dist || 1);
-        const ring = Math.exp(-(((r - ringCenter) / ringWidth) ** 2));
-        const strength = ring * 88;
-        const swirl = ring * 0.35;
-        rx = Math.max(
-          0,
-          Math.min(255, 128 - nx * strength + -ny * strength * swirl),
-        );
-        gy = Math.max(
-          0,
-          Math.min(255, 128 - ny * strength + nx * strength * swirl),
-        );
-      }
-
-      data[i] = rx;
-      data[i + 1] = gy;
-      data[i + 2] = 128;
-      data[i + 3] = 255;
-    }
-  }
-
-  ctx.putImageData(img, 0, 0);
-  return canvas.toDataURL("image/png");
-}
-
-type LensState = {
-  map: string;
-  x: number;
-  y: number;
-  size: number;
-  scale: number;
-  pad: number;
-};
-
 /**
- * Tap-melody mute control + gravitational lens that bends real app pixels
- * around the button (no color overlays).
+ * Every button/link tap plays a melody note and stamps it into a soft
+ * decaying loop. Mute stops new notes and silences the loop.
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
   const setEnabled = useClickMelodyStore((s) => s.setEnabled);
   const engineRef = useRef<ClickMelodyEngine | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const patchRef = useRef<string>("");
   const [mounted, setMounted] = useState(false);
-  const [lens, setLens] = useState<LensState | null>(null);
-  const reactId = useId().replace(/:/g, "");
-  const filterId = `grav-lens-${reactId}`;
 
   useEffect(() => {
     setMounted(true);
-    // Map is resolution-independent; geometry is normalized to the patch.
-    patchRef.current = buildGravLensPatch(192);
-
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
     engine.setMuted(!useClickMelodyStore.getState().enabled);
@@ -136,187 +60,39 @@ export function ClickMelody() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    let raf = 0;
-    let lastKey = "";
-
-    const clearRootFilter = () => {
-      const el = document.querySelector<HTMLElement>("[data-grav-lens-root]");
-      if (!el) return;
-      el.style.removeProperty("filter");
-      el.style.removeProperty("-webkit-filter");
-    };
-
-    const applyRootFilter = () => {
-      const el = document.querySelector<HTMLElement>("[data-grav-lens-root]");
-      if (!el) return;
-      if (!useClickMelodyStore.getState().enabled) {
-        clearRootFilter();
-        return;
-      }
-      el.style.setProperty("filter", `url(#${filterId})`);
-      el.style.setProperty("-webkit-filter", `url(#${filterId})`);
-    };
-
-    const sync = () => {
-      const root = document.querySelector<HTMLElement>("[data-grav-lens-root]");
-      const btn = buttonRef.current;
-      const map = patchRef.current;
-      if (!root || !btn || !map) return;
-
-      if (!useClickMelodyStore.getState().enabled) {
-        if (lastKey !== "off") {
-          lastKey = "off";
-          setLens(null);
-          clearRootFilter();
-        }
-        return;
-      }
-
-      const rootRect = root.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      const btnRadius = Math.max(btnRect.width, btnRect.height) / 2;
-      // Halo extends ~½ button-radius past the button edge.
-      const halo = btnRadius * 0.5;
-      const size = Math.round((btnRadius + halo) * 2);
-      const cx = btnRect.left + btnRect.width / 2 - rootRect.left;
-      const cy = btnRect.top + btnRect.height / 2 - rootRect.top;
-      const x = Math.round(cx - size / 2);
-      const y = Math.round(cy - size / 2);
-      // Displacement scale tracks the thin halo so the bend stays local.
-      const scale = Math.max(10, Math.round(halo * 1.35));
-      const pad = Math.ceil(scale * 0.75);
-      const key = `${x}:${y}:${size}:${scale}:${pad}`;
-      if (key === lastKey) {
-        applyRootFilter();
-        return;
-      }
-      lastKey = key;
-      setLens({ map, x, y, size, scale, pad });
-      requestAnimationFrame(applyRootFilter);
-    };
-
-    const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(sync);
-    };
-
-    schedule();
-    window.addEventListener("resize", schedule);
-    window.addEventListener("scroll", schedule, true);
-    const unsub = useClickMelodyStore.subscribe(schedule);
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(schedule)
-        : null;
-    const root = document.querySelector("[data-grav-lens-root]");
-    if (root && ro) ro.observe(root);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule, true);
-      unsub();
-      ro?.disconnect();
-      clearRootFilter();
-    };
-  }, [mounted, filterId]);
-
   const playing = mounted ? enabled : true;
   const label = playing ? "Mute tap music" : "Play tap music";
 
-  const ui = (
-    <>
-      {lens ? (
-        <svg
-          className="site-music-toggle__svgdefs"
-          aria-hidden
-          width={0}
-          height={0}
-        >
-          <defs>
-            <filter
-              id={filterId}
-              x={lens.x - lens.pad}
-              y={lens.y - lens.pad}
-              width={lens.size + lens.pad * 2}
-              height={lens.size + lens.pad * 2}
-              filterUnits="userSpaceOnUse"
-              primitiveUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              {/* Neutral base so uncovered pad pixels don't blow out */}
-              <feFlood
-                floodColor="rgb(128,128,128)"
-                x={lens.x - lens.pad}
-                y={lens.y - lens.pad}
-                width={lens.size + lens.pad * 2}
-                height={lens.size + lens.pad * 2}
-                result="neutral"
-              />
-              <feImage
-                href={lens.map}
-                result="patch"
-                x={lens.x}
-                y={lens.y}
-                width={lens.size}
-                height={lens.size}
-                preserveAspectRatio="none"
-              />
-              <feComposite
-                in="patch"
-                in2="neutral"
-                operator="over"
-                result="map"
-              />
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="map"
-                scale={lens.scale}
-                xChannelSelector="R"
-                yChannelSelector="G"
-              />
-            </filter>
-          </defs>
-        </svg>
-      ) : null}
-
-      <div
-        className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
-        data-click-melody-toggle
+  return (
+    <div
+      className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
+      data-click-melody-toggle
+    >
+      <button
+        type="button"
+        className="site-music-toggle"
+        aria-label={label}
+        aria-pressed={playing}
+        title={label}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const engine = engineRef.current;
+          const next = !useClickMelodyStore.getState().enabled;
+          setEnabled(next);
+          if (!engine) return;
+          engine.setMuted(!next);
+          if (!next) engine.clearLoop();
+          else void engine.unlock();
+        }}
       >
-        <button
-          ref={buttonRef}
-          type="button"
-          className="site-music-toggle"
-          aria-label={label}
-          aria-pressed={playing}
-          title={label}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const engine = engineRef.current;
-            const next = !useClickMelodyStore.getState().enabled;
-            setEnabled(next);
-            if (!engine) return;
-            engine.setMuted(!next);
-            if (!next) engine.clearLoop();
-            else void engine.unlock();
-          }}
-        >
-          <span className="site-music-toggle__icon" aria-hidden>
-            <MusicIcon muted={!playing} />
-          </span>
-        </button>
-      </div>
-    </>
+        <span className="site-music-toggle__icon" aria-hidden>
+          <MusicIcon muted={!playing} />
+        </span>
+      </button>
+    </div>
   );
-
-  if (!mounted) return null;
-  return createPortal(ui, document.body);
 }
 
 function MusicIcon({ muted }: { muted: boolean }) {

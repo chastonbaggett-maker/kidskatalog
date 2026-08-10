@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
+import { ClickMelody } from "./ClickMelody";
 import { InstallPrompt } from "./InstallPrompt";
 import { KartFlyBallHost } from "./KartFlyBallHost";
 import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
-import { SiteMusic } from "./SiteMusic";
 import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { useToyPileModeStore } from "@/lib/toy-pile-store";
 import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
@@ -39,7 +39,7 @@ export function AppShell({
       {/* Stable host for fly-ball + confetti (keeps effects off document.body) */}
       <div id="kart-fx-root" className="kart-fx-root" aria-hidden />
       <KartFlyBallHost />
-      <SiteMusic />
+      <ClickMelody />
       <InstallPrompt />
     </div>
   );

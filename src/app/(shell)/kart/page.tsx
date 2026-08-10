@@ -11,7 +11,6 @@ import {
   crazyModeScrollClass,
 } from "@/lib/crazy-mode-store";
 import { useKartStore } from "@/lib/kart-store";
-import { speakToyDescription } from "@/lib/toy-speech";
 import type { Toy } from "@/types/toy";
 
 export default function KartPage() {
@@ -84,7 +83,6 @@ export default function KartPage() {
                   <Link
                     href={`/toy/${toy.id}`}
                     prefetch={false}
-                    onClick={() => speakToyDescription(toy)}
                     className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
                   >
                     <ToyPhoto
@@ -96,11 +94,7 @@ export default function KartPage() {
                     />
                   </Link>
                   <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/toy/${toy.id}`}
-                      prefetch={false}
-                      onClick={() => speakToyDescription(toy)}
-                    >
+                    <Link href={`/toy/${toy.id}`} prefetch={false}>
                       <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
                         {toy.name}
                       </p>

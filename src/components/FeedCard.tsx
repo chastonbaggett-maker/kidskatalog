@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import { speakToyDescription } from "@/lib/toy-speech";
 import { ToyPhoto } from "./ToyPhoto";
 
 export function FeedCard({
@@ -43,10 +42,6 @@ export function FeedCard({
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
 
-  function onToyOpen() {
-    speakToyDescription(toy);
-  }
-
   return (
     <article
       data-feed-slot={slotIndex}
@@ -66,7 +61,6 @@ export function FeedCard({
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}
-          onClick={onToyOpen}
           className={`feed-card__media block bg-white${
             stableTextLayout ? " feed-card__media--stable-text" : ""
           }`}
@@ -87,7 +81,7 @@ export function FeedCard({
               showBlurb ? "pb-4" : "pb-3 pr-14"
             }${stableTextLayout ? " feed-card__title-slot--stable" : ""}`}
           >
-            <Link href={`/toy/${toy.id}`} onClick={onToyOpen}>
+            <Link href={`/toy/${toy.id}`}>
               <h2
                 className={`font-[family-name:var(--font-display)] font-bold text-[var(--ink)] ${titleClassName}`}
               >
@@ -102,7 +96,6 @@ export function FeedCard({
         <Link
           href={`/toy/${toy.id}`}
           prefetch={false}
-          onClick={onToyOpen}
           aria-label={`View ${toy.name}`}
           className={`feed-card__view-btn ${viewBtnClass}`}
         />

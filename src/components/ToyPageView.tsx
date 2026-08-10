@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import {
   useCrazyModeStore,
   crazyModeRootClass,
   crazyModeScrollClass,
 } from "@/lib/crazy-mode-store";
-import { useSiteMusicStore } from "@/lib/site-music-store";
-import { cancelToySpeech, speakToyDescription } from "@/lib/toy-speech";
 import { useMoreToysCrazyActive } from "@/hooks/useMoreToysCrazyActive";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { ProductGallery } from "./ProductGallery";
@@ -29,7 +27,6 @@ type Props = {
 export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Props) {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
-  const audioEnabled = useSiteMusicStore((s) => s.enabled);
   const crazyOn = crazyMode;
   const [crazyFlash, setCrazyFlash] = useState(false);
 
@@ -44,18 +41,6 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
     moreToysRef,
   );
   const kartGoReady = useVisualSettled(toy.id);
-
-  // Speak from the opening tap when possible. On the detail page, only start
-  // speech if nothing is already speaking for this toy — never cancel on
-  // cleanup (React Strict Mode was killing speech right after the tap).
-  useEffect(() => {
-    if (!audioEnabled) return;
-    speakToyDescription(toy);
-  }, [toy.id, toy.name, toy.blurb, audioEnabled, toy]);
-
-  useEffect(() => {
-    if (!audioEnabled) cancelToySpeech(toy.id);
-  }, [audioEnabled, toy.id]);
 
   return (
     <div

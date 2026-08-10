@@ -2850,7 +2850,7 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   animation: admin-generate-spin 0.7s linear infinite;
 }
 
-/* Gentle site music toggle — floats above bottom nav, left side */
+/* Tap-melody mute — floats above bottom nav, left side */
 .site-music-toggle {
   position: fixed;
   z-index: 45;

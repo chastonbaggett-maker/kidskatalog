@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
+import { playConfettiBurstSound } from "@/lib/burst-sound";
 
 type ConfettiBit = {
   id: string;
@@ -91,6 +92,7 @@ export function useConfettiBurst() {
 
       setBursting(true);
       setBits(next);
+      playConfettiBurstSound();
       window.setTimeout(() => setBursting(false), 760);
     },
     [uid],

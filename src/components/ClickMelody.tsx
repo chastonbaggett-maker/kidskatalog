@@ -6,7 +6,6 @@ import { useClickMelodyStore } from "@/lib/click-melody-store";
 
 function isMusicalTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  // Ignore the mute control itself so toggling doesn't add a note.
   if (target.closest("[data-click-melody-toggle]")) return false;
   return Boolean(
     target.closest(
@@ -15,8 +14,8 @@ function isMusicalTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Radial RG displacement map — pulls light into a lens ring (black-hole style). */
-function buildLensDisplacementMap(size = 160): string {
+/** Radial RG displacement map — bends sampled backdrop toward a lens ring. */
+function buildLensDisplacementMap(size = 192): string {
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -32,21 +31,21 @@ function buildLensDisplacementMap(size = 160): string {
     for (let x = 0; x < size; x += 1) {
       const dx = x - cx;
       const dy = y - cy;
-      const r = Math.hypot(dx, dy) / maxR;
+      const dist = Math.hypot(dx, dy);
+      const r = dist / maxR;
       const i = (y * size + x) * 4;
 
-      // Neutral gray = no displacement.
       let rx = 128;
       let gy = 128;
 
-      if (r > 0.18 && r < 0.98) {
-        const nx = dx / (Math.hypot(dx, dy) || 1);
-        const ny = dy / (Math.hypot(dx, dy) || 1);
-        // Peak warp around the photon ring.
-        const ring = Math.exp(-Math.pow((r - 0.58) / 0.18, 2));
-        const swirl = Math.exp(-Math.pow((r - 0.48) / 0.22, 2)) * 0.55;
-        const strength = ring * 52;
-        // Radial bend inward + slight tangential swirl (lensed light).
+      if (r > 0.12 && r < 1) {
+        const nx = dx / (dist || 1);
+        const ny = dy / (dist || 1);
+        // Strongest bend on a ring around the button (photon sphere).
+        const ring = Math.exp(-(((r - 0.55) / 0.2) ** 2));
+        const inner = Math.exp(-(((r - 0.32) / 0.16) ** 2)) * 0.45;
+        const strength = (ring + inner) * 70;
+        const swirl = ring * 0.4;
         rx = Math.max(
           0,
           Math.min(255, 128 - nx * strength + -ny * strength * swirl),
@@ -83,7 +82,7 @@ export function ClickMelody() {
 
   useEffect(() => {
     setMounted(true);
-    setLensMap(buildLensDisplacementMap(192));
+    setLensMap(buildLensDisplacementMap(224));
 
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
@@ -126,16 +125,19 @@ export function ClickMelody() {
     <div
       className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
       data-click-melody-toggle
-      style={
-        lensMap
-          ? ({ ["--melody-lens" as string]: `url(#${filterId})` } as React.CSSProperties)
-          : undefined
-      }
     >
-      <span className="site-music-toggle__warp" aria-hidden>
-        <span className="site-music-toggle__warp-lens" />
-        <span className="site-music-toggle__warp-magnify" />
-        <span className="site-music-toggle__warp-fring" />
+      {/* Sample backdrop, then displace it — no tint overlays */}
+      <span
+        className="site-music-toggle__warp"
+        aria-hidden
+        style={
+          lensMap
+            ? ({ filter: `url(#${filterId})` } as React.CSSProperties)
+            : undefined
+        }
+      >
+        <span className="site-music-toggle__warp-sample" />
+        <span className="site-music-toggle__warp-sample site-music-toggle__warp-sample--mag" />
       </span>
 
       {lensMap ? (
@@ -143,10 +145,10 @@ export function ClickMelody() {
           <defs>
             <filter
               id={filterId}
-              x="-40%"
-              y="-40%"
-              width="180%"
-              height="180%"
+              x="-50%"
+              y="-50%"
+              width="200%"
+              height="200%"
               colorInterpolationFilters="sRGB"
             >
               <feImage
@@ -161,7 +163,7 @@ export function ClickMelody() {
               <feDisplacementMap
                 in="SourceGraphic"
                 in2="map"
-                scale="36"
+                scale="58"
                 xChannelSelector="R"
                 yChannelSelector="G"
               />

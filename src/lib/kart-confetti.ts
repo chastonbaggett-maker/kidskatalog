@@ -1,3 +1,5 @@
+import { playConfettiBurstSound } from "@/lib/burst-sound";
+
 const GOLD_CONFETTI = [
   "#ffd700",
   "#ffb800",
@@ -16,6 +18,8 @@ const CLEAR_MS = 1100;
 export function fireGoldConfettiAt(x: number, y: number) {
   if (typeof document === "undefined") return;
 
+  playConfettiBurstSound();
+
   const host =
     document.getElementById("kart-fx-root") ?? document.body;
   const root = document.createElement("div");
@@ -33,7 +37,7 @@ export function fireGoldConfettiAt(x: number, y: number) {
     bit.style.top = `${y}px`;
     bit.style.width = `${6 + Math.random() * 6}px`;
     bit.style.height = `${8 + Math.random() * 10}px`;
-    bit.style.background = GOLD_CONFETTI[i % GOLD_CONFETTI.length];
+    bit.style.background = GOLD_CONFETTI[i % GOLD_CONFETTI.length]!;
     bit.style.animationDelay = `${Math.random() * 40}ms`;
     bit.style.setProperty("--dx", `${Math.cos(angle) * speed}px`);
     bit.style.setProperty(

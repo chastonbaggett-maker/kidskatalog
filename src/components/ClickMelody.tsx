@@ -14,6 +14,17 @@ function isMusicalTarget(target: EventTarget | null): boolean {
   );
 }
 
+type FloatNote = {
+  id: number;
+  dx: number;
+  delay: number;
+  spin: number;
+  scale: number;
+  live: boolean;
+};
+
+let noteId = 0;
+
 /**
  * Every button/link tap plays a melody note and stamps it into a soft
  * decaying loop. Mute stops new notes and silences the loop.
@@ -23,12 +34,33 @@ export function ClickMelody() {
   const setEnabled = useClickMelodyStore((s) => s.setEnabled);
   const engineRef = useRef<ClickMelodyEngine | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [floatNotes, setFloatNotes] = useState<FloatNote[]>([]);
+
+  const spawnFloat = (live: boolean) => {
+    const next: FloatNote = {
+      id: ++noteId,
+      dx: (Math.random() - 0.5) * (live ? 36 : 24),
+      delay: Math.random() * 40,
+      spin: (Math.random() > 0.5 ? 1 : -1) * (12 + Math.random() * 28),
+      scale: live ? 0.9 + Math.random() * 0.35 : 0.55 + Math.random() * 0.25,
+      live,
+    };
+    setFloatNotes((prev) => [...prev.slice(-14), next]);
+    window.setTimeout(() => {
+      setFloatNotes((prev) => prev.filter((n) => n.id !== next.id));
+    }, live ? 1100 : 900);
+  };
 
   useEffect(() => {
     setMounted(true);
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
     engine.setMuted(!useClickMelodyStore.getState().enabled);
+    engine.setOnNote(({ live }) => {
+      // Loop echoes are quieter visually so the halo doesn't flood.
+      if (!live && Math.random() > 0.55) return;
+      spawnFloat(live);
+    });
 
     const onUnlock = () => {
       if (!useClickMelodyStore.getState().enabled) return;
@@ -45,7 +77,10 @@ export function ClickMelody() {
     const unsub = useClickMelodyStore.subscribe((state, prev) => {
       if (state.enabled === prev.enabled) return;
       engine.setMuted(!state.enabled);
-      if (!state.enabled) engine.clearLoop();
+      if (!state.enabled) {
+        engine.clearLoop();
+        setFloatNotes([]);
+      }
     });
 
     document.addEventListener("pointerdown", onUnlock, true);
@@ -55,6 +90,7 @@ export function ClickMelody() {
       unsub();
       document.removeEventListener("pointerdown", onUnlock, true);
       document.removeEventListener("click", onClick, true);
+      engine.setOnNote(null);
       engine.dispose();
       engineRef.current = null;
     };
@@ -68,6 +104,22 @@ export function ClickMelody() {
       className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
       data-click-melody-toggle
     >
+      <div className="site-music-toggle__floats" aria-hidden>
+        {floatNotes.map((n) => (
+          <span
+            key={n.id}
+            className={`site-music-toggle__float${n.live ? " is-live" : " is-loop"}`}
+            style={{
+              ["--dx" as string]: `${n.dx}px`,
+              ["--spin" as string]: `${n.spin}deg`,
+              ["--scale" as string]: String(n.scale),
+              animationDelay: `${n.delay}ms`,
+            }}
+          >
+            <FloatNoteIcon />
+          </span>
+        ))}
+      </div>
       <button
         type="button"
         className="site-music-toggle"
@@ -83,8 +135,10 @@ export function ClickMelody() {
           setEnabled(next);
           if (!engine) return;
           engine.setMuted(!next);
-          if (!next) engine.clearLoop();
-          else void engine.unlock();
+          if (!next) {
+            engine.clearLoop();
+            setFloatNotes([]);
+          } else void engine.unlock();
         }}
       >
         <span className="site-music-toggle__icon" aria-hidden>
@@ -115,6 +169,14 @@ function MusicIcon({ muted }: { muted: boolean }) {
         strokeLinecap="round"
         opacity={muted ? 1 : 0}
       />
+    </svg>
+  );
+}
+
+function FloatNoteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+      <path d="M10 4.2v10.45a3.1 3.1 0 1 1-1.85-2.84V7.05l9-1.7v8.7a3.1 3.1 0 1 1-1.85-2.84V4.95L10 4.2Z" />
     </svg>
   );
 }

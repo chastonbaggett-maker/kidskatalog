@@ -36,6 +36,12 @@ export class ClickMelodyEngine {
   private nextTickAt = 0;
   private muted = false;
   private unlocked = false;
+  private onNote: ((info: { live: boolean; freq: number }) => void) | null =
+    null;
+
+  setOnNote(handler: ((info: { live: boolean; freq: number }) => void) | null) {
+    this.onNote = handler;
+  }
 
   get isUnlocked() {
     return this.unlocked;
@@ -73,6 +79,7 @@ export class ClickMelodyEngine {
     const freq = SCALE[degree]!;
 
     this.pluck(this.ctx.currentTime, freq, LIVE_LEVEL);
+    this.onNote?.({ live: true, freq });
 
     this.steps[this.writeHead] = { freq, amp: LOOP_LEVEL };
     this.writeHead = (this.writeHead + 1) % STEPS;
@@ -138,6 +145,7 @@ export class ClickMelodyEngine {
     const cell = this.steps[this.tickHead];
     if (cell && cell.amp >= MIN_AMP) {
       this.pluck(when, cell.freq, cell.amp);
+      this.onNote?.({ live: false, freq: cell.freq });
     }
 
     this.tickHead = (this.tickHead + 1) % STEPS;

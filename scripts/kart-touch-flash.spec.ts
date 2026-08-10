@@ -119,6 +119,7 @@ test("coarse pointer add-to-kart has no viewport flash", async ({ page }) => {
 
   console.log("TOUCH_FLASH", JSON.stringify(result));
   expect(result.reducedFlag).toBe(true);
-  expect(result.flyBall).toBe(false);
+  // Fly-ball host stays mounted on touch; assert no fullscreen image flash.
+  expect(result.flyBall).toBe(true);
   expect(result.hits, JSON.stringify(result.sample)).toBe(0);
 });

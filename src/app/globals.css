@@ -2849,3 +2849,102 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
 .admin-generate-spinner {
   animation: admin-generate-spin 0.7s linear infinite;
 }
+
+/* Gentle site music toggle — floats above bottom nav, left side */
+.site-music-toggle {
+  position: fixed;
+  z-index: 45;
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  bottom: calc(var(--bottom-nav-offset) + 0.65rem);
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--ink);
+  background: color-mix(in srgb, white 88%, var(--mint));
+  box-shadow:
+    0 8px 22px -14px rgba(60, 70, 120, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--mint) 35%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.site-music-toggle:hover {
+  transform: translateY(-1px) scale(1.04);
+  background: color-mix(in srgb, white 78%, var(--mint));
+}
+
+.site-music-toggle:active {
+  transform: scale(0.96);
+}
+
+.site-music-toggle[aria-pressed="true"] {
+  color: #1f6f66;
+  background: color-mix(in srgb, white 72%, var(--mint));
+  box-shadow:
+    0 8px 22px -14px rgba(40, 140, 120, 0.5),
+    0 0 0 2px color-mix(in srgb, var(--mint) 55%, transparent);
+}
+
+.site-music-toggle[aria-pressed="false"] {
+  color: var(--ink-soft);
+  opacity: 0.92;
+}
+
+.site-music-toggle__icon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+html[data-accent="boys"] .site-music-toggle {
+  background: color-mix(in srgb, white 88%, var(--blue));
+  box-shadow:
+    0 8px 22px -14px rgba(60, 70, 120, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--blue) 35%, transparent);
+}
+
+html[data-accent="boys"] .site-music-toggle[aria-pressed="true"] {
+  color: var(--blue-deep);
+  background: color-mix(in srgb, white 72%, var(--blue));
+  box-shadow:
+    0 8px 22px -14px rgba(60, 100, 180, 0.5),
+    0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent);
+}
+
+html[data-accent="girls"] .site-music-toggle {
+  background: color-mix(in srgb, white 88%, var(--pink));
+  box-shadow:
+    0 8px 22px -14px rgba(60, 70, 120, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--pink) 40%, transparent);
+}
+
+html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
+  color: #c45a88;
+  background: color-mix(in srgb, white 72%, var(--pink));
+  box-shadow:
+    0 8px 22px -14px rgba(180, 80, 120, 0.45),
+    0 0 0 2px color-mix(in srgb, var(--pink) 55%, transparent);
+}
+
+.app-shell--pile .site-music-toggle {
+  bottom: calc(var(--pile-nav-stack-height) + 0.55rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-music-toggle {
+    transition: none;
+  }
+
+  .site-music-toggle:hover,
+  .site-music-toggle:active {
+    transform: none;
+  }
+}

@@ -15,7 +15,7 @@ function isMusicalTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Compact RG displacement patch — bends pixels toward a photon-ring. */
+/** Compact RG displacement patch — warp only in a thin ring outside the button. */
 function buildGravLensPatch(size: number): string {
   const s = Math.max(32, Math.round(size));
   const canvas = document.createElement("canvas");
@@ -29,6 +29,11 @@ function buildGravLensPatch(size: number): string {
   const cx = (s - 1) / 2;
   const cy = (s - 1) / 2;
   const maxR = s * 0.5;
+  // Patch covers button + half-radius halo.
+  // Button edge sits at (2/3) of patch radius; warp only beyond that.
+  const inner = 2 / 3;
+  const ringCenter = (inner + 1) / 2;
+  const ringWidth = (1 - inner) * 0.55;
 
   for (let y = 0; y < s; y += 1) {
     for (let x = 0; x < s; x += 1) {
@@ -41,13 +46,12 @@ function buildGravLensPatch(size: number): string {
       let rx = 128;
       let gy = 128;
 
-      if (r < 1 && r > 0.05) {
+      if (r > inner && r < 1) {
         const nx = dx / (dist || 1);
         const ny = dy / (dist || 1);
-        const ring = Math.exp(-(((r - 0.6) / 0.15) ** 2));
-        const well = Math.exp(-(((r - 0.25) / 0.18) ** 2)) * 0.6;
-        const strength = (ring * 1.2 + well) * 95;
-        const swirl = ring * 0.55;
+        const ring = Math.exp(-(((r - ringCenter) / ringWidth) ** 2));
+        const strength = ring * 88;
+        const swirl = ring * 0.35;
         rx = Math.max(
           0,
           Math.min(255, 128 - nx * strength + -ny * strength * swirl),
@@ -74,6 +78,8 @@ type LensState = {
   x: number;
   y: number;
   size: number;
+  scale: number;
+  pad: number;
 };
 
 /**
@@ -93,7 +99,8 @@ export function ClickMelody() {
 
   useEffect(() => {
     setMounted(true);
-    patchRef.current = buildGravLensPatch(256);
+    // Map is resolution-independent; geometry is normalized to the patch.
+    patchRef.current = buildGravLensPatch(192);
 
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
@@ -170,21 +177,24 @@ export function ClickMelody() {
 
       const rootRect = root.getBoundingClientRect();
       const btnRect = btn.getBoundingClientRect();
+      const btnRadius = Math.max(btnRect.width, btnRect.height) / 2;
+      // Halo extends ~½ button-radius past the button edge.
+      const halo = btnRadius * 0.5;
+      const size = Math.round((btnRadius + halo) * 2);
       const cx = btnRect.left + btnRect.width / 2 - rootRect.left;
       const cy = btnRect.top + btnRect.height / 2 - rootRect.top;
-      // Reach up into feed content + across nearby nav chrome.
-      const size = Math.round(
-        Math.max(220, Math.min(rootRect.width, rootRect.height) * 0.42),
-      );
       const x = Math.round(cx - size / 2);
       const y = Math.round(cy - size / 2);
-      const key = `${x}:${y}:${size}`;
+      // Displacement scale tracks the thin halo so the bend stays local.
+      const scale = Math.max(10, Math.round(halo * 1.35));
+      const pad = Math.ceil(scale * 0.75);
+      const key = `${x}:${y}:${size}:${scale}:${pad}`;
       if (key === lastKey) {
         applyRootFilter();
         return;
       }
       lastKey = key;
-      setLens({ map, x, y, size });
+      setLens({ map, x, y, size, scale, pad });
       requestAnimationFrame(applyRootFilter);
     };
 
@@ -229,27 +239,42 @@ export function ClickMelody() {
           <defs>
             <filter
               id={filterId}
-              x="-8%"
-              y="-8%"
-              width="116%"
-              height="116%"
+              x={lens.x - lens.pad}
+              y={lens.y - lens.pad}
+              width={lens.size + lens.pad * 2}
+              height={lens.size + lens.pad * 2}
               filterUnits="userSpaceOnUse"
               primitiveUnits="userSpaceOnUse"
               colorInterpolationFilters="sRGB"
             >
+              {/* Neutral base so uncovered pad pixels don't blow out */}
+              <feFlood
+                floodColor="rgb(128,128,128)"
+                x={lens.x - lens.pad}
+                y={lens.y - lens.pad}
+                width={lens.size + lens.pad * 2}
+                height={lens.size + lens.pad * 2}
+                result="neutral"
+              />
               <feImage
                 href={lens.map}
-                result="map"
+                result="patch"
                 x={lens.x}
                 y={lens.y}
                 width={lens.size}
                 height={lens.size}
                 preserveAspectRatio="none"
               />
+              <feComposite
+                in="patch"
+                in2="neutral"
+                operator="over"
+                result="map"
+              />
               <feDisplacementMap
                 in="SourceGraphic"
                 in2="map"
-                scale={64}
+                scale={lens.scale}
                 xChannelSelector="R"
                 yChannelSelector="G"
               />

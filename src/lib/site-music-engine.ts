@@ -1,12 +1,12 @@
 /**
  * Gentle, playful looping bed music via Web Audio (no media files).
- * Soft xylophone-like plinks over a quiet pad — kid-friendly, low volume.
+ * Soft xylophone-like plinks over a quiet pad — kid-friendly.
  */
 
-const MASTER_LEVEL = 0.085;
-const DUCKED_LEVEL = 0.018;
-const FADE_IN_S = 2.2;
-const FADE_OUT_S = 0.55;
+const MASTER_LEVEL = 0.22;
+const DUCKED_LEVEL = 0.05;
+const FADE_IN_S = 1.4;
+const FADE_OUT_S = 0.35;
 const LOOP_S = 12;
 
 /** C major pentatonic (Hz): C4 D4 E4 G4 A4 C5 */
@@ -46,6 +46,7 @@ export class SiteMusicEngine {
   private muted = false;
   private ducked = false;
   private unlocked = false;
+  private padTeardownTimer: number | null = null;
 
   get isRunning() {
     return this.running;
@@ -70,14 +71,23 @@ export class SiteMusicEngine {
 
   setMuted(muted: boolean) {
     this.muted = muted;
-    this.applyGain(muted || !this.running ? 0 : undefined, 0.04);
+    if (!this.running || !this.master || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(
+      muted ? 0 : this.targetLevel(),
+      now,
+      muted ? 0.03 : 0.08,
+    );
   }
 
   /** Soften bed music while a toy description is spoken. */
   setDucked(ducked: boolean) {
     this.ducked = ducked;
-    if (this.muted || !this.running) return;
-    this.applyGain(undefined, ducked ? 0.05 : 0.12);
+    if (this.muted || !this.running || !this.master || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(this.targetLevel(), now, ducked ? 0.05 : 0.12);
   }
 
   private targetLevel() {
@@ -85,66 +95,72 @@ export class SiteMusicEngine {
     return this.ducked ? DUCKED_LEVEL : MASTER_LEVEL;
   }
 
-  private applyGain(explicit?: number, timeConstant = 0.08) {
-    const master = this.master;
-    const ctx = this.ctx;
-    if (!master || !ctx) return;
-    const now = ctx.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setTargetAtTime(
-      explicit ?? this.targetLevel(),
-      now,
-      timeConstant,
-    );
-  }
-
   async start() {
-    if (this.running) {
-      this.applyGain(undefined, 0.08);
-      return;
-    }
     const ok = await this.unlock();
-    if (!ok) return;
+    if (!ok) return false;
 
     const ctx = this.ensureContext();
-    if (!ctx || !this.master) return;
+    if (!ctx || !this.master) return false;
 
-    this.running = true;
-    this.startPad(ctx);
-    this.nextLoopAt = ctx.currentTime + 0.05;
-    this.scheduleAhead();
-    this.armScheduler();
+    if (this.padTeardownTimer != null) {
+      window.clearTimeout(this.padTeardownTimer);
+      this.padTeardownTimer = null;
+    }
+
+    if (!this.running) {
+      this.running = true;
+      this.startPad(ctx);
+      this.nextLoopAt = ctx.currentTime + 0.05;
+      this.scheduleAhead();
+      this.armScheduler();
+    }
 
     const now = ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setValueAtTime(0.0001, now);
+    const current = Math.max(this.master.gain.value, 0.0001);
+    this.master.gain.setValueAtTime(current, now);
     if (!this.muted) {
       this.master.gain.exponentialRampToValueAtTime(
-        this.targetLevel() || MASTER_LEVEL,
+        this.targetLevel(),
         now + FADE_IN_S,
       );
+    } else {
+      this.master.gain.setTargetAtTime(0, now, 0.03);
     }
+    return true;
   }
 
   stop() {
-    if (!this.running) return;
+    if (!this.running) {
+      this.applySilent();
+      return;
+    }
     this.running = false;
     this.clearScheduler();
+    this.applySilent();
 
+    this.padTeardownTimer = window.setTimeout(() => {
+      this.padTeardownTimer = null;
+      this.teardownPad();
+    }, FADE_OUT_S * 1000 + 50);
+  }
+
+  private applySilent() {
     const ctx = this.ctx;
     const master = this.master;
-    if (ctx && master) {
-      const now = ctx.currentTime;
-      master.gain.cancelScheduledValues(now);
-      master.gain.setTargetAtTime(0.0001, now, FADE_OUT_S / 3);
-    }
-
-    window.setTimeout(() => this.teardownPad(), FADE_OUT_S * 1000 + 50);
+    if (!ctx || !master) return;
+    const now = ctx.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setTargetAtTime(0.0001, now, FADE_OUT_S / 3);
   }
 
   dispose() {
     this.stop();
     this.clearScheduler();
+    if (this.padTeardownTimer != null) {
+      window.clearTimeout(this.padTeardownTimer);
+      this.padTeardownTimer = null;
+    }
     this.teardownPad();
     try {
       void this.ctx?.close();
@@ -154,6 +170,7 @@ export class SiteMusicEngine {
     this.ctx = null;
     this.master = null;
     this.unlocked = false;
+    this.running = false;
   }
 
   private ensureContext(): AudioContext | null {
@@ -164,11 +181,13 @@ export class SiteMusicEngine {
         .webkitAudioContext;
     if (!AC) return null;
 
-    if (!this.ctx) {
+    if (!this.ctx || this.ctx.state === "closed") {
       this.ctx = new AC();
       this.master = this.ctx.createGain();
       this.master.gain.value = 0;
       this.master.connect(this.ctx.destination);
+      this.running = false;
+      this.unlocked = false;
     }
     return this.ctx;
   }
@@ -197,7 +216,6 @@ export class SiteMusicEngine {
       for (const hit of HITS) {
         this.pluck(ctx, base + hit.t, NOTES[hit.n]!, hit.soft ? 0.55 : 1);
       }
-      // Soft fifth under the phrase start
       this.pluck(ctx, base + 0.02, NOTES[0]! / 2, 0.35);
       this.pluck(ctx, base + 6.05, NOTES[3]! / 2, 0.28);
       this.nextLoopAt += LOOP_S;
@@ -213,24 +231,23 @@ export class SiteMusicEngine {
 
     osc.type = "triangle";
     osc.frequency.setValueAtTime(freq, t);
-    // Tiny pitch droop for toy-xylophone character
     osc.frequency.exponentialRampToValueAtTime(freq * 0.985, t + 0.35);
 
     filter.type = "lowpass";
-    filter.frequency.setValueAtTime(1800 + freq * 0.6, t);
+    filter.frequency.setValueAtTime(2200 + freq * 0.7, t);
     filter.Q.value = 0.7;
 
-    const peak = clamp01(0.22 * strength);
+    const peak = clamp01(0.34 * strength);
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(peak, t + 0.018);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.85);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
 
     osc.start(t);
-    osc.stop(t + 1.0);
+    osc.stop(t + 1.05);
     osc.onended = () => {
       try {
         osc.disconnect();
@@ -247,7 +264,7 @@ export class SiteMusicEngine {
     if (!this.master) return;
 
     this.padGain = ctx.createGain();
-    this.padGain.gain.value = 0.045;
+    this.padGain.gain.value = 0.06;
     this.padGain.connect(this.master);
 
     const freqs = [NOTES[0]! / 2, NOTES[3]! / 2, NOTES[0]!];

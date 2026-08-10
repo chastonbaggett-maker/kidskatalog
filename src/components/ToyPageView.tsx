@@ -45,16 +45,17 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
   );
   const kartGoReady = useVisualSettled(toy.id);
 
+  // Speak from the opening tap when possible. On the detail page, only start
+  // speech if nothing is already speaking for this toy — never cancel on
+  // cleanup (React Strict Mode was killing speech right after the tap).
   useEffect(() => {
-    if (!audioEnabled) {
-      cancelToySpeech(toy.id);
-      return;
-    }
+    if (!audioEnabled) return;
     speakToyDescription(toy);
-    return () => {
-      cancelToySpeech(toy.id);
-    };
   }, [toy.id, toy.name, toy.blurb, audioEnabled, toy]);
+
+  useEffect(() => {
+    if (!audioEnabled) cancelToySpeech(toy.id);
+  }, [audioEnabled, toy.id]);
 
   return (
     <div

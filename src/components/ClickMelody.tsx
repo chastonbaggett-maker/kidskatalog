@@ -16,14 +16,23 @@ function isMusicalTarget(target: EventTarget | null): boolean {
 
 type FloatNote = {
   id: number;
-  dx: number;
+  /** Quick outward burst */
+  burstX: number;
+  burstY: number;
+  /** Slow float drift after the burst */
+  driftX: number;
   delay: number;
   spin: number;
   scale: number;
   live: boolean;
 };
 
+const MAX_FLOAT_NOTES = 7;
+const FLOAT_LIFE_MS = 3400;
+const LOOP_FLOAT_LIFE_MS = 3000;
+
 let noteId = 0;
+const floatTimers = new Map<number, number>();
 
 /**
  * Every button/link tap plays a melody note and stamps it into a soft
@@ -37,18 +46,40 @@ export function ClickMelody() {
   const [floatNotes, setFloatNotes] = useState<FloatNote[]>([]);
 
   const spawnFloat = (live: boolean) => {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.1;
+    const burstDist = live ? 28 + Math.random() * 18 : 18 + Math.random() * 12;
     const next: FloatNote = {
       id: ++noteId,
-      dx: (Math.random() - 0.5) * (live ? 36 : 24),
-      delay: Math.random() * 40,
-      spin: (Math.random() > 0.5 ? 1 : -1) * (12 + Math.random() * 28),
-      scale: live ? 0.9 + Math.random() * 0.35 : 0.55 + Math.random() * 0.25,
+      burstX: Math.cos(angle) * burstDist,
+      burstY: Math.sin(angle) * burstDist,
+      driftX: (Math.random() - 0.5) * (live ? 42 : 28),
+      delay: Math.random() * 30,
+      spin: (Math.random() > 0.5 ? 1 : -1) * (18 + Math.random() * 40),
+      scale: live ? 0.95 + Math.random() * 0.35 : 0.6 + Math.random() * 0.25,
       live,
     };
-    setFloatNotes((prev) => [...prev.slice(-14), next]);
-    window.setTimeout(() => {
+
+    setFloatNotes((prev) => {
+      const merged = [...prev, next];
+      const overflow = merged.length - MAX_FLOAT_NOTES;
+      if (overflow <= 0) return merged;
+      const killed = merged.slice(0, overflow);
+      for (const old of killed) {
+        const t = floatTimers.get(old.id);
+        if (t != null) {
+          window.clearTimeout(t);
+          floatTimers.delete(old.id);
+        }
+      }
+      return merged.slice(overflow);
+    });
+
+    const life = live ? FLOAT_LIFE_MS : LOOP_FLOAT_LIFE_MS;
+    const timer = window.setTimeout(() => {
+      floatTimers.delete(next.id);
       setFloatNotes((prev) => prev.filter((n) => n.id !== next.id));
-    }, live ? 1100 : 900);
+    }, life);
+    floatTimers.set(next.id, timer);
   };
 
   useEffect(() => {
@@ -79,6 +110,8 @@ export function ClickMelody() {
       engine.setMuted(!state.enabled);
       if (!state.enabled) {
         engine.clearLoop();
+        for (const t of floatTimers.values()) window.clearTimeout(t);
+        floatTimers.clear();
         setFloatNotes([]);
       }
     });
@@ -93,6 +126,8 @@ export function ClickMelody() {
       engine.setOnNote(null);
       engine.dispose();
       engineRef.current = null;
+      for (const t of floatTimers.values()) window.clearTimeout(t);
+      floatTimers.clear();
     };
   }, []);
 
@@ -110,7 +145,9 @@ export function ClickMelody() {
             key={n.id}
             className={`site-music-toggle__float${n.live ? " is-live" : " is-loop"}`}
             style={{
-              ["--dx" as string]: `${n.dx}px`,
+              ["--burst-x" as string]: `${n.burstX}px`,
+              ["--burst-y" as string]: `${n.burstY}px`,
+              ["--drift-x" as string]: `${n.driftX}px`,
               ["--spin" as string]: `${n.spin}deg`,
               ["--scale" as string]: String(n.scale),
               animationDelay: `${n.delay}ms`,
@@ -137,6 +174,8 @@ export function ClickMelody() {
           engine.setMuted(!next);
           if (!next) {
             engine.clearLoop();
+            for (const t of floatTimers.values()) window.clearTimeout(t);
+            floatTimers.clear();
             setFloatNotes([]);
           } else void engine.unlock();
         }}

@@ -2887,14 +2887,14 @@ body:has(.app-shell--pile) .site-music-toggle-wrap {
   color: color-mix(in srgb, var(--mint) 70%, var(--ink));
   opacity: 0;
   transform: translate(-50%, 0) scale(var(--scale, 1));
-  animation: site-music-note-float 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation: site-music-note-float 3.4s linear forwards;
   will-change: transform, opacity;
   filter: drop-shadow(0 2px 4px rgba(40, 60, 90, 0.18));
 }
 
 .site-music-toggle__float.is-loop {
   color: color-mix(in srgb, var(--mint) 45%, var(--ink-soft));
-  animation-duration: 0.9s;
+  animation-duration: 3s;
 }
 
 html[data-accent="boys"] .site-music-toggle__float {
@@ -2916,16 +2916,42 @@ html[data-accent="girls"] .site-music-toggle__float.is-loop {
 @keyframes site-music-note-float {
   0% {
     opacity: 0;
-    transform: translate(-50%, 8px) scale(calc(var(--scale, 1) * 0.7))
+    transform: translate(-50%, 6px) scale(calc(var(--scale, 1) * 0.55))
       rotate(0deg);
   }
-  12% {
+  /* Quick push outward from the button */
+  8% {
     opacity: 1;
+    transform: translate(
+        calc(-50% + var(--burst-x, 0px)),
+        var(--burst-y, -28px)
+      )
+      scale(var(--scale, 1)) rotate(calc(var(--spin, 18deg) * 0.25));
+  }
+  /* Then ease into a long, lazy float */
+  22% {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--burst-x, 0px) * 0.85 + var(--drift-x, 0px) * 0.2),
+        calc(var(--burst-y, -28px) - 18px)
+      )
+      scale(var(--scale, 1)) rotate(calc(var(--spin, 18deg) * 0.4));
+  }
+  70% {
+    opacity: 0.92;
+    transform: translate(
+        calc(-50% + var(--burst-x, 0px) * 0.55 + var(--drift-x, 0px) * 0.75),
+        calc(var(--burst-y, -28px) - 92px)
+      )
+      scale(calc(var(--scale, 1) * 0.96)) rotate(calc(var(--spin, 18deg) * 0.85));
   }
   100% {
     opacity: 0;
-    transform: translate(calc(-50% + var(--dx, 0px)), -78px)
-      scale(var(--scale, 1)) rotate(var(--spin, 18deg));
+    transform: translate(
+        calc(-50% + var(--burst-x, 0px) * 0.35 + var(--drift-x, 0px)),
+        calc(var(--burst-y, -28px) - 150px)
+      )
+      scale(calc(var(--scale, 1) * 0.88)) rotate(var(--spin, 18deg));
   }
 }
 

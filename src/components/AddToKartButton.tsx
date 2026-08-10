@@ -7,7 +7,6 @@ import { useVisualSettled } from "@/hooks/useVisualSettled";
 import { useKartStore } from "@/lib/kart-store";
 import { readBootInKart } from "@/lib/kart-boot";
 import { pingMetrics } from "@/lib/metrics-client";
-import { useKartEffectsReduced } from "@/hooks/useKartEffectsReduced";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { fireKartFlyBall, notifyKartFlyBallLand } from "@/lib/kart-fly-ball";
 
@@ -25,7 +24,6 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
   const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
   const visualReady = useVisualSettled(`${pathname}:${toyId}`);
   const bootInKart = readBootInKart(toyId);
-  const reducedEffects = useKartEffectsReduced();
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
   const [pulsing, setPulsing] = useState(false);
   const pulseTimerRef = useRef<number | undefined>(undefined);
@@ -63,16 +61,11 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
     add(toyId);
     pingMetrics("kart_add");
 
-    // Confetti + SFX stay on for mobile; only skip the fly-ball layer there.
-    // Play SFX in this click turn (iOS), then paint confetti on the next frame.
+    // Confetti + fly-ball run on mobile too (SFX unlocks in the click turn on iOS).
     fireConfetti(point, GOLD_CONFETTI);
-    if (!reducedEffects) {
-      requestAnimationFrame(() => {
-        if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
-      });
-    } else {
-      notifyKartFlyBallLand();
-    }
+    requestAnimationFrame(() => {
+      if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
+    });
   };
 
   return (

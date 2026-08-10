@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** Touch / iOS / PWA — skip fullscreen fixed-effect layers that flash on compositor repaint. */
+/** Touch / iOS / PWA — tone down heavy button chrome; fly-ball + confetti stay on. */
 export function detectKartEffectsReduced() {
   if (typeof window === "undefined") return false;
 

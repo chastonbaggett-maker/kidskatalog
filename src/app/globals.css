@@ -2342,12 +2342,8 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   }
 }
 
-/* Touch / PWA: skip fly-ball layer (compositor flash); keep confetti */
+/* Touch / PWA: keep fly-ball + confetti; tone down heavier button chrome */
 @media (pointer: coarse) {
-  .kart-fly-ball {
-    display: none !important;
-  }
-
   /* Easter-egg bounce balls stay available on touch. */
 
   .add-kart-btn,
@@ -2388,7 +2384,7 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
     transition: none !important;
   }
 
-  /* Keep landing pulse — ball is skipped on touch, so this is the catch feedback. */
+  /* Keep landing pulse when the fly-ball arrives at the kart icon. */
   .bottom-nav__kart--land .bottom-nav__kart-icon {
     animation: kart-nav-icon-land 0.52s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
@@ -2435,11 +2431,7 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   }
 }
 
-html[data-kart-effects-reduced="true"] .kart-fly-ball {
-  display: none !important;
-}
-
-/* Bounce easter egg still runs when fly-ball/confetti are reduced. */
+/* Bounce easter egg + fly-ball still run when other effects are reduced. */
 
 html[data-kart-effects-reduced="true"] .add-kart-btn,
 html[data-kart-effects-reduced="true"] .add-kart-btn--in {

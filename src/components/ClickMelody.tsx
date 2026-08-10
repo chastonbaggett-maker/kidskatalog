@@ -88,9 +88,9 @@ export function ClickMelody() {
     engineRef.current = engine;
     engine.setMuted(!useClickMelodyStore.getState().enabled);
     engine.setOnNote(({ live }) => {
-      // Loop echoes are quieter visually so the halo doesn't flood.
-      if (!live && Math.random() > 0.55) return;
-      spawnFloat(live);
+      // Visual notes only for real button/link taps — not loop echoes.
+      if (!live) return;
+      spawnFloat(true);
     });
 
     const onUnlock = () => {

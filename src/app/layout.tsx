@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
+import { AppSplash } from "@/components/AppSplash";
 import { StandaloneClass } from "@/components/StandaloneClass";
 import { KART_BOOT_SCRIPT } from "@/lib/kart-boot";
 import { ROUTE_CHANGE_BOOT_SCRIPT } from "@/lib/route-change";
@@ -118,6 +119,7 @@ export default function RootLayout({
         />
         <StandaloneClass />
         <AccentSync />
+        <AppSplash />
         {children}
       </body>
     </html>

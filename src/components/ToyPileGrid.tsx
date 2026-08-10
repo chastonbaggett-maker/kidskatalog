@@ -13,6 +13,7 @@ import {
 import type { Toy } from "@/types/toy";
 import { shuffleWithSeed } from "@/lib/shuffle";
 import { beginRouteChange } from "@/lib/route-change";
+import { speakToyDescription } from "@/lib/toy-speech";
 import { FeedCard } from "./FeedCard";
 
 const MIN_CHUNK = 6;
@@ -757,6 +758,11 @@ export function ToyPileGrid({
       if (link) {
         const href = link.getAttribute("href");
         if (href) {
+          const toyId = href.split("/toy/")[1]?.split(/[?#]/)[0];
+          const toy = toyId
+            ? ordered.find((t) => t.id === toyId)
+            : undefined;
+          if (toy) speakToyDescription(toy);
           beginRouteChange();
           router.push(href);
           return;
@@ -769,11 +775,13 @@ export function ToyPileGrid({
       const card = findCardAtClientPoint(viewport, clientX, clientY);
       const toyId = card?.getAttribute("data-toy-id");
       if (toyId) {
+        const toy = ordered.find((t) => t.id === toyId);
+        if (toy) speakToyDescription(toy);
         beginRouteChange();
         router.push(`/toy/${toyId}`);
       }
     },
-    [router],
+    [ordered, router],
   );
 
   const maybeExpand = useCallback(() => {

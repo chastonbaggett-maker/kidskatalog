@@ -4,6 +4,7 @@
  */
 
 const MASTER_LEVEL = 0.085;
+const DUCKED_LEVEL = 0.018;
 const FADE_IN_S = 2.2;
 const FADE_OUT_S = 0.55;
 const LOOP_S = 12;
@@ -43,6 +44,7 @@ export class SiteMusicEngine {
   private nextLoopAt = 0;
   private running = false;
   private muted = false;
+  private ducked = false;
   private unlocked = false;
 
   get isRunning() {
@@ -68,21 +70,37 @@ export class SiteMusicEngine {
 
   setMuted(muted: boolean) {
     this.muted = muted;
+    this.applyGain(muted || !this.running ? 0 : undefined, 0.04);
+  }
+
+  /** Soften bed music while a toy description is spoken. */
+  setDucked(ducked: boolean) {
+    this.ducked = ducked;
+    if (this.muted || !this.running) return;
+    this.applyGain(undefined, ducked ? 0.05 : 0.12);
+  }
+
+  private targetLevel() {
+    if (this.muted || !this.running) return 0;
+    return this.ducked ? DUCKED_LEVEL : MASTER_LEVEL;
+  }
+
+  private applyGain(explicit?: number, timeConstant = 0.08) {
     const master = this.master;
     const ctx = this.ctx;
     if (!master || !ctx) return;
     const now = ctx.currentTime;
     master.gain.cancelScheduledValues(now);
-    if (muted || !this.running) {
-      master.gain.setTargetAtTime(0, now, 0.04);
-    } else {
-      master.gain.setTargetAtTime(MASTER_LEVEL, now, 0.08);
-    }
+    master.gain.setTargetAtTime(
+      explicit ?? this.targetLevel(),
+      now,
+      timeConstant,
+    );
   }
 
   async start() {
     if (this.running) {
-      this.setMuted(this.muted);
+      this.applyGain(undefined, 0.08);
       return;
     }
     const ok = await this.unlock();
@@ -101,7 +119,10 @@ export class SiteMusicEngine {
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setValueAtTime(0.0001, now);
     if (!this.muted) {
-      this.master.gain.exponentialRampToValueAtTime(MASTER_LEVEL, now + FADE_IN_S);
+      this.master.gain.exponentialRampToValueAtTime(
+        this.targetLevel() || MASTER_LEVEL,
+        now + FADE_IN_S,
+      );
     }
   }
 

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SiteMusicEngine } from "@/lib/site-music-engine";
+import { registerSiteMusicEngine } from "@/lib/site-music-bridge";
 import { useSiteMusicStore } from "@/lib/site-music-store";
+import { cancelToySpeech } from "@/lib/toy-speech";
 import { getStorePersist, usePersistHydrated } from "@/hooks/usePersistHydrated";
 
 /**
@@ -19,6 +21,7 @@ export function SiteMusic() {
   useEffect(() => {
     const engine = new SiteMusicEngine();
     engineRef.current = engine;
+    registerSiteMusicEngine(engine);
 
     const tryStart = async () => {
       if (!useSiteMusicStore.getState().enabled) return;
@@ -37,6 +40,7 @@ export function SiteMusic() {
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
+        cancelToySpeech();
         engine.stop();
       } else if (useSiteMusicStore.getState().enabled) {
         void tryStart();
@@ -53,6 +57,8 @@ export function SiteMusic() {
       window.removeEventListener("pointerdown", onGesture);
       window.removeEventListener("keydown", onGesture);
       document.removeEventListener("visibilitychange", onVisibility);
+      cancelToySpeech();
+      registerSiteMusicEngine(null);
       engine.dispose();
       engineRef.current = null;
     };
@@ -69,6 +75,7 @@ export function SiteMusic() {
         setNeedsGesture(!engine.isUnlocked);
       });
     } else {
+      cancelToySpeech();
       engine.stop();
     }
   }, [enabled, hydrated]);

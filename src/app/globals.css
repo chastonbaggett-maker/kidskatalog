@@ -2850,8 +2850,11 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   animation: admin-generate-spin 0.7s linear infinite;
 }
 
-/* Tap-melody mute — floats above bottom nav, left side */
+/* Tap-melody mute — black-hole well around the control */
 .site-music-toggle {
+  --bh-core: #07060c;
+  --bh-ring: #5ee7d4;
+  --bh-ember: #ffb45a;
   position: fixed;
   z-index: 45;
   left: max(0.75rem, env(safe-area-inset-left, 0px));
@@ -2862,80 +2865,199 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: var(--ink);
-  background: color-mix(in srgb, white 88%, var(--mint));
-  box-shadow:
-    0 8px 22px -14px rgba(60, 70, 120, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--mint) 35%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  color: #e8fffb;
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+  isolation: isolate;
+  overflow: visible;
+  transition: transform 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
-.site-music-toggle:hover {
-  transform: translateY(-1px) scale(1.04);
-  background: color-mix(in srgb, white 78%, var(--mint));
+.site-music-toggle__well,
+.site-music-toggle__disk,
+.site-music-toggle__horizon,
+.site-music-toggle__icon {
+  grid-area: 1 / 1;
 }
 
-.site-music-toggle:active {
-  transform: scale(0.96);
-}
-
-.site-music-toggle[aria-pressed="true"] {
-  color: #1f6f66;
-  background: color-mix(in srgb, white 72%, var(--mint));
+/* Gravity well — dark void that pulls the surrounding UI inward visually */
+.site-music-toggle__well {
+  width: 7.25rem;
+  height: 7.25rem;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.78) 22%,
+      rgba(8, 6, 18, 0.55) 42%,
+      rgba(8, 6, 18, 0.2) 62%,
+      transparent 74%
+    );
   box-shadow:
-    0 8px 22px -14px rgba(40, 140, 120, 0.5),
-    0 0 0 2px color-mix(in srgb, var(--mint) 55%, transparent);
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 18px 40px -10px rgba(0, 0, 0, 0.65);
+  animation: bh-well-breathe 4.8s ease-in-out infinite;
 }
 
-.site-music-toggle[aria-pressed="false"] {
-  color: var(--ink-soft);
-  opacity: 0.92;
+/* Spinning accretion disk */
+.site-music-toggle__disk {
+  width: 4.35rem;
+  height: 4.35rem;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      color-mix(in srgb, var(--bh-ember) 75%, white) 38deg,
+      transparent 78deg,
+      color-mix(in srgb, var(--bh-ring) 80%, white) 128deg,
+      transparent 168deg,
+      color-mix(in srgb, var(--bh-ember) 55%, #ff7a3c) 220deg,
+      transparent 268deg,
+      color-mix(in srgb, var(--bh-ring) 70%, #9cf6ea) 312deg,
+      transparent 360deg
+    );
+  -webkit-mask: radial-gradient(circle, transparent 54%, #000 58%, #000 72%, transparent 76%);
+  mask: radial-gradient(circle, transparent 54%, #000 58%, #000 72%, transparent 76%);
+  filter: blur(0.35px) saturate(1.15);
+  opacity: 0.95;
+  animation: bh-disk-spin 3.6s linear infinite;
+}
+
+.site-music-toggle__disk::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: inherit;
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent 0deg,
+      rgba(255, 210, 140, 0.55) 50deg,
+      transparent 95deg,
+      rgba(120, 240, 220, 0.45) 160deg,
+      transparent 210deg
+    );
+  -webkit-mask: radial-gradient(circle, transparent 50%, #000 56%, #000 68%, transparent 74%);
+  mask: radial-gradient(circle, transparent 50%, #000 56%, #000 68%, transparent 74%);
+  animation: bh-disk-spin 2.2s linear infinite reverse;
+}
+
+/* Event horizon — the actual pressable face */
+.site-music-toggle__horizon {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(circle at 35% 30%, #2a2a38 0%, var(--bh-core) 58%, #000 100%);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--bh-ring) 55%, transparent),
+    inset 0 -6px 14px rgba(0, 0, 0, 0.85),
+    inset 0 4px 10px rgba(255, 255, 255, 0.08),
+    0 0 18px color-mix(in srgb, var(--bh-ring) 28%, transparent),
+    0 0 0 3px rgba(0, 0, 0, 0.55);
+  animation: bh-horizon-pulse 3.2s ease-in-out infinite;
 }
 
 .site-music-toggle__icon {
+  position: relative;
+  z-index: 3;
   display: grid;
   place-items: center;
   line-height: 0;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--bh-ring) 45%, transparent));
+}
+
+.site-music-toggle:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+.site-music-toggle:active {
+  transform: scale(0.95);
+}
+
+.site-music-toggle.is-muted {
+  color: #9aa3b5;
+  opacity: 0.88;
+}
+
+.site-music-toggle.is-muted .site-music-toggle__well {
+  opacity: 0.55;
+  animation: none;
+}
+
+.site-music-toggle.is-muted .site-music-toggle__disk {
+  opacity: 0.28;
+  animation-duration: 9s;
+  filter: grayscale(0.35) blur(0.5px);
+}
+
+.site-music-toggle.is-muted .site-music-toggle__horizon {
+  animation: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 -6px 14px rgba(0, 0, 0, 0.85),
+    0 0 0 3px rgba(0, 0, 0, 0.4);
 }
 
 html[data-accent="boys"] .site-music-toggle {
-  background: color-mix(in srgb, white 88%, var(--blue));
-  box-shadow:
-    0 8px 22px -14px rgba(60, 70, 120, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--blue) 35%, transparent);
-}
-
-html[data-accent="boys"] .site-music-toggle[aria-pressed="true"] {
-  color: var(--blue-deep);
-  background: color-mix(in srgb, white 72%, var(--blue));
-  box-shadow:
-    0 8px 22px -14px rgba(60, 100, 180, 0.5),
-    0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent);
+  --bh-ring: #7eb6ff;
+  --bh-ember: #9ec5ff;
 }
 
 html[data-accent="girls"] .site-music-toggle {
-  background: color-mix(in srgb, white 88%, var(--pink));
-  box-shadow:
-    0 8px 22px -14px rgba(60, 70, 120, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--pink) 40%, transparent);
-}
-
-html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
-  color: #c45a88;
-  background: color-mix(in srgb, white 72%, var(--pink));
-  box-shadow:
-    0 8px 22px -14px rgba(180, 80, 120, 0.45),
-    0 0 0 2px color-mix(in srgb, var(--pink) 55%, transparent);
+  --bh-ring: #ffb3d0;
+  --bh-ember: #ffd0a8;
 }
 
 .app-shell--pile .site-music-toggle {
   bottom: calc(var(--pile-nav-stack-height) + 0.55rem);
+}
+
+@keyframes bh-disk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bh-well-breathe {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes bh-horizon-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1.5px color-mix(in srgb, var(--bh-ring) 50%, transparent),
+      inset 0 -6px 14px rgba(0, 0, 0, 0.85),
+      inset 0 4px 10px rgba(255, 255, 255, 0.08),
+      0 0 14px color-mix(in srgb, var(--bh-ring) 22%, transparent),
+      0 0 0 3px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1.5px color-mix(in srgb, var(--bh-ember) 55%, transparent),
+      inset 0 -6px 14px rgba(0, 0, 0, 0.85),
+      inset 0 4px 10px rgba(255, 255, 255, 0.1),
+      0 0 24px color-mix(in srgb, var(--bh-ring) 38%, transparent),
+      0 0 0 3px rgba(0, 0, 0, 0.6);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2946,5 +3068,12 @@ html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
   .site-music-toggle:hover,
   .site-music-toggle:active {
     transform: none;
+  }
+
+  .site-music-toggle__well,
+  .site-music-toggle__disk,
+  .site-music-toggle__disk::after,
+  .site-music-toggle__horizon {
+    animation: none;
   }
 }

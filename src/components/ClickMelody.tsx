@@ -69,7 +69,7 @@ export function ClickMelody() {
     <button
       type="button"
       data-click-melody-toggle
-      className="site-music-toggle"
+      className={`site-music-toggle${playing ? " is-singing" : " is-muted"}`}
       aria-label={label}
       aria-pressed={playing}
       title={label}
@@ -86,6 +86,9 @@ export function ClickMelody() {
         else void engine.unlock();
       }}
     >
+      <span className="site-music-toggle__well" aria-hidden />
+      <span className="site-music-toggle__disk" aria-hidden />
+      <span className="site-music-toggle__horizon" aria-hidden />
       <span className="site-music-toggle__icon" aria-hidden>
         <MusicIcon muted={!playing} />
       </span>

@@ -2850,10 +2850,10 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   animation: admin-generate-spin 0.7s linear infinite;
 }
 
-/* Tap-melody mute — original button + pure backdrop gravitational warp */
+/* Tap-melody mute — button only; grav lens is an SVG filter on app content */
 .site-music-toggle-wrap {
   position: fixed;
-  z-index: 45;
+  z-index: 60;
   left: max(0.75rem, env(safe-area-inset-left, 0px));
   bottom: calc(var(--bottom-nav-offset) + 0.65rem);
   width: 2.75rem;
@@ -2861,7 +2861,7 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   pointer-events: none;
 }
 
-.app-shell--pile .site-music-toggle-wrap {
+body:has(.app-shell--pile) .site-music-toggle-wrap {
   bottom: calc(var(--pile-nav-stack-height) + 0.55rem);
 }
 
@@ -2874,79 +2874,13 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   width: 0;
   height: 0;
   overflow: hidden;
-}
-
-/* Samples content behind, then SVG displacement bends it (no color overlays). */
-.site-music-toggle__warp {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 8rem;
-  height: 8rem;
-  transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 0;
-  border-radius: 999px;
-  overflow: hidden;
-  /* Force a stacking context so backdrop samples + filter composite correctly */
-  isolation: isolate;
-  will-change: filter;
 }
 
-.site-music-toggle__warp-sample {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  pointer-events: none;
-  /* blur(0) still triggers backdrop sampling without tinting */
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
-  -webkit-mask: radial-gradient(
-    circle,
-    transparent 20%,
-    #000 30%,
-    #000 68%,
-    transparent 78%
-  );
-  mask: radial-gradient(
-    circle,
-    transparent 20%,
-    #000 30%,
-    #000 68%,
-    transparent 78%
-  );
-}
-
-/* Magnified band — scales the sampled backdrop (true content bend) */
-.site-music-toggle__warp-sample--mag {
-  inset: -12%;
-  transform: scale(1.28);
-  transform-origin: center;
-  -webkit-mask: radial-gradient(
-    circle,
-    transparent 34%,
-    #000 44%,
-    #000 58%,
-    transparent 70%
-  );
-  mask: radial-gradient(
-    circle,
-    transparent 34%,
-    #000 44%,
-    #000 58%,
-    transparent 70%
-  );
-  animation: melody-lens-breathe 6s ease-in-out infinite;
-}
-
-.site-music-toggle-wrap.is-muted .site-music-toggle__warp {
-  opacity: 0.4;
-  filter: none !important;
-}
-
-.site-music-toggle-wrap.is-muted .site-music-toggle__warp-sample--mag {
-  animation: none;
-  transform: scale(1.08);
+.app-shell__lens-root {
+  min-height: 0;
+  width: 100%;
+  /* filter is applied inline by ClickMelody — warps real pixels */
 }
 
 .site-music-toggle {
@@ -3030,16 +2964,6 @@ html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
     0 0 0 2px color-mix(in srgb, var(--pink) 55%, transparent);
 }
 
-@keyframes melody-lens-breathe {
-  0%,
-  100% {
-    transform: scale(1.24);
-  }
-  50% {
-    transform: scale(1.34);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .site-music-toggle {
     transition: none;
@@ -3050,7 +2974,7 @@ html[data-accent="girls"] .site-music-toggle[aria-pressed="true"] {
     transform: none;
   }
 
-  .site-music-toggle__warp-sample--mag {
-    animation: none;
+  .app-shell__lens-root {
+    filter: none !important;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ClickMelodyEngine } from "@/lib/click-melody-engine";
 import { useClickMelodyStore } from "@/lib/click-melody-store";
 
@@ -14,38 +15,39 @@ function isMusicalTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Radial RG displacement map — bends sampled backdrop toward a lens ring. */
-function buildLensDisplacementMap(size = 192): string {
+/** Compact RG displacement patch — bends pixels toward a photon-ring. */
+function buildGravLensPatch(size: number): string {
+  const s = Math.max(32, Math.round(size));
   const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = s;
+  canvas.height = s;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
 
-  const img = ctx.createImageData(size, size);
-  const cx = (size - 1) / 2;
-  const cy = (size - 1) / 2;
-  const maxR = size * 0.5;
+  const img = ctx.createImageData(s, s);
+  const data = img.data;
+  const cx = (s - 1) / 2;
+  const cy = (s - 1) / 2;
+  const maxR = s * 0.5;
 
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
+  for (let y = 0; y < s; y += 1) {
+    for (let x = 0; x < s; x += 1) {
       const dx = x - cx;
       const dy = y - cy;
       const dist = Math.hypot(dx, dy);
       const r = dist / maxR;
-      const i = (y * size + x) * 4;
+      const i = (y * s + x) * 4;
 
       let rx = 128;
       let gy = 128;
 
-      if (r > 0.12 && r < 1) {
+      if (r < 1 && r > 0.05) {
         const nx = dx / (dist || 1);
         const ny = dy / (dist || 1);
-        // Strongest bend on a ring around the button (photon sphere).
-        const ring = Math.exp(-(((r - 0.55) / 0.2) ** 2));
-        const inner = Math.exp(-(((r - 0.32) / 0.16) ** 2)) * 0.45;
-        const strength = (ring + inner) * 70;
-        const swirl = ring * 0.4;
+        const ring = Math.exp(-(((r - 0.6) / 0.15) ** 2));
+        const well = Math.exp(-(((r - 0.25) / 0.18) ** 2)) * 0.6;
+        const strength = (ring * 1.2 + well) * 95;
+        const swirl = ring * 0.55;
         rx = Math.max(
           0,
           Math.min(255, 128 - nx * strength + -ny * strength * swirl),
@@ -56,10 +58,10 @@ function buildLensDisplacementMap(size = 192): string {
         );
       }
 
-      img.data[i] = rx;
-      img.data[i + 1] = gy;
-      img.data[i + 2] = 128;
-      img.data[i + 3] = 255;
+      data[i] = rx;
+      data[i + 1] = gy;
+      data[i + 2] = 128;
+      data[i + 3] = 255;
     }
   }
 
@@ -67,22 +69,31 @@ function buildLensDisplacementMap(size = 192): string {
   return canvas.toDataURL("image/png");
 }
 
+type LensState = {
+  map: string;
+  x: number;
+  y: number;
+  size: number;
+};
+
 /**
- * Every button/link tap plays a melody note and stamps it into a soft
- * decaying loop. Mute stops new notes and silences the loop.
+ * Tap-melody mute control + gravitational lens that bends real app pixels
+ * around the button (no color overlays).
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
   const setEnabled = useClickMelodyStore((s) => s.setEnabled);
   const engineRef = useRef<ClickMelodyEngine | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const patchRef = useRef<string>("");
   const [mounted, setMounted] = useState(false);
-  const [lensMap, setLensMap] = useState<string>("");
+  const [lens, setLens] = useState<LensState | null>(null);
   const reactId = useId().replace(/:/g, "");
-  const filterId = `melody-lens-${reactId}`;
+  const filterId = `grav-lens-${reactId}`;
 
   useEffect(() => {
     setMounted(true);
-    setLensMap(buildLensDisplacementMap(224));
+    patchRef.current = buildGravLensPatch(256);
 
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
@@ -118,52 +129,127 @@ export function ClickMelody() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!mounted) return;
+
+    let raf = 0;
+    let lastKey = "";
+
+    const clearRootFilter = () => {
+      const el = document.querySelector<HTMLElement>("[data-grav-lens-root]");
+      if (!el) return;
+      el.style.removeProperty("filter");
+      el.style.removeProperty("-webkit-filter");
+    };
+
+    const applyRootFilter = () => {
+      const el = document.querySelector<HTMLElement>("[data-grav-lens-root]");
+      if (!el) return;
+      if (!useClickMelodyStore.getState().enabled) {
+        clearRootFilter();
+        return;
+      }
+      el.style.setProperty("filter", `url(#${filterId})`);
+      el.style.setProperty("-webkit-filter", `url(#${filterId})`);
+    };
+
+    const sync = () => {
+      const root = document.querySelector<HTMLElement>("[data-grav-lens-root]");
+      const btn = buttonRef.current;
+      const map = patchRef.current;
+      if (!root || !btn || !map) return;
+
+      if (!useClickMelodyStore.getState().enabled) {
+        if (lastKey !== "off") {
+          lastKey = "off";
+          setLens(null);
+          clearRootFilter();
+        }
+        return;
+      }
+
+      const rootRect = root.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const cx = btnRect.left + btnRect.width / 2 - rootRect.left;
+      const cy = btnRect.top + btnRect.height / 2 - rootRect.top;
+      // Reach up into feed content + across nearby nav chrome.
+      const size = Math.round(
+        Math.max(220, Math.min(rootRect.width, rootRect.height) * 0.42),
+      );
+      const x = Math.round(cx - size / 2);
+      const y = Math.round(cy - size / 2);
+      const key = `${x}:${y}:${size}`;
+      if (key === lastKey) {
+        applyRootFilter();
+        return;
+      }
+      lastKey = key;
+      setLens({ map, x, y, size });
+      requestAnimationFrame(applyRootFilter);
+    };
+
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(sync);
+    };
+
+    schedule();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    const unsub = useClickMelodyStore.subscribe(schedule);
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(schedule)
+        : null;
+    const root = document.querySelector("[data-grav-lens-root]");
+    if (root && ro) ro.observe(root);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      unsub();
+      ro?.disconnect();
+      clearRootFilter();
+    };
+  }, [mounted, filterId]);
+
   const playing = mounted ? enabled : true;
   const label = playing ? "Mute tap music" : "Play tap music";
 
-  return (
-    <div
-      className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
-      data-click-melody-toggle
-    >
-      {/* Sample backdrop, then displace it — no tint overlays */}
-      <span
-        className="site-music-toggle__warp"
-        aria-hidden
-        style={
-          lensMap
-            ? ({ filter: `url(#${filterId})` } as React.CSSProperties)
-            : undefined
-        }
-      >
-        <span className="site-music-toggle__warp-sample" />
-        <span className="site-music-toggle__warp-sample site-music-toggle__warp-sample--mag" />
-      </span>
-
-      {lensMap ? (
-        <svg className="site-music-toggle__svgdefs" aria-hidden width="0" height="0">
+  const ui = (
+    <>
+      {lens ? (
+        <svg
+          className="site-music-toggle__svgdefs"
+          aria-hidden
+          width={0}
+          height={0}
+        >
           <defs>
             <filter
               id={filterId}
-              x="-50%"
-              y="-50%"
-              width="200%"
-              height="200%"
+              x="-8%"
+              y="-8%"
+              width="116%"
+              height="116%"
+              filterUnits="userSpaceOnUse"
+              primitiveUnits="userSpaceOnUse"
               colorInterpolationFilters="sRGB"
             >
               <feImage
-                href={lensMap}
+                href={lens.map}
                 result="map"
-                x="0"
-                y="0"
-                width="100%"
-                height="100%"
+                x={lens.x}
+                y={lens.y}
+                width={lens.size}
+                height={lens.size}
                 preserveAspectRatio="none"
               />
               <feDisplacementMap
                 in="SourceGraphic"
                 in2="map"
-                scale="58"
+                scale={64}
                 xChannelSelector="R"
                 yChannelSelector="G"
               />
@@ -172,31 +258,40 @@ export function ClickMelody() {
         </svg>
       ) : null}
 
-      <button
-        type="button"
-        className="site-music-toggle"
-        aria-label={label}
-        aria-pressed={playing}
-        title={label}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const engine = engineRef.current;
-          const next = !useClickMelodyStore.getState().enabled;
-          setEnabled(next);
-          if (!engine) return;
-          engine.setMuted(!next);
-          if (!next) engine.clearLoop();
-          else void engine.unlock();
-        }}
+      <div
+        className={`site-music-toggle-wrap${playing ? " is-singing" : " is-muted"}`}
+        data-click-melody-toggle
       >
-        <span className="site-music-toggle__icon" aria-hidden>
-          <MusicIcon muted={!playing} />
-        </span>
-      </button>
-    </div>
+        <button
+          ref={buttonRef}
+          type="button"
+          className="site-music-toggle"
+          aria-label={label}
+          aria-pressed={playing}
+          title={label}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const engine = engineRef.current;
+            const next = !useClickMelodyStore.getState().enabled;
+            setEnabled(next);
+            if (!engine) return;
+            engine.setMuted(!next);
+            if (!next) engine.clearLoop();
+            else void engine.unlock();
+          }}
+        >
+          <span className="site-music-toggle__icon" aria-hidden>
+            <MusicIcon muted={!playing} />
+          </span>
+        </button>
+      </div>
+    </>
   );
+
+  if (!mounted) return null;
+  return createPortal(ui, document.body);
 }
 
 function MusicIcon({ muted }: { muted: boolean }) {

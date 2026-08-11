@@ -440,6 +440,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
   background: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
   opacity: 1;
   visibility: visible;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .app-splash--out {
@@ -449,18 +451,38 @@ html.route-changing .bottom-nav__kart-badge--pop {
 }
 
 .app-splash__logo {
-  width: auto;
+  display: block;
+  width: min(11vw, 3.4rem);
   height: min(16vw, 5rem);
   max-height: 22vh;
   opacity: 0;
   transform: scale(0.9);
   user-select: none;
   -webkit-user-drag: none;
-  filter: drop-shadow(0 10px 28px rgba(15, 90, 82, 0.28));
+  pointer-events: none;
+  background-color: #fff;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  /* Mask avoids img + drop-shadow bounding-box artifacts on iOS. */
+  -webkit-mask-image: url(/logo-icon.png);
+  mask-image: url(/logo-icon.png);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 .app-splash--in .app-splash__logo {
   animation: app-splash-logo-in 0.7s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+}
+
+.app-splash--armed .app-splash__logo {
+  opacity: 1;
+  transform: scale(1);
+  animation: app-splash-logo-armed 1.1s ease-in-out infinite;
 }
 
 .app-splash--tap .app-splash__logo {
@@ -481,6 +503,16 @@ html.route-changing .bottom-nav__kart-badge--pop {
   100% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes app-splash-logo-armed {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
   }
 }
 

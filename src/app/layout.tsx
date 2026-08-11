@@ -5,6 +5,7 @@ import { AppSplash } from "@/components/AppSplash";
 import { StandaloneClass } from "@/components/StandaloneClass";
 import { KART_BOOT_SCRIPT } from "@/lib/kart-boot";
 import { ROUTE_CHANGE_BOOT_SCRIPT } from "@/lib/route-change";
+import { SPLASH_BOOT_SCRIPT, SPLASH_BOOT_STYLE } from "@/lib/splash-boot";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -99,14 +100,23 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
+      data-splash="active"
       // Boot scripts may set data-* on <html> before hydrate (standalone/touch).
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
+      <head>
+        <style
+          id="app-splash-critical"
+          dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_STYLE }}
+        />
+      </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden">
+        {/* Static first-paint cover — no CSS bundle / hydration required. */}
+        <div id="app-splash-boot" aria-hidden="true" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');if(window.matchMedia('(pointer: coarse)').matches)document.documentElement.setAttribute('data-touch','true');var ua=navigator.userAgent;if(/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.setAttribute('data-kart-effects-reduced','true');document.documentElement.setAttribute('data-splash','active');}catch(e){}})();`,
+            __html: SPLASH_BOOT_SCRIPT,
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }} />

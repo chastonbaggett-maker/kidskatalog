@@ -445,7 +445,8 @@ html[data-splash="exiting"] body {
   background-image: none;
 }
 
-/* Nav shelf frost paints before/under a short splash on mobile — hide until exit. */
+/* Nav / shell frost paints before CSS arrives — also mirrored in splash-boot critical CSS. */
+html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost,
 html[data-splash="active"] .bottom-nav__mode-row,
@@ -453,6 +454,29 @@ html[data-splash="active"] .bottom-nav__icons {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+#app-splash-boot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10001;
+  width: 100%;
+  height: calc(100dvh + 4rem);
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: var(--splash-bg-solid);
+  background-image: var(--splash-bg);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
 }
 
 .app-splash {

@@ -37,6 +37,8 @@ export function AppSplash() {
   useEffect(() => {
     setPortalRoot(document.body);
     setSplashState("active");
+    // Hand off from the static first-paint cover to the animated splash.
+    document.getElementById("app-splash-boot")?.remove();
     return () => setSplashState(null);
   }, []);
 

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
 import { AppSplash } from "@/components/AppSplash";
@@ -31,6 +32,8 @@ const script = Caveat({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
+
+const LEGACY_MODE_BOOT_SCRIPT = `(function(){try{localStorage.removeItem('kidskatalog-accent');localStorage.removeItem('kidskatalog-crazy-mode');localStorage.removeItem('kidskatalog-toy-pile-mode');document.documentElement.dataset.accent='both';}catch(e){}})();`;
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -112,18 +115,25 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: SPLASH_BOOT_SCRIPT,
-          }}
+        <Script
+          id="kk-splash-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_SCRIPT }}
         />
-        <script dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: KART_BOOT_SCRIPT }} />
-        <script
-          dangerouslySetInnerHTML={{
-            // Drop legacy persisted mode/accent keys — modes are session-only; load is always unisex.
-            __html: `(function(){try{localStorage.removeItem('kidskatalog-accent');localStorage.removeItem('kidskatalog-crazy-mode');localStorage.removeItem('kidskatalog-toy-pile-mode');document.documentElement.dataset.accent='both';}catch(e){}})();`,
-          }}
+        <Script
+          id="kk-route-change-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }}
+        />
+        <Script
+          id="kk-kart-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: KART_BOOT_SCRIPT }}
+        />
+        <Script
+          id="kk-legacy-mode-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: LEGACY_MODE_BOOT_SCRIPT }}
         />
         <StandaloneClass />
         <AccentSync />

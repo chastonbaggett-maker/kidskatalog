@@ -625,7 +625,7 @@ export function AdminToyForm({
                 onChange={(e) =>
                   setForm((f) => ({ ...f, category: e.target.value as CategoryId }))
                 }
-                className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+                className="admin-select"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -642,7 +642,7 @@ export function AdminToyForm({
                 onChange={(e) =>
                   setForm((f) => ({ ...f, audience: e.target.value as Audience }))
                 }
-                className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+                className="admin-select"
               >
                 <option value="all">All</option>
                 <option value="boys">Boys</option>
@@ -690,7 +690,7 @@ export function AdminToyForm({
                   featuredTier: normalizeFeaturedTier(Number(e.target.value)),
                 }))
               }
-              className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+              className="admin-select"
             >
               {FEATURED_TIER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>

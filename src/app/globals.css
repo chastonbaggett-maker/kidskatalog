@@ -3009,6 +3009,31 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   box-shadow: 0 2px 12px rgba(80, 100, 180, 0.08);
 }
 
+/* Pill selects — custom chevron so the native arrow isn't jammed on the edge */
+.admin-panel select.admin-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
+  border-radius: 9999px;
+  background-color: var(--lavender);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23555e7a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 0.95rem;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  color: var(--ink);
+  outline: none;
+  border: none;
+  cursor: pointer;
+}
+
+.admin-panel select.admin-select:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--purple) 55%, transparent);
+}
+
 .admin-metric-card {
   border-radius: 1rem;
   background: var(--lavender);

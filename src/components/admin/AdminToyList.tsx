@@ -181,7 +181,7 @@ function GenerateListingsButton({
                       agePreset: e.target.value as GenerateListingsOptions["agePreset"],
                     }))
                   }
-                  className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm font-semibold text-[var(--ink)] outline-none"
+                  className="admin-select text-sm font-semibold"
                 >
                   {AGE_PRESETS.map((preset) => (
                     <option key={preset.id} value={preset.id}>

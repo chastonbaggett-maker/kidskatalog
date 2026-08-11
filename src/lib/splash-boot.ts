@@ -6,6 +6,10 @@ export const SPLASH_BG_GRADIENT =
 
 export const SPLASH_SESSION_KEY = "kidskatalog-splash-done";
 
+/**
+ * Critical first-paint CSS. Uses html::before for the boot cover so we never
+ * inject/remove a DOM node that React owns or hydrates against.
+ */
 export const SPLASH_BOOT_STYLE = `
 html[data-splash="active"],html[data-splash="active"] body,
 html[data-splash="exiting"],html[data-splash="exiting"] body{
@@ -16,7 +20,8 @@ html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost{
   visibility:hidden!important;opacity:0!important;pointer-events:none!important;
 }
-#app-splash-boot{
+html[data-splash="active"]::before{
+  content:"";
   position:fixed;top:0;left:0;right:0;bottom:0;z-index:10001;
   width:100%;height:100%;
   min-height:100vh;min-height:100dvh;min-height:-webkit-fill-available;
@@ -27,14 +32,11 @@ html[data-splash="active"] .bottom-nav__frost{
   background-size:100% 100%;background-repeat:no-repeat;background-position:center;
   pointer-events:none;
 }
-html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot{
-  display:none!important;
-}
 `.trim();
 
 /**
- * Boot script: mark splash active for cold opens and inject a non-React cover
- * node (safe to remove later — React does not own it).
+ * Boot script: mark splash active for cold opens only.
+ * Session-done skips so client navigations / remounts never re-hide the shell.
  */
 export const SPLASH_BOOT_SCRIPT = `(function(){try{
   var root=document.documentElement;
@@ -46,15 +48,6 @@ export const SPLASH_BOOT_SCRIPT = `(function(){try{
   if(/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))root.setAttribute('data-kart-effects-reduced','true');
   var done=false;
   try{done=sessionStorage.getItem('${SPLASH_SESSION_KEY}')==='1';}catch(e){}
-  if(done){
-    root.removeAttribute('data-splash');
-    return;
-  }
+  if(done){root.removeAttribute('data-splash');return;}
   root.setAttribute('data-splash','active');
-  if(!document.getElementById('app-splash-boot')){
-    var el=document.createElement('div');
-    el.id='app-splash-boot';
-    el.setAttribute('aria-hidden','true');
-    document.body.insertBefore(el, document.body.firstChild);
-  }
 }catch(e){}})();`;

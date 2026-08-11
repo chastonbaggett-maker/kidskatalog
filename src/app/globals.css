@@ -456,7 +456,8 @@ html[data-splash="active"] .bottom-nav__icons {
   pointer-events: none !important;
 }
 
-#app-splash-boot {
+#app-splash-boot,
+html[data-splash="active"]::before {
   position: fixed;
   top: 0;
   left: 0;
@@ -477,6 +478,10 @@ html[data-splash="active"] .bottom-nav__icons {
   background-repeat: no-repeat;
   background-position: center;
   pointer-events: none;
+}
+
+html[data-splash="active"]::before {
+  content: "";
 }
 
 html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {

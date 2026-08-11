@@ -38,11 +38,6 @@ function setSplashState(state: "active" | "exiting" | null) {
   else delete root.dataset.splash;
 }
 
-function dropBootCover() {
-  // Only remove the script-injected cover — never a React-owned layout node.
-  document.getElementById("app-splash-boot")?.remove();
-}
-
 /**
  * Cold-open splash: fade in the K, pulse ring until tap (or auto after 5s),
  * then confetti + burst SFX. Whole-screen background + logo fade out together.
@@ -64,25 +59,15 @@ export function AppSplash() {
     setPortalRoot(document.body);
     if (readSplashDone()) {
       setSplashState(null);
-      dropBootCover();
       setPhase("done");
-      return;
+    } else {
+      setSplashState("active");
     }
-
-    setSplashState("active");
-    // Drop static cover only after the animated splash has painted a frame.
-    const raf = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(dropBootCover);
-    });
-    return () => {
-      window.cancelAnimationFrame(raf);
-    };
   }, []);
 
   const finishSplash = () => {
     markSplashDone();
     setSplashState(null);
-    dropBootCover();
     setPhase("done");
   };
 
@@ -120,7 +105,7 @@ export function AppSplash() {
   };
 
   useEffect(() => {
-    if (phase === "done") return;
+    if (readSplashDone()) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {

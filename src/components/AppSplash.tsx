@@ -37,9 +37,15 @@ export function AppSplash() {
   useEffect(() => {
     setPortalRoot(document.body);
     setSplashState("active");
-    // Hand off from the static first-paint cover to the animated splash.
-    document.getElementById("app-splash-boot")?.remove();
-    return () => setSplashState(null);
+    // Remove static cover only after the animated splash has painted a frame.
+    const dropBoot = () => document.getElementById("app-splash-boot")?.remove();
+    const raf = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(dropBoot);
+    });
+    return () => {
+      window.cancelAnimationFrame(raf);
+      setSplashState(null);
+    };
   }, []);
 
   const runTap = () => {
@@ -79,6 +85,7 @@ export function AppSplash() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
+      document.getElementById("app-splash-boot")?.remove();
       setSplashState(null);
       setPhase("done");
       return;

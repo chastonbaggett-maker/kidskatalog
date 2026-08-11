@@ -34,8 +34,7 @@ export function AppSplash() {
     firedRef.current = true;
 
     // Unlock + play in the same turn when this came from a real press.
-    if (fromGesture) unlockSharedAudio();
-    else unlockSharedAudio();
+    unlockSharedAudio();
 
     const rect = logoRef.current?.getBoundingClientRect();
     const origin = rect
@@ -107,8 +106,10 @@ export function AppSplash() {
         }}
       >
         <div className="app-splash__stage">
-          <span className="app-splash__pulse-ring" aria-hidden />
-          <span ref={logoRef} className="app-splash__logo" />
+          <div className="app-splash__logo-wrap">
+            <span className="app-splash__pulse-ring" aria-hidden />
+            <span ref={logoRef} className="app-splash__logo" />
+          </div>
           {showHint ? (
             <div className="app-splash__hint" aria-hidden>
               <span className="app-splash__tap-finger">

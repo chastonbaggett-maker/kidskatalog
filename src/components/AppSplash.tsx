@@ -29,7 +29,7 @@ export function AppSplash() {
     setPortalRoot(document.body);
   }, []);
 
-  const runTap = (_fromGesture: boolean) => {
+  const runTap = () => {
     if (firedRef.current) return;
     firedRef.current = true;
 
@@ -66,10 +66,7 @@ export function AppSplash() {
     unlockSharedAudio();
 
     const armTimer = window.setTimeout(() => setPhase("armed"), FADE_IN_MS);
-    const autoTimer = window.setTimeout(
-      () => runTap(false),
-      FADE_IN_MS + AUTO_TAP_MS,
-    );
+    const autoTimer = window.setTimeout(() => runTap(), FADE_IN_MS + AUTO_TAP_MS);
 
     return () => {
       window.clearTimeout(armTimer);
@@ -83,7 +80,7 @@ export function AppSplash() {
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (phase === "out" || phase === "done" || firedRef.current) return;
     if (e.button !== 0) return;
-    runTap(true);
+    runTap();
   };
 
   if (phase === "done") return confettiPortal;
@@ -101,7 +98,7 @@ export function AppSplash() {
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            runTap(true);
+            runTap();
           }
         }}
       >

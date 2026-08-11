@@ -4,28 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const FADE_IN_MS = 700;
-const DESKTOP_AUTO_TAP_MS = 780;
-const TOUCH_FALLBACK_MS = 2600;
+const TAP_AT_MS = 750;
 const OUT_AFTER_TAP_MS = 420;
-const DONE_AFTER_TAP_MS = 1300;
+const DONE_MS = 2000;
 
-type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
-
-function needsGestureForAudio() {
-  if (typeof window === "undefined") return false;
-  if (window.matchMedia("(pointer: coarse)").matches) return true;
-  const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) return true;
-  if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) {
-    return true;
-  }
-  return false;
-}
+type SplashPhase = "in" | "tap" | "out" | "done";
 
 /**
- * Cold-open splash: fade in the K, mimic a tap (confetti + burst SFX), then fade out.
- * On touch/iOS the tap waits for a real gesture so Web Audio can unlock.
+ * Cold-open splash: fade in the K, auto-simulate a tap (confetti + burst SFX), fade out.
+ * Sound plays when the browser allows autoplay (desktop usually; iOS often blocks until a real tap).
  */
 export function AppSplash() {
   const logoRef = useRef<HTMLSpanElement>(null);
@@ -35,36 +22,10 @@ export function AppSplash() {
     portalRoot,
   });
   const firedRef = useRef(false);
-  const gestureRef = useRef(false);
 
   useEffect(() => {
     setPortalRoot(document.body);
-    gestureRef.current = needsGestureForAudio();
   }, []);
-
-  const runTap = (fromGesture: boolean) => {
-    if (firedRef.current) return;
-    firedRef.current = true;
-
-    // Must unlock + play inside the gesture turn on iOS — not in a later effect.
-    if (fromGesture) unlockSharedAudio();
-
-    const rect = logoRef.current?.getBoundingClientRect();
-    const origin = rect
-      ? {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        }
-      : {
-          x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
-        };
-
-    fireConfetti(origin, GOLD_CONFETTI);
-    setPhase("tap");
-    window.setTimeout(() => setPhase("out"), OUT_AFTER_TAP_MS);
-    window.setTimeout(() => setPhase("done"), DONE_AFTER_TAP_MS);
-  };
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -73,32 +34,36 @@ export function AppSplash() {
       return;
     }
 
-    const armTimer = window.setTimeout(() => setPhase("armed"), FADE_IN_MS);
-    return () => window.clearTimeout(armTimer);
-  }, []);
+    // Prime Web Audio as early as the browser allows.
+    unlockSharedAudio();
 
-  useEffect(() => {
-    if (phase !== "armed" || firedRef.current) return;
+    const timers = [
+      window.setTimeout(() => {
+        if (firedRef.current) return;
+        firedRef.current = true;
 
-    const delay = gestureRef.current
-      ? TOUCH_FALLBACK_MS - FADE_IN_MS
-      : DESKTOP_AUTO_TAP_MS - FADE_IN_MS;
+        unlockSharedAudio();
+        const rect = logoRef.current?.getBoundingClientRect();
+        const origin = rect
+          ? {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            }
+          : {
+              x: window.innerWidth / 2,
+              y: window.innerHeight / 2,
+            };
+        fireConfetti(origin, GOLD_CONFETTI);
+        setPhase("tap");
+      }, TAP_AT_MS),
+      window.setTimeout(() => setPhase("out"), TAP_AT_MS + OUT_AFTER_TAP_MS),
+      window.setTimeout(() => setPhase("done"), DONE_MS),
+    ];
 
-    const timer = window.setTimeout(
-      () => runTap(false),
-      Math.max(60, delay),
-    );
-    return () => window.clearTimeout(timer);
-    // runTap is stable enough via refs; intentionally omit to avoid re-arms.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "out" || phase === "done" || firedRef.current) return;
-    // Only primary press; keep the call stack in the user gesture.
-    if (e.button !== 0) return;
-    runTap(true);
-  };
+    return () => {
+      for (const t of timers) window.clearTimeout(t);
+    };
+  }, [fireConfetti]);
 
   if (phase === "done") return confettiPortal;
 
@@ -108,7 +73,6 @@ export function AppSplash() {
         className={`app-splash app-splash--${phase}`}
         role="presentation"
         aria-hidden
-        onPointerDown={onSplashPointerDown}
       >
         <span ref={logoRef} className="app-splash__logo" />
       </div>

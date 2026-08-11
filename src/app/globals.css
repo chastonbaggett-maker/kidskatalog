@@ -463,7 +463,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
   animation: app-splash-logo-in 0.7s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
 }
 
-.app-splash__logo--tap {
+.app-splash--tap .app-splash__logo {
   opacity: 1;
   animation: app-splash-logo-tap 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

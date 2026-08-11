@@ -75,9 +75,7 @@ export function AppSplash() {
         {/* eslint-disable-next-line @next/next/no-img-element -- splash must paint without Next image runtime */}
         <img
           ref={logoRef}
-          className={`app-splash__logo${
-            phase === "tap" || phase === "out" ? " app-splash__logo--tap" : ""
-          }`}
+          className="app-splash__logo"
           src="/logo-icon.png"
           alt=""
           width={64}

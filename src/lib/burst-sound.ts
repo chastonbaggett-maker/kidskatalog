@@ -64,8 +64,14 @@ export function playConfettiBurstSound() {
     });
   };
 
-  // Schedule immediately in the gesture; also after resume settles.
+  // Prefer scheduling in the same turn (gesture). If still suspended (autoplay),
+  // retry once resume resolves — helps desktop/Android simulated splash taps.
   try {
+    if (audio.state === "suspended") {
+      void audio.resume().then(schedule).catch(() => undefined);
+      schedule();
+      return;
+    }
     schedule();
   } catch {
     void audio.resume().then(schedule).catch(() => undefined);

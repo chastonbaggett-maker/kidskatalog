@@ -7,13 +7,22 @@ import { unlockSharedAudio } from "@/lib/shared-audio";
 const FADE_IN_MS = 700;
 const AUTO_TAP_MS = 5000;
 const OUT_AFTER_TAP_MS = 420;
-const DONE_AFTER_TAP_MS = 1300;
+/** Must match `.app-splash--out` animation duration. */
+const FADE_OUT_MS = 850;
+const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
+function setSplashActive(active: boolean) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (active) root.dataset.splash = "active";
+  else delete root.dataset.splash;
+}
+
 /**
  * Cold-open splash: fade in the K, pulse ring until tap (or auto after 5s),
- * then confetti + burst SFX and fade out. Logo stays viewport-centered.
+ * then confetti + burst SFX. Whole-screen background + logo fade out together.
  */
 export function AppSplash() {
   const logoRef = useRef<HTMLSpanElement>(null);
@@ -27,6 +36,8 @@ export function AppSplash() {
 
   useEffect(() => {
     setPortalRoot(document.body);
+    setSplashActive(true);
+    return () => setSplashActive(false);
   }, []);
 
   const runTap = () => {
@@ -52,13 +63,17 @@ export function AppSplash() {
 
     outTimersRef.current.push(
       window.setTimeout(() => setPhase("out"), OUT_AFTER_TAP_MS),
-      window.setTimeout(() => setPhase("done"), DONE_AFTER_TAP_MS),
+      window.setTimeout(() => {
+        setSplashActive(false);
+        setPhase("done");
+      }, DONE_AFTER_TAP_MS),
     );
   };
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
+      setSplashActive(false);
       setPhase("done");
       return;
     }

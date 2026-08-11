@@ -443,8 +443,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 .app-splash__logo {
   width: auto;
-  height: min(28vw, 9.5rem);
-  max-height: 42vh;
+  height: min(16vw, 5rem);
+  max-height: 22vh;
   opacity: 0;
   transform: scale(0.9);
   user-select: none;

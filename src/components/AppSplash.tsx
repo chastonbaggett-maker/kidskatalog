@@ -27,8 +27,8 @@ export function AppSplash() {
         className="app-splash__logo"
         src="/logo-icon.png"
         alt=""
-        width={120}
-        height={176}
+        width={64}
+        height={94}
         decoding="async"
         draggable={false}
       />

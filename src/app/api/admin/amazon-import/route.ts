@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
-import { previewAmazonImport } from "@/lib/amazon-import";
+import { importAmazonListingPreview } from "@/lib/amazon-import-listing";
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   if (!requireAdminSession(req)) {
@@ -11,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing Amazon URL" }, { status: 400 });
   }
   try {
-    const preview = await previewAmazonImport(body.url);
+    const preview = await importAmazonListingPreview(body.url);
     return NextResponse.json({ preview });
   } catch (e) {
     return NextResponse.json(

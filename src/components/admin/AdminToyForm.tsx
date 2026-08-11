@@ -8,13 +8,22 @@ import type { Audience, CategoryId, Toy } from "@/types/toy";
 
 type ImportPreview = {
   asin: string;
+  id?: string;
   affiliateUrl: string;
   name: string;
   blurb: string;
+  category: CategoryId;
+  audience: Audience;
+  ageMin: number;
+  ageMax: number;
   image: string;
+  images: string[];
   imageAlt: string;
   imageUrl?: string;
+  color?: string;
   manualFieldsRequired: boolean;
+  usedGrok?: boolean;
+  grokWarning?: string;
 };
 
 type Props = {
@@ -88,6 +97,8 @@ export function AdminToyForm({
     message: string;
   } | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [importedImages, setImportedImages] = useState<string[]>([]);
+  const [importedId, setImportedId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importing, setImporting] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -100,6 +111,8 @@ export function AdminToyForm({
   useEffect(() => {
     if (editing) {
       setPreview(null);
+      setImportedImages([]);
+      setImportedId(null);
       setAmazonUrl("");
       setBulkText("");
       setAddMode("single");
@@ -118,6 +131,8 @@ export function AdminToyForm({
     } else {
       setForm(emptyForm);
       setPreview(null);
+      setImportedImages([]);
+      setImportedId(null);
       setAmazonUrl("");
     }
     setGalleryIndex(0);
@@ -128,6 +143,7 @@ export function AdminToyForm({
     if (!amazonUrl.trim()) return;
     setImporting(true);
     setError("");
+    setGalleryIndex(0);
     try {
       const res = await fetch("/api/admin/amazon-import", {
         method: "POST",
@@ -137,16 +153,31 @@ export function AdminToyForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
       const p = data.preview as ImportPreview;
+      const gallery =
+        Array.isArray(p.images) && p.images.length > 0
+          ? p.images
+          : p.image
+            ? [p.image]
+            : [];
       setPreview(p);
-      setForm((f) => ({
-        ...f,
+      setImportedImages(gallery);
+      setImportedId(p.id ?? null);
+      setForm({
         name: p.name,
         blurb: p.blurb,
+        category: p.category || "plush",
+        audience: p.audience || "all",
+        ageMin: typeof p.ageMin === "number" ? p.ageMin : 3,
+        ageMax: typeof p.ageMax === "number" ? p.ageMax : 12,
         affiliateUrl: p.affiliateUrl,
-        image: p.image,
-        imageAlt: p.imageAlt,
-        imageUrl: p.imageUrl ?? "",
-      }));
+        image: gallery[0] || p.image,
+        imageAlt: p.imageAlt || p.name,
+        // Local gallery paths are already downloaded — no remote imageUrl needed.
+        imageUrl: "",
+      });
+      if (p.grokWarning) {
+        setError(p.grokWarning);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed");
     } finally {
@@ -272,8 +303,28 @@ export function AdminToyForm({
 
     const cat = categories.find((c) => c.id === form.category);
     const primaryImage = form.image.trim() || "/categories/plush.svg";
+    const galleryForSave = (() => {
+      if (editing?.images && editing.images.length > 0) {
+        return [
+          primaryImage,
+          ...editing.images.filter((src) => src !== primaryImage),
+        ];
+      }
+      if (!editing && importedImages.length > 0) {
+        return [
+          primaryImage,
+          ...importedImages.filter((src) => src !== primaryImage),
+        ];
+      }
+      if (editing) return [primaryImage];
+      return importedImages.length > 0 ? importedImages : [primaryImage];
+    })();
+
     const toy: Toy & { imageUrl?: string } = {
-      id: editing?.id ?? (slugify(form.name) || `toy-${Date.now()}`),
+      id:
+        editing?.id ??
+        importedId ??
+        (slugify(form.name) || `toy-${Date.now()}`),
       name: form.name.trim(),
       blurb: form.blurb.trim(),
       category: form.category,
@@ -282,14 +333,9 @@ export function AdminToyForm({
       ageMax: form.ageMax,
       affiliateUrl: form.affiliateUrl.trim(),
       image: primaryImage,
-      images:
-        editing?.images && editing.images.length > 0
-          ? [primaryImage, ...editing.images.filter((src) => src !== primaryImage)]
-          : editing
-            ? [primaryImage]
-            : undefined,
+      images: galleryForSave,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
-      color: cat?.hue ?? "#B19CD9",
+      color: preview?.color || cat?.hue || "#B19CD9",
     };
 
     if (form.imageUrl) {
@@ -313,6 +359,8 @@ export function AdminToyForm({
 
       setForm(emptyForm);
       setPreview(null);
+      setImportedImages([]);
+      setImportedId(null);
       setAmazonUrl("");
       onSaved();
       if (editing) onCancelEdit();
@@ -326,6 +374,7 @@ export function AdminToyForm({
   const galleryImages = (() => {
     const fromEditing = editing?.images?.filter(Boolean) ?? [];
     if (fromEditing.length > 0) return fromEditing;
+    if (importedImages.length > 0) return importedImages;
     const primary = form.image || preview?.image || editing?.image;
     return primary ? [primary] : [];
   })();
@@ -391,12 +440,23 @@ export function AdminToyForm({
               onClick={() => void handleImport()}
               className="shrink-0 rounded-full bg-[var(--purple-deep)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >
-              {importing ? "…" : "Import"}
+              {importing ? "Importing…" : "Import"}
             </button>
           </div>
+          <p className="text-xs text-[var(--ink-soft)]">
+            Pulls the full photo gallery and fills short name, blurb, category,
+            audience, and ages (same style as live products).
+          </p>
           {preview?.manualFieldsRequired ? (
             <p className="text-xs text-amber-700">
               Amazon blocked metadata — fill in name and image manually.
+            </p>
+          ) : null}
+          {preview && !preview.manualFieldsRequired ? (
+            <p className="text-xs text-[var(--ink-soft)]">
+              {importedImages.length} image
+              {importedImages.length === 1 ? "" : "s"} ready
+              {preview.usedGrok ? " · drafted with Grok" : ""}.
             </p>
           ) : null}
         </div>
@@ -492,7 +552,14 @@ export function AdminToyForm({
                 <li key={`${src}-${index}`} className="shrink-0">
                   <button
                     type="button"
-                    onClick={() => setGalleryIndex(index)}
+                    onClick={() => {
+                      setGalleryIndex(index);
+                      setForm((f) => ({
+                        ...f,
+                        image: src,
+                        imageUrl: src.startsWith("http") ? src : "",
+                      }));
+                    }}
                     aria-label={`Show image ${index + 1}`}
                     aria-pressed={selected}
                     className={`relative h-16 w-16 overflow-hidden rounded-lg bg-white ring-2 transition ${

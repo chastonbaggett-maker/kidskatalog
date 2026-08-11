@@ -12,3 +12,30 @@ export function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   }
   return arr;
 }
+
+/**
+ * Deterministic weighted shuffle (Efraimidis–Spirakis).
+ * Higher weight → more likely toward the front of the order (shown sooner / more often across seeds).
+ */
+export function weightedShuffleWithSeed<T>(
+  items: T[],
+  seed: number,
+  weightOf: (item: T) => number,
+): T[] {
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return (s + 1) / 4294967296;
+  };
+
+  return items
+    .map((item) => {
+      const weight = Math.max(1e-6, weightOf(item));
+      const u = rand();
+      // key = u^(1/w); larger keys sort first.
+      const key = Math.pow(u, 1 / weight);
+      return { item, key };
+    })
+    .sort((a, b) => b.key - a.key)
+    .map((entry) => entry.item);
+}

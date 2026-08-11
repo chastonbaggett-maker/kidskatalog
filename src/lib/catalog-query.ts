@@ -1,5 +1,9 @@
 import type { Audience, CategoryId, Toy } from "@/types/toy";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import {
+  featuredTierWeight,
+  resolveFeaturedTier,
+} from "@/lib/featured-tier";
+import { weightedShuffleWithSeed } from "@/lib/shuffle";
 
 export type CatalogFilters = {
   category?: CategoryId | string;
@@ -58,6 +62,10 @@ export function filterCatalogToys(toys: Toy[], filters: CatalogFilters): Toy[] {
   });
 }
 
+function catalogWeight(toy: Toy): number {
+  return featuredTierWeight(resolveFeaturedTier(toy));
+}
+
 export function paginateCatalogToys(
   toys: Toy[],
   request: CatalogPageRequest,
@@ -66,7 +74,7 @@ export function paginateCatalogToys(
   const limit = Math.max(1, Math.min(request.limit ?? 20, 60));
   const filtered = filterCatalogToys(toys, request);
   const seed = (request.seed ?? Date.now()) >>> 0;
-  const ordered = shuffleWithSeed(filtered, seed);
+  const ordered = weightedShuffleWithSeed(filtered, seed, catalogWeight);
   const page = ordered.slice(offset, offset + limit);
 
   return {
@@ -88,19 +96,8 @@ export function pickRandomCatalogToys(
   const pool = filterCatalogToys(toys, filters);
   if (pool.length === 0 || count <= 0) return [];
 
-  const picks: Toy[] = [];
-  let s = seed >>> 0;
-  const used = new Set<string>();
-
-  for (let i = 0; i < count && used.size < pool.length; i++) {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    const toy = pool[s % pool.length]!;
-    if (used.has(toy.id)) continue;
-    used.add(toy.id);
-    picks.push(toy);
-  }
-
-  return picks;
+  const ordered = weightedShuffleWithSeed(pool, seed, catalogWeight);
+  return ordered.slice(0, Math.min(count, ordered.length));
 }
 
 export function buildCatalogQueryString(

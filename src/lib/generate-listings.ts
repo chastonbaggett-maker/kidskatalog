@@ -334,6 +334,8 @@ export async function buildDraftFromAsin(
     imageAlt: `${name} toy`,
     affiliateUrl: buildAffiliateUrl(asin),
     color: categoryColor(category),
+    featuredTier: 0,
+    featured: false,
     asin,
     createdAt: new Date().toISOString(),
     sourceTitle,

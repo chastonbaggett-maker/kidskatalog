@@ -8,6 +8,10 @@ import {
   DEFAULT_GENERATE_OPTIONS,
   type GenerateListingsOptions,
 } from "@/lib/generate-options";
+import {
+  featuredTierLabel,
+  resolveFeaturedTier,
+} from "@/lib/featured-tier";
 import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
 
 type Tab = "live" | "review";
@@ -520,6 +524,8 @@ export function AdminToyList({
                     </p>
                     <p className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
                       {toy.category} · {toy.ageMin}–{toy.ageMax} · {toy.audience}
+                      {" · "}
+                      {featuredTierLabel(resolveFeaturedTier(toy))}
                     </p>
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">
                       {toy.blurb}
@@ -582,7 +588,8 @@ export function AdminToyList({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-[var(--ink)]">{toy.name}</p>
                   <p className="truncate text-xs text-[var(--ink-soft)]">
-                    {toy.category} · ages {toy.ageMin}–{toy.ageMax} · {toy.blurb}
+                    {toy.category} · ages {toy.ageMin}–{toy.ageMax} ·{" "}
+                    {featuredTierLabel(resolveFeaturedTier(toy))} · {toy.blurb}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">

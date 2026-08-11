@@ -11,7 +11,11 @@ import {
   useState,
 } from "react";
 import type { Toy } from "@/types/toy";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import { weightedShuffleWithSeed } from "@/lib/shuffle";
+import {
+  featuredTierWeight,
+  resolveFeaturedTier,
+} from "@/lib/featured-tier";
 import { beginRouteChange } from "@/lib/route-change";
 import { FeedCard } from "./FeedCard";
 
@@ -580,15 +584,21 @@ export function ToyPileGrid({
   toysRef.current = toys;
   // Primitive deps only — keep useEffect arity stable across HMR / prop adds.
   const toysKey = useMemo(
-    () => toys.map((toy) => toy.id).join("\0"),
+    () =>
+      toys
+        .map((toy) => `${toy.id}:${resolveFeaturedTier(toy)}`)
+        .join("\0"),
     [toys],
   );
 
   // Unique-first order: reshuffle on filter / Randomize; append pages without reshuffling.
+  // Featured tiers bias toys toward earlier spiral slots (shown more often across seeds).
   useEffect(() => {
     const unique = dedupeToys(toysRef.current);
     const meta = orderedMetaRef.current;
     const orderSeed = (filterSeed + shuffleNonce * 9973) >>> 0;
+    const weightOf = (toy: (typeof unique)[number]) =>
+      featuredTierWeight(resolveFeaturedTier(toy));
 
     if (
       meta.seed !== filterSeed ||
@@ -600,7 +610,7 @@ export function ToyPileGrid({
         shuffleNonce,
         ids: new Set(unique.map((toy) => toy.id)),
       };
-      setOrdered(shuffleWithSeed(unique, orderSeed));
+      setOrdered(weightedShuffleWithSeed(unique, orderSeed, weightOf));
       return;
     }
 
@@ -608,7 +618,7 @@ export function ToyPileGrid({
     if (newcomers.length === 0) return;
 
     const appendSeed = (orderSeed + meta.ids.size * 9973) >>> 0;
-    const shuffledNew = shuffleWithSeed(newcomers, appendSeed);
+    const shuffledNew = weightedShuffleWithSeed(newcomers, appendSeed, weightOf);
     for (const toy of shuffledNew) meta.ids.add(toy.id);
     setOrdered((prev) => [...prev, ...shuffledNew]);
   }, [toysKey, filterSeed, shuffleNonce]);

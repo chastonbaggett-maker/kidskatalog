@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { categories } from "@/data/categories";
 import { slugify } from "@/lib/slugify";
+import {
+  FEATURED_TIER_OPTIONS,
+  normalizeFeaturedTier,
+  resolveFeaturedTier,
+  type FeaturedTier,
+} from "@/lib/featured-tier";
 import type { Audience, CategoryId, Toy } from "@/types/toy";
 
 type ImportPreview = {
@@ -43,6 +49,7 @@ const emptyForm = {
   audience: "all" as Audience,
   ageMin: 3,
   ageMax: 12,
+  featuredTier: 0 as FeaturedTier,
   affiliateUrl: "",
   image: "",
   imageAlt: "",
@@ -123,6 +130,7 @@ export function AdminToyForm({
         audience: editing.audience,
         ageMin: editing.ageMin,
         ageMax: editing.ageMax,
+        featuredTier: resolveFeaturedTier(editing),
         affiliateUrl: editing.affiliateUrl,
         image: editing.image,
         imageAlt: editing.imageAlt,
@@ -169,6 +177,7 @@ export function AdminToyForm({
         audience: p.audience || "all",
         ageMin: typeof p.ageMin === "number" ? p.ageMin : 3,
         ageMax: typeof p.ageMax === "number" ? p.ageMax : 12,
+        featuredTier: 0,
         affiliateUrl: p.affiliateUrl,
         image: gallery[0] || p.image,
         imageAlt: p.imageAlt || p.name,
@@ -331,6 +340,8 @@ export function AdminToyForm({
       audience: form.audience,
       ageMin: form.ageMin,
       ageMax: form.ageMax,
+      featuredTier: form.featuredTier,
+      featured: form.featuredTier > 0,
       affiliateUrl: form.affiliateUrl.trim(),
       image: primaryImage,
       images: galleryForSave,
@@ -668,6 +679,29 @@ export function AdminToyForm({
               />
             </label>
           </div>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Featured tier</span>
+            <select
+              value={form.featuredTier}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  featuredTier: normalizeFeaturedTier(Number(e.target.value)),
+                }))
+              }
+              className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+            >
+              {FEATURED_TIER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} — {opt.hint}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-[var(--ink-soft)]">
+              Higher tiers are shuffled into view more often in browse and pile.
+            </span>
+          </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">Affiliate URL</span>

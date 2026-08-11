@@ -12,14 +12,53 @@ import {
 
 type ToyPayload = Toy & { imageUrl?: string };
 
-async function resolveToyImage(toy: ToyPayload): Promise<Toy> {
-  const remote = toy.imageUrl || (toy.image.startsWith("http") ? toy.image : "");
-  if (!remote) return toy;
-
+async function resolveToyImages(toy: ToyPayload): Promise<Toy> {
   const slug = slugify(toy.name) || toy.id;
-  const localImage = await downloadToyImage(remote, slug);
-  const { imageUrl: _drop, ...rest } = toy;
-  return { ...rest, image: localImage };
+  const { imageUrl: remoteHint, ...rest } = toy;
+
+  const candidates = [
+    ...(Array.isArray(toy.images) ? toy.images : []),
+    toy.image,
+    remoteHint || "",
+  ].filter(Boolean);
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const src of candidates) {
+    if (seen.has(src)) continue;
+    seen.add(src);
+    unique.push(src);
+  }
+
+  const stored: string[] = [];
+  for (let i = 0; i < unique.length; i += 1) {
+    const src = unique[i]!;
+    if (!src.startsWith("http")) {
+      stored.push(src);
+      continue;
+    }
+    // Already on Vercel Blob — keep as-is.
+    if (src.includes(".blob.vercel-storage.com")) {
+      stored.push(src);
+      continue;
+    }
+    try {
+      const fileStem = i === 0 ? slug : `${slug}-${i}`;
+      stored.push(await downloadToyImage(src, fileStem));
+    } catch {
+      stored.push(src);
+    }
+  }
+
+  if (stored.length === 0) {
+    return { ...rest, image: toy.image || "/categories/plush.svg" };
+  }
+
+  return {
+    ...rest,
+    image: stored[0]!,
+    images: stored,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -39,7 +78,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required toy fields" }, { status: 400 });
   }
   try {
-    const resolved = await resolveToyImage(toy);
+    const resolved = await resolveToyImages(toy);
     const created = await addCatalogToy(resolved);
     return NextResponse.json({ toy: created });
   } catch (e) {
@@ -56,7 +95,7 @@ export async function PATCH(req: NextRequest) {
   }
   const body = (await req.json()) as { id: string; patch: ToyPayload };
   if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const resolved = await resolveToyImage({ ...body.patch, id: body.id } as ToyPayload);
+  const resolved = await resolveToyImages({ ...body.patch, id: body.id } as ToyPayload);
   const { id: _id, ...patch } = resolved;
   const updated = await updateCatalogToy(body.id, patch);
   if (!updated) return NextResponse.json({ error: "Toy not found" }, { status: 404 });

@@ -1,6 +1,4 @@
 import "server-only";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { buildAffiliateUrl, parseAsin } from "@/lib/amazon-import";
 import { getCatalogToys } from "@/lib/catalog-store";
 import { addDraftToys, getDraftToys } from "@/lib/draft-store";
@@ -18,12 +16,12 @@ import {
   kidBlurb,
   shortCardName,
 } from "@/lib/toy-card-style";
+import { downloadAndStoreGallery } from "@/lib/toy-image-store";
 
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const MAX_GALLERY = 6;
-const TARGET_LONG = 1500;
 
 /**
  * Extra candidate ASINs if search returns few hits.
@@ -169,16 +167,36 @@ async function fetchHtml(url: string): Promise<string> {
       headers: {
         "User-Agent": UA,
         "Accept-Language": "en-US,en;q=0.9",
-        Accept: "text/html,application/xhtml+xml",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Cache-Control": "no-cache",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
       },
       cache: "no-store",
+      redirect: "follow",
     });
     if (!res.ok) return "";
     const html = await res.text();
-    return html.length > 5000 ? html : "";
+    // Soft-block / captcha pages are usually short or missing product markup.
+    if (html.length < 5000) return "";
+    if (/api-services-support@amazon\.com|Enter the characters you see/i.test(html)) {
+      return "";
+    }
+    return html;
   } catch {
     return "";
   }
+}
+
+async function downloadGallery(
+  imageUrls: string[],
+  stem: string,
+): Promise<string[]> {
+  return downloadAndStoreGallery(imageUrls, stem, UA);
 }
 
 async function searchAmazonAsins(
@@ -203,78 +221,6 @@ async function searchAmazonAsins(
     }
   }
   return found;
-}
-
-async function saveFilledProductJpeg(
-  input: Buffer,
-  outPath: string,
-): Promise<void> {
-  const sharp = (await import("sharp")).default;
-  const flattened = await sharp(input)
-    .rotate()
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .png()
-    .toBuffer();
-
-  let trimmed: Buffer;
-  try {
-    trimmed = await sharp(flattened)
-      .trim({
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
-        threshold: 12,
-      })
-      .toBuffer();
-  } catch {
-    trimmed = flattened;
-  }
-
-  const meta = await sharp(trimmed).metadata();
-  const w = meta.width || 1;
-  const h = meta.height || 1;
-  const scale = TARGET_LONG / Math.max(w, h);
-
-  await sharp(trimmed)
-    .resize({
-      width: Math.max(1, Math.round(w * scale)),
-      height: Math.max(1, Math.round(h * scale)),
-      fit: "fill",
-      kernel: "lanczos3",
-    })
-    .jpeg({ quality: 85, progressive: true, mozjpeg: true })
-    .toFile(outPath);
-}
-
-async function downloadGallery(
-  imageUrls: string[],
-  stem: string,
-): Promise<string[]> {
-  const dir = path.join(process.cwd(), "public", "toys");
-  await mkdir(dir, { recursive: true });
-  const saved: string[] = [];
-
-  for (let i = 0; i < imageUrls.length; i += 1) {
-    const url = imageUrls[i]!;
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": UA },
-        cache: "no-store",
-      });
-      if (!res.ok) continue;
-      const input = Buffer.from(await res.arrayBuffer());
-      const fileStem = i === 0 ? stem : `${stem}-${i}`;
-      const fileName = `${fileStem}.jpg`;
-      const outPath = path.join(dir, fileName);
-      try {
-        await saveFilledProductJpeg(input, outPath);
-      } catch {
-        await writeFile(outPath, input);
-      }
-      saved.push(`/toys/${fileName}`);
-    } catch {
-      // skip bad image
-    }
-  }
-  return saved;
 }
 
 /** Live-catalog Amazon product ids only — drafts/names/images are not duplicates. */
@@ -314,7 +260,8 @@ export async function buildDraftFromAsin(
 ): Promise<DraftToy | null> {
   const html =
     (await fetchHtml(`https://www.amazon.com/dp/${asin}?th=1&psc=1`)) ||
-    (await fetchHtml(`https://www.amazon.com/gp/product/${asin}`));
+    (await fetchHtml(`https://www.amazon.com/gp/product/${asin}`)) ||
+    (await fetchHtml(`https://www.amazon.com/dp/${asin}`));
   if (!html) return null;
 
   const sourceTitle = pickAmazonTitle(html);
@@ -369,8 +316,10 @@ export async function buildDraftFromAsin(
   if (usedIds.has(id)) return null;
   usedIds.add(id);
 
+  // Prefer Blob/local persistence; keep remote Amazon URLs if storage is unavailable.
   const images = await downloadGallery(imageUrls, id);
-  if (images.length === 0) return null;
+  const gallery = images.length > 0 ? images : imageUrls;
+  if (gallery.length === 0) return null;
 
   return {
     id,
@@ -380,8 +329,8 @@ export async function buildDraftFromAsin(
     audience,
     ageMin,
     ageMax,
-    image: images[0]!,
-    images,
+    image: gallery[0]!,
+    images: gallery,
     imageAlt: `${name} toy`,
     affiliateUrl: buildAffiliateUrl(asin),
     color: categoryColor(category),

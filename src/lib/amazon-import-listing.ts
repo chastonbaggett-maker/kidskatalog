@@ -73,7 +73,7 @@ export async function importAmazonListingPreview(
 
   if (!draft) {
     throw new Error(
-      "Could not import that Amazon listing (blocked page or missing images). Try again or fill fields manually.",
+      "Could not import that Amazon listing. Amazon may have blocked the product page from the server, or images were missing. Try again in a minute, or paste a different /dp/ link.",
     );
   }
 

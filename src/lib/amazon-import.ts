@@ -71,27 +71,15 @@ export async function downloadToyImage(imageUrl: string, slug: string): Promise<
   if (!res.ok) throw new Error("Could not download product image");
 
   const contentType = res.headers.get("content-type") || "image/jpeg";
-  const ext = contentType.includes("png") ? "png" : "jpg";
   const bytes = Buffer.from(await res.arrayBuffer());
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(`kidskatalog/toys/${slug}.${ext}`, bytes, {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType,
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
-    return blob.url;
-  }
+  const { persistToyImageBytes } = await import("@/lib/toy-image-store");
+  const stored = await persistToyImageBytes(bytes, slug, contentType);
+  if (stored) return stored;
 
-  const { writeFile, mkdir } = await import("fs/promises");
-  const path = await import("path");
-  const dir = path.join(process.cwd(), "public", "toys");
-  await mkdir(dir, { recursive: true });
-  const fileName = `${slug}.${ext}`;
-  await writeFile(path.join(dir, fileName), bytes);
-  return `/toys/${fileName}`;
+  // Last resort on read-only hosts: keep the remote URL so save still works.
+  if (imageUrl.startsWith("http")) return imageUrl;
+  throw new Error(
+    "Could not store product image. Set BLOB_READ_WRITE_TOKEN for production imports.",
+  );
 }
-

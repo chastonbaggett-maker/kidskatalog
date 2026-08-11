@@ -13,10 +13,10 @@ const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
-function setSplashActive(active: boolean) {
+function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (active) root.dataset.splash = "active";
+  if (state) root.dataset.splash = state;
   else delete root.dataset.splash;
 }
 
@@ -36,8 +36,8 @@ export function AppSplash() {
 
   useEffect(() => {
     setPortalRoot(document.body);
-    setSplashActive(true);
-    return () => setSplashActive(false);
+    setSplashState("active");
+    return () => setSplashState(null);
   }, []);
 
   const runTap = () => {
@@ -62,9 +62,13 @@ export function AppSplash() {
     setPhase("tap");
 
     outTimersRef.current.push(
-      window.setTimeout(() => setPhase("out"), OUT_AFTER_TAP_MS),
       window.setTimeout(() => {
-        setSplashActive(false);
+        // Reveal nav under the fade so the shelf doesn't pop after splash.
+        setSplashState("exiting");
+        setPhase("out");
+      }, OUT_AFTER_TAP_MS),
+      window.setTimeout(() => {
+        setSplashState(null);
         setPhase("done");
       }, DONE_AFTER_TAP_MS),
     );
@@ -73,7 +77,7 @@ export function AppSplash() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
-      setSplashActive(false);
+      setSplashState(null);
       setPhase("done");
       return;
     }

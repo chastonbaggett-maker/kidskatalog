@@ -438,7 +438,9 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
 html[data-splash="active"],
-html[data-splash="active"] body {
+html[data-splash="active"] body,
+html[data-splash="exiting"],
+html[data-splash="exiting"] body {
   background-color: var(--splash-bg-solid) !important;
   background-image: none;
 }

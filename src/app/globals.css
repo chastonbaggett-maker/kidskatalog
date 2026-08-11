@@ -521,10 +521,6 @@ html.route-changing .bottom-nav__kart-badge--pop {
   }
 }
 
-.add-kart-confetti--splash {
-  z-index: 10001;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
   .app-splash__logo {
@@ -2323,6 +2319,11 @@ html[data-accent="both"] .add-kart-btn--ready:hover {
   overflow: visible;
   pointer-events: none;
   z-index: 200;
+}
+
+/* Must follow base rule — splash overlay is z-index 10000. */
+.add-kart-confetti.add-kart-confetti--splash {
+  z-index: 10001;
 }
 
 .add-kart-confetti__bit {

@@ -4,6 +4,8 @@ export const SPLASH_BG_SOLID = "#3ecfc0";
 export const SPLASH_BG_GRADIENT =
   "linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%)";
 
+export const SPLASH_SESSION_KEY = "kidskatalog-splash-done";
+
 export const SPLASH_BOOT_STYLE = `
 html[data-splash="active"],html[data-splash="active"] body,
 html[data-splash="exiting"],html[data-splash="exiting"] body{
@@ -25,6 +27,34 @@ html[data-splash="active"] .bottom-nav__frost{
   background-size:100% 100%;background-repeat:no-repeat;background-position:center;
   pointer-events:none;
 }
+html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot{
+  display:none!important;
+}
 `.trim();
 
-export const SPLASH_BOOT_SCRIPT = `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');if(window.matchMedia('(pointer: coarse)').matches)document.documentElement.setAttribute('data-touch','true');var ua=navigator.userAgent;if(/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.setAttribute('data-kart-effects-reduced','true');document.documentElement.setAttribute('data-splash','active');}catch(e){}})();`;
+/**
+ * Boot script: mark splash active for cold opens and inject a non-React cover
+ * node (safe to remove later — React does not own it).
+ */
+export const SPLASH_BOOT_SCRIPT = `(function(){try{
+  var root=document.documentElement;
+  var m=window.matchMedia('(display-mode: standalone)').matches;
+  var ios='standalone' in navigator&&navigator.standalone===true;
+  if(m||ios)root.setAttribute('data-standalone','true');
+  if(window.matchMedia('(pointer: coarse)').matches)root.setAttribute('data-touch','true');
+  var ua=navigator.userAgent;
+  if(/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))root.setAttribute('data-kart-effects-reduced','true');
+  var done=false;
+  try{done=sessionStorage.getItem('${SPLASH_SESSION_KEY}')==='1';}catch(e){}
+  if(done){
+    root.removeAttribute('data-splash');
+    return;
+  }
+  root.setAttribute('data-splash','active');
+  if(!document.getElementById('app-splash-boot')){
+    var el=document.createElement('div');
+    el.id='app-splash-boot';
+    el.setAttribute('aria-hidden','true');
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+}catch(e){}})();`;

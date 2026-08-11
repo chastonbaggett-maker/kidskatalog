@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
+import { SPLASH_SESSION_KEY } from "@/lib/splash-boot";
 
 const FADE_IN_MS = 700;
 const AUTO_TAP_MS = 5000;
@@ -13,6 +14,23 @@ const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
+function readSplashDone() {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSplashDone() {
+  try {
+    sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
@@ -20,13 +38,21 @@ function setSplashState(state: "active" | "exiting" | null) {
   else delete root.dataset.splash;
 }
 
+function dropBootCover() {
+  // Only remove the script-injected cover — never a React-owned layout node.
+  document.getElementById("app-splash-boot")?.remove();
+}
+
 /**
  * Cold-open splash: fade in the K, pulse ring until tap (or auto after 5s),
  * then confetti + burst SFX. Whole-screen background + logo fade out together.
+ * Runs once per tab session; client navigations must not re-trigger it.
  */
 export function AppSplash() {
   const logoRef = useRef<HTMLSpanElement>(null);
-  const [phase, setPhase] = useState<SplashPhase>("in");
+  const [phase, setPhase] = useState<SplashPhase>(() =>
+    readSplashDone() ? "done" : "in",
+  );
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
     portalRoot,
@@ -36,20 +62,32 @@ export function AppSplash() {
 
   useEffect(() => {
     setPortalRoot(document.body);
+    if (readSplashDone()) {
+      setSplashState(null);
+      dropBootCover();
+      setPhase("done");
+      return;
+    }
+
     setSplashState("active");
-    // Remove static cover only after the animated splash has painted a frame.
-    const dropBoot = () => document.getElementById("app-splash-boot")?.remove();
+    // Drop static cover only after the animated splash has painted a frame.
     const raf = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(dropBoot);
+      window.requestAnimationFrame(dropBootCover);
     });
     return () => {
       window.cancelAnimationFrame(raf);
-      setSplashState(null);
     };
   }, []);
 
+  const finishSplash = () => {
+    markSplashDone();
+    setSplashState(null);
+    dropBootCover();
+    setPhase("done");
+  };
+
   const runTap = () => {
-    if (firedRef.current) return;
+    if (firedRef.current || phase === "done") return;
     firedRef.current = true;
 
     // Measure center before phase change so confetti originates on the mark.
@@ -76,18 +114,17 @@ export function AppSplash() {
         setPhase("out");
       }, OUT_AFTER_TAP_MS),
       window.setTimeout(() => {
-        setSplashState(null);
-        setPhase("done");
+        finishSplash();
       }, DONE_AFTER_TAP_MS),
     );
   };
 
   useEffect(() => {
+    if (phase === "done") return;
+
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
-      document.getElementById("app-splash-boot")?.remove();
-      setSplashState(null);
-      setPhase("done");
+      finishSplash();
       return;
     }
 

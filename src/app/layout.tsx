@@ -100,8 +100,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
-      data-splash="active"
-      // Boot scripts may set data-* on <html> before hydrate (standalone/touch).
+      // Boot script sets data-splash for cold opens only — do not hardcode it
+      // here or client navigations will re-hide .app-shell after splash ends.
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
@@ -112,8 +112,6 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden">
-        {/* Static first-paint cover — no CSS bundle / hydration required. */}
-        <div id="app-splash-boot" aria-hidden="true" />
         <script
           dangerouslySetInnerHTML={{
             __html: SPLASH_BOOT_SCRIPT,

@@ -1,12 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
 import { AppSplash } from "@/components/AppSplash";
 import { StandaloneClass } from "@/components/StandaloneClass";
-import { KART_BOOT_SCRIPT } from "@/lib/kart-boot";
-import { ROUTE_CHANGE_BOOT_SCRIPT } from "@/lib/route-change";
-import { SPLASH_BOOT_SCRIPT, SPLASH_BOOT_STYLE } from "@/lib/splash-boot";
+import { SPLASH_BOOT_STYLE } from "@/lib/splash-boot";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -32,8 +29,6 @@ const script = Caveat({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
-
-const LEGACY_MODE_BOOT_SCRIPT = `(function(){try{localStorage.removeItem('kidskatalog-accent');localStorage.removeItem('kidskatalog-crazy-mode');localStorage.removeItem('kidskatalog-toy-pile-mode');document.documentElement.dataset.accent='both';}catch(e){}})();`;
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -103,8 +98,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
-      // Boot script sets data-splash for cold opens only — do not hardcode it
-      // here or client navigations will re-hide .app-shell after splash ends.
+      // Boot script (/kk-boot.js) sets data-splash for cold opens only —
+      // do not hardcode it here or client navigations will re-hide .app-shell.
       suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
@@ -113,28 +108,11 @@ export default function RootLayout({
           id="app-splash-critical"
           dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_STYLE }}
         />
+        {/* Plain src script — avoids React 19 "script tag while rendering" errors. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/kk-boot.js" />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden">
-        <Script
-          id="kk-splash-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_SCRIPT }}
-        />
-        <Script
-          id="kk-route-change-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: ROUTE_CHANGE_BOOT_SCRIPT }}
-        />
-        <Script
-          id="kk-kart-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: KART_BOOT_SCRIPT }}
-        />
-        <Script
-          id="kk-legacy-mode-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: LEGACY_MODE_BOOT_SCRIPT }}
-        />
         <StandaloneClass />
         <AccentSync />
         <AppSplash />

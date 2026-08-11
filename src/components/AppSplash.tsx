@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
-import { SPLASH_SESSION_KEY } from "@/lib/splash-boot";
 
 const FADE_IN_MS = 700;
 const AUTO_TAP_MS = 5000;
@@ -13,23 +12,6 @@ const FADE_OUT_MS = 850;
 const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
-
-function readSplashDone() {
-  if (typeof window === "undefined") return false;
-  try {
-    return sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function markSplashDone() {
-  try {
-    sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
-  } catch {
-    /* ignore */
-  }
-}
 
 function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
@@ -41,13 +23,11 @@ function setSplashState(state: "active" | "exiting" | null) {
 /**
  * Cold-open splash: fade in the K, pulse ring until tap (or auto after 5s),
  * then confetti + burst SFX. Whole-screen background + logo fade out together.
- * Runs once per tab session; client navigations must not re-trigger it.
+ * Mounts once per full document load; client navigations do not remount it.
  */
 export function AppSplash() {
   const logoRef = useRef<HTMLSpanElement>(null);
-  const [phase, setPhase] = useState<SplashPhase>(() =>
-    readSplashDone() ? "done" : "in",
-  );
+  const [phase, setPhase] = useState<SplashPhase>("in");
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
     portalRoot,
@@ -57,16 +37,10 @@ export function AppSplash() {
 
   useEffect(() => {
     setPortalRoot(document.body);
-    if (readSplashDone()) {
-      setSplashState(null);
-      setPhase("done");
-    } else {
-      setSplashState("active");
-    }
+    setSplashState("active");
   }, []);
 
   const finishSplash = () => {
-    markSplashDone();
     setSplashState(null);
     setPhase("done");
   };
@@ -105,8 +79,6 @@ export function AppSplash() {
   };
 
   useEffect(() => {
-    if (readSplashDone()) return;
-
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       finishSplash();

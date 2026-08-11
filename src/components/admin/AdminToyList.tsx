@@ -11,6 +11,7 @@ import {
 import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
 
 type Tab = "live" | "review";
+type ViewMode = "list" | "grid";
 
 type Props = {
   toys: Toy[];
@@ -29,6 +30,30 @@ type Props = {
   busyId: string | null;
   editingId?: string | null;
 };
+
+function ListViewIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M2 3.5h12M2 8h12M2 12.5h12"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function GridViewIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect x="2" y="2" width="5" height="5" rx="1.2" fill="currentColor" />
+      <rect x="9" y="2" width="5" height="5" rx="1.2" fill="currentColor" />
+      <rect x="2" y="9" width="5" height="5" rx="1.2" fill="currentColor" />
+      <rect x="9" y="9" width="5" height="5" rx="1.2" fill="currentColor" />
+    </svg>
+  );
+}
 
 function GenerateListingsButton({
   generating,
@@ -279,22 +304,11 @@ export function AdminToyList({
   busyId,
   editingId = null,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<Tab>("live");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(
     () => new Set(),
   );
-
-  // Desktop grid is the useful expanded view; collapse if viewport shrinks.
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => {
-      if (!mq.matches) setExpanded(false);
-    };
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   useEffect(() => {
     setSelectedDraftIds((prev) => {
@@ -307,6 +321,7 @@ export function AdminToyList({
   }, [drafts]);
 
   const items = tab === "live" ? toys : drafts;
+  const isGrid = viewMode === "grid";
 
   function handleEdit(toy: Toy) {
     onEdit(toy, tab);
@@ -349,7 +364,7 @@ export function AdminToyList({
   return (
     <section
       className={`admin-panel__section p-4${
-        expanded ? " admin-toy-list--expanded" : ""
+        isGrid ? " admin-toy-list--grid" : ""
       }`}
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -362,15 +377,38 @@ export function AdminToyList({
             generateProgress={generateProgress}
             onGenerate={onGenerate}
           />
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            disabled={generating}
-            className="hidden rounded-full bg-[var(--lavender)] px-3.5 py-2 text-sm font-bold text-[var(--purple-deep)] transition active:scale-[0.98] disabled:opacity-50 lg:inline-flex"
-            aria-expanded={expanded}
+          <div
+            className="inline-flex rounded-full bg-[var(--lavender)]/50 p-1"
+            role="group"
+            aria-label="Toy layout"
           >
-            {expanded ? "Collapse grid" : "Expand grid"}
-          </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                viewMode === "list"
+                  ? "bg-white text-[var(--ink)] shadow-sm"
+                  : "text-[var(--ink-soft)]"
+              }`}
+              aria-pressed={viewMode === "list"}
+            >
+              <ListViewIcon />
+              List
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                viewMode === "grid"
+                  ? "bg-white text-[var(--ink)] shadow-sm"
+                  : "text-[var(--ink-soft)]"
+              }`}
+              aria-pressed={viewMode === "grid"}
+            >
+              <GridViewIcon />
+              Grid
+            </button>
+          </div>
         </div>
       </div>
 
@@ -443,55 +481,55 @@ export function AdminToyList({
             ? "No drafts yet — generate listings to review them here."
             : "No live toys."}
         </p>
-      ) : (
-        <>
-          {/* Compact list — default / mobile */}
-          <ul
-            className={`flex flex-col gap-2 overflow-y-auto ${
-              expanded ? "hidden" : "max-h-72"
-            }`}
-          >
+      ) : isGrid ? (
+        <div className="admin-toy-list__grid-host">
+          <ul className="admin-toy-list__grid">
             {items.map((toy) => {
               const selected = editingId === toy.id;
               const checked = selectedDraftIds.has(toy.id);
               return (
                 <li
                   key={toy.id}
-                  className={`flex items-center gap-3 rounded-xl p-2 ${
-                    selected
-                      ? "bg-[var(--lavender)] ring-2 ring-[var(--purple)]/35"
-                      : "bg-[var(--lavender)]/35"
+                  className={`admin-toy-list__card ${
+                    selected ? "admin-toy-list__card--selected" : ""
                   }`}
                 >
                   {tab === "review" ? (
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleDraftSelected(toy.id)}
-                      className="h-4 w-4 shrink-0 accent-[var(--mint)]"
-                      aria-label={`Select ${toy.name}`}
-                    />
+                    <label className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-sm ring-1 ring-black/5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleDraftSelected(toy.id)}
+                        className="h-3.5 w-3.5 accent-[var(--mint)]"
+                        aria-label={`Select ${toy.name}`}
+                      />
+                    </label>
                   ) : null}
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white">
+                  <div className="admin-toy-list__card-media">
                     <Image
                       src={toy.image}
                       alt={toy.imageAlt}
                       fill
                       className="object-contain"
-                      sizes="56px"
+                      sizes="160px"
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-[var(--ink)]">{toy.name}</p>
-                    <p className="truncate text-xs text-[var(--ink-soft)]">
-                      {toy.category} · ages {toy.ageMin}–{toy.ageMax} · {toy.blurb}
+                  <div className="min-w-0 flex-1 px-3 pb-2 pt-2.5">
+                    <p className="truncate font-[family-name:var(--font-display)] text-base font-bold text-[var(--ink)]">
+                      {toy.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+                      {toy.category} · {toy.ageMin}–{toy.ageMax} · {toy.audience}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">
+                      {toy.blurb}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="mt-auto flex gap-2 border-t border-black/[0.04] px-3 py-2.5">
                     <button
                       type="button"
                       onClick={() => handleEdit(toy)}
-                      className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--purple-deep)] shadow-sm ring-1 ring-black/5"
+                      className="flex-1 rounded-full bg-[var(--purple-deep)] py-2 text-xs font-bold text-white transition active:scale-[0.98]"
                     >
                       Edit
                     </button>
@@ -499,7 +537,7 @@ export function AdminToyList({
                       type="button"
                       disabled={busyId === toy.id}
                       onClick={() => onDelete(toy.id, tab)}
-                      className="rounded-full px-2.5 py-1 text-xs font-bold text-red-600 disabled:opacity-40"
+                      className="flex-1 rounded-full bg-red-50 py-2 text-xs font-bold text-red-600 ring-1 ring-red-100 transition disabled:opacity-40 active:scale-[0.98]"
                     >
                       {busyId === toy.id ? "…" : "Delete"}
                     </button>
@@ -508,76 +546,66 @@ export function AdminToyList({
               );
             })}
           </ul>
-
-          {/* Desktop expandable grid */}
-          <div
-            className={`${expanded ? "block" : "hidden"} admin-toy-list__grid-host`}
-          >
-            <ul className="admin-toy-list__grid">
-              {items.map((toy) => {
-                const selected = editingId === toy.id;
-                const checked = selectedDraftIds.has(toy.id);
-                return (
-                  <li
-                    key={toy.id}
-                    className={`admin-toy-list__card ${
-                      selected ? "admin-toy-list__card--selected" : ""
-                    }`}
+        </div>
+      ) : (
+        <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+          {items.map((toy) => {
+            const selected = editingId === toy.id;
+            const checked = selectedDraftIds.has(toy.id);
+            return (
+              <li
+                key={toy.id}
+                className={`flex items-center gap-3 rounded-xl p-2 ${
+                  selected
+                    ? "bg-[var(--lavender)] ring-2 ring-[var(--purple)]/35"
+                    : "bg-[var(--lavender)]/35"
+                }`}
+              >
+                {tab === "review" ? (
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleDraftSelected(toy.id)}
+                    className="h-4 w-4 shrink-0 accent-[var(--mint)]"
+                    aria-label={`Select ${toy.name}`}
+                  />
+                ) : null}
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white">
+                  <Image
+                    src={toy.image}
+                    alt={toy.imageAlt}
+                    fill
+                    className="object-contain"
+                    sizes="56px"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-[var(--ink)]">{toy.name}</p>
+                  <p className="truncate text-xs text-[var(--ink-soft)]">
+                    {toy.category} · ages {toy.ageMin}–{toy.ageMax} · {toy.blurb}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(toy)}
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--purple-deep)] shadow-sm ring-1 ring-black/5"
                   >
-                    {tab === "review" ? (
-                      <label className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-sm ring-1 ring-black/5">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleDraftSelected(toy.id)}
-                          className="h-3.5 w-3.5 accent-[var(--mint)]"
-                          aria-label={`Select ${toy.name}`}
-                        />
-                      </label>
-                    ) : null}
-                    <div className="admin-toy-list__card-media">
-                      <Image
-                        src={toy.image}
-                        alt={toy.imageAlt}
-                        fill
-                        className="object-contain"
-                        sizes="160px"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 px-3 pb-2 pt-2.5">
-                      <p className="truncate font-[family-name:var(--font-display)] text-base font-bold text-[var(--ink)]">
-                        {toy.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
-                        {toy.category} · {toy.ageMin}–{toy.ageMax} · {toy.audience}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--ink-soft)]">
-                        {toy.blurb}
-                      </p>
-                    </div>
-                    <div className="mt-auto flex gap-2 border-t border-black/[0.04] px-3 py-2.5">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(toy)}
-                        className="flex-1 rounded-full bg-[var(--purple-deep)] py-2 text-xs font-bold text-white transition active:scale-[0.98]"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busyId === toy.id}
-                        onClick={() => onDelete(toy.id, tab)}
-                        className="flex-1 rounded-full bg-red-50 py-2 text-xs font-bold text-red-600 ring-1 ring-red-100 transition disabled:opacity-40 active:scale-[0.98]"
-                      >
-                        {busyId === toy.id ? "…" : "Delete"}
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </>
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === toy.id}
+                    onClick={() => onDelete(toy.id, tab)}
+                    className="rounded-full px-2.5 py-1 text-xs font-bold text-red-600 disabled:opacity-40"
+                  >
+                    {busyId === toy.id ? "…" : "Delete"}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </section>
   );

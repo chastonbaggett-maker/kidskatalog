@@ -3030,11 +3030,11 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   color: var(--ink-soft);
 }
 
-/* Desktop manage-toys expandable grid */
-.admin-toy-list--expanded {
+/* Manage-toys list / grid layouts */
+.admin-toy-list--grid {
   display: flex;
   flex-direction: column;
-  min-height: min(78vh, 56rem);
+  min-height: min(70vh, 48rem);
 }
 
 .admin-toy-list__grid-host {
@@ -3043,6 +3043,11 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   overflow-y: auto;
   margin: 0 -0.25rem;
   padding: 0.25rem;
+  max-height: min(62vh, 42rem);
+}
+
+.admin-toy-list--grid .admin-toy-list__grid-host {
+  max-height: none;
 }
 
 .admin-toy-list__grid {

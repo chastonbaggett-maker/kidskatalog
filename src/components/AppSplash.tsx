@@ -29,7 +29,7 @@ export function AppSplash() {
     setPortalRoot(document.body);
   }, []);
 
-  const runTap = (fromGesture: boolean) => {
+  const runTap = (_fromGesture: boolean) => {
     if (firedRef.current) return;
     firedRef.current = true;
 

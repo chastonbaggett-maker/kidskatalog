@@ -429,7 +429,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
     drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
-/* Cold-open splash: fade in K, then fade out to the app (2s). */
+/* Cold-open splash: fade in K → tap/confetti → fade out (~2s). */
 .app-splash {
   position: fixed;
   inset: 0;
@@ -438,7 +438,14 @@ html.route-changing .bottom-nav__kart-badge--pop {
   place-items: center;
   pointer-events: auto;
   background: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
-  animation: app-splash-overlay 2s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+  opacity: 1;
+  visibility: visible;
+}
+
+.app-splash--out {
+  animation: app-splash-overlay-out 0.85s cubic-bezier(0.33, 0.1, 0.25, 1)
+    forwards;
+  pointer-events: none;
 }
 
 .app-splash__logo {
@@ -450,31 +457,61 @@ html.route-changing .bottom-nav__kart-badge--pop {
   user-select: none;
   -webkit-user-drag: none;
   filter: drop-shadow(0 10px 28px rgba(15, 90, 82, 0.28));
-  animation: app-splash-logo 2s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
 }
 
-@keyframes app-splash-logo {
+.app-splash--in .app-splash__logo {
+  animation: app-splash-logo-in 0.7s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+}
+
+.app-splash__logo--tap {
+  opacity: 1;
+  animation: app-splash-logo-tap 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.app-splash--out .app-splash__logo {
+  opacity: 1;
+  animation: app-splash-logo-out 0.85s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes app-splash-logo-in {
   0% {
     opacity: 0;
     transform: scale(0.9);
   }
-  38% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  52% {
-    opacity: 1;
-    transform: scale(1);
-  }
   100% {
-    opacity: 0;
-    transform: scale(1.04);
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-@keyframes app-splash-overlay {
-  0%,
-  52% {
+@keyframes app-splash-logo-tap {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes app-splash-logo-out {
+  0% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes app-splash-overlay-out {
+  0% {
     opacity: 1;
     visibility: visible;
   }
@@ -482,6 +519,10 @@ html.route-changing .bottom-nav__kart-badge--pop {
     opacity: 0;
     visibility: hidden;
   }
+}
+
+.add-kart-confetti--splash {
+  z-index: 10001;
 }
 
 @media (prefers-reduced-motion: reduce) {

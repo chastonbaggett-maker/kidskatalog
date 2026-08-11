@@ -40,11 +40,15 @@ export const GOLD_CONFETTI = [
   "#ffffff",
 ];
 
-export function useConfettiBurst() {
+export function useConfettiBurst(options?: {
+  /** Override portal host (e.g. splash overlay / document.body). */
+  portalRoot?: HTMLElement | null;
+}) {
   const uid = useId();
   const [bursting, setBursting] = useState(false);
   const [bits, setBits] = useState<ConfettiBit[]>([]);
   const [mounted, setMounted] = useState(false);
+  const portalRoot = options?.portalRoot ?? null;
 
   useEffect(() => {
     setMounted(true);
@@ -100,13 +104,13 @@ export function useConfettiBurst() {
 
   const fxRoot =
     typeof document !== "undefined"
-      ? document.getElementById("kart-fx-root") ?? document.body
+      ? portalRoot ?? document.getElementById("kart-fx-root") ?? document.body
       : null;
 
   const portal =
     mounted && bits.length > 0 && fxRoot
       ? createPortal(
-          <div className="add-kart-confetti" aria-hidden>
+          <div className="add-kart-confetti add-kart-confetti--splash" aria-hidden>
             {bits.map((bit) => (
               <span
                 key={bit.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { categories } from "@/data/categories";
 import { slugify } from "@/lib/slugify";
@@ -23,6 +23,8 @@ type Props = {
   editSource?: "live" | "review";
   onSaved: () => void;
   onCancelEdit: () => void;
+  /** Called after bulk add finishes so the panel can refresh Review drafts. */
+  onBulkComplete?: () => void;
 };
 
 const emptyForm = {
@@ -38,24 +40,69 @@ const emptyForm = {
   imageUrl: "",
 };
 
+const MAX_BULK = 100;
+
+function countUniqueBulkUrls(text: string): number {
+  const tokens = text
+    .split(/[\s,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  for (const token of tokens) {
+    const bare = /^[A-Z0-9]{10}$/i.test(token) ? token.toUpperCase() : null;
+    if (bare) {
+      seen.add(bare);
+      continue;
+    }
+    try {
+      const u = new URL(token);
+      const m = u.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+      if (m?.[1]) seen.add(m[1].toUpperCase());
+      else {
+        const asin = u.searchParams.get("asin");
+        if (asin && /^[A-Z0-9]{10}$/i.test(asin)) seen.add(asin.toUpperCase());
+      }
+    } catch {
+      const embedded = token.match(
+        /(?:\/(?:dp|gp\/product)\/|asin=)([A-Z0-9]{10})/i,
+      );
+      if (embedded?.[1]) seen.add(embedded[1].toUpperCase());
+    }
+  }
+  return Math.min(seen.size, MAX_BULK);
+}
+
 export function AdminToyForm({
   editing,
   editSource = "live",
   onSaved,
   onCancelEdit,
+  onBulkComplete,
 }: Props) {
+  const [addMode, setAddMode] = useState<"single" | "bulk">("single");
   const [amazonUrl, setAmazonUrl] = useState("");
+  const [bulkText, setBulkText] = useState("");
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+    message: string;
+  } | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importing, setImporting] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const bulkCount = useMemo(() => countUniqueBulkUrls(bulkText), [bulkText]);
 
   useEffect(() => {
     if (editing) {
       setPreview(null);
       setAmazonUrl("");
+      setBulkText("");
+      setAddMode("single");
       setForm({
         name: editing.name,
         blurb: editing.blurb,
@@ -104,6 +151,117 @@ export function AdminToyForm({
       setError(e instanceof Error ? e.message : "Import failed");
     } finally {
       setImporting(false);
+    }
+  }
+
+  async function handleBulkAdd() {
+    if (!bulkText.trim() || bulkCount === 0) return;
+    setBulkBusy(true);
+    setError("");
+    setBulkProgress({
+      current: 0,
+      total: bulkCount,
+      message: "Starting bulk add…",
+    });
+
+    let createdCount = 0;
+    let grokNote = "";
+
+    try {
+      const res = await fetch("/api/admin/drafts/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: bulkText }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Bulk add failed");
+      }
+      if (!res.body) throw new Error("Bulk stream unavailable");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          let event: {
+            type: string;
+            current?: number;
+            total?: number;
+            message?: string;
+            name?: string;
+            ok?: boolean;
+            error?: string;
+            result?: {
+              generated?: unknown[];
+              usedGrok?: boolean;
+              grokWarning?: string;
+              skippedExisting?: number;
+              failed?: number;
+            };
+          };
+          try {
+            event = JSON.parse(trimmed) as typeof event;
+          } catch {
+            continue;
+          }
+
+          if (event.type === "stage") {
+            setBulkProgress({
+              current: event.current ?? 0,
+              total: event.total ?? bulkCount,
+              message: event.message || "Working…",
+            });
+          } else if (event.type === "item" && event.ok) {
+            createdCount = event.current ?? createdCount + 1;
+            setBulkProgress({
+              current: createdCount,
+              total: event.total ?? bulkCount,
+              message: event.name
+                ? `Drafted ${event.name}`
+                : `Drafted ${createdCount}/${event.total ?? bulkCount}`,
+            });
+          } else if (event.type === "bulk-done" || event.type === "done") {
+            createdCount = Array.isArray(event.result?.generated)
+              ? event.result.generated.length
+              : createdCount;
+            if (event.result?.grokWarning) {
+              grokNote = event.result.grokWarning;
+            }
+            setBulkProgress({
+              current: createdCount,
+              total: bulkCount,
+              message: "Finishing…",
+            });
+          } else if (event.type === "error") {
+            throw new Error(event.error || "Bulk add failed");
+          }
+        }
+      }
+
+      onBulkComplete?.();
+      setBulkText("");
+      const extra = grokNote ? `\n\n${grokNote}` : "";
+      alert(
+        createdCount > 0
+          ? `Added ${createdCount} draft${createdCount === 1 ? "" : "s"} to Review.${extra}`
+          : `No new drafts were created. Amazon may have blocked the pages, or those URLs are already live.${extra}`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bulk add failed");
+    } finally {
+      setBulkBusy(false);
+      setBulkProgress(null);
     }
   }
 
@@ -187,6 +345,35 @@ export function AdminToyForm({
       </h3>
 
       {!editing && (
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setAddMode("single")}
+            aria-pressed={addMode === "single"}
+            className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+              addMode === "single"
+                ? "bg-[var(--purple-deep)] text-white"
+                : "bg-[var(--lavender)] text-[var(--ink-soft)]"
+            }`}
+          >
+            Single
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddMode("bulk")}
+            aria-pressed={addMode === "bulk"}
+            className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+              addMode === "bulk"
+                ? "bg-[var(--purple-deep)] text-white"
+                : "bg-[var(--lavender)] text-[var(--ink-soft)]"
+            }`}
+          >
+            Bulk add
+          </button>
+        </div>
+      )}
+
+      {!editing && addMode === "single" && (
         <div className="mb-4 flex flex-col gap-2">
           <label className="text-sm font-semibold text-[var(--ink)]">
             Amazon affiliate URL
@@ -211,6 +398,64 @@ export function AdminToyForm({
             <p className="text-xs text-amber-700">
               Amazon blocked metadata — fill in name and image manually.
             </p>
+          ) : null}
+        </div>
+      )}
+
+      {!editing && addMode === "bulk" && (
+        <div className="mb-4 flex flex-col gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-[var(--ink)]">
+              Paste Amazon URLs (up to {MAX_BULK} unique)
+            </span>
+            <textarea
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              rows={8}
+              disabled={bulkBusy}
+              placeholder={
+                "https://www.amazon.com/dp/B0...\nhttps://www.amazon.com/dp/B0...\n(or bare ASINs, one per line)"
+              }
+              className="rounded-2xl bg-[var(--lavender)] px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-[var(--purple)] disabled:opacity-60"
+            />
+          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-[var(--ink-soft)]">
+              {bulkCount} unique URL{bulkCount === 1 ? "" : "s"} ready
+              {bulkCount >= MAX_BULK ? " (max reached)" : ""}. Grok drafts
+              name, blurb, category, audience, and ages per catalog guidelines;
+              results land in Review.
+            </p>
+            <button
+              type="button"
+              disabled={bulkBusy || bulkCount === 0}
+              onClick={() => void handleBulkAdd()}
+              className="shrink-0 rounded-full bg-[var(--purple-deep)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {bulkBusy
+                ? bulkProgress
+                  ? `${bulkProgress.current}/${bulkProgress.total}`
+                  : "Working…"
+                : `Bulk add${bulkCount > 0 ? ` (${bulkCount})` : ""}`}
+            </button>
+          </div>
+          {bulkProgress ? (
+            <div className="rounded-xl bg-[var(--lavender)]/50 px-3 py-2 text-xs font-medium text-[var(--ink-soft)]">
+              {bulkProgress.message}
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/70">
+                <div
+                  className="h-full rounded-full bg-[var(--purple-deep)] transition-all"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (bulkProgress.current /
+                        Math.max(bulkProgress.total, 1)) *
+                        100,
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
           ) : null}
         </div>
       )}
@@ -272,143 +517,147 @@ export function AdminToyForm({
         </div>
       ) : null}
 
-      <form onSubmit={(e) => void handleSave(e)} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">Name</span>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">Blurb (~8 words)</span>
-          <input
-            required
-            value={form.blurb}
-            onChange={(e) => setForm((f) => ({ ...f, blurb: e.target.value }))}
-            className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
+      {addMode === "single" || editing ? (
+        <form onSubmit={(e) => void handleSave(e)} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Category</span>
-            <select
-              value={form.category}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, category: e.target.value as CategoryId }))
-              }
-              className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Audience</span>
-            <select
-              value={form.audience}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, audience: e.target.value as Audience }))
-              }
-              className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
-            >
-              <option value="all">All</option>
-              <option value="boys">Boys</option>
-              <option value="girls">Girls</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Age min</span>
+            <span className="text-sm font-semibold">Name</span>
             <input
-              type="number"
-              min={0}
-              max={18}
-              value={form.ageMin}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, ageMin: Number(e.target.value) }))
-              }
+              required
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
           </label>
+
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Age max</span>
+            <span className="text-sm font-semibold">Blurb (~8 words)</span>
             <input
-              type="number"
-              min={0}
-              max={18}
-              value={form.ageMax}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, ageMax: Number(e.target.value) }))
-              }
+              required
+              value={form.blurb}
+              onChange={(e) => setForm((f) => ({ ...f, blurb: e.target.value }))}
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
           </label>
-        </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">Affiliate URL</span>
-          <input
-            required
-            value={form.affiliateUrl}
-            onChange={(e) => setForm((f) => ({ ...f, affiliateUrl: e.target.value }))}
-            className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
-          />
-        </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">Category</span>
+              <select
+                value={form.category}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, category: e.target.value as CategoryId }))
+                }
+                className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">Image URL or path</span>
-          <input
-            value={form.imageUrl || form.image}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                image: e.target.value,
-                imageUrl: e.target.value.startsWith("http") ? e.target.value : "",
-              }))
-            }
-            placeholder="/toys/my-toy.jpg or https://..."
-            className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
-          />
-        </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">Audience</span>
+              <select
+                value={form.audience}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, audience: e.target.value as Audience }))
+                }
+                className="rounded-full bg-[var(--lavender)] px-3 py-2.5 text-sm outline-none"
+              >
+                <option value="all">All</option>
+                <option value="boys">Boys</option>
+                <option value="girls">Girls</option>
+              </select>
+            </label>
+          </div>
 
-        {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">Age min</span>
+              <input
+                type="number"
+                min={0}
+                max={18}
+                value={form.ageMin}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, ageMin: Number(e.target.value) }))
+                }
+                className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">Age max</span>
+              <input
+                type="number"
+                min={0}
+                max={18}
+                value={form.ageMax}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, ageMax: Number(e.target.value) }))
+                }
+                className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+              />
+            </label>
+          </div>
 
-        <div className="flex gap-2">
-          {editing ? (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Affiliate URL</span>
+            <input
+              required
+              value={form.affiliateUrl}
+              onChange={(e) => setForm((f) => ({ ...f, affiliateUrl: e.target.value }))}
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Image URL or path</span>
+            <input
+              value={form.imageUrl || form.image}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  image: e.target.value,
+                  imageUrl: e.target.value.startsWith("http") ? e.target.value : "",
+                }))
+              }
+              placeholder="/toys/my-toy.jpg or https://..."
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+          </label>
+
+          {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+          <div className="flex gap-2">
+            {editing ? (
+              <button
+                type="button"
+                onClick={onCancelEdit}
+                className="flex-1 rounded-full bg-[var(--lavender)] py-3 text-sm font-bold text-[var(--ink-soft)]"
+              >
+                Cancel edit
+              </button>
+            ) : null}
             <button
-              type="button"
-              onClick={onCancelEdit}
-              className="flex-1 rounded-full bg-[var(--lavender)] py-3 text-sm font-bold text-[var(--ink-soft)]"
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-full bg-[image:var(--header-grad-alt)] py-3 text-sm font-bold text-white disabled:opacity-50"
             >
-              Cancel edit
+              {saving
+                ? "Saving…"
+                : editing
+                  ? editSource === "review"
+                    ? "Update draft"
+                    : "Update toy"
+                  : "Save toy"}
             </button>
-          ) : null}
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 rounded-full bg-[image:var(--header-grad-alt)] py-3 text-sm font-bold text-white disabled:opacity-50"
-          >
-            {saving
-              ? "Saving…"
-              : editing
-                ? editSource === "review"
-                  ? "Update draft"
-                  : "Update toy"
-                : "Save toy"}
-          </button>
-        </div>
-      </form>
+          </div>
+        </form>
+      ) : error ? (
+        <p className="text-sm font-medium text-red-600">{error}</p>
+      ) : null}
     </section>
   );
 }

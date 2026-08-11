@@ -294,6 +294,7 @@ export function AdminPanel({ open, onClose }: Props) {
           editing={editing}
           editSource={editSource}
           onSaved={() => void refresh()}
+          onBulkComplete={() => void refresh()}
           onCancelEdit={() => {
             setEditing(null);
             setEditSource("live");

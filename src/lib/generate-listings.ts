@@ -4,7 +4,7 @@ import path from "path";
 import { buildAffiliateUrl, parseAsin } from "@/lib/amazon-import";
 import { getCatalogToys } from "@/lib/catalog-store";
 import { addDraftToys, getDraftToys } from "@/lib/draft-store";
-import type { DraftToy } from "@/types/toy";
+import type { Audience, CategoryId, DraftToy } from "@/types/toy";
 import { slugify } from "@/lib/slugify";
 import {
   buildSearchQueries,
@@ -289,10 +289,28 @@ function liveAsinSet(
   return asins;
 }
 
-async function buildDraftFromAsin(
+export type ListingEnrichFields = {
+  name: string;
+  blurb: string;
+  category: CategoryId;
+  audience: Audience;
+  ageMin: number;
+  ageMax: number;
+};
+
+export type BuildDraftFromAsinOptions = {
+  /** Optional AI / custom enricher for card fields (used by bulk Grok add). */
+  enrich?: (input: {
+    sourceTitle: string;
+    description: string;
+  }) => Promise<ListingEnrichFields | null>;
+};
+
+export async function buildDraftFromAsin(
   asin: string,
   usedIds: Set<string>,
   options: GenerateListingsOptions,
+  buildOptions?: BuildDraftFromAsinOptions,
 ): Promise<DraftToy | null> {
   const html =
     (await fetchHtml(`https://www.amazon.com/dp/${asin}?th=1&psc=1`)) ||
@@ -308,24 +326,36 @@ async function buildDraftFromAsin(
   const imageUrls = extractListingImages(html);
   if (imageUrls.length === 0) return null;
 
-  const name = shortCardName(sourceTitle);
-  const blurb = kidBlurb(sourceTitle, ogDesc);
+  const enriched = buildOptions?.enrich
+    ? await buildOptions.enrich({
+        sourceTitle,
+        description: ogDesc,
+      })
+    : null;
+
   const inferred = inferToyMeta(sourceTitle, `${ogDesc} age`);
   const ageTarget = resolveAgePreset(options.agePreset);
 
+  const name = enriched?.name || shortCardName(sourceTitle);
+  const blurb = enriched?.blurb || kidBlurb(sourceTitle, ogDesc);
   const category =
-    options.category === "any" ? inferred.category : options.category;
+    enriched?.category ??
+    (options.category === "any" ? inferred.category : options.category);
   const audience =
-    options.audience === "any"
+    enriched?.audience ??
+    (options.audience === "any"
       ? inferred.audience
       : options.audience === "all"
         ? "all"
-        : options.audience;
+        : options.audience);
 
   // Prefer admin age targeting; keep a sensible range width from inference when "all".
   let ageMin = ageTarget.min;
   let ageMax = ageTarget.max;
-  if (options.agePreset === "all") {
+  if (enriched) {
+    ageMin = enriched.ageMin;
+    ageMax = enriched.ageMax;
+  } else if (options.agePreset === "all") {
     ageMin = Math.max(3, Math.min(inferred.ageMin, 13));
     ageMax = Math.max(ageMin, Math.min(inferred.ageMax, 13));
   } else if (ageMin === ageMax) {

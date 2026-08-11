@@ -1,8 +1,14 @@
 const AFFILIATE_TAG = process.env.NEXT_PUBLIC_AFFILIATE_TAG || "kidskatalog-20";
 
 export function parseAsin(url: string): string | null {
+  const raw = url.trim();
+  if (!raw) return null;
+
+  // Bare ASIN pasted into a field or bulk list.
+  if (/^[A-Z0-9]{10}$/i.test(raw)) return raw.toUpperCase();
+
   try {
-    const parsed = new URL(url.trim());
+    const parsed = new URL(raw);
     if (!parsed.hostname.includes("amazon.")) return null;
 
     const dpMatch = parsed.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
@@ -13,9 +19,47 @@ export function parseAsin(url: string): string | null {
       return asinParam.toUpperCase();
     }
   } catch {
-    return null;
+    // Fall through — maybe an ASIN embedded in loose text.
   }
+
+  const embedded = raw.match(/(?:\/(?:dp|gp\/product)\/|asin=)([A-Z0-9]{10})/i);
+  if (embedded?.[1]) return embedded[1].toUpperCase();
+
   return null;
+}
+
+/** Split pasted bulk text into unique ASINs (max 100). */
+export function parseBulkAmazonInputs(text: string): {
+  asins: string[];
+  invalid: string[];
+  truncated: boolean;
+} {
+  const tokens = text
+    .split(/[\s,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const asins: string[] = [];
+  const seen = new Set<string>();
+  const invalid: string[] = [];
+  let truncated = false;
+
+  for (const token of tokens) {
+    const asin = parseAsin(token);
+    if (!asin) {
+      invalid.push(token.slice(0, 80));
+      continue;
+    }
+    if (seen.has(asin)) continue;
+    if (asins.length >= 100) {
+      truncated = true;
+      break;
+    }
+    seen.add(asin);
+    asins.push(asin);
+  }
+
+  return { asins, invalid, truncated };
 }
 
 export function buildAffiliateUrl(asin: string): string {

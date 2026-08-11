@@ -51,7 +51,9 @@ export async function GET(req: NextRequest) {
 
   const offset = Math.max(0, Number(req.nextUrl.searchParams.get("offset") ?? "0"));
   const limit = Math.max(1, Math.min(Number(req.nextUrl.searchParams.get("limit") ?? "20"), 60));
-  const page = paginateCatalogToys(all, { ...filters, offset, limit });
+  const seedRaw = Number(req.nextUrl.searchParams.get("seed") ?? "");
+  const seed = Number.isFinite(seedRaw) ? seedRaw : Date.now();
+  const page = paginateCatalogToys(all, { ...filters, offset, limit, seed });
 
   return NextResponse.json(page);
 }

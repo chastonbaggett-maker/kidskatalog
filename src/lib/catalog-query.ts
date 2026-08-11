@@ -1,4 +1,5 @@
 import type { Audience, CategoryId, Toy } from "@/types/toy";
+import { shuffleWithSeed } from "@/lib/shuffle";
 
 export type CatalogFilters = {
   category?: CategoryId | string;
@@ -12,6 +13,8 @@ export type CatalogFilters = {
 export type CatalogPageRequest = CatalogFilters & {
   offset?: number;
   limit?: number;
+  /** Stable order seed — same seed + filters => same page sequence across load-more. */
+  seed?: number;
 };
 
 export type CatalogPageResult = {
@@ -20,6 +23,8 @@ export type CatalogPageResult = {
   offset: number;
   limit: number;
   hasMore: boolean;
+  /** Seed used to shuffle the filtered catalog before slicing. */
+  seed: number;
 };
 
 export function filterCatalogToys(toys: Toy[], filters: CatalogFilters): Toy[] {
@@ -60,7 +65,9 @@ export function paginateCatalogToys(
   const offset = Math.max(0, request.offset ?? 0);
   const limit = Math.max(1, Math.min(request.limit ?? 20, 60));
   const filtered = filterCatalogToys(toys, request);
-  const page = filtered.slice(offset, offset + limit);
+  const seed = (request.seed ?? Date.now()) >>> 0;
+  const ordered = shuffleWithSeed(filtered, seed);
+  const page = ordered.slice(offset, offset + limit);
 
   return {
     toys: page,
@@ -68,6 +75,7 @@ export function paginateCatalogToys(
     offset,
     limit,
     hasMore: offset + page.length < filtered.length,
+    seed,
   };
 }
 
@@ -115,5 +123,6 @@ export function buildCatalogQueryString(
   if (request.excludeIds?.length) {
     params.set("exclude", request.excludeIds.join(","));
   }
+  if (request.seed != null) params.set("seed", String(request.seed >>> 0));
   return params.toString();
 }

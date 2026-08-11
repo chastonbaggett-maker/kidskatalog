@@ -21,6 +21,10 @@ function toysToMap(toys: Toy[]) {
   return new Map(toys.map((toy) => [toy.id, toy]));
 }
 
+function freshSeed() {
+  return Date.now() >>> 0;
+}
+
 export function useCatalogPage({
   limit = DEFAULT_LIMIT,
   enabled = true,
@@ -51,6 +55,8 @@ export function useCatalogPage({
     (excludeIds ?? []).join(","),
     String(limit),
   ].join("\0");
+
+  const seedRef = useRef<number>((initialPage?.seed ?? freshSeed()) >>> 0);
 
   const [toyMap, setToyMap] = useState<Map<string, Toy>>(() =>
     toysToMap(initialPage?.toys ?? []),
@@ -90,6 +96,7 @@ export function useCatalogPage({
           ...filtersRef.current,
           offset,
           limit,
+          seed: seedRef.current,
         });
         const response = await fetch(`/api/catalog?${query}`);
         if (!response.ok) throw new Error("Could not load toys");
@@ -97,6 +104,10 @@ export function useCatalogPage({
         const data = (await response.json()) as CatalogPageResult;
         if (requestId !== requestRef.current) return null;
         if (isKartEffectBlocked()) return null;
+
+        if (typeof data.seed === "number" && Number.isFinite(data.seed)) {
+          seedRef.current = data.seed >>> 0;
+        }
 
         mergeToys(data.toys);
         setTotal(data.total);
@@ -127,6 +138,8 @@ export function useCatalogPage({
       return;
     }
 
+    // New filter set => new shuffle order for this visit.
+    seedRef.current = freshSeed();
     setToyMap(new Map());
     setDisplayIds([]);
     setTotal(0);

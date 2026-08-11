@@ -132,7 +132,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
   }, [isChromePhase]);
 
   const [crazyFlash, setCrazyFlash] = useState(false);
-  const [shuffleNonce, setShuffleNonce] = useState(0);
+  const [shuffleNonce, setShuffleNonce] = useState(() => Date.now() >>> 0);
   const [shelfMode, setShelfMode] = useState<ShelfMode>("hidden");
   const [compactShelfBlocked, setCompactShelfBlocked] = useState(false);
 

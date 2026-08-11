@@ -479,6 +479,10 @@ html[data-splash="active"] .bottom-nav__icons {
   pointer-events: none;
 }
 
+html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
+  display: none !important;
+}
+
 .app-splash {
   position: fixed;
   z-index: 10000;

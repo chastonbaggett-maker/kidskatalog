@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
 import { getToyVideos } from "@/lib/toy-media";
+import { PlayableVideo } from "./PlayableVideo";
 
 type Props = {
   toys: Toy[];
@@ -114,7 +115,7 @@ function ToyVideoCard({
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="feed-card__surface toy-video-card__surface relative overflow-hidden bg-black">
-        <video
+        <PlayableVideo
           ref={videoRef}
           className="toy-video-card__video"
           src={src}

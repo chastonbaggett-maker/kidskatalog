@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ToyMediaItem } from "@/lib/toy-media";
 import { getToyVideos } from "@/lib/toy-media";
+import { PlayableVideo } from "./PlayableVideo";
 import { ToyPhoto } from "./ToyPhoto";
 
 const SWIPE_THRESHOLD_PX = 48;
@@ -101,7 +102,7 @@ export function ProductGallery({
           aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
         >
           {current.kind === "video" ? (
-            <video
+            <PlayableVideo
               key={current.src}
               ref={videoRef}
               className="product-gallery__video"

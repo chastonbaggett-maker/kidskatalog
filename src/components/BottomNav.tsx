@@ -116,7 +116,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/menu", label: "Menu", icon: MenuIcon },
+    { href: "/menu", label: "Watch", icon: MenuIcon },
   ] as const;
 
   const brandActive =
@@ -226,17 +226,23 @@ function HomeIcon({ active }: { active?: boolean }) {
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
+  // Tall toy-card frame with a play mark — suggests video / watching.
+  const stroke = active ? 2.4 : 2;
   return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="22" height="38" viewBox="0 0 22 38" fill="none" aria-hidden>
       <rect
-        x="4.5"
-        y="4.5"
-        width="15"
-        height="15"
-        rx="4"
-        ry="4"
+        x="2"
+        y="2"
+        width="18"
+        height="34"
+        rx="4.5"
+        ry="4.5"
         stroke="currentColor"
-        strokeWidth={active ? 2.4 : 2}
+        strokeWidth={stroke}
+      />
+      <path
+        d="M9.2 14.2v9.6L16.1 19 9.2 14.2z"
+        fill="currentColor"
       />
     </svg>
   );

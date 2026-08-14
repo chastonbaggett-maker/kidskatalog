@@ -1,21 +1,22 @@
 /**
- * Click-driven melody: every UI tap plays a note and writes it into a soft
- * looping phrase. Loop voices decay each cycle so the bed never piles up.
+ * Click tones over looping background music from the track catalog.
+ * Each UI tap plays a one-shot note; the selected bed track loops underneath.
  */
 
 import {
   getSharedAudioContext,
   unlockSharedAudio,
 } from "@/lib/shared-audio";
+import {
+  DEFAULT_MUSIC_TRACK_ID,
+  getMusicTrack,
+  type MusicTrack,
+} from "@/lib/music-tracks";
 
-const STEPS = 16;
-const BPM = 92;
-const STEP_S = 60 / BPM / 2; // eighth notes
 const LIVE_LEVEL = 0.2;
-const LOOP_LEVEL = 0.11;
-const DECAY_PER_LOOP = 0.68;
-const MIN_AMP = 0.012;
 const MASTER_LEVEL = 0.55;
+/** Bed sits under tap plucks — audible but not overpowering. */
+const BED_LEVEL = 0.28;
 
 /** Soft C major pentatonic walk — playful, not dissonant. */
 const SCALE = [
@@ -25,20 +26,15 @@ const SCALE = [
 /** Melodic contour indices into SCALE (up, skip, down). */
 const PHRASE = [0, 2, 4, 5, 7, 5, 4, 2, 1, 3, 5, 6, 8, 6, 4, 3, 2, 0] as const;
 
-type LoopCell = {
-  freq: number;
-  amp: number;
-};
-
 export class ClickMelodyEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  private steps: Array<LoopCell | null> = Array.from({ length: STEPS }, () => null);
-  private writeHead = 0;
-  private tickHead = 0;
+  private bedGain: GainNode | null = null;
+  private bedSource: AudioBufferSourceNode | null = null;
+  private bedBuffers = new Map<string, AudioBuffer>();
+  private bedLoads = new Map<string, Promise<AudioBuffer | null>>();
+  private trackId = DEFAULT_MUSIC_TRACK_ID;
   private phrasePos = 0;
-  private timer: number | null = null;
-  private nextTickAt = 0;
   private muted = false;
   private unlocked = false;
   private onNote: ((info: { live: boolean; freq: number }) => void) | null =
@@ -52,6 +48,10 @@ export class ClickMelodyEngine {
     return this.unlocked;
   }
 
+  get currentTrack(): MusicTrack {
+    return getMusicTrack(this.trackId);
+  }
+
   /** Must run inside a user gesture on iOS — do not await before scheduling. */
   unlock(): boolean {
     const ctx = unlockSharedAudio();
@@ -59,12 +59,11 @@ export class ClickMelodyEngine {
     this.ctx = ctx;
     this.ensureMaster();
     this.unlocked = ctx.state === "running" || ctx.state === "suspended";
-    if (ctx.state === "running") this.ensureClock();
-    // If still suspended, resume is in flight from unlockSharedAudio.
+    if (ctx.state === "running" && !this.muted) this.ensureBed();
     void ctx.resume().then(() => {
       if (ctx.state === "running") {
         this.unlocked = true;
-        this.ensureClock();
+        if (!this.muted) this.ensureBed();
       }
     });
     return true;
@@ -75,13 +74,27 @@ export class ClickMelodyEngine {
     if (!this.master || !this.ctx) return;
     const now = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.04);
+    this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.05);
+    if (muted) {
+      this.fadeBed(0, 0.2);
+    } else {
+      this.ensureBed();
+      this.fadeBed(BED_LEVEL, 0.4);
+    }
   }
 
-  /** Play the next melody note and stamp it into the decaying loop. */
+  /** Switch looping bed track (crossfades by stop + soft fade-in). */
+  setTrack(trackId: string) {
+    const next = getMusicTrack(trackId).id;
+    if (next === this.trackId && this.bedSource) return;
+    this.trackId = next;
+    this.stopBedSourceOnly();
+    if (!this.muted) this.ensureBed();
+  }
+
+  /** Play the next one-shot melody note (never echoed into a click loop). */
   note() {
     if (this.muted) return false;
-    // Sync unlock + schedule in the same gesture (iOS Safari).
     if (!this.unlock() || !this.ctx || !this.master) return false;
 
     const degree = PHRASE[this.phrasePos % PHRASE.length]!;
@@ -90,22 +103,11 @@ export class ClickMelodyEngine {
 
     this.pluck(this.ctx.currentTime, freq, LIVE_LEVEL);
     this.onNote?.({ live: true, freq });
-
-    this.steps[this.writeHead] = { freq, amp: LOOP_LEVEL };
-    this.writeHead = (this.writeHead + 1) % STEPS;
-    this.ensureClock();
     return true;
   }
 
-  clearLoop() {
-    this.steps = Array.from({ length: STEPS }, () => null);
-  }
-
   dispose() {
-    if (this.timer != null) {
-      window.clearInterval(this.timer);
-      this.timer = null;
-    }
+    this.stopBed();
     if (this.master) {
       try {
         this.master.disconnect();
@@ -113,7 +115,6 @@ export class ClickMelodyEngine {
         /* ignore */
       }
     }
-    // Keep the shared AudioContext alive for confetti SFX.
     this.master = null;
     this.ctx = null;
     this.unlocked = false;
@@ -127,50 +128,119 @@ export class ClickMelodyEngine {
       this.master = ctx.createGain();
       this.master.gain.value = this.muted ? 0 : MASTER_LEVEL;
       this.master.connect(ctx.destination);
-      this.nextTickAt = 0;
     }
   }
 
-  private ensureClock() {
-    if (this.timer != null || !this.ctx) return;
-    this.nextTickAt = this.ctx.currentTime + 0.05;
-    this.timer = window.setInterval(() => this.pump(), 40);
+  private ensureBed() {
+    if (!this.ctx || !this.master || this.muted) return;
+    if (this.bedSource && this.bedGain) {
+      this.fadeBed(BED_LEVEL, 0.3);
+      return;
+    }
+    void this.startBedWhenReady(this.trackId);
   }
 
-  private pump() {
+  private async startBedWhenReady(trackId: string) {
+    if (!this.ctx || !this.master || this.muted) return;
+    if (this.bedSource) return;
+
+    const track = getMusicTrack(trackId);
+    const buffer = await this.loadBedBuffer(track);
+    // Track may have changed while decoding.
+    if (this.trackId !== track.id) return;
+    if (!buffer || !this.ctx || !this.master || this.muted || this.bedSource) {
+      return;
+    }
+
+    const now = this.ctx.currentTime;
+    const bedGain = this.bedGain ?? this.ctx.createGain();
+    if (!this.bedGain) {
+      bedGain.gain.setValueAtTime(0.0001, now);
+      bedGain.connect(this.master);
+      this.bedGain = bedGain;
+    }
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(bedGain);
+    source.start(now);
+    this.bedSource = source;
+    source.onended = () => {
+      if (this.bedSource === source) this.bedSource = null;
+    };
+
+    this.fadeBed(BED_LEVEL, 0.7);
+  }
+
+  private loadBedBuffer(track: MusicTrack): Promise<AudioBuffer | null> {
+    const cached = this.bedBuffers.get(track.id);
+    if (cached) return Promise.resolve(cached);
+
+    const inflight = this.bedLoads.get(track.id);
+    if (inflight) return inflight;
+
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    if (!ctx) return Promise.resolve(null);
 
-    while (this.nextTickAt < ctx.currentTime + 0.12) {
-      this.scheduleTick(this.nextTickAt);
-      this.nextTickAt += STEP_S;
-    }
+    const load = (async () => {
+      try {
+        const res = await fetch(track.url, { cache: "force-cache" });
+        if (!res.ok) return null;
+        const raw = await res.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(raw.slice(0));
+        this.bedBuffers.set(track.id, decoded);
+        return decoded;
+      } catch {
+        return null;
+      } finally {
+        this.bedLoads.delete(track.id);
+      }
+    })();
+
+    this.bedLoads.set(track.id, load);
+    return load;
   }
 
-  private scheduleTick(when: number) {
-    const cell = this.steps[this.tickHead];
-    if (cell && cell.amp >= MIN_AMP) {
-      this.pluck(when, cell.freq, cell.amp);
-      this.onNote?.({ live: false, freq: cell.freq });
-    }
-
-    this.tickHead = (this.tickHead + 1) % STEPS;
-    if (this.tickHead === 0) {
-      this.decayLoop();
-    }
+  private fadeBed(level: number, seconds: number) {
+    if (!this.bedGain || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    const target = Math.max(0.0001, level);
+    this.bedGain.gain.cancelScheduledValues(now);
+    this.bedGain.gain.setValueAtTime(
+      Math.max(0.0001, this.bedGain.gain.value),
+      now,
+    );
+    this.bedGain.gain.exponentialRampToValueAtTime(target, now + seconds);
   }
 
-  private decayLoop() {
-    for (let i = 0; i < this.steps.length; i += 1) {
-      const cell = this.steps[i];
-      if (!cell) continue;
-      cell.amp *= DECAY_PER_LOOP;
-      if (cell.amp < MIN_AMP) this.steps[i] = null;
+  private stopBedSourceOnly() {
+    if (this.bedSource) {
+      try {
+        this.bedSource.onended = null;
+        this.bedSource.stop();
+        this.bedSource.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
+    this.bedSource = null;
+  }
+
+  private stopBed() {
+    this.stopBedSourceOnly();
+    if (this.bedGain) {
+      try {
+        this.bedGain.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.bedGain = null;
   }
 
   private pluck(when: number, freq: number, amp: number) {
-    if (!this.ctx || !this.master || amp < MIN_AMP) return;
+    if (!this.ctx || !this.master || amp < 0.01) return;
     const ctx = this.ctx;
     const t = Math.max(when, ctx.currentTime + 0.005);
 

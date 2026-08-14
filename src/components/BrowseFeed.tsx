@@ -334,10 +334,11 @@ export function BrowseFeed({ category, initialPage }: Props) {
           />
         ))}
       </div>
-      {hasMore && (
+      {(hasMore || loading) && (
         <FeedAutoLoadMore
           scrollerRef={scrollerRef}
-          active={hasMore && !loading}
+          hasMore={hasMore}
+          loading={loading}
           onLoad={handleLoadMore}
         />
       )}

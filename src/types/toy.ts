@@ -20,6 +20,11 @@ export type Toy = {
   image: string;
   /** Extra product photos for the detail page gallery */
   images?: string[];
+  /**
+   * Optional product video clips shown in the detail gallery selector
+   * and collected on the Watch (/menu) feed.
+   */
+  videos?: string[];
   imageAlt: string;
   /** Amazon affiliate-ready product URL */
   affiliateUrl: string;
@@ -49,6 +54,13 @@ export type Category = {
   id: CategoryId;
   label: string;
   hue: string;
+  /** Default cover image (product photo). */
   image: string;
   imageAlt: string;
+  /** Optional mode-specific single covers for boys / girls accents. */
+  covers?: Partial<Record<Audience, string>>;
+  /** Default 4-up collage photos for menu / thumb tiles. */
+  collage?: readonly string[];
+  /** Optional mode-specific 4-up collages. */
+  collages?: Partial<Record<Audience, readonly string[]>>;
 };

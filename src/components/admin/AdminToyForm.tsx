@@ -24,6 +24,7 @@ type ImportPreview = {
   ageMax: number;
   image: string;
   images: string[];
+  videos?: string[];
   imageAlt: string;
   imageUrl?: string;
   color?: string;
@@ -54,6 +55,8 @@ const emptyForm = {
   image: "",
   imageAlt: "",
   imageUrl: "",
+  /** One video URL/path per line (shown in gallery + Watch feed). */
+  videosText: "",
 };
 
 const MAX_BULK = 100;
@@ -135,7 +138,9 @@ export function AdminToyForm({
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",
+        videosText: (editing.videos ?? []).slice(0, 1).join("\n"),
       });
+      setGalleryIndex(0);
     } else {
       setForm(emptyForm);
       setPreview(null);
@@ -167,9 +172,17 @@ export function AdminToyForm({
           : p.image
             ? [p.image]
             : [];
+      const importedVideos = Array.isArray(p.videos)
+        ? p.videos.map((src) => src.trim()).filter(Boolean).slice(0, 1)
+        : [];
+      const mainImage = (p.image || gallery[0] || "").trim();
+      const orderedGallery = mainImage
+        ? [mainImage, ...gallery.filter((src) => src !== mainImage)]
+        : gallery;
       setPreview(p);
-      setImportedImages(gallery);
+      setImportedImages(orderedGallery);
       setImportedId(p.id ?? null);
+      setGalleryIndex(0);
       setForm({
         name: p.name,
         blurb: p.blurb,
@@ -179,10 +192,11 @@ export function AdminToyForm({
         ageMax: typeof p.ageMax === "number" ? p.ageMax : 12,
         featuredTier: 0,
         affiliateUrl: p.affiliateUrl,
-        image: gallery[0] || p.image,
+        image: mainImage || orderedGallery[0] || "",
         imageAlt: p.imageAlt || p.name,
         // Local gallery paths are already downloaded — no remote imageUrl needed.
         imageUrl: "",
+        videosText: importedVideos[0] ?? "",
       });
       if (p.grokWarning) {
         setError(p.grokWarning);
@@ -329,6 +343,12 @@ export function AdminToyForm({
       return importedImages.length > 0 ? importedImages : [primaryImage];
     })();
 
+    const videos = form.videosText
+      .split(/[\n,]+/)
+      .map((src) => src.trim())
+      .filter(Boolean)
+      .slice(0, 1);
+
     const toy: Toy & { imageUrl?: string } = {
       id:
         editing?.id ??
@@ -347,6 +367,7 @@ export function AdminToyForm({
       images: galleryForSave,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
       color: preview?.color || cat?.hue || "#B19CD9",
+      videos,
     };
 
     if (form.imageUrl) {
@@ -383,16 +404,32 @@ export function AdminToyForm({
   }
 
   const galleryImages = (() => {
-    const fromEditing = editing?.images?.filter(Boolean) ?? [];
-    if (fromEditing.length > 0) return fromEditing;
-    if (importedImages.length > 0) return importedImages;
-    const primary = form.image || preview?.image || editing?.image;
-    return primary ? [primary] : [];
+    const pool = [
+      form.image,
+      ...(editing?.images ?? []),
+      ...importedImages,
+      preview?.image,
+      editing?.image,
+    ]
+      .map((src) => (typeof src === "string" ? src.trim() : ""))
+      .filter(Boolean);
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const src of pool) {
+      if (seen.has(src)) continue;
+      seen.add(src);
+      unique.push(src);
+    }
+    const main = form.image.trim();
+    if (!main) return unique;
+    return [main, ...unique.filter((src) => src !== main)];
   })();
 
   const activeImage =
     galleryImages[Math.min(galleryIndex, Math.max(galleryImages.length - 1, 0))] ??
     "";
+  const mainImage = form.image.trim();
+  const activeIsMain = Boolean(mainImage && activeImage === mainImage);
 
   return (
     <section id="admin-toy-form" className="admin-panel__section scroll-mt-4 p-4">
@@ -545,7 +582,7 @@ export function AdminToyForm({
             </p>
           </div>
 
-          <div className="relative mb-3 aspect-[4/5] w-full max-w-[16rem] overflow-hidden rounded-xl bg-white sm:max-w-[18rem]">
+          <div className="relative mb-2 aspect-[4/5] w-full max-w-[16rem] overflow-hidden rounded-xl bg-white sm:max-w-[18rem]">
             <Image
               src={activeImage}
               alt={form.imageAlt || form.name || "Toy image"}
@@ -554,24 +591,59 @@ export function AdminToyForm({
               sizes="288px"
               unoptimized={activeImage.startsWith("http")}
             />
+            {activeIsMain ? (
+              <span className="absolute left-2 top-2 rounded-full bg-[var(--purple-deep)] px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-white shadow">
+                Main image
+              </span>
+            ) : null}
           </div>
+
+          {!activeIsMain && activeImage ? (
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({
+                  ...f,
+                  image: activeImage,
+                  imageUrl: activeImage.startsWith("http") ? activeImage : "",
+                }));
+                setGalleryIndex(0);
+              }}
+              className="mb-3 rounded-full bg-[var(--purple-deep)] px-3 py-1.5 text-xs font-bold text-white"
+            >
+              Use as main image
+            </button>
+          ) : (
+            <p className="mb-3 text-xs font-medium text-[var(--ink-soft)]">
+              Main product image is first in the gallery. Tap another thumb to
+              change it.
+            </p>
+          )}
 
           <ul className="flex gap-2 overflow-x-auto pb-1">
             {galleryImages.map((src, index) => {
               const selected = index === galleryIndex;
+              const isMain = Boolean(mainImage && src === mainImage);
               return (
-                <li key={`${src}-${index}`} className="shrink-0">
+                <li key={`${src}-${index}`} className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setGalleryIndex(index);
+                    }}
+                    onDoubleClick={() => {
                       setForm((f) => ({
                         ...f,
                         image: src,
                         imageUrl: src.startsWith("http") ? src : "",
                       }));
+                      setGalleryIndex(0);
                     }}
-                    aria-label={`Show image ${index + 1}`}
+                    aria-label={
+                      isMain
+                        ? `Main image ${index + 1}`
+                        : `Show image ${index + 1}`
+                    }
                     aria-pressed={selected}
                     className={`relative h-16 w-16 overflow-hidden rounded-lg bg-white ring-2 transition ${
                       selected
@@ -588,6 +660,11 @@ export function AdminToyForm({
                       unoptimized={src.startsWith("http")}
                     />
                   </button>
+                  {isMain ? (
+                    <span className="pointer-events-none absolute -bottom-0.5 left-1/2 z-[1] -translate-x-1/2 rounded-full bg-[var(--purple-deep)] px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-white">
+                      Main
+                    </span>
+                  ) : null}
                 </li>
               );
             })}
@@ -727,6 +804,22 @@ export function AdminToyForm({
               placeholder="/toys/my-toy.jpg or https://..."
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Video link</span>
+            <input
+              value={form.videosText}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, videosText: e.target.value }))
+              }
+              placeholder="https://…/clip.mp4 (from Amazon import)"
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+            <span className="text-xs text-[var(--ink-soft)]">
+              One primary video. Amazon import fills this when the listing has
+              gallery video. Shown in the toy selector and Watch feed.
+            </span>
           </label>
 
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}

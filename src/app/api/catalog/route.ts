@@ -14,6 +14,7 @@ function parseFilters(req: NextRequest): CatalogFilters {
   const age = ageRaw != null && ageRaw !== "" ? Number(ageRaw) : null;
   const q = req.nextUrl.searchParams.get("q") ?? undefined;
   const exclude = req.nextUrl.searchParams.get("exclude") ?? undefined;
+  const hasVideoParam = req.nextUrl.searchParams.get("hasVideo");
 
   return {
     category: category as CategoryId | undefined,
@@ -23,6 +24,12 @@ function parseFilters(req: NextRequest): CatalogFilters {
     excludeIds: exclude
       ? exclude.split(",").map((id) => id.trim()).filter(Boolean)
       : undefined,
+    hasVideo:
+      hasVideoParam === "1" ||
+      hasVideoParam === "true" ||
+      hasVideoParam === "yes"
+        ? true
+        : undefined,
   };
 }
 

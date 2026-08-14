@@ -200,71 +200,73 @@ export function FeedHeader({
       : "Search toys";
 
   return (
-    <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
-      <div className="mb-3 flex items-center justify-center">
-        <Logo light href="/shop" size={110} />
-      </div>
+    <header className="feed-header bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)] sm:px-5 lg:px-6">
+      <div className="feed-header__row flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex shrink-0 justify-center sm:justify-start">
+          <Logo light href="/shop" size={110} />
+        </div>
 
-      <div className="flex items-center gap-2">
-        {showBack && (
-          <Link
-            href="/shop"
-            tabIndex={inert ? -1 : 0}
-            className="flex h-10 w-10 shrink-0 items-center justify-center text-white"
-            aria-label="Back"
-          >
-            <Chevron />
-          </Link>
-        )}
+        <div className="feed-header__search flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:max-w-md md:max-w-lg lg:max-w-xl">
+          {showBack && (
+            <Link
+              href="/shop"
+              tabIndex={inert ? -1 : 0}
+              className="flex h-10 w-10 shrink-0 items-center justify-center text-white"
+              aria-label="Back"
+            >
+              <Chevron />
+            </Link>
+          )}
 
-        <label className="relative flex min-w-0 flex-1 items-center rounded-full bg-white px-3 py-2.5 shadow-sm">
-          <span className="mr-2 text-[var(--blue)]" aria-hidden>
-            <SearchIcon />
-          </span>
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder={placeholder}
-            inputMode="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            tabIndex={inert ? -1 : 0}
-            readOnly={inert}
-            className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
-          />
-          <button
-            type="button"
-            tabIndex={inert ? -1 : 0}
-            disabled={inert}
-            onClick={toggleVoice}
-            className={`voice-mic relative -mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
-              listening ? "voice-mic-listening" : ""
-            } ${micPop ? "voice-mic-pop" : ""}`}
-            aria-label={
-              listening
-                ? "Stop speak to text"
-                : "Speak to text"
-            }
-            aria-pressed={listening}
-            title={
-              listening
-                ? "Tap to stop"
-                : supported
-                  ? "Speak to type in search"
-                  : "Opens search — use the mic on your keyboard"
-            }
-          >
-            <span className="voice-mic__rings" aria-hidden>
-              <span />
-              <span />
-              <span />
+          <label className="relative flex min-w-0 flex-1 items-center rounded-full bg-white px-3 py-2.5 shadow-sm">
+            <span className="mr-2 text-[var(--blue)]" aria-hidden>
+              <SearchIcon />
             </span>
-            <MicIcon />
-          </button>
-        </label>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder={placeholder}
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              tabIndex={inert ? -1 : 0}
+              readOnly={inert}
+              className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
+            />
+            <button
+              type="button"
+              tabIndex={inert ? -1 : 0}
+              disabled={inert}
+              onClick={toggleVoice}
+              className={`voice-mic relative -mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
+                listening ? "voice-mic-listening" : ""
+              } ${micPop ? "voice-mic-pop" : ""}`}
+              aria-label={
+                listening
+                  ? "Stop speak to text"
+                  : "Speak to text"
+              }
+              aria-pressed={listening}
+              title={
+                listening
+                  ? "Tap to stop"
+                  : supported
+                    ? "Speak to type in search"
+                    : "Opens search — use the mic on your keyboard"
+              }
+            >
+              <span className="voice-mic__rings" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+              <MicIcon />
+            </button>
+          </label>
+        </div>
       </div>
     </header>
   );

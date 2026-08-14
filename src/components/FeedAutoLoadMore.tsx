@@ -3,27 +3,38 @@
 import { useEffect, useRef } from "react";
 
 type Props = {
-  active: boolean;
+  /** More pages remain in the catalog. */
+  hasMore: boolean;
+  /** A fetch is in flight (filter/mode change or infinite scroll). */
+  loading: boolean;
   onLoad: () => void;
   scrollerRef: React.RefObject<HTMLElement | null>;
   label?: string;
+  caughtUpLabel?: string;
 };
 
+/**
+ * Infinite-scroll sentinel. Shows a loading pill while pages are pending or
+ * fetching — never the "caught up" copy during a mode/filter reload.
+ */
 export function FeedAutoLoadMore({
-  active,
+  hasMore,
+  loading,
   onLoad,
   scrollerRef,
   label = "Loading more toys…",
+  caughtUpLabel = "You’re all caught up!",
 }: Props) {
   const zoneRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
+  const waitingRef = useRef(false);
+
+  // Allow another intersection trigger once the in-flight fetch settles.
+  useEffect(() => {
+    if (!loading) waitingRef.current = false;
+  }, [loading]);
 
   useEffect(() => {
-    loadingRef.current = false;
-  }, [active]);
-
-  useEffect(() => {
-    if (!active) return;
+    if (!hasMore || loading) return;
 
     const zone = zoneRef.current;
     const root = scrollerRef.current;
@@ -31,8 +42,8 @@ export function FeedAutoLoadMore({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting || loadingRef.current) return;
-        loadingRef.current = true;
+        if (!entry?.isIntersecting || waitingRef.current) return;
+        waitingRef.current = true;
         onLoad();
       },
       {
@@ -44,14 +55,25 @@ export function FeedAutoLoadMore({
 
     observer.observe(zone);
     return () => observer.disconnect();
-  }, [active, onLoad, scrollerRef]);
+  }, [hasMore, loading, onLoad, scrollerRef]);
+
+  const showLoading = hasMore || loading;
 
   return (
-    <div ref={zoneRef} className="feed-load-more col-span-full" aria-live="polite">
+    <div
+      ref={zoneRef}
+      className={`feed-load-more col-span-full${
+        showLoading ? " feed-load-more--loading" : " feed-load-more--caught-up"
+      }`}
+      aria-live="polite"
+      aria-busy={showLoading}
+    >
       <div className="feed-load-more__inner">
-        <span className="feed-load-more__spark" aria-hidden />
+        {showLoading ? (
+          <span className="feed-load-more__spark" aria-hidden />
+        ) : null}
         <p className="feed-load-more__label">
-          {active ? label : "You’re all caught up!"}
+          {showLoading ? label : caughtUpLabel}
         </p>
       </div>
     </div>

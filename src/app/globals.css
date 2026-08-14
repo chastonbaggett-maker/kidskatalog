@@ -2337,6 +2337,41 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   background-image: none;
 }
 
+/* Active page marker under the current nav control. */
+.bottom-nav__icons a[aria-current="page"]::after,
+.bottom-nav__icons button[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0.3rem;
+  left: 50%;
+  width: 1.1rem;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: currentColor;
+  transform: translateX(-50%) scaleX(0.85);
+  opacity: 0.95;
+  pointer-events: none;
+  animation: bottom-nav-active-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bottom-nav-active-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0.35);
+  }
+  to {
+    opacity: 0.95;
+    transform: translateX(-50%) scaleX(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav__icons a[aria-current="page"]::after,
+  .bottom-nav__icons button[aria-current="page"]::after {
+    animation: none;
+  }
+}
+
 .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost {
   opacity: 0;
   transform: none;

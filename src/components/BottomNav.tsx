@@ -138,8 +138,8 @@ export function BottomNav() {
             <button
               type="button"
               onClick={handleBrandTap}
-              className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                homeActive ? "opacity-100" : "opacity-80"
+              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                homeActive ? "bottom-nav__item--active opacity-100" : "opacity-45"
               }`}
               aria-label="Home"
               aria-current={homeActive ? "page" : undefined}
@@ -150,8 +150,8 @@ export function BottomNav() {
           <li>
             <Link
               href="/menu"
-              className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                watchActive ? "opacity-100" : "opacity-80"
+              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                watchActive ? "bottom-nav__item--active opacity-100" : "opacity-45"
               }`}
               aria-label="Watch"
               aria-current={watchActive ? "page" : undefined}

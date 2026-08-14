@@ -126,8 +126,8 @@ export const KartNavLink = memo(function KartNavLink({
         ref={registerKartNavEl}
         href="/kart"
         onClick={handleClick}
-        className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
-          active ? "opacity-100" : "opacity-80"
+        className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
+          active ? "bottom-nav__item--active opacity-100" : "opacity-45"
         } ${landing ? "bottom-nav__kart--land" : ""}`}
         aria-label="Kart"
         aria-current={active ? "page" : undefined}

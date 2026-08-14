@@ -736,11 +736,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
 }
 
 .thumb-carousel__expand-icon {
-  transition: transform 380ms var(--pile-chrome-ease, ease-in-out);
-}
-
-.thumb-carousel__expand-icon.is-expanded {
-  transform: rotate(180deg);
+  display: block;
 }
 
 .thumb-carousel__item {

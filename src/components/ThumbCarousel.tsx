@@ -70,7 +70,7 @@ export function ThumbCarousel() {
           title={expanded ? "Collapse" : "Expand"}
           onClick={() => setExpanded((v) => !v)}
         >
-          <ExpandChevron expanded={expanded} />
+          <ExpandToggleIcon expanded={expanded} />
         </button>
 
         {cats.map((cat, index) => (
@@ -105,7 +105,8 @@ export function ThumbCarousel() {
   );
 }
 
-function ExpandChevron({ expanded }: { expanded: boolean }) {
+function ExpandToggleIcon({ expanded }: { expanded: boolean }) {
+  // Expanded → Shrink (arrows inward). Collapsed → Grow (arrows outward).
   return (
     <svg
       width="22"
@@ -113,15 +114,71 @@ function ExpandChevron({ expanded }: { expanded: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className={`thumb-carousel__expand-icon ${expanded ? "is-expanded" : ""}`}
+      className="thumb-carousel__expand-icon"
     >
-      <path
-        d="M6.5 9.5 12 15l5.5-5.5"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {expanded ? (
+        <>
+          <path
+            d="M9 4v5H4"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 4v5h5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M9 20v-5H4"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 20v-5h5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      ) : (
+        <>
+          <path
+            d="M4 9V4h5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M20 9V4h-5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 15v5h5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M20 15v5h-5"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
     </svg>
   );
 }

@@ -2337,6 +2337,29 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   background-image: none;
 }
 
+/* Slightly taller nav chrome on tablet / desktop. */
+@media (min-width: 768px) {
+  :root {
+    --bottom-nav-offset: calc(5.35rem + env(safe-area-inset-bottom, 0px));
+    --bottom-nav-icons-height: 4.85rem;
+  }
+
+  .bottom-nav__icons {
+    min-height: var(--bottom-nav-icons-height);
+    padding-top: 0.7rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .bottom-nav__item {
+    height: 3.75rem;
+  }
+
+  .bottom-nav__item--active::before {
+    width: 3.9rem;
+    height: 3.9rem;
+  }
+}
+
 /* Active bubble + tap pulse for bottom nav controls.
    Icons stay on the theme accent; active gets a solid accent bubble + white icon. */
 .bottom-nav__item {

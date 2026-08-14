@@ -832,7 +832,13 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   animation: back-fun-bob 2.8s ease-in-out infinite;
 }
 
-.back-fun:active {
+/* Back-to-top — bob vertically (back chevron keeps the sideways bob). */
+.back-fun--up {
+  animation: back-fun-bob-up 2.8s ease-in-out infinite;
+}
+
+.back-fun:active,
+.back-fun--up:active {
   animation: none;
 }
 
@@ -894,6 +900,16 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 }
 
+@keyframes back-fun-bob-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 @keyframes kart-go-bob {
   0%,
   100% {
@@ -917,7 +933,8 @@ html[data-accent="both"] .kart-go-btn:hover {
     transform: none;
   }
 
-  .back-fun {
+  .back-fun,
+  .back-fun--up {
     animation: none;
   }
 

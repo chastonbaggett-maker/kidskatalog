@@ -24,6 +24,7 @@ type ImportPreview = {
   ageMax: number;
   image: string;
   images: string[];
+  videos?: string[];
   imageAlt: string;
   imageUrl?: string;
   color?: string;
@@ -170,6 +171,9 @@ export function AdminToyForm({
           : p.image
             ? [p.image]
             : [];
+      const importedVideos = Array.isArray(p.videos)
+        ? p.videos.map((src) => src.trim()).filter(Boolean)
+        : [];
       setPreview(p);
       setImportedImages(gallery);
       setImportedId(p.id ?? null);
@@ -186,6 +190,7 @@ export function AdminToyForm({
         imageAlt: p.imageAlt || p.name,
         // Local gallery paths are already downloaded — no remote imageUrl needed.
         imageUrl: "",
+        videosText: importedVideos.join("\n"),
       });
       if (p.grokWarning) {
         setError(p.grokWarning);
@@ -739,19 +744,20 @@ export function AdminToyForm({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Videos (optional)</span>
+            <span className="text-sm font-semibold">Video link</span>
             <textarea
               value={form.videosText}
               onChange={(e) =>
                 setForm((f) => ({ ...f, videosText: e.target.value }))
               }
               rows={3}
-              placeholder={"/videos/clip.mp4\nhttps://..."}
+              placeholder={"Paste a video URL (mp4/webm), one per line"}
               className="rounded-2xl bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">
-              One URL/path per line. Shows in the toy gallery selector and Watch
-              feed.
+              Manual links work anytime. Amazon import also fills this when the
+              product gallery includes video. Clips show in the toy selector and
+              Watch feed.
             </span>
           </label>
 

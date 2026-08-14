@@ -19,6 +19,8 @@ export type AmazonImportPreview = {
   ageMax: number;
   image: string;
   images: string[];
+  /** Product videos found in the Amazon gallery / immersion player. */
+  videos: string[];
   imageAlt: string;
   color: string;
   sourceTitle?: string;
@@ -79,6 +81,7 @@ export async function importAmazonListingPreview(
 
   const images =
     draft.images && draft.images.length > 0 ? draft.images : [draft.image];
+  const videos = (draft.videos ?? []).map((src) => src.trim()).filter(Boolean);
 
   return {
     asin: draft.asin || asin,
@@ -92,6 +95,7 @@ export async function importAmazonListingPreview(
     ageMax: draft.ageMax,
     image: draft.image,
     images,
+    videos,
     imageAlt: draft.imageAlt,
     color: draft.color,
     sourceTitle: draft.sourceTitle,

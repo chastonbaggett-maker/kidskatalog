@@ -147,6 +147,92 @@ function extractListingImages(html: string): string[] {
   return out;
 }
 
+const MAX_VIDEOS = 4;
+
+/** Normalize escaped Amazon URLs from embedded JSON blobs. */
+function normalizeAmazonMediaUrl(raw: string): string {
+  return raw
+    .replace(/\\u002F/g, "/")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/g, "&")
+    .trim();
+}
+
+function isPlayableVideoUrl(url: string): boolean {
+  if (!/^https?:\/\//i.test(url)) return false;
+  // Prefer progressive MP4/WebM for the in-app player (skip HLS playlists).
+  if (/\.m3u8(\?|$)/i.test(url)) return false;
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) return true;
+  // Amazon VSE / immersion clips often omit an extension but still stream as mp4.
+  if (/media-amazon\.com\/images\/S\/vse-/i.test(url)) return true;
+  if (/vse-vms-transcoding-artifact/i.test(url)) return true;
+  return false;
+}
+
+/**
+ * Pull product video URLs from Amazon PDP HTML / embedded gallery JSON.
+ * These sit alongside image gallery data when a listing has video content.
+ */
+export function extractListingVideos(html: string): string[] {
+  const ranked: { url: string; score: number }[] = [];
+  const push = (raw: string, score: number) => {
+    const url = normalizeAmazonMediaUrl(raw);
+    if (!isPlayableVideoUrl(url)) return;
+    ranked.push({ url, score });
+  };
+
+  // Structured video objects in colorImages / immersion / hipVideos blobs.
+  for (const m of html.matchAll(
+    /"url"\s*:\s*"(https:\\\/\\\/[^"]+?\.(?:mp4|webm)[^"]*)"/gi,
+  )) {
+    push(m[1]!, 4);
+  }
+  for (const m of html.matchAll(
+    /"url"\s*:\s*"(https:\/\/[^"]+?\.(?:mp4|webm)[^"]*)"/gi,
+  )) {
+    push(m[1]!, 4);
+  }
+  for (const m of html.matchAll(
+    /"(?:videoUrl|videoURL|mainUrl|downloadUrl)"\s*:\s*"(https:\\\/\\\/[^"]+|https:\/\/[^"]+)"/gi,
+  )) {
+    push(m[1]!, 5);
+  }
+  for (const m of html.matchAll(
+    /data-(?:video-url|videoUrl)=["'](https:\/\/[^"']+)["']/gi,
+  )) {
+    push(m[1]!, 4);
+  }
+  // Amazon VSE artifact URLs (often no .mp4 suffix in the path).
+  for (const m of html.matchAll(
+    /https:\\\/\\\/[a-z0-9.-]*media-amazon\.com\\\/images\\\/S\\\/vse-[^"\\]+/gi,
+  )) {
+    push(m[0]!, 3);
+  }
+  for (const m of html.matchAll(
+    /https:\/\/[a-z0-9.-]*media-amazon\.com\/images\/S\/vse-[^\s"'<>]+/gi,
+  )) {
+    push(m[0]!.replace(/[),.;]+$/g, ""), 3);
+  }
+  // Bare mp4/webm links anywhere in the markup.
+  for (const m of html.matchAll(
+    /https:\/\/[^\s"'<>]+?\.(?:mp4|webm)(?:\?[^\s"'<>]*)?/gi,
+  )) {
+    push(m[0]!, 2);
+  }
+
+  ranked.sort((a, b) => b.score - a.score);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const { url } of ranked) {
+    const key = url.split("?")[0]!.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(url);
+    if (out.length >= MAX_VIDEOS) break;
+  }
+  return out;
+}
+
 function extractAsins(html: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -272,6 +358,7 @@ export async function buildDraftFromAsin(
     metaContent(html, "description", "name");
   const imageUrls = extractListingImages(html);
   if (imageUrls.length === 0) return null;
+  const videoUrls = extractListingVideos(html);
 
   const enriched = buildOptions?.enrich
     ? await buildOptions.enrich({
@@ -331,6 +418,7 @@ export async function buildDraftFromAsin(
     ageMax,
     image: gallery[0]!,
     images: gallery,
+    ...(videoUrls.length > 0 ? { videos: videoUrls } : {}),
     imageAlt: `${name} toy`,
     affiliateUrl: buildAffiliateUrl(asin),
     color: categoryColor(category),

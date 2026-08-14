@@ -17,6 +17,11 @@ export const MUSIC_TRACKS: readonly MusicTrack[] = [
     title: "Clouds in a Bubble",
     url: "/music/clouds-in-a-bubble.mp3",
   },
+  {
+    id: "cloudy-day-dance",
+    title: "Cloudy Day Dance",
+    url: "/music/cloudy-day-dance.mp3",
+  },
 ] as const;
 
 export const DEFAULT_MUSIC_TRACK_ID = MUSIC_TRACKS[0]!.id;

@@ -3,8 +3,12 @@ import type { Audience, CategoryId } from "@/types/toy";
 import {
   inferToyMeta,
   kidBlurb,
+  normalizeCatalogBlurb,
+  normalizeCatalogName,
   shortCardName,
 } from "@/lib/toy-card-style";
+
+export { normalizeCatalogBlurb, normalizeCatalogName } from "@/lib/toy-card-style";
 
 const CATEGORY_IDS: CategoryId[] = [
   "dinos",
@@ -16,6 +20,18 @@ const CATEGORY_IDS: CategoryId[] = [
   "stem",
   "pretend",
 ];
+
+/** Live-catalog examples — keep Grok voice locked to existing cards. */
+const CATALOG_VOICE_EXAMPLES = [
+  { name: "Ocean Rescue", blurb: "Bath vehicles light up underwater." },
+  { name: "Magnet Tiles", blurb: "110 magnetic tiles for castles." },
+  { name: "Glow Pyramid", blurb: "Magnetic pyramid glows and flips." },
+  { name: "Busy Board", blurb: "Latches and switches to explore." },
+  { name: "Spidey Bike", blurb: "Spidey rides a cool motorcycle." },
+  { name: "Brain Flakes", blurb: "Interlocking discs snap into shapes." },
+  { name: "Sound Putty", blurb: "White noise and soft putty." },
+  { name: "Flash Talkies", blurb: "Talk far with flashlight radios." },
+] as const;
 
 export type GrokListingFields = {
   name: string;
@@ -42,20 +58,35 @@ export function getGrokModel(): string {
   );
 }
 
-const SYSTEM_PROMPT = `You write KidsKatalog toy card listings for a kid-friendly virtual catalog (ages ~3–13).
+const SYSTEM_PROMPT = `You write KidsKatalog toy card listings. Match the EXISTING catalog voice exactly — do not invent a new style.
 
 Return ONLY valid JSON with keys:
 name, blurb, category, audience, ageMin, ageMax
 
-Guidelines:
-- name: short catchy card title, 1–3 Title Case words. Drop brand fluff, pack counts, and marketing suffixes. Match catalog voice (e.g. "Squishmallow", "Magna Tiles", "Hot Wheels").
-- blurb: kid-friendly, about 5–8 words, ends with a period. Playful, not salesy. No prices, deals, or "buy now".
-- category: one of dinos | plush | cars | blocks | outside | games | stem | pretend
-  (stem = build/robots/STEM; pretend = art, dolls, dress-up, pretend play)
-- audience: all | boys | girls (prefer all unless clearly gendered)
-- ageMin / ageMax: integers from 3–13 based on the product; ageMax >= ageMin
+NAME (must match live cards):
+- Exactly 1 or 2 Title Case words (almost never 3).
+- Catchy product nickname kids would say out loud.
+- Keep distinctive product words (Magna→Magnet Tiles style nicknames, Spidey Bike, Ocean Rescue).
+- Drop brand house names when the toy has its own identity (Hasbro/Mattel/Amazon fluff).
+- Drop pack counts, ages, "set", "kit", "for kids", "gift", colors-as-marketing, and long Amazon suffixes.
+- Good: "Ocean Rescue", "Magnet Tiles", "Busy Board", "Shashibo"
+- Bad: "LED Bath Toy Boat Set", "Magnetic Building Tiles for Kids", "Official Marvel Spider-Man Motorcycle"
 
-Do not invent unrelated products. Base fields on the Amazon title and description provided.`;
+BLURB (must match live cards):
+- One short sentence, 4–6 words (target 5), ending with a period.
+- Present tense, concrete, playful — what it does / how it feels.
+- No prices, deals, "buy", "perfect for", "great gift", or SEO stuffing.
+- No repeating the full name as the whole blurb.
+- Good: "Bath vehicles light up underwater."
+- Good: "Latches and switches to explore."
+- Bad: "This amazing educational STEM toy is perfect for creative kids ages 5 and up."
+
+CATEGORY: one of dinos | plush | cars | blocks | outside | games | stem | pretend
+  (stem = robots/electronics/STEM; pretend = art, dolls, dress-up, pretend play)
+AUDIENCE: all | boys | girls (prefer all unless clearly gendered)
+AGES: integers 3–13; ageMax >= ageMin
+
+Base every field on the Amazon title/description. Do not invent a different product.`;
 
 function heuristicListing(
   sourceTitle: string,
@@ -81,16 +112,19 @@ function clampAge(n: unknown, fallback: number): number {
 function normalizeGrokFields(
   raw: Record<string, unknown>,
   fallback: GrokListingFields,
+  sourceTitle: string,
+  description: string,
 ): GrokListingFields {
-  const name =
-    typeof raw.name === "string" && raw.name.trim()
-      ? raw.name.trim().slice(0, 48)
-      : fallback.name;
-  let blurb =
-    typeof raw.blurb === "string" && raw.blurb.trim()
-      ? raw.blurb.trim().slice(0, 96)
-      : fallback.blurb;
-  if (!/[.!?]$/.test(blurb)) blurb = `${blurb}.`;
+  const name = normalizeCatalogName(
+    typeof raw.name === "string" ? raw.name : fallback.name,
+    sourceTitle || fallback.name,
+  );
+
+  const blurb = normalizeCatalogBlurb(
+    typeof raw.blurb === "string" ? raw.blurb : fallback.blurb,
+    sourceTitle || fallback.name,
+    description || fallback.blurb,
+  );
 
   const category = CATEGORY_IDS.includes(raw.category as CategoryId)
     ? (raw.category as CategoryId)
@@ -132,14 +166,20 @@ export async function draftListingWithGrok(input: {
   sourceTitle: string;
   description?: string;
 }): Promise<{ fields: GrokListingFields; usedGrok: boolean; error?: string }> {
-  const fallback = heuristicListing(
+  const description = input.description || input.sourceTitle;
+  const fallback = heuristicListing(input.sourceTitle, description);
+  // Even heuristics get the same catalog normalizer.
+  const fallbackNormalized = normalizeGrokFields(
+    fallback,
+    fallback,
     input.sourceTitle,
-    input.description || input.sourceTitle,
+    description,
   );
+
   const apiKey = getGrokApiKey();
   if (!apiKey) {
     return {
-      fields: fallback,
+      fields: fallbackNormalized,
       usedGrok: false,
       error: "XAI_API_KEY (or GROK_API_KEY) is not set — used local guidelines instead.",
     };
@@ -154,16 +194,19 @@ export async function draftListingWithGrok(input: {
       },
       body: JSON.stringify({
         model: getGrokModel(),
-        temperature: 0.3,
-        max_tokens: 300,
+        temperature: 0.2,
+        max_tokens: 280,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
             content: JSON.stringify({
+              instruction:
+                "Write name + blurb in the exact KidsKatalog catalog voice shown in examples.",
+              catalogExamples: CATALOG_VOICE_EXAMPLES,
               amazonTitle: input.sourceTitle,
-              amazonDescription: (input.description || "").slice(0, 1200),
+              amazonDescription: description.slice(0, 1200),
             }),
           },
         ],
@@ -174,7 +217,7 @@ export async function draftListingWithGrok(input: {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       return {
-        fields: fallback,
+        fields: fallbackNormalized,
         usedGrok: false,
         error: `Grok API ${res.status}${detail ? `: ${detail.slice(0, 160)}` : ""}`,
       };
@@ -187,19 +230,24 @@ export async function draftListingWithGrok(input: {
     const parsed = extractJsonObject(content);
     if (!parsed) {
       return {
-        fields: fallback,
+        fields: fallbackNormalized,
         usedGrok: false,
         error: "Grok returned non-JSON — used local guidelines instead.",
       };
     }
 
     return {
-      fields: normalizeGrokFields(parsed, fallback),
+      fields: normalizeGrokFields(
+        parsed,
+        fallbackNormalized,
+        input.sourceTitle,
+        description,
+      ),
       usedGrok: true,
     };
   } catch (e) {
     return {
-      fields: fallback,
+      fields: fallbackNormalized,
       usedGrok: false,
       error: e instanceof Error ? e.message : "Grok request failed",
     };

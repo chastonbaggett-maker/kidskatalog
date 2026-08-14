@@ -14,6 +14,8 @@ import {
   categoryColor,
   inferToyMeta,
   kidBlurb,
+  normalizeCatalogBlurb,
+  normalizeCatalogName,
   shortCardName,
 } from "@/lib/toy-card-style";
 import { downloadAndStoreGallery } from "@/lib/toy-image-store";
@@ -399,8 +401,15 @@ export async function buildDraftFromAsin(
   const inferred = inferToyMeta(sourceTitle, `${ogDesc} age`);
   const ageTarget = resolveAgePreset(options.agePreset);
 
-  const name = enriched?.name || shortCardName(sourceTitle);
-  const blurb = enriched?.blurb || kidBlurb(sourceTitle, ogDesc);
+  const name = normalizeCatalogName(
+    enriched?.name || shortCardName(sourceTitle),
+    sourceTitle,
+  );
+  const blurb = normalizeCatalogBlurb(
+    enriched?.blurb || kidBlurb(sourceTitle, ogDesc),
+    sourceTitle,
+    ogDesc,
+  );
   const category =
     enriched?.category ??
     (options.category === "any" ? inferred.category : options.category);

@@ -33,7 +33,7 @@ export function categoryColor(category: CategoryId): string {
   return categories.find((c) => c.id === category)?.hue ?? "#B19CD9";
 }
 
-/** Short catchy card name — 1–3 Title Case words, matching live catalog voice. */
+/** Short catchy card name — 1–2 Title Case words, matching live catalog voice. */
 export function shortCardName(title: string): string {
   let t = title
     .replace(/\([^)]*\)/g, " ")
@@ -49,7 +49,8 @@ export function shortCardName(title: string): string {
     .map((w) => w.replace(/[^a-zA-Z0-9'-]/g, ""))
     .filter((w) => w.length > 1 && !STOP.has(w.toLowerCase()));
 
-  const picked = words.slice(0, 3);
+  // Live catalog is almost always 2 words (never 3+).
+  const picked = words.slice(0, 2);
   if (picked.length === 0) return "Fun Toy";
 
   return picked
@@ -57,27 +58,80 @@ export function shortCardName(title: string): string {
     .join(" ");
 }
 
-/** ~5–8 word kid-friendly blurb ending with a period. */
+/** ~4–6 word kid-friendly blurb (target 5) ending with a period. */
 export function kidBlurb(title: string, description: string): string {
   const source = (description || title).replace(/\s+/g, " ").trim();
   const cleaned = source
     .replace(/^amazon\.com[:\s-]*/i, "")
-    .replace(/\b(buy|shop|deal|save|%\s*off)\b/gi, "")
+    .replace(/\b(buy|shop|deal|save|%\s*off|perfect for|great gift)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();
 
   const words = cleaned.split(" ").filter(Boolean);
-  if (words.length === 0) return "A fun pick for playtime.";
+  if (words.length === 0) return "Fun pick for playtime.";
 
-  let phrase = words.slice(0, 8).join(" ");
+  // Live catalog averages ~5 words (range 3–6).
+  let phrase = words.slice(0, 5).join(" ");
   phrase = phrase.replace(/[,:;]+$/, "");
   if (!/[.!?]$/.test(phrase)) phrase = `${phrase}.`;
-
-  // Prefer playful cadence when the scrape is a long marketing sentence.
-  if (phrase.length > 64) {
-    phrase = `${words.slice(0, 6).join(" ")}.`;
-  }
   return phrase;
+}
+
+/** Force any draft name into live-catalog 1–2 word Title Case. */
+export function normalizeCatalogName(raw: string, fallbackTitle: string): string {
+  const source = (raw || "").trim() || fallbackTitle;
+  const cleaned = shortCardName(source);
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  if (words.length <= 2) return cleaned;
+  return words.slice(0, 2).join(" ");
+}
+
+/** Force any draft blurb into ~4–6 word catalog cadence ending with a period. */
+export function normalizeCatalogBlurb(
+  raw: string,
+  fallbackTitle: string,
+  fallbackDescription = "",
+): string {
+  let phrase = (raw || "").replace(/\s+/g, " ").trim();
+  if (!phrase) {
+    phrase = kidBlurb(fallbackTitle, fallbackDescription);
+  }
+
+  phrase = phrase
+    .replace(/^["'“”]+|["'“”]+$/g, "")
+    .replace(/\b(buy|shop|deal|save|%\s*off|perfect for|great gift)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = phrase
+    .replace(/[.!?]+$/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  // Live catalog averages ~5 words; clamp to 4–6 (prefer 5 when trimming).
+  let kept = words;
+  if (kept.length > 6) kept = kept.slice(0, 5);
+  if (kept.length < 3) {
+    const fb = kidBlurb(fallbackTitle, fallbackDescription || phrase)
+      .replace(/[.!?]+$/g, "")
+      .split(/\s+/)
+      .filter(Boolean);
+    kept = fb.slice(0, 5);
+  }
+
+  let out = kept.join(" ");
+  out = out
+    .replace(/\b(and|or|the|a|an|for|with|to|of|in|on)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[,:;]+$/g, "");
+  if (!out) {
+    out = kidBlurb(fallbackTitle, fallbackDescription)
+      .replace(/[.!?]+$/g, "")
+      .trim();
+  }
+  if (!/[.!?]$/.test(out)) out = `${out}.`;
+  return out;
 }
 
 export function inferToyMeta(

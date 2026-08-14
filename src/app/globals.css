@@ -190,6 +190,51 @@ select {
   box-sizing: border-box;
 }
 
+.category-collage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  box-sizing: border-box;
+}
+
+.category-collage--compact {
+  gap: 0.1rem;
+  padding: 0.18rem;
+}
+
+.category-collage__cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, white 70%, var(--pile-hue, var(--mint)));
+}
+
+.category-collage--compact .category-collage__cell {
+  border-radius: 0.35rem;
+}
+
+.category-collage__photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: 0.2rem;
+  box-sizing: border-box;
+}
+
+.category-collage--compact .category-collage__photo {
+  padding: 0.08rem;
+}
+
 /* Mirror bottom-nav: rounded shell clips a full-bleed frosted fill layer */
 .shelf-header {
   position: relative;

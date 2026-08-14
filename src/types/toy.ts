@@ -52,6 +52,10 @@ export type Category = {
   /** Default cover image (product photo). */
   image: string;
   imageAlt: string;
-  /** Optional mode-specific covers for boys / girls accents. */
+  /** Optional mode-specific single covers for boys / girls accents. */
   covers?: Partial<Record<Audience, string>>;
+  /** Default 4-up collage photos for menu / thumb tiles. */
+  collage?: readonly string[];
+  /** Optional mode-specific 4-up collages. */
+  collages?: Partial<Record<Audience, readonly string[]>>;
 };

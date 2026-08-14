@@ -3,10 +3,10 @@
 import Link from "next/link";
 import {
   getCategoriesForAudience,
-  getCategoryCover,
+  getCategoryCollage,
 } from "@/data/categories";
+import { CategoryCollage } from "@/components/CategoryCollage";
 import { ShelfHeader } from "@/components/ShelfHeader";
-import { ToyPhoto } from "@/components/ToyPhoto";
 import { useAccentStore } from "@/lib/accent-store";
 import {
   useCrazyModeStore,
@@ -40,12 +40,9 @@ export default function MenuPage() {
                 className="menu-pile-card__photo-wrap"
                 style={{ ["--pile-hue" as string]: cat.hue }}
               >
-                <ToyPhoto
-                  src={getCategoryCover(cat, audience)}
+                <CategoryCollage
+                  images={getCategoryCollage(cat, audience)}
                   alt={cat.imageAlt}
-                  loading="lazy"
-                  decoding="async"
-                  className="menu-pile-card__photo"
                 />
               </span>
               <span className="font-[family-name:var(--font-display)] text-lg font-bold">

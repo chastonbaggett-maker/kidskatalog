@@ -3,10 +3,10 @@
 import Link from "next/link";
 import {
   getCategoriesForAudience,
-  getCategoryCover,
+  getCategoryCollage,
 } from "@/data/categories";
 import { useAccentStore } from "@/lib/accent-store";
-import { ToyPhoto } from "./ToyPhoto";
+import { CategoryCollage } from "./CategoryCollage";
 
 export function ThumbCarousel() {
   const audience = useAccentStore((s) => s.audience);
@@ -22,13 +22,12 @@ export function ThumbCarousel() {
             className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition active:scale-95"
             aria-label={cat.label}
             title={cat.label}
+            style={{ ["--pile-hue" as string]: cat.hue }}
           >
-            <ToyPhoto
-              src={getCategoryCover(cat, audience)}
+            <CategoryCollage
+              images={getCategoryCollage(cat, audience)}
               alt={cat.imageAlt}
-              loading="lazy"
-              decoding="async"
-              className="thumb-carousel__photo"
+              compact
             />
           </Link>
         ))}

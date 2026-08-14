@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
-import { ButtonVoiceover } from "./ButtonVoiceover";
 import { ClickMelody } from "./ClickMelody";
 import { InstallPrompt } from "./InstallPrompt";
 import { KartFlyBallHost } from "./KartFlyBallHost";
@@ -35,7 +34,6 @@ export function AppShell({
     <div className={shellClass}>
       <KartNavEffectGuard />
       <MetricsPing />
-      <ButtonVoiceover />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
       {/* Stable host for fly-ball + confetti (keeps effects off document.body) */}

@@ -13,7 +13,7 @@ type Props = {
 
 /**
  * Vertical Watch feed — one video card per toy that has clips.
- * Eye button opens the toy detail page.
+ * The in-view card autoplays; others pause when the next takes focus.
  */
 export function ToyVideoFeed({ toys }: Props) {
   const audience = useAccentStore((s) => s.audience);
@@ -23,6 +23,8 @@ export function ToyVideoFeed({ toys }: Props) {
       : audience === "girls"
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
+
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   if (toys.length === 0) {
     return (
@@ -43,6 +45,11 @@ export function ToyVideoFeed({ toys }: Props) {
             toy={toy}
             index={index}
             viewBtnClass={viewBtnClass}
+            active={activeId === toy.id}
+            onActiveChange={(isActive) => {
+              if (isActive) setActiveId(toy.id);
+              else setActiveId((cur) => (cur === toy.id ? null : cur));
+            }}
           />
         ))}
       </div>
@@ -54,21 +61,28 @@ function ToyVideoCard({
   toy,
   index,
   viewBtnClass,
+  active,
+  onActiveChange,
 }: {
   toy: Toy;
   index: number;
   viewBtnClass: string;
+  active: boolean;
+  onActiveChange: (active: boolean) => void;
 }) {
   const clips = getToyVideos(toy);
   const src = clips[0] ?? "";
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
+  const readyRef = useRef(false);
+  const inViewRef = useRef(false);
   const [playing, setPlaying] = useState(false);
 
   const tryPlay = useCallback(async () => {
     const node = videoRef.current;
-    if (!node) return;
+    if (!node || !readyRef.current || !inViewRef.current) return;
     try {
+      node.muted = true;
       await node.play();
       setPlaying(true);
     } catch {
@@ -83,27 +97,35 @@ function ToyVideoCard({
     setPlaying(false);
   }, []);
 
+  // Parent "active" flag: only the in-view card should play.
+  useEffect(() => {
+    if (active) {
+      inViewRef.current = true;
+      void tryPlay();
+    } else {
+      inViewRef.current = false;
+      pause();
+    }
+  }, [active, tryPlay, pause]);
+
   useEffect(() => {
     const card = cardRef.current;
-    const node = videoRef.current;
-    if (!card || !node || !src) return;
+    if (!card || !src) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
         if (!entry) return;
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
-          void tryPlay();
-        } else {
-          pause();
-        }
+        const mostlyVisible =
+          entry.isIntersecting && entry.intersectionRatio >= 0.6;
+        onActiveChange(mostlyVisible);
       },
-      { threshold: [0.35, 0.65, 0.9] },
+      { threshold: [0.25, 0.6, 0.85], rootMargin: "0px 0px -10% 0px" },
     );
 
     observer.observe(card);
     return () => observer.disconnect();
-  }, [src, tryPlay, pause]);
+  }, [src, onActiveChange]);
 
   if (!src) return null;
 
@@ -112,6 +134,7 @@ function ToyVideoCard({
       ref={cardRef}
       className="toy-video-card feed-card relative mx-0"
       data-toy-id={toy.id}
+      data-active={active ? "1" : "0"}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
       <div className="feed-card__surface toy-video-card__surface relative overflow-hidden bg-black">
@@ -123,8 +146,12 @@ function ToyVideoCard({
           playsInline
           muted
           loop
-          preload="metadata"
+          preload="auto"
           aria-label={`${toy.name} video`}
+          onReady={() => {
+            readyRef.current = true;
+            if (inViewRef.current) void tryPlay();
+          }}
           onClick={() => {
             if (playing) pause();
             else void tryPlay();

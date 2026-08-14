@@ -12,66 +12,99 @@ function isHlsUrl(src: string): boolean {
   return /\.m3u8(\?|$)/i.test(src.trim());
 }
 
+type Props = Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
+  src: string;
+  /** Fires once the progressive/HLS source is attached and ready to play. */
+  onReady?: () => void;
+};
+
 /**
  * HTML5 video that also plays Amazon HLS (.m3u8) via hls.js when needed.
  */
-export const PlayableVideo = forwardRef<
-  HTMLVideoElement,
-  Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & { src: string }
->(function PlayableVideo({ src, ...props }, ref) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+export const PlayableVideo = forwardRef<HTMLVideoElement, Props>(
+  function PlayableVideo({ src, onReady, ...props }, ref) {
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const onReadyRef = useRef(onReady);
+    onReadyRef.current = onReady;
 
-  useImperativeHandle(ref, () => videoRef.current as HTMLVideoElement);
+    useImperativeHandle(ref, () => videoRef.current as HTMLVideoElement);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !src) return;
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video || !src) return;
 
-    let cancelled = false;
-    let hls: { destroy: () => void } | null = null;
+      let cancelled = false;
+      let hls: { destroy: () => void } | null = null;
+      let readyFired = false;
 
-    const attach = async () => {
-      if (!isHlsUrl(src)) {
-        video.src = src;
-        return;
-      }
+      const fireReady = () => {
+        if (cancelled || readyFired) return;
+        readyFired = true;
+        onReadyRef.current?.();
+      };
 
-      // Safari / iOS can play HLS natively.
-      if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = src;
-        return;
-      }
+      const attach = async () => {
+        const notifyWhenCanPlay = () => {
+          if (video.readyState >= 2) {
+            fireReady();
+            return;
+          }
+          const onCanPlay = () => {
+            video.removeEventListener("canplay", onCanPlay);
+            fireReady();
+          };
+          video.addEventListener("canplay", onCanPlay);
+        };
 
-      try {
-        const mod = await import("hls.js");
-        const Hls = mod.default;
-        if (cancelled || !Hls.isSupported()) return;
-        const instance = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-        });
-        instance.loadSource(src);
-        instance.attachMedia(video);
-        hls = instance;
-      } catch {
-        // Fall back to native src — may still fail on non-Safari.
-        if (!cancelled) video.src = src;
-      }
-    };
+        if (!isHlsUrl(src)) {
+          video.src = src;
+          notifyWhenCanPlay();
+          return;
+        }
 
-    void attach();
+        // Safari / iOS can play HLS natively.
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = src;
+          notifyWhenCanPlay();
+          return;
+        }
 
-    return () => {
-      cancelled = true;
-      try {
-        hls?.destroy();
-      } catch {
-        /* ignore */
-      }
-      video.removeAttribute("src");
-      video.load();
-    };
-  }, [src]);
+        try {
+          const mod = await import("hls.js");
+          const Hls = mod.default;
+          if (cancelled || !Hls.isSupported()) return;
+          const instance = new Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+          });
+          instance.on(Hls.Events.MANIFEST_PARSED, () => {
+            fireReady();
+          });
+          instance.loadSource(src);
+          instance.attachMedia(video);
+          hls = instance;
+        } catch {
+          if (!cancelled) {
+            video.src = src;
+            notifyWhenCanPlay();
+          }
+        }
+      };
 
-  return <video ref={videoRef} {...props} />;
-});
+      void attach();
+
+      return () => {
+        cancelled = true;
+        try {
+          hls?.destroy();
+        } catch {
+          /* ignore */
+        }
+        video.removeAttribute("src");
+        video.load();
+      };
+    }, [src]);
+
+    return <video ref={videoRef} {...props} />;
+  },
+);

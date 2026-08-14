@@ -8,6 +8,27 @@ import { ToyPhoto } from "./ToyPhoto";
 
 const SWIPE_THRESHOLD_PX = 48;
 
+/** Main photo first, primary video second, then remaining photos. */
+function buildSelectorMedia(
+  images: string[],
+  videos: string[] | undefined,
+): ToyMediaItem[] {
+  const photos = (images.length > 0 ? images : [])
+    .map((src) => src.trim())
+    .filter(Boolean);
+  const clips = getToyVideos({ videos });
+
+  if (photos.length === 0) {
+    return clips.map((src) => ({ kind: "video" as const, src }));
+  }
+
+  const items: ToyMediaItem[] = [{ kind: "image", src: photos[0]! }];
+  if (clips[0]) items.push({ kind: "video", src: clips[0] });
+  for (const src of photos.slice(1)) items.push({ kind: "image", src });
+  for (const src of clips.slice(1)) items.push({ kind: "video", src });
+  return items;
+}
+
 export function ProductGallery({
   images,
   videos,
@@ -15,29 +36,21 @@ export function ProductGallery({
   poster,
 }: {
   images: string[];
-  /** Optional clips shown after photos in the selector. */
+  /** Optional clips — primary clip is shown second in the selector. */
   videos?: string[];
   alt: string;
   /** Poster frame for video thumbs / paused state. */
   poster?: string;
 }) {
-  const media: ToyMediaItem[] = [
-    ...(images.length > 0 ? images : []).map((src) => ({
-      kind: "image" as const,
-      src,
-    })),
-    ...getToyVideos({ videos }).map((src) => ({
-      kind: "video" as const,
-      src,
-    })),
-  ];
-  const shots = media.length > 0 ? media : [];
+  const shots = buildSelectorMedia(images, videos);
   const [active, setActive] = useState(0);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const thumbRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const wantPlayRef = useRef(false);
   const current = shots[active] ?? shots[0];
   const posterSrc = poster || images[0] || "";
+  const videoSelected = current?.kind === "video";
 
   const goPrev = useCallback(() => {
     setActive((index) => (index - 1 + shots.length) % shots.length);
@@ -55,12 +68,44 @@ export function ProductGallery({
     });
   }, [active]);
 
+  // When the video thumb is selected, autoplay (muted for browser policy).
   useEffect(() => {
+    wantPlayRef.current = videoSelected;
     const node = videoRef.current;
-    if (!node) return;
-    node.pause();
-    node.currentTime = 0;
-  }, [active, current?.src]);
+    if (!videoSelected) {
+      if (node) {
+        node.pause();
+        try {
+          node.currentTime = 0;
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+
+    const tryPlay = async () => {
+      const video = videoRef.current;
+      if (!video || !wantPlayRef.current) return;
+      try {
+        video.muted = true;
+        await video.play();
+      } catch {
+        /* autoplay may still be blocked until another gesture */
+      }
+    };
+
+    void tryPlay();
+    const onCanPlay = () => {
+      void tryPlay();
+    };
+    node?.addEventListener("canplay", onCanPlay);
+    return () => {
+      wantPlayRef.current = false;
+      node?.removeEventListener("canplay", onCanPlay);
+      node?.pause();
+    };
+  }, [active, videoSelected, current?.src]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (shots.length <= 1) return;
@@ -74,7 +119,10 @@ export function ProductGallery({
     const deltaY = event.clientY - swipeStart.current.y;
     swipeStart.current = null;
 
-    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX || Math.abs(deltaX) < Math.abs(deltaY)) {
+    if (
+      Math.abs(deltaX) < SWIPE_THRESHOLD_PX ||
+      Math.abs(deltaX) < Math.abs(deltaY)
+    ) {
       return;
     }
 
@@ -110,8 +158,15 @@ export function ProductGallery({
               poster={posterSrc || undefined}
               controls
               playsInline
-              preload="metadata"
+              muted
+              loop
+              preload="auto"
               aria-label={alt}
+              onReady={() => {
+                const video = videoRef.current;
+                if (!video || !wantPlayRef.current) return;
+                void video.play().catch(() => undefined);
+              }}
             />
           ) : (
             <ToyPhoto

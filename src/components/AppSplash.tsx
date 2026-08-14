@@ -21,7 +21,7 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: fade in the K, pulse ring until tap (or auto after 5s),
+ * Cold-open splash: fade in the K, logo-shaped pulse until tap (or auto after 5s),
  * then confetti + burst SFX. Whole-screen background + logo fade out together.
  * Mounts once per full document load; client navigations do not remount it.
  */
@@ -123,7 +123,8 @@ export function AppSplash() {
         }}
       >
         <div className="app-splash__logo-wrap">
-          <span className="app-splash__pulse-ring" aria-hidden />
+          <span className="app-splash__pulse app-splash__pulse--a" aria-hidden />
+          <span className="app-splash__pulse app-splash__pulse--b" aria-hidden />
           <span ref={logoRef} className="app-splash__logo" />
         </div>
       </div>

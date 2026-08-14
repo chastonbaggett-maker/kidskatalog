@@ -429,7 +429,7 @@ html.route-changing .bottom-nav__kart-badge--pop {
     drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
-/* Cold-open splash: fade in K → pulse ring → tap/auto → whole screen fades out. */
+/* Cold-open splash: fade in K → logo-shaped pulse → tap/auto → whole screen fades out. */
 :root {
   --splash-bg-solid: #3ecfc0;
   --splash-bg: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
@@ -540,35 +540,56 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   position: relative;
   display: grid;
   place-items: center;
-  width: min(42vw, 9.5rem);
-  height: min(42vw, 9.5rem);
+  /* Room for expanding K-shaped pulses without clipping the mark. */
+  width: min(52vw, 12rem);
+  height: min(72vw, 16rem);
   margin: 0;
   transform: translateZ(0);
 }
 
-.app-splash__pulse-ring {
+/* Expanding K silhouettes — same mask as the splash mark. */
+.app-splash__pulse {
   position: absolute;
   inset: 0;
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  border-radius: 9999px;
-  transform: scale(0.72);
+  margin: auto;
+  width: min(11vw, 3.4rem);
+  height: min(16vw, 5rem);
+  max-height: 22vh;
+  background-color: rgba(255, 255, 255, 0.55);
+  transform: scale(1);
   transform-origin: center center;
   opacity: 0;
   pointer-events: none;
+  -webkit-mask-image: url(/logo-icon.png);
+  mask-image: url(/logo-icon.png);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  will-change: transform, opacity;
 }
 
-.app-splash--armed .app-splash__pulse-ring {
-  animation: app-splash-ring 1.35s ease-out infinite;
+.app-splash--armed .app-splash__pulse--a {
+  animation: app-splash-k-pulse 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
 }
 
-.app-splash--tap .app-splash__pulse-ring,
-.app-splash--out .app-splash__pulse-ring {
+.app-splash--armed .app-splash__pulse--b {
+  animation: app-splash-k-pulse 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.8s
+    infinite;
+}
+
+.app-splash--tap .app-splash__pulse,
+.app-splash--out .app-splash__pulse {
   animation: none;
   opacity: 0;
 }
 
 .app-splash__logo {
   display: block;
+  position: relative;
+  z-index: 1;
   width: min(11vw, 3.4rem);
   height: min(16vw, 5rem);
   max-height: 22vh;
@@ -599,7 +620,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 
 .app-splash--armed .app-splash__logo {
   opacity: 1;
-  animation: app-splash-logo-pulse 1.35s ease-in-out infinite;
+  animation: app-splash-logo-pulse 1.6s ease-in-out infinite;
 }
 
 .app-splash--tap .app-splash__logo {
@@ -631,18 +652,22 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.04);
   }
 }
 
-@keyframes app-splash-ring {
+/* Soft K-shaped ripple expanding from the mark. */
+@keyframes app-splash-k-pulse {
   0% {
-    opacity: 0.7;
-    transform: scale(0.72);
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  55% {
+    opacity: 0.18;
   }
   100% {
     opacity: 0;
-    transform: scale(1.15);
+    transform: scale(2.35);
   }
 }
 
@@ -675,7 +700,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
   .app-splash__logo,
-  .app-splash__pulse-ring {
+  .app-splash__pulse {
     animation: none !important;
   }
 

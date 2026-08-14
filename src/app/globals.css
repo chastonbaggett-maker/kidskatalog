@@ -3595,7 +3595,6 @@ body:has(.app-shell--pile) .site-music-toggle-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.3rem;
   pointer-events: none;
 }
 
@@ -3604,32 +3603,6 @@ body:has(.app-shell--pile) .site-music-toggle-wrap {
   align-items: center;
   gap: 0.4rem;
   pointer-events: auto;
-}
-
-.site-music-player__title {
-  margin: 0;
-  max-width: 100%;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-family: var(--font-display), ui-rounded, system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: color-mix(in srgb, var(--ink) 88%, var(--mint));
-  background: color-mix(in srgb, white 82%, var(--mint));
-  box-shadow:
-    0 6px 16px -12px rgba(60, 70, 120, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--mint) 28%, transparent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-.site-music-toggle-wrap.is-muted .site-music-player__title {
-  color: var(--ink-soft);
-  opacity: 0.88;
 }
 
 .site-music-toggle-wrap > .site-music-toggle,
@@ -3675,27 +3648,11 @@ body:has(.app-shell--pile) .site-music-toggle-wrap {
   translate: 1px 0;
 }
 
-html[data-accent="boys"] .site-music-player__title {
-  color: color-mix(in srgb, var(--ink) 85%, var(--blue));
-  background: color-mix(in srgb, white 82%, var(--blue));
-  box-shadow:
-    0 6px 16px -12px rgba(60, 70, 120, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--blue) 28%, transparent);
-}
-
 html[data-accent="boys"] .site-music-next {
   background: color-mix(in srgb, white 88%, var(--blue));
   box-shadow:
     0 8px 22px -14px rgba(60, 70, 120, 0.55),
     0 0 0 1px color-mix(in srgb, var(--blue) 35%, transparent);
-}
-
-html[data-accent="girls"] .site-music-player__title {
-  color: color-mix(in srgb, var(--ink) 85%, var(--pink));
-  background: color-mix(in srgb, white 82%, var(--pink));
-  box-shadow:
-    0 6px 16px -12px rgba(60, 70, 120, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--pink) 32%, transparent);
 }
 
 html[data-accent="girls"] .site-music-next {

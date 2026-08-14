@@ -2,21 +2,32 @@
 
 import { useEffect } from "react";
 import {
+  silenceButtonVoiceover,
   speakLabeledButtonFromEvent,
   warmButtonVoiceover,
 } from "@/lib/button-voiceover";
+import { useClickMelodyStore } from "@/lib/click-melody-store";
 
 /**
- * Reads visible button labels aloud on click with a fun energetic voice.
- * Icon-only controls (no text label) stay silent.
+ * Reads visible button labels aloud on click with a natural voice.
+ * Icon-only controls stay silent. Respects the site music mute toggle.
  */
 export function ButtonVoiceover() {
+  const audioEnabled = useClickMelodyStore((s) => s.enabled);
+
+  useEffect(() => {
+    if (!audioEnabled) {
+      silenceButtonVoiceover();
+    }
+  }, [audioEnabled]);
+
   useEffect(() => {
     warmButtonVoiceover();
 
     const onPointerDown = () => {
       // Unlock TTS on the first real gesture (needed on some mobile browsers).
       warmButtonVoiceover();
+      if (!useClickMelodyStore.getState().enabled) return;
       try {
         window.speechSynthesis?.resume();
       } catch {

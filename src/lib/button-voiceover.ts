@@ -1,15 +1,22 @@
-/** Fun, energetic read-aloud for labeled button taps (Web Speech API). */
+/** Natural read-aloud for labeled button taps (Web Speech API). */
 
-const SPEAK_RATE = 1.2;
-const SPEAK_PITCH = 1.35;
+import { useClickMelodyStore } from "@/lib/click-melody-store";
+
+/** Near-normal cadence — slight lift without sounding rushed or cartoonish. */
+const SPEAK_RATE = 1.02;
+const SPEAK_PITCH = 1.02;
 
 let preferredVoice: SpeechSynthesisVoice | null | undefined;
 let warmed = false;
 
+function audioIsMuted(): boolean {
+  return !useClickMelodyStore.getState().enabled;
+}
+
 function refreshPreferredVoice() {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   preferredVoice = undefined;
-  pickEnergeticVoice(window.speechSynthesis.getVoices());
+  pickNaturalVoice(window.speechSynthesis.getVoices());
 }
 
 /**
@@ -24,7 +31,6 @@ export function warmButtonVoiceover() {
   const synth = window.speechSynthesis;
   refreshPreferredVoice();
   synth.addEventListener("voiceschanged", refreshPreferredVoice);
-  // Prime the engine — some browsers keep TTS paused until resumed.
   try {
     synth.resume();
   } catch {
@@ -32,36 +38,61 @@ export function warmButtonVoiceover() {
   }
 }
 
-/** Prefer upbeat English voices when the browser exposes them. */
-function pickEnergeticVoice(voices: SpeechSynthesisVoice[]) {
+/** Stop any in-flight utterance (used when audio is muted). */
+export function silenceButtonVoiceover() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Prefer smooth, natural English voices when the browser exposes them.
+ * Neural / Natural / Premium engines first; avoid novelty or robotic picks.
+ */
+function pickNaturalVoice(voices: SpeechSynthesisVoice[]) {
   if (preferredVoice !== undefined) return preferredVoice;
 
   const en = voices.filter((v) => /^en([-_]|$)/i.test(v.lang));
   const pool = en.length > 0 ? en : voices;
 
+  const avoid =
+    /robot|novelty|bahh|albert|bad news|good news|bells|boing|bubbles|cellos|organ|trinoids|whisper|zarvox|pipe organ/i;
+
   const ranked = [
+    /neural/i,
+    /natural/i,
+    /premium/i,
+    /enhanced/i,
     /google us english/i,
+    /google uk english female/i,
+    /microsoft (aria|jenny|guy|sara|sonia)/i,
     /samantha/i,
     /karen/i,
     /moira/i,
     /tessa/i,
     /fiona/i,
-    /veena/i,
+    /victoria/i,
+    /daniel/i,
     /zira/i,
-    /aria/i,
-    /jenny/i,
-    /female/i,
   ];
 
   for (const re of ranked) {
-    const hit = pool.find((v) => re.test(v.name));
+    const hit = pool.find((v) => re.test(v.name) && !avoid.test(v.name));
     if (hit) {
       preferredVoice = hit;
       return hit;
     }
   }
 
-  preferredVoice = pool[0] ?? null;
+  const localNatural = pool.find(
+    (v) =>
+      !avoid.test(v.name) &&
+      (v.localService || /english/i.test(v.name) || /^en/i.test(v.lang)),
+  );
+  preferredVoice = localNatural ?? pool.find((v) => !avoid.test(v.name)) ?? null;
   return preferredVoice;
 }
 
@@ -103,13 +134,18 @@ export function speakButtonLabel(label: string) {
   if (!text) return;
   if (typeof window === "undefined" || !window.speechSynthesis) return;
 
+  // Match site music mute: when audio is off, voice-over stays silent too.
+  if (audioIsMuted()) {
+    silenceButtonVoiceover();
+    return;
+  }
+
   const synth = window.speechSynthesis;
   warmButtonVoiceover();
 
   const voices = synth.getVoices();
-  const voice = pickEnergeticVoice(voices);
+  const voice = pickNaturalVoice(voices);
 
-  // Cancel any in-flight line, then speak in the same turn as the gesture.
   synth.cancel();
   try {
     synth.resume();
@@ -134,7 +170,6 @@ export function speakButtonLabel(label: string) {
 
   synth.speak(utter);
 
-  // Chrome occasionally parks the queue in a paused state.
   if (synth.paused) {
     try {
       synth.resume();

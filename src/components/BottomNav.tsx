@@ -114,13 +114,10 @@ export function BottomNav() {
     }
   }
 
-  const navItems = [
-    { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/menu", label: "Watch", icon: MenuIcon },
-  ] as const;
-
-  const brandActive =
+  const homeActive =
     pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
+  const watchActive =
+    pathname === "/menu" || pathname.startsWith("/menu/");
 
   const showFrostFill = !pileNavShelf || pileShelfMounted;
 
@@ -137,44 +134,36 @@ export function BottomNav() {
           <div className="bottom-nav__frost" aria-hidden="true" />
         )}
         <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
-          {navItems.map((item) => {
-            const active =
-              item.href === "/shop"
-                ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                    active ? "opacity-100" : "opacity-80"
-                  }`}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon active={active} />
-                </Link>
-              </li>
-            );
-          })}
-          <KartNavLink
-            active={pathname === "/kart" || pathname.startsWith("/kart/")}
-            accentClass={accentClass}
-            badgeClass={badgeClass}
-          />
           <li>
             <button
               type="button"
               onClick={handleBrandTap}
               className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                brandActive ? "opacity-100" : "opacity-80"
+                homeActive ? "opacity-100" : "opacity-80"
               }`}
-              aria-label="Brand"
+              aria-label="Home"
+              aria-current={homeActive ? "page" : undefined}
             >
               <BrandIcon />
             </button>
           </li>
+          <li>
+            <Link
+              href="/menu"
+              className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                watchActive ? "opacity-100" : "opacity-80"
+              }`}
+              aria-label="Watch"
+              aria-current={watchActive ? "page" : undefined}
+            >
+              <MenuIcon active={watchActive} />
+            </Link>
+          </li>
+          <KartNavLink
+            active={pathname === "/kart" || pathname.startsWith("/kart/")}
+            accentClass={accentClass}
+            badgeClass={badgeClass}
+          />
         </ul>
         {pileShelfMounted && (
           <div
@@ -195,71 +184,14 @@ export function BottomNav() {
   );
 }
 
-/** Shared outline weight for Home / Kart / Watch (logo brand icon unchanged). */
+/** Shared outline weight for Kart / Watch (logo home icon uses mask fill). */
 const NAV_STROKE = 2;
 const NAV_STROKE_ACTIVE = 2.4;
 const NAV_ICON_PX = 31;
 const NAV_ICON_VB = 24;
-/** Watch SVG is 1:1 viewBox→px; scale stroke to match Home/Kart’s rendered weight. */
+/** Watch SVG is 1:1 viewBox→px; scale stroke to match Kart’s rendered weight. */
 const MENU_STROKE = NAV_STROKE * (NAV_ICON_PX / NAV_ICON_VB);
 const MENU_STROKE_ACTIVE = NAV_STROKE_ACTIVE * (NAV_ICON_PX / NAV_ICON_VB);
-
-function HomeIcon({ active }: { active?: boolean }) {
-  // Pile of toys — blocks + ball stacked for the Home / browse entry.
-  const stroke = active ? NAV_STROKE_ACTIVE : NAV_STROKE;
-  return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      {/* Bottom block */}
-      <rect
-        x="3.5"
-        y="15.5"
-        width="10"
-        height="5.5"
-        rx="1.2"
-        stroke="currentColor"
-        strokeWidth={stroke}
-      />
-      {/* Right block */}
-      <rect
-        x="12.5"
-        y="13.5"
-        width="8"
-        height="7.5"
-        rx="1.2"
-        stroke="currentColor"
-        strokeWidth={stroke}
-      />
-      {/* Top-left block */}
-      <rect
-        x="5"
-        y="9"
-        width="7.5"
-        height="6.5"
-        rx="1.2"
-        stroke="currentColor"
-        strokeWidth={stroke}
-      />
-      {/* Ball on the pile */}
-      <circle
-        cx="15.5"
-        cy="8.5"
-        r="4"
-        stroke="currentColor"
-        strokeWidth={stroke}
-      />
-      {/* Small block peeking on top */}
-      <rect
-        x="7.5"
-        y="4.5"
-        width="4.5"
-        height="4.5"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth={stroke}
-      />
-    </svg>
-  );
-}
 
 function MenuIcon({ active }: { active?: boolean }) {
   // Tall toy-card frame with a play mark — suggests video / watching.

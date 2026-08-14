@@ -506,8 +506,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
 }
 
 .thumb-carousel--expanded {
-  --thumb-tile: 7.25rem;
-  --thumb-label-h: 1.35rem;
+  --thumb-tile: 9.75rem;
+  --thumb-label-h: 1.5rem;
 }
 
 .thumb-carousel__track {
@@ -606,12 +606,12 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 @media (min-width: 640px) {
   .thumb-carousel--expanded {
-    --thumb-tile: 8rem;
-    --thumb-label-h: 1.45rem;
+    --thumb-tile: 11rem;
+    --thumb-label-h: 1.6rem;
   }
 
   .thumb-carousel__label {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
   }
 }
 

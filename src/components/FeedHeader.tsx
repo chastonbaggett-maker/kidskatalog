@@ -206,7 +206,7 @@ export function FeedHeader({
           <Logo light href="/shop" size={110} />
         </div>
 
-        <div className="feed-header__search flex w-full min-w-0 items-center gap-2 sm:max-w-md md:max-w-lg lg:max-w-xl">
+        <div className="feed-header__search flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:max-w-md md:max-w-lg lg:max-w-xl">
           {showBack && (
             <Link
               href="/shop"

@@ -44,6 +44,12 @@ const MIN_ZOOM_OUT_ROWS = 6;
 /** Tablet max zoom-out reference — ~6 columns × ~4.5 rows in the visible band. */
 const TABLET_MIN_ZOOM_OUT_COLUMNS = 6;
 const TABLET_MIN_ZOOM_OUT_ROWS = 4.5;
+/**
+ * Desktop max zoom-out — a little past the ~3-col feed framing so pinch/ctrl-wheel
+ * can pull back without collapsing into a dense overview.
+ */
+const DESKTOP_MIN_ZOOM_OUT_COLUMNS = 5;
+const DESKTOP_MIN_ZOOM_OUT_ROWS = 3.5;
 const TABLET_MIN_WIDTH_PX = 640;
 const DESKTOP_MIN_WIDTH_PX = 1024;
 
@@ -109,8 +115,9 @@ function getPileFormFactor(viewport: HTMLElement) {
   return "mobile";
 }
 
-function isPileZoomEnabled(viewport: HTMLElement) {
-  return getPileFormFactor(viewport) !== "desktop";
+/** Pinch / ctrl-wheel zoom-out is available on mobile, tablet, and desktop. */
+function isPileZoomEnabled(_viewport: HTMLElement) {
+  return true;
 }
 
 /** Match regular-mode FeedCard width at the current breakpoint. */
@@ -179,7 +186,14 @@ function pickRandomFocusCell() {
 }
 
 function getMinZoomOutCounts(viewport: HTMLElement) {
-  if (getPileFormFactor(viewport) === "tablet") {
+  const form = getPileFormFactor(viewport);
+  if (form === "desktop") {
+    return {
+      columns: DESKTOP_MIN_ZOOM_OUT_COLUMNS,
+      rows: DESKTOP_MIN_ZOOM_OUT_ROWS,
+    };
+  }
+  if (form === "tablet") {
     return {
       columns: TABLET_MIN_ZOOM_OUT_COLUMNS,
       rows: TABLET_MIN_ZOOM_OUT_ROWS,

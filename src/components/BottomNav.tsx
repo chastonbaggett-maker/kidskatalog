@@ -116,7 +116,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/menu", label: "Menu", icon: MenuIcon },
+    { href: "/menu", label: "Watch", icon: MenuIcon },
   ] as const;
 
   const brandActive =

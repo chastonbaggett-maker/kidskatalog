@@ -135,7 +135,7 @@ function ExpandToggleIcon({ expanded }: { expanded: boolean }) {
           d={d}
           stroke={EXPAND_RAINBOW[i]!}
           strokeWidth={EXPAND_ICON_STROKE.width}
-          strokeLinecap={EXPAND_ICON_STROKE.Linecap}
+          strokeLinecap={EXPAND_ICON_STROKE.linecap}
           strokeLinejoin={EXPAND_ICON_STROKE.linejoin}
         />
       ))}

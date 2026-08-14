@@ -199,6 +199,7 @@ select {
   gap: 0.2rem;
   padding: 0.35rem;
   box-sizing: border-box;
+  background: #fff;
 }
 
 .category-collage--compact {
@@ -212,7 +213,7 @@ select {
   min-height: 0;
   overflow: hidden;
   border-radius: 0.55rem;
-  background: color-mix(in srgb, white 70%, var(--pile-hue, var(--mint)));
+  background: #fff;
 }
 
 .category-collage--compact .category-collage__cell {
@@ -754,12 +755,24 @@ html.route-changing .bottom-nav__kart-badge--pop {
 .thumb-carousel__tile {
   display: block;
   position: relative;
+  /* Soft gender-filter frame around the white collage. */
   background:
     linear-gradient(
       165deg,
-      color-mix(in srgb, var(--pile-hue, var(--mint)) 14%, white),
-      color-mix(in srgb, var(--pile-hue, var(--mint)) 6%, white)
+      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 22%, white),
+      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 10%, white)
     );
+}
+
+.thumb-carousel__tile .category-collage {
+  inset: 0.38rem;
+  border-radius: 0.9rem;
+  overflow: hidden;
+}
+
+.thumb-carousel__tile .category-collage--compact {
+  inset: 0.28rem;
+  border-radius: 0.7rem;
 }
 
 .thumb-carousel__label {

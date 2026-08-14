@@ -815,12 +815,12 @@ export function AdminToyForm({
               onChange={(e) =>
                 setForm((f) => ({ ...f, videosText: e.target.value }))
               }
-              placeholder="https://…/clip.mp4 or /toys/…-video.mp4"
+              placeholder="https://…/clip.mp4 or …/….m3u8"
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">
-              One primary video. Amazon import downloads it when the listing has
-              gallery video. Preview below before you save.
+              One primary video link. Amazon import fills this with the remote
+              stream URL (not downloaded). Preview below before you save.
             </span>
           </label>
 

@@ -43,7 +43,7 @@ function isVideoSourceUrl(url: string): boolean {
 
 /**
  * Prefers the main gallery/seller clip (often HLS). Progressive MP4s are
- * kept as fallbacks. Callers should download/remux before serving when possible.
+ * kept as fallbacks. Callers store the remote URL and stream it in the player.
  */
 export function extractListingVideos(html: string): string[] {
   const ranked: { url: string; score: number }[] = [];

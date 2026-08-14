@@ -10,7 +10,7 @@ export default async function WatchPage() {
 
   return (
     <WatchPageShell>
-      <ShelfHeader title="Watch" subtitle="Videos from imported toys" />
+      <ShelfHeader title="Watch" />
       <ToyVideoFeed toys={toys} />
     </WatchPageShell>
   );

@@ -226,16 +226,16 @@ function HomeIcon({ active }: { active?: boolean }) {
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
-  // Portrait rounded rect — same 4:5 proportion as feed-card media.
+  // Portrait toy-card silhouette (~2:3 overall, matching feed card proportions).
   return (
-    <svg width="25" height="31" viewBox="0 0 24 30" fill="none" aria-hidden>
+    <svg width="23" height="34" viewBox="0 0 23 34" fill="none" aria-hidden>
       <rect
-        x="4"
-        y="2.5"
-        width="16"
-        height="20"
-        rx="4"
-        ry="4"
+        x="2"
+        y="2"
+        width="19"
+        height="30"
+        rx="4.5"
+        ry="4.5"
         stroke="currentColor"
         strokeWidth={active ? 2.4 : 2}
       />

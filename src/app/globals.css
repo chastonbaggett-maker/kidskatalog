@@ -2353,8 +2353,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 3.65rem;
+  height: 3.65rem;
   border-radius: 999px;
   background: var(--bottom-nav-accent, var(--mint));
   transform: translate(-50%, -50%) scale(1);
@@ -2363,9 +2363,16 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   animation: bottom-nav-bubble-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.bottom-nav__item > * {
+/* Keep icon glyphs above the bubble; do not override absolute badge positioning. */
+.bottom-nav__kart-icon,
+.bottom-nav__item > svg,
+.bottom-nav__item > span:not(.bottom-nav__kart-badge) {
   position: relative;
   z-index: 1;
+}
+
+.bottom-nav__kart-badge {
+  z-index: 2;
 }
 
 .bottom-nav__item.is-pulsing {

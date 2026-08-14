@@ -149,7 +149,7 @@ export const KartNavLink = memo(function KartNavLink({
           <KartIcon active={active} />
         </span>
         <span
-          className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
+          className={`bottom-nav__kart-badge absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
             landing ? "bottom-nav__kart-badge--pop" : ""
           }`}
           style={{

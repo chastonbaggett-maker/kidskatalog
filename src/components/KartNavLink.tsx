@@ -120,14 +120,29 @@ export const KartNavLink = memo(function KartNavLink({
     }
   };
 
+  const pulseKart = (e: React.PointerEvent<HTMLAnchorElement>) => {
+    const item = e.currentTarget;
+    item.classList.remove("is-pulsing");
+    void item.offsetWidth;
+    item.classList.add("is-pulsing");
+  };
+
+  const clearKartPulse = (e: React.AnimationEvent<HTMLAnchorElement>) => {
+    if (e.animationName === "bottom-nav-tap-pulse") {
+      e.currentTarget.classList.remove("is-pulsing");
+    }
+  };
+
   return (
     <li>
       <Link
         ref={registerKartNavEl}
         href="/kart"
         onClick={handleClick}
-        className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl ${accentClass} ${
-          active ? "bottom-nav__item--active opacity-100" : "opacity-45"
+        onPointerDown={pulseKart}
+        onAnimationEnd={clearKartPulse}
+        className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+          active ? `bottom-nav__item--active opacity-100 ${accentClass}` : "opacity-100"
         } ${landing ? "bottom-nav__kart--land" : ""}`}
         aria-label="Kart"
         aria-current={active ? "page" : undefined}

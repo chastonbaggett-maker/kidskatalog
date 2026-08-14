@@ -2337,37 +2337,85 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   background-image: none;
 }
 
-/* Active page marker under the current nav control. */
-.bottom-nav__icons a[aria-current="page"]::after,
-.bottom-nav__icons button[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  bottom: 0.3rem;
-  left: 50%;
-  width: 1.1rem;
-  height: 0.22rem;
-  border-radius: 999px;
-  background: currentColor;
-  transform: translateX(-50%) scaleX(0.85);
-  opacity: 0.95;
-  pointer-events: none;
-  animation: bottom-nav-active-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+/* Active bubble + tap pulse for bottom nav controls. */
+.bottom-nav__item {
+  color: var(--ink-soft);
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 
-@keyframes bottom-nav-active-in {
+.bottom-nav__item--active {
+  /* Accent color comes from utility class (mint / boys / girls). */
+}
+
+.bottom-nav__item--active::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+  z-index: 0;
+  animation: bottom-nav-bubble-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bottom-nav__item > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bottom-nav__item.is-pulsing {
+  animation: bottom-nav-tap-pulse 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-nav__item.is-pulsing::before {
+  animation:
+    bottom-nav-bubble-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both,
+    bottom-nav-bubble-pulse 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bottom-nav-bubble-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) scaleX(0.35);
+    transform: translate(-50%, -50%) scale(0.55);
   }
   to {
-    opacity: 0.95;
-    transform: translateX(-50%) scaleX(0.85);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes bottom-nav-tap-pulse {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bottom-nav-bubble-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  35% {
+    transform: translate(-50%, -50%) scale(1.16);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bottom-nav__icons a[aria-current="page"]::after,
-  .bottom-nav__icons button[aria-current="page"]::after {
+  .bottom-nav__item--active::before,
+  .bottom-nav__item.is-pulsing,
+  .bottom-nav__item.is-pulsing::before {
     animation: none;
   }
 }

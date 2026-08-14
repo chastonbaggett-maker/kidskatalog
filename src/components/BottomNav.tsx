@@ -121,6 +121,20 @@ export function BottomNav() {
 
   const showFrostFill = !pileNavShelf || pileShelfMounted;
 
+  function pulseNavItem(e: React.PointerEvent<HTMLElement>) {
+    const item = e.currentTarget;
+    item.classList.remove("is-pulsing");
+    // Force reflow so rapid taps retrigger the pulse animation.
+    void item.offsetWidth;
+    item.classList.add("is-pulsing");
+  }
+
+  function clearNavPulse(e: React.AnimationEvent<HTMLElement>) {
+    if (e.animationName === "bottom-nav-tap-pulse") {
+      e.currentTarget.classList.remove("is-pulsing");
+    }
+  }
+
   return (
     <>
       <nav
@@ -138,8 +152,12 @@ export function BottomNav() {
             <button
               type="button"
               onClick={handleBrandTap}
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                homeActive ? "bottom-nav__item--active opacity-100" : "opacity-45"
+              onPointerDown={pulseNavItem}
+              onAnimationEnd={clearNavPulse}
+              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                homeActive
+                  ? `bottom-nav__item--active opacity-100 ${accentClass}`
+                  : "opacity-100"
               }`}
               aria-label="Home"
               aria-current={homeActive ? "page" : undefined}
@@ -150,8 +168,12 @@ export function BottomNav() {
           <li>
             <Link
               href="/menu"
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                watchActive ? "bottom-nav__item--active opacity-100" : "opacity-45"
+              onPointerDown={pulseNavItem}
+              onAnimationEnd={clearNavPulse}
+              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                watchActive
+                  ? `bottom-nav__item--active opacity-100 ${accentClass}`
+                  : "opacity-100"
               }`}
               aria-label="Watch"
               aria-current={watchActive ? "page" : undefined}

@@ -24,19 +24,17 @@ type FloatNote = {
   delay: number;
   spin: number;
   scale: number;
-  live: boolean;
 };
 
 const MAX_FLOAT_NOTES = 7;
 const FLOAT_LIFE_MS = 3400;
-const LOOP_FLOAT_LIFE_MS = 3000;
 
 let noteId = 0;
 const floatTimers = new Map<number, number>();
 
 /**
- * Every button/link tap plays a melody note and stamps it into a soft
- * decaying loop. Mute stops new notes and silences the loop.
+ * Every button/link tap plays a one-shot melody note over a soft ambient pad.
+ * Mute stops new notes and fades the pad.
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
@@ -45,18 +43,17 @@ export function ClickMelody() {
   const [mounted, setMounted] = useState(false);
   const [floatNotes, setFloatNotes] = useState<FloatNote[]>([]);
 
-  const spawnFloat = (live: boolean) => {
+  const spawnFloat = () => {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.1;
-    const burstDist = live ? 28 + Math.random() * 18 : 18 + Math.random() * 12;
+    const burstDist = 28 + Math.random() * 18;
     const next: FloatNote = {
       id: ++noteId,
       burstX: Math.cos(angle) * burstDist,
       burstY: Math.sin(angle) * burstDist,
-      driftX: (Math.random() - 0.5) * (live ? 42 : 28),
+      driftX: (Math.random() - 0.5) * 42,
       delay: Math.random() * 30,
       spin: (Math.random() > 0.5 ? 1 : -1) * (18 + Math.random() * 40),
-      scale: live ? 0.95 + Math.random() * 0.35 : 0.6 + Math.random() * 0.25,
-      live,
+      scale: 0.95 + Math.random() * 0.35,
     };
 
     setFloatNotes((prev) => {
@@ -74,11 +71,10 @@ export function ClickMelody() {
       return merged.slice(overflow);
     });
 
-    const life = live ? FLOAT_LIFE_MS : LOOP_FLOAT_LIFE_MS;
     const timer = window.setTimeout(() => {
       floatTimers.delete(next.id);
       setFloatNotes((prev) => prev.filter((n) => n.id !== next.id));
-    }, life);
+    }, FLOAT_LIFE_MS);
     floatTimers.set(next.id, timer);
   };
 
@@ -87,10 +83,8 @@ export function ClickMelody() {
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
     engine.setMuted(!useClickMelodyStore.getState().enabled);
-    engine.setOnNote(({ live }) => {
-      // Visual notes only for real button/link taps — not loop echoes.
-      if (!live) return;
-      spawnFloat(true);
+    engine.setOnNote(() => {
+      spawnFloat();
     });
 
     const onUnlock = () => {
@@ -110,7 +104,6 @@ export function ClickMelody() {
       if (state.enabled === prev.enabled) return;
       engine.setMuted(!state.enabled);
       if (!state.enabled) {
-        engine.clearLoop();
         for (const t of floatTimers.values()) window.clearTimeout(t);
         floatTimers.clear();
         setFloatNotes([]);
@@ -144,7 +137,7 @@ export function ClickMelody() {
         {floatNotes.map((n) => (
           <span
             key={n.id}
-            className={`site-music-toggle__float${n.live ? " is-live" : " is-loop"}`}
+            className="site-music-toggle__float is-live"
             style={{
               ["--burst-x" as string]: `${n.burstX}px`,
               ["--burst-y" as string]: `${n.burstY}px`,
@@ -174,7 +167,6 @@ export function ClickMelody() {
           if (!engine) return;
           engine.setMuted(!next);
           if (!next) {
-            engine.clearLoop();
             for (const t of floatTimers.values()) window.clearTimeout(t);
             floatTimers.clear();
             setFloatNotes([]);

@@ -1,6 +1,6 @@
 /**
- * Click-driven melody: every UI tap plays a note and writes it into a soft
- * looping phrase. Loop voices decay each cycle so the bed never piles up.
+ * Click tones + ambient pad: each UI tap plays a one-shot note.
+ * A soft background pad runs under the taps — no looping phrase of click notes.
  */
 
 import {
@@ -8,14 +8,9 @@ import {
   unlockSharedAudio,
 } from "@/lib/shared-audio";
 
-const STEPS = 16;
-const BPM = 92;
-const STEP_S = 60 / BPM / 2; // eighth notes
 const LIVE_LEVEL = 0.2;
-const LOOP_LEVEL = 0.11;
-const DECAY_PER_LOOP = 0.68;
-const MIN_AMP = 0.012;
 const MASTER_LEVEL = 0.55;
+const PAD_LEVEL = 0.052;
 
 /** Soft C major pentatonic walk — playful, not dissonant. */
 const SCALE = [
@@ -25,20 +20,29 @@ const SCALE = [
 /** Melodic contour indices into SCALE (up, skip, down). */
 const PHRASE = [0, 2, 4, 5, 7, 5, 4, 2, 1, 3, 5, 6, 8, 6, 4, 3, 2, 0] as const;
 
-type LoopCell = {
-  freq: number;
-  amp: number;
+/** Warm C-major pad voicing under the tap tones. */
+const PAD_PARTIALS = [
+  { freq: 130.81, type: "sine" as const, amp: 0.55 },
+  { freq: 196.0, type: "sine" as const, amp: 0.38 },
+  { freq: 261.63, type: "triangle" as const, amp: 0.26 },
+  { freq: 329.63, type: "sine" as const, amp: 0.2 },
+  { freq: 392.0, type: "sine" as const, amp: 0.12 },
+] as const;
+
+type PadVoice = {
+  osc: OscillatorNode;
+  gain: GainNode;
 };
 
 export class ClickMelodyEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  private steps: Array<LoopCell | null> = Array.from({ length: STEPS }, () => null);
-  private writeHead = 0;
-  private tickHead = 0;
+  private padGain: GainNode | null = null;
+  private padFilter: BiquadFilterNode | null = null;
+  private padLfo: OscillatorNode | null = null;
+  private padLfoGain: GainNode | null = null;
+  private padVoices: PadVoice[] = [];
   private phrasePos = 0;
-  private timer: number | null = null;
-  private nextTickAt = 0;
   private muted = false;
   private unlocked = false;
   private onNote: ((info: { live: boolean; freq: number }) => void) | null =
@@ -59,12 +63,12 @@ export class ClickMelodyEngine {
     this.ctx = ctx;
     this.ensureMaster();
     this.unlocked = ctx.state === "running" || ctx.state === "suspended";
-    if (ctx.state === "running") this.ensureClock();
+    if (ctx.state === "running" && !this.muted) this.ensurePad();
     // If still suspended, resume is in flight from unlockSharedAudio.
     void ctx.resume().then(() => {
       if (ctx.state === "running") {
         this.unlocked = true;
-        this.ensureClock();
+        if (!this.muted) this.ensurePad();
       }
     });
     return true;
@@ -75,10 +79,16 @@ export class ClickMelodyEngine {
     if (!this.master || !this.ctx) return;
     const now = this.ctx.currentTime;
     this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.04);
+    this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.05);
+    if (muted) {
+      this.fadePad(0, 0.18);
+    } else {
+      this.ensurePad();
+      this.fadePad(PAD_LEVEL, 0.35);
+    }
   }
 
-  /** Play the next melody note and stamp it into the decaying loop. */
+  /** Play the next one-shot melody note (never echoed into a loop). */
   note() {
     if (this.muted) return false;
     // Sync unlock + schedule in the same gesture (iOS Safari).
@@ -90,22 +100,11 @@ export class ClickMelodyEngine {
 
     this.pluck(this.ctx.currentTime, freq, LIVE_LEVEL);
     this.onNote?.({ live: true, freq });
-
-    this.steps[this.writeHead] = { freq, amp: LOOP_LEVEL };
-    this.writeHead = (this.writeHead + 1) % STEPS;
-    this.ensureClock();
     return true;
   }
 
-  clearLoop() {
-    this.steps = Array.from({ length: STEPS }, () => null);
-  }
-
   dispose() {
-    if (this.timer != null) {
-      window.clearInterval(this.timer);
-      this.timer = null;
-    }
+    this.stopPad();
     if (this.master) {
       try {
         this.master.disconnect();
@@ -127,50 +126,132 @@ export class ClickMelodyEngine {
       this.master = ctx.createGain();
       this.master.gain.value = this.muted ? 0 : MASTER_LEVEL;
       this.master.connect(ctx.destination);
-      this.nextTickAt = 0;
     }
   }
 
-  private ensureClock() {
-    if (this.timer != null || !this.ctx) return;
-    this.nextTickAt = this.ctx.currentTime + 0.05;
-    this.timer = window.setInterval(() => this.pump(), 40);
-  }
+  private ensurePad() {
+    if (!this.ctx || !this.master || this.muted) return;
+    if (this.padVoices.length > 0 && this.padGain) {
+      this.fadePad(PAD_LEVEL, 0.25);
+      return;
+    }
 
-  private pump() {
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    const now = ctx.currentTime;
 
-    while (this.nextTickAt < ctx.currentTime + 0.12) {
-      this.scheduleTick(this.nextTickAt);
-      this.nextTickAt += STEP_S;
+    const padGain = ctx.createGain();
+    padGain.gain.setValueAtTime(0.0001, now);
+    padGain.gain.exponentialRampToValueAtTime(PAD_LEVEL, now + 0.9);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(720, now);
+    filter.Q.value = 0.55;
+
+    // Slow breath on the filter so the pad feels alive without sounding looped.
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(0.07, now);
+    lfoGain.gain.setValueAtTime(180, now);
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start(now);
+
+    const voices: PadVoice[] = PAD_PARTIALS.map((partial, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = partial.type;
+      // Tiny detune spreads the bed without beating harshly.
+      osc.frequency.setValueAtTime(partial.freq, now);
+      osc.detune.setValueAtTime((i % 2 === 0 ? -1 : 1) * (4 + i), now);
+      gain.gain.setValueAtTime(partial.amp, now);
+      osc.connect(gain);
+      gain.connect(filter);
+      osc.start(now);
+      return { osc, gain };
+    });
+
+    filter.connect(padGain);
+    padGain.connect(this.master);
+
+    this.padGain = padGain;
+    this.padFilter = filter;
+    this.padLfo = lfo;
+    this.padLfoGain = lfoGain;
+    this.padVoices = voices;
+  }
+
+  private fadePad(level: number, seconds: number) {
+    if (!this.padGain || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    const target = Math.max(0.0001, level);
+    this.padGain.gain.cancelScheduledValues(now);
+    this.padGain.gain.setValueAtTime(
+      Math.max(0.0001, this.padGain.gain.value),
+      now,
+    );
+    this.padGain.gain.exponentialRampToValueAtTime(target, now + seconds);
+    if (level <= 0) {
+      window.setTimeout(() => {
+        if (this.muted) this.stopPad();
+      }, seconds * 1000 + 40);
     }
   }
 
-  private scheduleTick(when: number) {
-    const cell = this.steps[this.tickHead];
-    if (cell && cell.amp >= MIN_AMP) {
-      this.pluck(when, cell.freq, cell.amp);
-      this.onNote?.({ live: false, freq: cell.freq });
+  private stopPad() {
+    const now = this.ctx?.currentTime ?? 0;
+    for (const voice of this.padVoices) {
+      try {
+        voice.osc.stop(now + 0.02);
+        voice.osc.disconnect();
+        voice.gain.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
+    this.padVoices = [];
 
-    this.tickHead = (this.tickHead + 1) % STEPS;
-    if (this.tickHead === 0) {
-      this.decayLoop();
+    if (this.padLfo) {
+      try {
+        this.padLfo.stop(now + 0.02);
+        this.padLfo.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
-  }
+    this.padLfo = null;
 
-  private decayLoop() {
-    for (let i = 0; i < this.steps.length; i += 1) {
-      const cell = this.steps[i];
-      if (!cell) continue;
-      cell.amp *= DECAY_PER_LOOP;
-      if (cell.amp < MIN_AMP) this.steps[i] = null;
+    if (this.padLfoGain) {
+      try {
+        this.padLfoGain.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
+    this.padLfoGain = null;
+
+    if (this.padFilter) {
+      try {
+        this.padFilter.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.padFilter = null;
+
+    if (this.padGain) {
+      try {
+        this.padGain.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.padGain = null;
   }
 
   private pluck(when: number, freq: number, amp: number) {
-    if (!this.ctx || !this.master || amp < MIN_AMP) return;
+    if (!this.ctx || !this.master || amp < 0.01) return;
     const ctx = this.ctx;
     const t = Math.max(when, ctx.currentTime + 0.005);
 

@@ -226,13 +226,14 @@ function HomeIcon({ active }: { active?: boolean }) {
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
+  // Portrait rounded rect — same 4:5 proportion as feed-card media.
   return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="25" height="31" viewBox="0 0 24 30" fill="none" aria-hidden>
       <rect
-        x="4.5"
-        y="4.5"
-        width="15"
-        height="15"
+        x="4"
+        y="2.5"
+        width="16"
+        height="20"
         rx="4"
         ry="4"
         stroke="currentColor"

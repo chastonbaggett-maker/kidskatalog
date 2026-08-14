@@ -137,9 +137,11 @@ export function BottomNav() {
           <div className="bottom-nav__frost" aria-hidden="true" />
         )}
         <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
-          {navItems.slice(0, 1).map((item) => {
+          {navItems.map((item) => {
             const active =
-              pathname.startsWith("/shop") || pathname.startsWith("/toy");
+              item.href === "/shop"
+                ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             return (
               <li key={item.href}>
@@ -161,25 +163,6 @@ export function BottomNav() {
             accentClass={accentClass}
             badgeClass={badgeClass}
           />
-          {navItems.slice(1).map((item) => {
-            const active =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                    active ? "opacity-100" : "opacity-80"
-                  }`}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon active={active} />
-                </Link>
-              </li>
-            );
-          })}
           <li>
             <button
               type="button"

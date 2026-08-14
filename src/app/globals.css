@@ -483,9 +483,46 @@ html.route-changing .bottom-nav__kart-badge--pop {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
   background: #0b0b10;
   border-radius: var(--shelf-radius);
+  overflow: hidden;
+}
+
+.playable-video {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0b0b10;
+}
+
+.playable-video__blur-plate {
+  position: absolute;
+  inset: -12%;
+  z-index: 0;
+  background-color: #0b0b10;
+  filter: blur(28px) saturate(1.15) brightness(0.72);
+  transform: scale(1.12);
+  pointer-events: none;
+}
+
+.playable-video__blur {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.playable-video__main {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
 }
 
 .product-gallery__fade-layer {
@@ -561,8 +598,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   background: #0b0b10;
+  overflow: hidden;
 }
 
 .toy-video-card__shade {

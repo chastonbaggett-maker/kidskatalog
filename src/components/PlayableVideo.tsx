@@ -16,14 +16,18 @@ type Props = Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
   src: string;
   /** Fires once the progressive/HLS source is attached and ready to play. */
   onReady?: () => void;
+  /** Optional poster used as blurred fill before/while video frames mirror. */
+  poster?: string;
 };
 
 /**
  * HTML5 video that also plays Amazon HLS (.m3u8) via hls.js when needed.
+ * Letterboxing is filled with a blurred copy of the playing video.
  */
 export const PlayableVideo = forwardRef<HTMLVideoElement, Props>(
-  function PlayableVideo({ src, onReady, ...props }, ref) {
+  function PlayableVideo({ src, onReady, className, poster, style, ...props }, ref) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const blurRef = useRef<HTMLVideoElement | null>(null);
     const onReadyRef = useRef(onReady);
     onReadyRef.current = onReady;
 
@@ -62,7 +66,6 @@ export const PlayableVideo = forwardRef<HTMLVideoElement, Props>(
           return;
         }
 
-        // Safari / iOS can play HLS natively.
         if (video.canPlayType("application/vnd.apple.mpegurl")) {
           video.src = src;
           notifyWhenCanPlay();
@@ -105,6 +108,134 @@ export const PlayableVideo = forwardRef<HTMLVideoElement, Props>(
       };
     }, [src]);
 
-    return <video ref={videoRef} {...props} />;
+    // Mirror the foreground into a blurred cover layer (fills letterbox bars).
+    useEffect(() => {
+      const main = videoRef.current;
+      const blur = blurRef.current;
+      if (!main || !blur) return;
+
+      let mirrored = false;
+
+      const clearMirror = () => {
+        mirrored = false;
+        try {
+          blur.pause();
+        } catch {
+          /* ignore */
+        }
+        blur.removeAttribute("src");
+        blur.srcObject = null;
+        blur.load();
+      };
+
+      const mirrorFromMain = () => {
+        if (mirrored) return;
+        const capture = (
+          main as HTMLVideoElement & {
+            captureStream?: () => MediaStream;
+            mozCaptureStream?: () => MediaStream;
+          }
+        ).captureStream?.bind(main) ||
+          (
+            main as HTMLVideoElement & {
+              mozCaptureStream?: () => MediaStream;
+            }
+          ).mozCaptureStream?.bind(main);
+
+        if (capture) {
+          try {
+            const stream = capture();
+            blur.srcObject = stream;
+            blur.muted = true;
+            void blur.play().catch(() => undefined);
+            mirrored = true;
+            return;
+          } catch {
+            /* fall through */
+          }
+        }
+
+        // Progressive fallback: same URL, cover+blur (may share HTTP cache).
+        if (!isHlsUrl(src)) {
+          blur.srcObject = null;
+          blur.src = src;
+          blur.muted = true;
+          void blur.play().catch(() => undefined);
+          mirrored = true;
+        }
+      };
+
+      const syncTime = () => {
+        if (!blur.src && !blur.srcObject) return;
+        try {
+          if (Math.abs((blur.currentTime || 0) - main.currentTime) > 0.35) {
+            blur.currentTime = main.currentTime;
+          }
+        } catch {
+          /* ignore seek errors */
+        }
+        if (!main.paused && blur.paused) {
+          void blur.play().catch(() => undefined);
+        }
+        if (main.paused && !blur.paused) {
+          blur.pause();
+        }
+      };
+
+      const onPlaying = () => {
+        mirrorFromMain();
+        syncTime();
+      };
+
+      main.addEventListener("playing", onPlaying);
+      main.addEventListener("timeupdate", syncTime);
+      main.addEventListener("pause", syncTime);
+      main.addEventListener("seeked", syncTime);
+
+      if (!main.paused) onPlaying();
+
+      return () => {
+        main.removeEventListener("playing", onPlaying);
+        main.removeEventListener("timeupdate", syncTime);
+        main.removeEventListener("pause", syncTime);
+        main.removeEventListener("seeked", syncTime);
+        clearMirror();
+      };
+    }, [src]);
+
+    const blurPosterStyle = poster
+      ? {
+          backgroundImage: `url(${poster})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : undefined;
+
+    return (
+      <div className={["playable-video", className].filter(Boolean).join(" ")} style={style}>
+        <div
+          className="playable-video__blur-plate"
+          style={blurPosterStyle}
+          aria-hidden
+        >
+          <video
+            ref={blurRef}
+            className="playable-video__blur"
+            muted
+            playsInline
+            loop={props.loop}
+            preload="metadata"
+            aria-hidden
+            tabIndex={-1}
+          />
+        </div>
+        <video
+          ref={videoRef}
+          className="playable-video__main"
+          poster={poster}
+          {...props}
+        />
+      </div>
+    );
   },
 );

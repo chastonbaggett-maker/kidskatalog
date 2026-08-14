@@ -109,6 +109,33 @@ function extractListingImages(html: string): string[] {
     ranked.push({ url: url.replace(/\\u002F/g, "/"), score });
   };
 
+  // Featured / product hero — must stay first in the saved gallery.
+  const featuredRaw = [
+    metaContent(html, "og:image"),
+    ...[...html.matchAll(/"landingImageUrl"\s*:\s*"(https:\/\/[^"]+)"/gi)].map(
+      (m) => m[1]!,
+    ),
+    ...[...html.matchAll(/"heroImage"\s*:\s*"(https:\/\/[^"]+)"/gi)].map(
+      (m) => m[1]!,
+    ),
+    ...[...html.matchAll(/"mainImageUrl"\s*:\s*"(https:\/\/[^"]+)"/gi)].map(
+      (m) => m[1]!,
+    ),
+    ...[
+      ...html.matchAll(
+        /id=["']landingImage["'][^>]+src=["'](https:\/\/[^"']+)["']/gi,
+      ),
+    ].map((m) => m[1]!),
+    ...[
+      ...html.matchAll(
+        /src=["'](https:\/\/[^"']+)["'][^>]+id=["']landingImage["']/gi,
+      ),
+    ].map((m) => m[1]!),
+  ];
+  for (const url of featuredRaw) {
+    push(url, 10);
+  }
+
   for (const m of html.matchAll(
     /"hiRes"\s*:\s*"(https:\/\/[^"]+?media-amazon\.com\/images\/I\/[^"]+)"/g,
   )) {
@@ -147,7 +174,8 @@ function extractListingImages(html: string): string[] {
   return out;
 }
 
-const MAX_VIDEOS = 4;
+/** Imports attach a single primary clip only (admin can edit later). */
+const MAX_VIDEOS = 1;
 
 /** Normalize escaped Amazon URLs from embedded JSON blobs. */
 function normalizeAmazonMediaUrl(raw: string): string {
@@ -358,7 +386,8 @@ export async function buildDraftFromAsin(
     metaContent(html, "description", "name");
   const imageUrls = extractListingImages(html);
   if (imageUrls.length === 0) return null;
-  const videoUrls = extractListingVideos(html);
+  // One primary video only — keeps Watch/gallery simple for new imports.
+  const videoUrls = extractListingVideos(html).slice(0, 1);
 
   const enriched = buildOptions?.enrich
     ? await buildOptions.enrich({

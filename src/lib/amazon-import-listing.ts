@@ -81,7 +81,10 @@ export async function importAmazonListingPreview(
 
   const images =
     draft.images && draft.images.length > 0 ? draft.images : [draft.image];
-  const videos = (draft.videos ?? []).map((src) => src.trim()).filter(Boolean);
+  const videos = (draft.videos ?? [])
+    .map((src) => src.trim())
+    .filter(Boolean)
+    .slice(0, 1);
 
   return {
     asin: draft.asin || asin,
@@ -93,7 +96,7 @@ export async function importAmazonListingPreview(
     audience: draft.audience,
     ageMin: draft.ageMin,
     ageMax: draft.ageMax,
-    image: draft.image,
+    image: draft.image || images[0]!,
     images,
     videos,
     imageAlt: draft.imageAlt,

@@ -58,7 +58,7 @@ function extractListingVideos(html) {
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(url);
-    if (out.length >= 4) break;
+    if (out.length >= 1) break;
   }
   return out;
 }
@@ -80,8 +80,7 @@ var videoUrl = "https://cdn.example.com/toy-demo.webm?foo=1";
 
 const found = extractListingVideos(sample);
 console.log(found);
-assert.equal(found.length, 2);
+assert.equal(found.length, 1);
 assert.match(found[0], /\.mp4/);
-assert.match(found[1], /\.webm/);
 assert.ok(!found.some((u) => u.includes(".m3u8")));
 console.log("smoke-extract-listing-videos: PASS");

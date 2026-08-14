@@ -70,7 +70,15 @@ export function useCatalogPage({
   const [error, setError] = useState<string | null>(null);
 
   const requestRef = useRef(0);
+  const loadingRef = useRef(false);
+  const displayIdsRef = useRef<string[]>(
+    initialPage?.toys.map((t) => t.id) ?? [],
+  );
   const seededKeyRef = useRef<string | null>(initialPage ? filtersKey : null);
+
+  useEffect(() => {
+    displayIdsRef.current = displayIds;
+  }, [displayIds]);
 
   const mergeToys = useCallback((toys: Toy[]) => {
     if (toys.length === 0) return;
@@ -86,6 +94,9 @@ export function useCatalogPage({
   const fetchPage = useCallback(
     async (offset: number, replace: boolean) => {
       if (!enabled) return null;
+      // Synchronous guard — React `loading` state is too late to stop races.
+      if (loadingRef.current) return null;
+      loadingRef.current = true;
 
       const requestId = ++requestRef.current;
       setLoading(true);
@@ -112,9 +123,23 @@ export function useCatalogPage({
         mergeToys(data.toys);
         setTotal(data.total);
         setHasMore(data.hasMore);
-        setDisplayIds((prev) =>
-          replace ? data.toys.map((t) => t.id) : [...prev, ...data.toys.map((t) => t.id)],
-        );
+        setDisplayIds((prev) => {
+          const incoming = data.toys.map((t) => t.id);
+          if (replace) {
+            displayIdsRef.current = incoming;
+            return incoming;
+          }
+          // Dedupe in case two loads overlapped before the guard landed.
+          const seen = new Set(prev);
+          const merged = [...prev];
+          for (const id of incoming) {
+            if (seen.has(id)) continue;
+            seen.add(id);
+            merged.push(id);
+          }
+          displayIdsRef.current = merged;
+          return merged;
+        });
 
         return data;
       } catch (err) {
@@ -123,6 +148,7 @@ export function useCatalogPage({
         return null;
       } finally {
         if (requestId === requestRef.current) {
+          loadingRef.current = false;
           setLoading(false);
         }
       }
@@ -140,7 +166,9 @@ export function useCatalogPage({
 
     // New filter set => new shuffle order for this visit.
     seedRef.current = freshSeed();
+    loadingRef.current = false;
     setToyMap(new Map());
+    displayIdsRef.current = [];
     setDisplayIds([]);
     setTotal(0);
     setHasMore(true);
@@ -148,12 +176,21 @@ export function useCatalogPage({
   }, [enabled, filtersKey, fetchPage]);
 
   const loadMore = useCallback(async () => {
-    if (!enabled || loading || !hasMore) return;
-    await fetchPage(displayIds.length, false);
-  }, [displayIds.length, enabled, fetchPage, hasMore, loading]);
+    if (!enabled || loadingRef.current || !hasMore) return;
+    await fetchPage(displayIdsRef.current.length, false);
+  }, [enabled, fetchPage, hasMore]);
 
   const replaceDisplayIds = useCallback((ids: string[]) => {
-    setDisplayIds(ids);
+    // Randomize / crazy reshuffles should not reintroduce duplicates.
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      unique.push(id);
+    }
+    displayIdsRef.current = unique;
+    setDisplayIds(unique);
   }, []);
 
   const displayed = displayIds

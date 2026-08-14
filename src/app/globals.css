@@ -755,12 +755,12 @@ html.route-changing .bottom-nav__kart-badge--pop {
 .thumb-carousel__tile {
   display: block;
   position: relative;
-  /* Soft gender-filter frame around the white collage. */
+  /* Soft per-tile frame from the gender-themed palette. */
   background:
     linear-gradient(
       165deg,
-      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 22%, white),
-      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 10%, white)
+      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 26%, white),
+      color-mix(in srgb, var(--gender-filter-hue, var(--mint)) 12%, white)
     );
 }
 

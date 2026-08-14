@@ -71,7 +71,12 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
           }`}
         >
           <div ref={productAreaRef} className="product-detail__layout">
-            <ProductGallery images={gallery} alt={toy.imageAlt} />
+            <ProductGallery
+              images={gallery}
+              videos={toy.videos}
+              poster={toy.image}
+              alt={toy.imageAlt}
+            />
 
             <div className="product-detail__info min-w-0">
               <p className="mb-1 text-sm font-bold text-[var(--blue)]">

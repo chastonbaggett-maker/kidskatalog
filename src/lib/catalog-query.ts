@@ -12,6 +12,8 @@ export type CatalogFilters = {
   q?: string;
   excludeId?: string;
   excludeIds?: string[];
+  /** Only toys that have at least one video clip. */
+  hasVideo?: boolean;
 };
 
 export type CatalogPageRequest = CatalogFilters & {
@@ -43,6 +45,10 @@ export function filterCatalogToys(toys: Toy[], filters: CatalogFilters): Toy[] {
   return toys.filter((toy) => {
     if (exclude.has(toy.id)) return false;
     if (filters.category && toy.category !== filters.category) return false;
+    if (filters.hasVideo) {
+      const hasClip = Boolean(toy.videos?.some((src) => Boolean(src?.trim())));
+      if (!hasClip) return false;
+    }
 
     const audienceOk =
       audience === "all" ||

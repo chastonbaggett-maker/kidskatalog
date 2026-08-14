@@ -20,7 +20,10 @@
       "affiliateUrl": "https://www.amazon.com/dp/B0G5WBGTWK?tag=kidskatalog-20",
       "ageMin": 1,
       "ageMax": 5,
-      "color": "#6CB6FF"
+      "color": "#6CB6FF",
+      "videos": [
+        "/videos/flower.mp4"
+      ]
     },
     {
       "id": "sound-putty",
@@ -41,7 +44,10 @@
       "affiliateUrl": "https://www.amazon.com/dp/B0DT6ZPT5X?tag=kidskatalog-20",
       "ageMin": 0,
       "ageMax": 5,
-      "color": "#EF8FB3"
+      "color": "#EF8FB3",
+      "videos": [
+        "/videos/clip-1.mp4"
+      ]
     },
     {
       "id": "retro-player",
@@ -62,7 +68,10 @@
       "affiliateUrl": "https://www.amazon.com/dp/B0DJ5RPZY2?tag=kidskatalog-20",
       "ageMin": 6,
       "ageMax": 13,
-      "color": "#9B7FD1"
+      "color": "#9B7FD1",
+      "videos": [
+        "/videos/demo-mint.mp4"
+      ]
     },
     {
       "id": "bunch-balloons",
@@ -356,7 +365,10 @@
       "affiliateUrl": "https://www.amazon.com/dp/B0CV2HGNY9?tag=kidskatalog-20",
       "ageMin": 9,
       "ageMax": 14,
-      "color": "#5BA3F0"
+      "color": "#5BA3F0",
+      "videos": [
+        "/videos/flower.mp4"
+      ]
     },
     {
       "id": "magnet-tiles",
@@ -1761,7 +1773,10 @@
       "affiliateUrl": "https://www.amazon.com/dp/B0CD42KQ3K?tag=kidskatalog-20",
       "ageMin": 0,
       "ageMax": 2,
-      "color": "#EF8FB3"
+      "color": "#EF8FB3",
+      "videos": [
+        "/videos/clip-1.mp4"
+      ]
     },
     {
       "id": "wrist-rattles",

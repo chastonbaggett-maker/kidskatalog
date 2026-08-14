@@ -54,6 +54,8 @@ const emptyForm = {
   image: "",
   imageAlt: "",
   imageUrl: "",
+  /** One video URL/path per line (shown in gallery + Watch feed). */
+  videosText: "",
 };
 
 const MAX_BULK = 100;
@@ -135,6 +137,7 @@ export function AdminToyForm({
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",
+        videosText: (editing.videos ?? []).join("\n"),
       });
     } else {
       setForm(emptyForm);
@@ -329,6 +332,11 @@ export function AdminToyForm({
       return importedImages.length > 0 ? importedImages : [primaryImage];
     })();
 
+    const videos = form.videosText
+      .split(/[\n,]+/)
+      .map((src) => src.trim())
+      .filter(Boolean);
+
     const toy: Toy & { imageUrl?: string } = {
       id:
         editing?.id ??
@@ -347,6 +355,7 @@ export function AdminToyForm({
       images: galleryForSave,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
       color: preview?.color || cat?.hue || "#B19CD9",
+      videos,
     };
 
     if (form.imageUrl) {
@@ -727,6 +736,23 @@ export function AdminToyForm({
               placeholder="/toys/my-toy.jpg or https://..."
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Videos (optional)</span>
+            <textarea
+              value={form.videosText}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, videosText: e.target.value }))
+              }
+              rows={3}
+              placeholder={"/videos/clip.mp4\nhttps://..."}
+              className="rounded-2xl bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+            <span className="text-xs text-[var(--ink-soft)]">
+              One URL/path per line. Shows in the toy gallery selector and Watch
+              feed.
+            </span>
           </label>
 
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}

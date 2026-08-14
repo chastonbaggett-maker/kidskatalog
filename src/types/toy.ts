@@ -20,6 +20,11 @@ export type Toy = {
   image: string;
   /** Extra product photos for the detail page gallery */
   images?: string[];
+  /**
+   * Optional product video clips shown in the detail gallery selector
+   * and collected on the Watch (/menu) feed.
+   */
+  videos?: string[];
   imageAlt: string;
   /** Amazon affiliate-ready product URL */
   affiliateUrl: string;

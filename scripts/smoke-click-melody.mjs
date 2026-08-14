@@ -13,11 +13,13 @@ const ui = readFileSync(resolve(root, "src/components/ClickMelody.tsx"), "utf8")
 const marble = resolve(root, "public/music/marble-balloon-hop.mp3");
 const clouds = resolve(root, "public/music/clouds-in-a-bubble.mp3");
 const cloudy = resolve(root, "public/music/cloudy-day-dance.mp3");
+const sunny = resolve(root, "public/music/sunny-ukulele-dance.mp3");
 
 const checks = [
   ["catalog lists Marble Balloon Hop", tracks.includes("Marble Balloon Hop")],
   ["catalog lists Clouds in a Bubble", tracks.includes("Clouds in a Bubble")],
   ["catalog lists Cloudy Day Dance", tracks.includes("Cloudy Day Dance")],
+  ["catalog lists Sunny Ukulele Dance", tracks.includes("Sunny Ukulele Dance")],
   ["engine can setTrack", src.includes("setTrack(")],
   ["engine loops bed via AudioBufferSource", src.includes("source.loop = true")],
   ["UI has next-song control", ui.includes("site-music-next") && ui.includes("nextTrack")],
@@ -25,6 +27,7 @@ const checks = [
   ["marble MP3 present", existsSync(marble)],
   ["clouds MP3 present", existsSync(clouds)],
   ["cloudy day dance MP3 present", existsSync(cloudy)],
+  ["sunny ukulele dance MP3 present", existsSync(sunny)],
 ];
 
 let failed = 0;

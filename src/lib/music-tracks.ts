@@ -22,6 +22,11 @@ export const MUSIC_TRACKS: readonly MusicTrack[] = [
     title: "Cloudy Day Dance",
     url: "/music/cloudy-day-dance.mp3",
   },
+  {
+    id: "sunny-ukulele-dance",
+    title: "Sunny Ukulele Dance",
+    url: "/music/sunny-ukulele-dance.mp3",
+  },
 ] as const;
 
 export const DEFAULT_MUSIC_TRACK_ID = MUSIC_TRACKS[0]!.id;

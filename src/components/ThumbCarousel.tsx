@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { getCategoriesForAudience } from "@/data/categories";
+import {
+  getCategoriesForAudience,
+  getCategoryCover,
+} from "@/data/categories";
 import { useAccentStore } from "@/lib/accent-store";
 import { ToyPhoto } from "./ToyPhoto";
 
@@ -16,12 +19,12 @@ export function ThumbCarousel() {
           <Link
             key={cat.id}
             href={`/shop/${cat.id}`}
-            className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl ring-1 ring-black/5 transition active:scale-95"
+            className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition active:scale-95"
             aria-label={cat.label}
             title={cat.label}
           >
             <ToyPhoto
-              src={cat.image}
+              src={getCategoryCover(cat, audience)}
               alt={cat.imageAlt}
               loading="lazy"
               decoding="async"

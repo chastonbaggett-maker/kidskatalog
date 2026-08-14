@@ -49,6 +49,9 @@ export type Category = {
   id: CategoryId;
   label: string;
   hue: string;
+  /** Default cover image (product photo). */
   image: string;
   imageAlt: string;
+  /** Optional mode-specific covers for boys / girls accents. */
+  covers?: Partial<Record<Audience, string>>;
 };

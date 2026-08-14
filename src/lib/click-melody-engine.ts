@@ -1,6 +1,7 @@
 /**
- * Click tones over looping background music from the track catalog.
- * Each UI tap plays a one-shot note; the selected bed track loops underneath.
+ * Click tones over background music from the track catalog.
+ * Each UI tap plays a one-shot note; bed tracks play through once and
+ * advance to the next song (playlist loops, songs do not).
  */
 
 import {
@@ -39,9 +40,15 @@ export class ClickMelodyEngine {
   private unlocked = false;
   private onNote: ((info: { live: boolean; freq: number }) => void) | null =
     null;
+  private onTrackEnded: (() => void) | null = null;
 
   setOnNote(handler: ((info: { live: boolean; freq: number }) => void) | null) {
     this.onNote = handler;
+  }
+
+  /** Fired when the current bed track finishes naturally (not on manual skip/mute). */
+  setOnTrackEnded(handler: (() => void) | null) {
+    this.onTrackEnded = handler;
   }
 
   get isUnlocked() {
@@ -83,7 +90,7 @@ export class ClickMelodyEngine {
     }
   }
 
-  /** Switch looping bed track (crossfades by stop + soft fade-in). */
+  /** Switch bed track (crossfades by stop + soft fade-in). */
   setTrack(trackId: string) {
     const next = getMusicTrack(trackId).id;
     if (next === this.trackId && this.bedSource) return;
@@ -162,12 +169,16 @@ export class ClickMelodyEngine {
 
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
-    source.loop = true;
+    // Play once — playlist advances on end (does not loop a single song).
+    source.loop = false;
     source.connect(bedGain);
     source.start(now);
     this.bedSource = source;
     source.onended = () => {
-      if (this.bedSource === source) this.bedSource = null;
+      if (this.bedSource !== source) return;
+      this.bedSource = null;
+      if (this.muted) return;
+      this.onTrackEnded?.();
     };
 
     this.fadeBed(BED_LEVEL, 0.7);

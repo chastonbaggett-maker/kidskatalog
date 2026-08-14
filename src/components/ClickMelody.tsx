@@ -33,7 +33,7 @@ const floatTimers = new Map<number, number>();
 
 /**
  * Mini music player: mute/unmute + next track, with one-shot tap tones
- * over the selected looping bed song.
+ * over the selected bed song. Songs play once; the playlist loops.
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
@@ -91,6 +91,10 @@ export function ClickMelody() {
     engine.setOnNote(() => {
       spawnFloat();
     });
+    engine.setOnTrackEnded(() => {
+      // Advance playlist when a bed finishes; store subscription starts the next.
+      useClickMelodyStore.getState().nextTrack();
+    });
 
     const onUnlock = () => {
       if (!useClickMelodyStore.getState().enabled) return;
@@ -125,6 +129,7 @@ export function ClickMelody() {
       document.removeEventListener("pointerdown", onUnlock, true);
       document.removeEventListener("click", onClick, true);
       engine.setOnNote(null);
+      engine.setOnTrackEnded(null);
       engine.dispose();
       engineRef.current = null;
       for (const t of floatTimers.values()) window.clearTimeout(t);

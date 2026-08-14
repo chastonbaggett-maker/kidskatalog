@@ -142,7 +142,7 @@ export const KartNavLink = memo(function KartNavLink({
         onPointerDown={pulseKart}
         onAnimationEnd={clearKartPulse}
         className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-          active ? `bottom-nav__item--active opacity-100 ${accentClass}` : "opacity-100"
+          active ? "bottom-nav__item--active" : ""
         } ${landing ? "bottom-nav__kart--land" : ""}`}
         aria-label="Kart"
         aria-current={active ? "page" : undefined}

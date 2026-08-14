@@ -27,6 +27,13 @@ function useViewAccentClass() {
   return "text-[var(--mint)]";
 }
 
+function useViewAccentVar() {
+  const audience = useAccentStore((s) => s.audience);
+  if (audience === "boys") return "var(--boys-chip)";
+  if (audience === "girls") return "var(--girls-chip)";
+  return "var(--mint)";
+}
+
 function useViewBadgeClass() {
   const audience = useAccentStore((s) => s.audience);
   if (audience === "boys") return "bg-[var(--boys-chip)]";
@@ -38,6 +45,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const accentClass = useViewAccentClass();
+  const accentVar = useViewAccentVar();
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
@@ -143,6 +151,7 @@ export function BottomNav() {
         }${pileShelfMounted ? " is-shelf-raised" : ""}${
           pileNavEnterVisible ? " is-enter-visible" : ""
         }${crazyMode ? " bottom-nav--crazy" : ""}`}
+        style={{ ["--bottom-nav-accent" as string]: accentVar }}
       >
         {showFrostFill && (
           <div className="bottom-nav__frost" aria-hidden="true" />
@@ -155,9 +164,7 @@ export function BottomNav() {
               onPointerDown={pulseNavItem}
               onAnimationEnd={clearNavPulse}
               className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                homeActive
-                  ? `bottom-nav__item--active opacity-100 ${accentClass}`
-                  : "opacity-100"
+                homeActive ? "bottom-nav__item--active" : ""
               }`}
               aria-label="Home"
               aria-current={homeActive ? "page" : undefined}
@@ -171,9 +178,7 @@ export function BottomNav() {
               onPointerDown={pulseNavItem}
               onAnimationEnd={clearNavPulse}
               className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                watchActive
-                  ? `bottom-nav__item--active opacity-100 ${accentClass}`
-                  : "opacity-100"
+                watchActive ? "bottom-nav__item--active" : ""
               }`}
               aria-label="Watch"
               aria-current={watchActive ? "page" : undefined}

@@ -2337,10 +2337,15 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   background-image: none;
 }
 
-/* Active bubble + tap pulse for bottom nav controls. */
+/* Active bubble + tap pulse for bottom nav controls.
+   Icons stay on the theme accent; active gets a solid accent bubble + white icon. */
 .bottom-nav__item {
-  color: var(--ink-soft);
-  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  color: var(--bottom-nav-accent, var(--mint));
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.bottom-nav__item--active {
+  color: #fff;
 }
 
 .bottom-nav__item--active::before {
@@ -2351,7 +2356,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   width: 2.85rem;
   height: 2.85rem;
   border-radius: 999px;
-  background: color-mix(in srgb, currentColor 18%, transparent);
+  background: var(--bottom-nav-accent, var(--mint));
   transform: translate(-50%, -50%) scale(1);
   pointer-events: none;
   z-index: 0;

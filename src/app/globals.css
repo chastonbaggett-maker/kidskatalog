@@ -1632,6 +1632,14 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   animation: feed-load-more-pulse 1.1s ease-in-out infinite;
 }
 
+.feed-load-more--loading .feed-load-more__spark {
+  animation: feed-load-more-pulse 1.1s ease-in-out infinite;
+}
+
+.feed-load-more--caught-up .feed-load-more__inner {
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .feed-load-more__label {
   font-size: 0.875rem;
   font-weight: 700;

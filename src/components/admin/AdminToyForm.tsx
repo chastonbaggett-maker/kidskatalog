@@ -11,6 +11,7 @@ import {
   type FeaturedTier,
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, Toy } from "@/types/toy";
+import { PlayableVideo } from "@/components/PlayableVideo";
 
 type ImportPreview = {
   asin: string;
@@ -504,6 +505,7 @@ export function AdminToyForm({
             <p className="text-xs text-[var(--ink-soft)]">
               {importedImages.length} image
               {importedImages.length === 1 ? "" : "s"} ready
+              {form.videosText.trim() ? " · video ready" : ""}
               {preview.usedGrok ? " · drafted with Grok" : ""}.
             </p>
           ) : null}
@@ -813,14 +815,31 @@ export function AdminToyForm({
               onChange={(e) =>
                 setForm((f) => ({ ...f, videosText: e.target.value }))
               }
-              placeholder="https://…/clip.mp4 (from Amazon import)"
+              placeholder="https://…/clip.mp4 or /toys/…-video.mp4"
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">
-              One primary video. Amazon import fills this when the listing has
-              gallery video. Shown in the toy selector and Watch feed.
+              One primary video. Amazon import downloads it when the listing has
+              gallery video. Preview below before you save.
             </span>
           </label>
+
+          {form.videosText.trim() ? (
+            <div className="overflow-hidden rounded-xl bg-black">
+              <p className="bg-[var(--lavender)]/60 px-3 py-1.5 text-xs font-semibold text-[var(--ink)]">
+                Video preview
+              </p>
+              <PlayableVideo
+                key={form.videosText.trim()}
+                src={form.videosText.trim()}
+                className="aspect-video w-full bg-black"
+                controls
+                playsInline
+                preload="metadata"
+                poster={form.image || undefined}
+              />
+            </div>
+          ) : null}
 
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
 

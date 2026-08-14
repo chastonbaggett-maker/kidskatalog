@@ -2394,6 +2394,14 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 1;
 }
 
+/* Soft periodic nudge on the active page icon (~every 7s). */
+.bottom-nav__item--active > svg,
+.bottom-nav__item--active > span:not(.bottom-nav__kart-badge),
+.bottom-nav__item--active .bottom-nav__kart-icon {
+  transform-origin: center center;
+  animation: bottom-nav-active-idle 7s cubic-bezier(0.34, 1.35, 0.64, 1) infinite;
+}
+
 .bottom-nav__kart-badge {
   z-index: 2;
 }
@@ -2443,10 +2451,31 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   }
 }
 
+/* Most of the 7s cycle is still; a short bounce near the end. */
+@keyframes bottom-nav-active-idle {
+  0%,
+  88%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  91% {
+    transform: scale(1.14) translateY(-2px);
+  }
+  94% {
+    transform: scale(0.94) translateY(0);
+  }
+  97% {
+    transform: scale(1.06) translateY(-1px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bottom-nav__item--active::before,
   .bottom-nav__item.is-pulsing,
-  .bottom-nav__item.is-pulsing::before {
+  .bottom-nav__item.is-pulsing::before,
+  .bottom-nav__item--active > svg,
+  .bottom-nav__item--active > span:not(.bottom-nav__kart-badge),
+  .bottom-nav__item--active .bottom-nav__kart-icon {
     animation: none;
   }
 }

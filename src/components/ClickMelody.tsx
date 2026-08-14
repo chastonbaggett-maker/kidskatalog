@@ -33,8 +33,8 @@ let noteId = 0;
 const floatTimers = new Map<number, number>();
 
 /**
- * Every button/link tap plays a one-shot melody note over a soft ambient pad.
- * Mute stops new notes and fades the pad.
+ * Every button/link tap plays a one-shot melody note over looping bed music
+ * ("Marble Balloon Hop"). Mute stops new notes and fades the bed.
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);

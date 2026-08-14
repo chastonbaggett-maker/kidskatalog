@@ -1,6 +1,6 @@
 /**
- * Click tones + ambient pad: each UI tap plays a one-shot note.
- * A soft background pad runs under the taps — no looping phrase of click notes.
+ * Click tones over looping background music.
+ * Each UI tap plays a one-shot note; "Marble Balloon Hop" loops underneath.
  */
 
 import {
@@ -10,7 +10,9 @@ import {
 
 const LIVE_LEVEL = 0.2;
 const MASTER_LEVEL = 0.55;
-const PAD_LEVEL = 0.052;
+/** Bed sits under tap plucks — audible but not overpowering. */
+const BED_LEVEL = 0.28;
+const BED_URL = "/music/marble-balloon-hop.mp3";
 
 /** Soft C major pentatonic walk — playful, not dissonant. */
 const SCALE = [
@@ -20,28 +22,13 @@ const SCALE = [
 /** Melodic contour indices into SCALE (up, skip, down). */
 const PHRASE = [0, 2, 4, 5, 7, 5, 4, 2, 1, 3, 5, 6, 8, 6, 4, 3, 2, 0] as const;
 
-/** Warm C-major pad voicing under the tap tones. */
-const PAD_PARTIALS = [
-  { freq: 130.81, type: "sine" as const, amp: 0.55 },
-  { freq: 196.0, type: "sine" as const, amp: 0.38 },
-  { freq: 261.63, type: "triangle" as const, amp: 0.26 },
-  { freq: 329.63, type: "sine" as const, amp: 0.2 },
-  { freq: 392.0, type: "sine" as const, amp: 0.12 },
-] as const;
-
-type PadVoice = {
-  osc: OscillatorNode;
-  gain: GainNode;
-};
-
 export class ClickMelodyEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  private padGain: GainNode | null = null;
-  private padFilter: BiquadFilterNode | null = null;
-  private padLfo: OscillatorNode | null = null;
-  private padLfoGain: GainNode | null = null;
-  private padVoices: PadVoice[] = [];
+  private bedGain: GainNode | null = null;
+  private bedSource: AudioBufferSourceNode | null = null;
+  private bedBuffer: AudioBuffer | null = null;
+  private bedLoad: Promise<AudioBuffer | null> | null = null;
   private phrasePos = 0;
   private muted = false;
   private unlocked = false;
@@ -63,12 +50,12 @@ export class ClickMelodyEngine {
     this.ctx = ctx;
     this.ensureMaster();
     this.unlocked = ctx.state === "running" || ctx.state === "suspended";
-    if (ctx.state === "running" && !this.muted) this.ensurePad();
+    if (ctx.state === "running" && !this.muted) this.ensureBed();
     // If still suspended, resume is in flight from unlockSharedAudio.
     void ctx.resume().then(() => {
       if (ctx.state === "running") {
         this.unlocked = true;
-        if (!this.muted) this.ensurePad();
+        if (!this.muted) this.ensureBed();
       }
     });
     return true;
@@ -81,10 +68,10 @@ export class ClickMelodyEngine {
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.05);
     if (muted) {
-      this.fadePad(0, 0.18);
+      this.fadeBed(0, 0.2);
     } else {
-      this.ensurePad();
-      this.fadePad(PAD_LEVEL, 0.35);
+      this.ensureBed();
+      this.fadeBed(BED_LEVEL, 0.4);
     }
   }
 
@@ -104,7 +91,7 @@ export class ClickMelodyEngine {
   }
 
   dispose() {
-    this.stopPad();
+    this.stopBed();
     if (this.master) {
       try {
         this.master.disconnect();
@@ -129,125 +116,102 @@ export class ClickMelodyEngine {
     }
   }
 
-  private ensurePad() {
+  private ensureBed() {
     if (!this.ctx || !this.master || this.muted) return;
-    if (this.padVoices.length > 0 && this.padGain) {
-      this.fadePad(PAD_LEVEL, 0.25);
+    if (this.bedSource && this.bedGain) {
+      this.fadeBed(BED_LEVEL, 0.3);
+      return;
+    }
+    void this.startBedWhenReady();
+  }
+
+  private async startBedWhenReady() {
+    if (!this.ctx || !this.master || this.muted) return;
+    if (this.bedSource) return;
+
+    const buffer = await this.loadBedBuffer();
+    if (!buffer || !this.ctx || !this.master || this.muted || this.bedSource) {
       return;
     }
 
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
+    const now = this.ctx.currentTime;
+    const bedGain = this.bedGain ?? this.ctx.createGain();
+    if (!this.bedGain) {
+      bedGain.gain.setValueAtTime(0.0001, now);
+      bedGain.connect(this.master);
+      this.bedGain = bedGain;
+    }
 
-    const padGain = ctx.createGain();
-    padGain.gain.setValueAtTime(0.0001, now);
-    padGain.gain.exponentialRampToValueAtTime(PAD_LEVEL, now + 0.9);
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(bedGain);
+    source.start(now);
+    this.bedSource = source;
+    source.onended = () => {
+      if (this.bedSource === source) this.bedSource = null;
+    };
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(720, now);
-    filter.Q.value = 0.55;
-
-    // Slow breath on the filter so the pad feels alive without sounding looped.
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.type = "sine";
-    lfo.frequency.setValueAtTime(0.07, now);
-    lfoGain.gain.setValueAtTime(180, now);
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
-    lfo.start(now);
-
-    const voices: PadVoice[] = PAD_PARTIALS.map((partial, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = partial.type;
-      // Tiny detune spreads the bed without beating harshly.
-      osc.frequency.setValueAtTime(partial.freq, now);
-      osc.detune.setValueAtTime((i % 2 === 0 ? -1 : 1) * (4 + i), now);
-      gain.gain.setValueAtTime(partial.amp, now);
-      osc.connect(gain);
-      gain.connect(filter);
-      osc.start(now);
-      return { osc, gain };
-    });
-
-    filter.connect(padGain);
-    padGain.connect(this.master);
-
-    this.padGain = padGain;
-    this.padFilter = filter;
-    this.padLfo = lfo;
-    this.padLfoGain = lfoGain;
-    this.padVoices = voices;
+    this.fadeBed(BED_LEVEL, 0.7);
   }
 
-  private fadePad(level: number, seconds: number) {
-    if (!this.padGain || !this.ctx) return;
+  private loadBedBuffer(): Promise<AudioBuffer | null> {
+    if (this.bedBuffer) return Promise.resolve(this.bedBuffer);
+    if (this.bedLoad) return this.bedLoad;
+
+    const ctx = this.ctx;
+    if (!ctx) return Promise.resolve(null);
+
+    this.bedLoad = (async () => {
+      try {
+        const res = await fetch(BED_URL, { cache: "force-cache" });
+        if (!res.ok) return null;
+        const raw = await res.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(raw.slice(0));
+        this.bedBuffer = decoded;
+        return decoded;
+      } catch {
+        return null;
+      } finally {
+        this.bedLoad = null;
+      }
+    })();
+
+    return this.bedLoad;
+  }
+
+  private fadeBed(level: number, seconds: number) {
+    if (!this.bedGain || !this.ctx) return;
     const now = this.ctx.currentTime;
     const target = Math.max(0.0001, level);
-    this.padGain.gain.cancelScheduledValues(now);
-    this.padGain.gain.setValueAtTime(
-      Math.max(0.0001, this.padGain.gain.value),
+    this.bedGain.gain.cancelScheduledValues(now);
+    this.bedGain.gain.setValueAtTime(
+      Math.max(0.0001, this.bedGain.gain.value),
       now,
     );
-    this.padGain.gain.exponentialRampToValueAtTime(target, now + seconds);
-    if (level <= 0) {
-      window.setTimeout(() => {
-        if (this.muted) this.stopPad();
-      }, seconds * 1000 + 40);
-    }
+    this.bedGain.gain.exponentialRampToValueAtTime(target, now + seconds);
   }
 
-  private stopPad() {
-    const now = this.ctx?.currentTime ?? 0;
-    for (const voice of this.padVoices) {
+  private stopBed() {
+    if (this.bedSource) {
       try {
-        voice.osc.stop(now + 0.02);
-        voice.osc.disconnect();
-        voice.gain.disconnect();
+        this.bedSource.onended = null;
+        this.bedSource.stop();
+        this.bedSource.disconnect();
       } catch {
         /* ignore */
       }
     }
-    this.padVoices = [];
+    this.bedSource = null;
 
-    if (this.padLfo) {
+    if (this.bedGain) {
       try {
-        this.padLfo.stop(now + 0.02);
-        this.padLfo.disconnect();
+        this.bedGain.disconnect();
       } catch {
         /* ignore */
       }
     }
-    this.padLfo = null;
-
-    if (this.padLfoGain) {
-      try {
-        this.padLfoGain.disconnect();
-      } catch {
-        /* ignore */
-      }
-    }
-    this.padLfoGain = null;
-
-    if (this.padFilter) {
-      try {
-        this.padFilter.disconnect();
-      } catch {
-        /* ignore */
-      }
-    }
-    this.padFilter = null;
-
-    if (this.padGain) {
-      try {
-        this.padGain.disconnect();
-      } catch {
-        /* ignore */
-      }
-    }
-    this.padGain = null;
+    this.bedGain = null;
   }
 
   private pluck(when: number, freq: number, amp: number) {

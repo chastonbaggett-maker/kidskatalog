@@ -97,7 +97,7 @@ export function ShelfHeader({
           <div className="shelf-back-btn">
             <button
               type="button"
-              className={cornerBtnClass}
+              className={`${cornerBtnClass} back-fun--up`}
               aria-label="Back to top"
               onClick={scrollToTop}
             >

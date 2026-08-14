@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ClickMelodyEngine } from "@/lib/click-melody-engine";
 import { useClickMelodyStore } from "@/lib/click-melody-store";
+import { getMusicTrack } from "@/lib/music-tracks";
 
 function isMusicalTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
@@ -16,10 +17,8 @@ function isMusicalTarget(target: EventTarget | null): boolean {
 
 type FloatNote = {
   id: number;
-  /** Quick outward burst */
   burstX: number;
   burstY: number;
-  /** Slow float drift after the burst */
   driftX: number;
   delay: number;
   spin: number;
@@ -33,15 +32,19 @@ let noteId = 0;
 const floatTimers = new Map<number, number>();
 
 /**
- * Every button/link tap plays a one-shot melody note over looping bed music
- * ("Marble Balloon Hop"). Mute stops new notes and fades the bed.
+ * Mini music player: mute/unmute + next track, with one-shot tap tones
+ * over the selected looping bed song.
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
+  const trackId = useClickMelodyStore((s) => s.trackId);
   const setEnabled = useClickMelodyStore((s) => s.setEnabled);
+  const nextTrack = useClickMelodyStore((s) => s.nextTrack);
   const engineRef = useRef<ClickMelodyEngine | null>(null);
   const [mounted, setMounted] = useState(false);
   const [floatNotes, setFloatNotes] = useState<FloatNote[]>([]);
+
+  const track = getMusicTrack(trackId);
 
   const spawnFloat = () => {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.1;
@@ -82,7 +85,9 @@ export function ClickMelody() {
     setMounted(true);
     const engine = new ClickMelodyEngine();
     engineRef.current = engine;
-    engine.setMuted(!useClickMelodyStore.getState().enabled);
+    const state = useClickMelodyStore.getState();
+    engine.setTrack(state.trackId);
+    engine.setMuted(!state.enabled);
     engine.setOnNote(() => {
       spawnFloat();
     });
@@ -96,11 +101,13 @@ export function ClickMelody() {
       if (!useClickMelodyStore.getState().enabled) return;
       if (event.button !== 0) return;
       if (!isMusicalTarget(event.target)) return;
-      // Sync note() — never await across the iOS gesture boundary.
       engine.note();
     };
 
     const unsub = useClickMelodyStore.subscribe((state, prev) => {
+      if (state.trackId !== prev.trackId) {
+        engine.setTrack(state.trackId);
+      }
       if (state.enabled === prev.enabled) return;
       engine.setMuted(!state.enabled);
       if (!state.enabled) {
@@ -126,7 +133,8 @@ export function ClickMelody() {
   }, []);
 
   const playing = mounted ? enabled : true;
-  const label = playing ? "Mute tap music" : "Play tap music";
+  const muteLabel = playing ? "Mute music" : "Play music";
+  const nextLabel = `Next song (now: ${track.title})`;
 
   return (
     <div
@@ -151,34 +159,66 @@ export function ClickMelody() {
           </span>
         ))}
       </div>
-      <button
-        type="button"
-        className="site-music-toggle"
-        aria-label={label}
-        aria-pressed={playing}
-        title={label}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const engine = engineRef.current;
-          const next = !useClickMelodyStore.getState().enabled;
-          setEnabled(next);
-          if (!engine) return;
-          engine.setMuted(!next);
-          if (!next) {
-            for (const t of floatTimers.values()) window.clearTimeout(t);
-            floatTimers.clear();
-            setFloatNotes([]);
-          } else {
-            engine.unlock();
-          }
-        }}
-      >
-        <span className="site-music-toggle__icon" aria-hidden>
-          <MusicIcon muted={!playing} />
-        </span>
-      </button>
+
+      <div className="site-music-player">
+        <div className="site-music-player__controls">
+          <button
+            type="button"
+            className="site-music-toggle"
+            aria-label={muteLabel}
+            aria-pressed={playing}
+            title={muteLabel}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const engine = engineRef.current;
+              const next = !useClickMelodyStore.getState().enabled;
+              setEnabled(next);
+              if (!engine) return;
+              engine.setMuted(!next);
+              if (!next) {
+                for (const t of floatTimers.values()) window.clearTimeout(t);
+                floatTimers.clear();
+                setFloatNotes([]);
+              } else {
+                engine.unlock();
+              }
+            }}
+          >
+            <span className="site-music-toggle__icon" aria-hidden>
+              <MusicIcon muted={!playing} />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="site-music-next"
+            aria-label={nextLabel}
+            title={nextLabel}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const engine = engineRef.current;
+              nextTrack();
+              if (!engine) return;
+              engine.unlock();
+              if (useClickMelodyStore.getState().enabled) {
+                engine.setMuted(false);
+              }
+            }}
+          >
+            <span className="site-music-next__icon" aria-hidden>
+              <NextIcon />
+            </span>
+          </button>
+        </div>
+
+        <p className="site-music-player__title" title={track.title}>
+          {track.title}
+        </p>
+      </div>
     </div>
   );
 }
@@ -203,6 +243,15 @@ function MusicIcon({ muted }: { muted: boolean }) {
         strokeLinecap="round"
         opacity={muted ? 1 : 0}
       />
+    </svg>
+  );
+}
+
+function NextIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+      <path d="M6.2 5.4a1 1 0 0 1 1.55-.83l8.2 5.6a1 1 0 0 1 0 1.66l-8.2 5.6A1 1 0 0 1 6 16.6V7.4a1 1 0 0 1 .2-.6Z" />
+      <rect x="17.1" y="5.8" width="1.9" height="12.4" rx="0.95" />
     </svg>
   );
 }

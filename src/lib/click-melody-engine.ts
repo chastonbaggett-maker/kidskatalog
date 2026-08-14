@@ -1,18 +1,22 @@
 /**
- * Click tones over looping background music.
- * Each UI tap plays a one-shot note; "Marble Balloon Hop" loops underneath.
+ * Click tones over looping background music from the track catalog.
+ * Each UI tap plays a one-shot note; the selected bed track loops underneath.
  */
 
 import {
   getSharedAudioContext,
   unlockSharedAudio,
 } from "@/lib/shared-audio";
+import {
+  DEFAULT_MUSIC_TRACK_ID,
+  getMusicTrack,
+  type MusicTrack,
+} from "@/lib/music-tracks";
 
 const LIVE_LEVEL = 0.2;
 const MASTER_LEVEL = 0.55;
 /** Bed sits under tap plucks — audible but not overpowering. */
 const BED_LEVEL = 0.28;
-const BED_URL = "/music/marble-balloon-hop.mp3";
 
 /** Soft C major pentatonic walk — playful, not dissonant. */
 const SCALE = [
@@ -27,8 +31,9 @@ export class ClickMelodyEngine {
   private master: GainNode | null = null;
   private bedGain: GainNode | null = null;
   private bedSource: AudioBufferSourceNode | null = null;
-  private bedBuffer: AudioBuffer | null = null;
-  private bedLoad: Promise<AudioBuffer | null> | null = null;
+  private bedBuffers = new Map<string, AudioBuffer>();
+  private bedLoads = new Map<string, Promise<AudioBuffer | null>>();
+  private trackId = DEFAULT_MUSIC_TRACK_ID;
   private phrasePos = 0;
   private muted = false;
   private unlocked = false;
@@ -43,6 +48,10 @@ export class ClickMelodyEngine {
     return this.unlocked;
   }
 
+  get currentTrack(): MusicTrack {
+    return getMusicTrack(this.trackId);
+  }
+
   /** Must run inside a user gesture on iOS — do not await before scheduling. */
   unlock(): boolean {
     const ctx = unlockSharedAudio();
@@ -51,7 +60,6 @@ export class ClickMelodyEngine {
     this.ensureMaster();
     this.unlocked = ctx.state === "running" || ctx.state === "suspended";
     if (ctx.state === "running" && !this.muted) this.ensureBed();
-    // If still suspended, resume is in flight from unlockSharedAudio.
     void ctx.resume().then(() => {
       if (ctx.state === "running") {
         this.unlocked = true;
@@ -75,10 +83,18 @@ export class ClickMelodyEngine {
     }
   }
 
-  /** Play the next one-shot melody note (never echoed into a loop). */
+  /** Switch looping bed track (crossfades by stop + soft fade-in). */
+  setTrack(trackId: string) {
+    const next = getMusicTrack(trackId).id;
+    if (next === this.trackId && this.bedSource) return;
+    this.trackId = next;
+    this.stopBedSourceOnly();
+    if (!this.muted) this.ensureBed();
+  }
+
+  /** Play the next one-shot melody note (never echoed into a click loop). */
   note() {
     if (this.muted) return false;
-    // Sync unlock + schedule in the same gesture (iOS Safari).
     if (!this.unlock() || !this.ctx || !this.master) return false;
 
     const degree = PHRASE[this.phrasePos % PHRASE.length]!;
@@ -99,7 +115,6 @@ export class ClickMelodyEngine {
         /* ignore */
       }
     }
-    // Keep the shared AudioContext alive for confetti SFX.
     this.master = null;
     this.ctx = null;
     this.unlocked = false;
@@ -122,14 +137,17 @@ export class ClickMelodyEngine {
       this.fadeBed(BED_LEVEL, 0.3);
       return;
     }
-    void this.startBedWhenReady();
+    void this.startBedWhenReady(this.trackId);
   }
 
-  private async startBedWhenReady() {
+  private async startBedWhenReady(trackId: string) {
     if (!this.ctx || !this.master || this.muted) return;
     if (this.bedSource) return;
 
-    const buffer = await this.loadBedBuffer();
+    const track = getMusicTrack(trackId);
+    const buffer = await this.loadBedBuffer(track);
+    // Track may have changed while decoding.
+    if (this.trackId !== track.id) return;
     if (!buffer || !this.ctx || !this.master || this.muted || this.bedSource) {
       return;
     }
@@ -155,29 +173,33 @@ export class ClickMelodyEngine {
     this.fadeBed(BED_LEVEL, 0.7);
   }
 
-  private loadBedBuffer(): Promise<AudioBuffer | null> {
-    if (this.bedBuffer) return Promise.resolve(this.bedBuffer);
-    if (this.bedLoad) return this.bedLoad;
+  private loadBedBuffer(track: MusicTrack): Promise<AudioBuffer | null> {
+    const cached = this.bedBuffers.get(track.id);
+    if (cached) return Promise.resolve(cached);
+
+    const inflight = this.bedLoads.get(track.id);
+    if (inflight) return inflight;
 
     const ctx = this.ctx;
     if (!ctx) return Promise.resolve(null);
 
-    this.bedLoad = (async () => {
+    const load = (async () => {
       try {
-        const res = await fetch(BED_URL, { cache: "force-cache" });
+        const res = await fetch(track.url, { cache: "force-cache" });
         if (!res.ok) return null;
         const raw = await res.arrayBuffer();
         const decoded = await ctx.decodeAudioData(raw.slice(0));
-        this.bedBuffer = decoded;
+        this.bedBuffers.set(track.id, decoded);
         return decoded;
       } catch {
         return null;
       } finally {
-        this.bedLoad = null;
+        this.bedLoads.delete(track.id);
       }
     })();
 
-    return this.bedLoad;
+    this.bedLoads.set(track.id, load);
+    return load;
   }
 
   private fadeBed(level: number, seconds: number) {
@@ -192,7 +214,7 @@ export class ClickMelodyEngine {
     this.bedGain.gain.exponentialRampToValueAtTime(target, now + seconds);
   }
 
-  private stopBed() {
+  private stopBedSourceOnly() {
     if (this.bedSource) {
       try {
         this.bedSource.onended = null;
@@ -203,7 +225,10 @@ export class ClickMelodyEngine {
       }
     }
     this.bedSource = null;
+  }
 
+  private stopBed() {
+    this.stopBedSourceOnly();
     if (this.bedGain) {
       try {
         this.bedGain.disconnect();

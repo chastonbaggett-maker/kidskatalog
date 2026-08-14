@@ -1,5 +1,5 @@
 /**
- * Smoke checks for click-melody engine: looping MP3 bed, no click-note sequencer.
+ * Smoke checks for multi-track bed music player.
  * Run: node scripts/smoke-click-melody.mjs
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -8,17 +8,20 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(resolve(root, "src/lib/click-melody-engine.ts"), "utf8");
+const tracks = readFileSync(resolve(root, "src/lib/music-tracks.ts"), "utf8");
 const ui = readFileSync(resolve(root, "src/components/ClickMelody.tsx"), "utf8");
-const bedPath = resolve(root, "public/music/marble-balloon-hop.mp3");
+const marble = resolve(root, "public/music/marble-balloon-hop.mp3");
+const clouds = resolve(root, "public/music/clouds-in-a-bubble.mp3");
 
 const checks = [
-  ["engine has no setInterval click loop", !src.includes("setInterval")],
-  ["engine has no STEPS sequencer grid", !src.includes("const STEPS")],
-  ["engine uses Marble Balloon Hop bed URL", src.includes("marble-balloon-hop.mp3")],
+  ["catalog lists Marble Balloon Hop", tracks.includes("Marble Balloon Hop")],
+  ["catalog lists Clouds in a Bubble", tracks.includes("Clouds in a Bubble")],
+  ["engine can setTrack", src.includes("setTrack(")],
   ["engine loops bed via AudioBufferSource", src.includes("source.loop = true")],
-  ["engine notes are one-shot", src.includes("one-shot") && src.includes("this.pluck(")],
-  ["bed MP3 exists in public/music", existsSync(bedPath)],
-  ["UI no longer calls clearLoop", !ui.includes("clearLoop")],
+  ["UI has next-song control", ui.includes("site-music-next") && ui.includes("nextTrack")],
+  ["UI shows track title", ui.includes("site-music-player__title")],
+  ["marble MP3 present", existsSync(marble)],
+  ["clouds MP3 present", existsSync(clouds)],
 ];
 
 let failed = 0;

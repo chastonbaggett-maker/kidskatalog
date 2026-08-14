@@ -20,13 +20,6 @@ const BRAND_TAP_WINDOW_MS = 2500;
 /** Wait longer than a rapid multi-tap before treating tap 1 as "go home". */
 const BRAND_SINGLE_TAP_NAV_MS = 400;
 
-function useViewAccentClass() {
-  const audience = useAccentStore((s) => s.audience);
-  if (audience === "boys") return "text-[var(--boys-chip)]";
-  if (audience === "girls") return "text-[var(--girls-chip)]";
-  return "text-[var(--mint)]";
-}
-
 function useViewAccentVar() {
   const audience = useAccentStore((s) => s.audience);
   if (audience === "boys") return "var(--boys-chip)";
@@ -44,7 +37,6 @@ function useViewBadgeClass() {
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const accentClass = useViewAccentClass();
   const accentVar = useViewAccentVar();
   const badgeClass = useViewBadgeClass();
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
@@ -188,7 +180,6 @@ export function BottomNav() {
           </li>
           <KartNavLink
             active={pathname === "/kart" || pathname.startsWith("/kart/")}
-            accentClass={accentClass}
             badgeClass={badgeClass}
           />
         </ul>

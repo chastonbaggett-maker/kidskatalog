@@ -13,7 +13,6 @@ import { beginRouteChange } from "@/lib/route-change";
 
 type Props = {
   active: boolean;
-  accentClass: string;
   badgeClass: string;
 };
 
@@ -26,7 +25,6 @@ const EASTER_SINGLE_TAP_NAV_MS = 380;
 /** Kart tab + badge — pulses when the decorative fly ball lands. */
 export const KartNavLink = memo(function KartNavLink({
   active,
-  accentClass,
   badgeClass,
 }: Props) {
   const router = useRouter();

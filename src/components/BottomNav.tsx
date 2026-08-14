@@ -226,18 +226,23 @@ function HomeIcon({ active }: { active?: boolean }) {
 }
 
 function MenuIcon({ active }: { active?: boolean }) {
-  // Portrait toy-card silhouette (~2:3 overall, matching feed card proportions).
+  // Tall toy-card frame with a play mark — suggests video / watching.
+  const stroke = active ? 2.4 : 2;
   return (
-    <svg width="23" height="34" viewBox="0 0 23 34" fill="none" aria-hidden>
+    <svg width="22" height="38" viewBox="0 0 22 38" fill="none" aria-hidden>
       <rect
         x="2"
         y="2"
-        width="19"
-        height="30"
+        width="18"
+        height="34"
         rx="4.5"
         ry="4.5"
         stroke="currentColor"
-        strokeWidth={active ? 2.4 : 2}
+        strokeWidth={stroke}
+      />
+      <path
+        d="M9.2 14.2v9.6L16.1 19 9.2 14.2z"
+        fill="currentColor"
       />
     </svg>
   );

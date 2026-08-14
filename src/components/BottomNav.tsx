@@ -222,13 +222,57 @@ const MENU_STROKE = NAV_STROKE * (NAV_ICON_PX / NAV_ICON_VB);
 const MENU_STROKE_ACTIVE = NAV_STROKE_ACTIVE * (NAV_ICON_PX / NAV_ICON_VB);
 
 function HomeIcon({ active }: { active?: boolean }) {
+  // Pile of toys — blocks + ball stacked for the Home / browse entry.
+  const stroke = active ? NAV_STROKE_ACTIVE : NAV_STROKE;
   return (
     <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
+      {/* Bottom block */}
+      <rect
+        x="3.5"
+        y="15.5"
+        width="10"
+        height="5.5"
+        rx="1.2"
         stroke="currentColor"
-        strokeWidth={active ? NAV_STROKE_ACTIVE : NAV_STROKE}
-        strokeLinejoin="round"
+        strokeWidth={stroke}
+      />
+      {/* Right block */}
+      <rect
+        x="12.5"
+        y="13.5"
+        width="8"
+        height="7.5"
+        rx="1.2"
+        stroke="currentColor"
+        strokeWidth={stroke}
+      />
+      {/* Top-left block */}
+      <rect
+        x="5"
+        y="9"
+        width="7.5"
+        height="6.5"
+        rx="1.2"
+        stroke="currentColor"
+        strokeWidth={stroke}
+      />
+      {/* Ball on the pile */}
+      <circle
+        cx="15.5"
+        cy="8.5"
+        r="4"
+        stroke="currentColor"
+        strokeWidth={stroke}
+      />
+      {/* Small block peeking on top */}
+      <rect
+        x="7.5"
+        y="4.5"
+        width="4.5"
+        height="4.5"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth={stroke}
       />
     </svg>
   );

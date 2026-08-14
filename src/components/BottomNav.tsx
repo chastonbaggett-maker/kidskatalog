@@ -212,13 +212,22 @@ export function BottomNav() {
   );
 }
 
+/** Shared outline weight for Home / Kart / Watch (logo brand icon unchanged). */
+const NAV_STROKE = 2;
+const NAV_STROKE_ACTIVE = 2.4;
+const NAV_ICON_PX = 31;
+const NAV_ICON_VB = 24;
+/** Watch SVG is 1:1 viewBox→px; scale stroke to match Home/Kart’s rendered weight. */
+const MENU_STROKE = NAV_STROKE * (NAV_ICON_PX / NAV_ICON_VB);
+const MENU_STROKE_ACTIVE = NAV_STROKE_ACTIVE * (NAV_ICON_PX / NAV_ICON_VB);
+
 function HomeIcon({ active }: { active?: boolean }) {
   return (
     <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
         stroke="currentColor"
-        strokeWidth={active ? 2.4 : 2}
+        strokeWidth={active ? NAV_STROKE_ACTIVE : NAV_STROKE}
         strokeLinejoin="round"
       />
     </svg>
@@ -227,7 +236,7 @@ function HomeIcon({ active }: { active?: boolean }) {
 
 function MenuIcon({ active }: { active?: boolean }) {
   // Tall toy-card frame with a play mark — suggests video / watching.
-  const stroke = active ? 2.4 : 2;
+  const stroke = active ? MENU_STROKE_ACTIVE : MENU_STROKE;
   return (
     <svg width="22" height="38" viewBox="0 0 22 38" fill="none" aria-hidden>
       <rect

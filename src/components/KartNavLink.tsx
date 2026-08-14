@@ -133,7 +133,7 @@ export const KartNavLink = memo(function KartNavLink({
         aria-current={active ? "page" : undefined}
       >
         <span className="bottom-nav__kart-icon">
-          <KartIcon />
+          <KartIcon active={active} />
         </span>
         <span
           className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass} ${
@@ -151,13 +151,13 @@ export const KartNavLink = memo(function KartNavLink({
   );
 });
 
-function KartIcon() {
+function KartIcon({ active }: { active?: boolean }) {
   return (
     <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth={active ? 2.4 : 2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

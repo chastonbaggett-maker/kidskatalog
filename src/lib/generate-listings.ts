@@ -18,7 +18,7 @@ import {
   normalizeCatalogName,
   shortCardName,
 } from "@/lib/toy-card-style";
-import { downloadAndStoreGallery, downloadAndStoreVideo } from "@/lib/toy-image-store";
+import { downloadAndStoreGallery } from "@/lib/toy-image-store";
 import { extractListingVideos } from "@/lib/amazon-listing-videos";
 
 export { extractListingVideos } from "@/lib/amazon-listing-videos";
@@ -364,8 +364,8 @@ export async function buildDraftFromAsin(
 
   let videos: string[] | undefined;
   if (videoUrls.length > 0) {
-    const stored = await downloadAndStoreVideo(videoUrls[0]!, id, UA);
-    videos = stored ? [stored] : undefined;
+    // Keep remote stream/progressive URLs — do not download or store video files.
+    videos = [videoUrls[0]!];
   }
 
   return {

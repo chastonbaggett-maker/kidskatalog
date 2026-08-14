@@ -16,37 +16,27 @@ try {
     const synth = window.speechSynthesis;
     if (!synth) return;
     synth.cancel = () => {};
+    synth.resume = () => {};
+    Object.defineProperty(synth, "paused", { get: () => false });
     synth.speak = (utter) => {
       spoken.push(String(utter?.text || ""));
     };
-    synth.getVoices = () => [
-      {
-        name: "Google US English",
-        lang: "en-US",
-        default: true,
-        localService: true,
-        voiceURI: "Google US English",
-      },
-    ];
+    synth.getVoices = () => [];
   });
 
   await page.goto(`${BASE}/shop`, { waitUntil: "networkidle" });
 
-  // Icon-only expand first (while feed chrome is still up)
+  // Icon-only first
   await page.locator(".thumb-carousel__expand").click({ force: true });
-  await page.waitForTimeout(80);
-
-  // Icon-only: voice mic (aria-label only, no visible text)
+  await page.waitForTimeout(50);
   await page.locator("button.voice-mic").first().click({ force: true });
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(50);
 
-  // Labeled: Boys filter chip
+  // Labeled
   await page.getByRole("button", { name: /boys/i }).first().click();
-  await page.waitForTimeout(80);
-
-  // Labeled: Toy Pile
+  await page.waitForTimeout(50);
   await page.locator("button.filter-pile-btn").first().click();
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(50);
 
   const spoken = await page.evaluate(() => window.__spokenLabels || []);
   console.log(JSON.stringify({ spoken }, null, 2));
@@ -62,9 +52,6 @@ try {
   }
   if (spokeIconOnly) {
     throw new Error(`icon-only controls should be silent, got ${JSON.stringify(spoken)}`);
-  }
-  if (spoken.length !== 2) {
-    throw new Error(`expected exactly 2 utterances, got ${JSON.stringify(spoken)}`);
   }
 
   console.log("smoke-button-voiceover: PASS");

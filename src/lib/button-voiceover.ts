@@ -1,35 +1,35 @@
 /** Fun, energetic read-aloud for labeled button taps (Web Speech API). */
 
-const SPEAK_RATE = 1.22;
-const SPEAK_PITCH = 1.38;
+const SPEAK_RATE = 1.2;
+const SPEAK_PITCH = 1.35;
 
-let voicesReady: Promise<SpeechSynthesisVoice[]> | null = null;
 let preferredVoice: SpeechSynthesisVoice | null | undefined;
+let warmed = false;
 
-function loadVoices(): Promise<SpeechSynthesisVoice[]> {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
-    return Promise.resolve([]);
+function refreshPreferredVoice() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  preferredVoice = undefined;
+  pickEnergeticVoice(window.speechSynthesis.getVoices());
+}
+
+/**
+ * Preload voices so click handlers can speak synchronously
+ * (awaiting before speak() drops the user-gesture unlock in browsers).
+ */
+export function warmButtonVoiceover() {
+  if (typeof window === "undefined" || !window.speechSynthesis || warmed) {
+    return;
   }
-
-  if (!voicesReady) {
-    voicesReady = new Promise((resolve) => {
-      const synth = window.speechSynthesis;
-      const current = synth.getVoices();
-      if (current.length > 0) {
-        resolve(current);
-        return;
-      }
-      const onVoices = () => {
-        synth.removeEventListener("voiceschanged", onVoices);
-        resolve(synth.getVoices());
-      };
-      synth.addEventListener("voiceschanged", onVoices);
-      // Some browsers never fire voiceschanged if the list is already empty.
-      window.setTimeout(() => resolve(synth.getVoices()), 600);
-    });
+  warmed = true;
+  const synth = window.speechSynthesis;
+  refreshPreferredVoice();
+  synth.addEventListener("voiceschanged", refreshPreferredVoice);
+  // Prime the engine — some browsers keep TTS paused until resumed.
+  try {
+    synth.resume();
+  } catch {
+    /* ignore */
   }
-
-  return voicesReady;
 }
 
 /** Prefer upbeat English voices when the browser exposes them. */
@@ -97,16 +97,26 @@ export function findLabeledButton(target: EventTarget | null): HTMLElement | nul
   return btn;
 }
 
-export async function speakButtonLabel(label: string) {
+/** Speak immediately — must stay synchronous with the click gesture. */
+export function speakButtonLabel(label: string) {
   const text = label.trim();
   if (!text) return;
   if (typeof window === "undefined" || !window.speechSynthesis) return;
 
   const synth = window.speechSynthesis;
-  const voices = await loadVoices();
+  warmButtonVoiceover();
+
+  const voices = synth.getVoices();
   const voice = pickEnergeticVoice(voices);
 
+  // Cancel any in-flight line, then speak in the same turn as the gesture.
   synth.cancel();
+  try {
+    synth.resume();
+  } catch {
+    /* ignore */
+  }
+
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = SPEAK_RATE;
   utter.pitch = SPEAK_PITCH;
@@ -118,12 +128,20 @@ export async function speakButtonLabel(label: string) {
       utter.voice = voice;
       if (voice.lang) utter.lang = voice.lang;
     } catch {
-      // Some environments expose voice list entries that aren't assignable.
       preferredVoice = null;
     }
   }
 
   synth.speak(utter);
+
+  // Chrome occasionally parks the queue in a paused state.
+  if (synth.paused) {
+    try {
+      synth.resume();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export function speakLabeledButtonFromEvent(event: Event) {
@@ -131,5 +149,5 @@ export function speakLabeledButtonFromEvent(event: Event) {
   if (!btn) return;
   const label = getVisibleButtonLabel(btn);
   if (!label) return;
-  void speakButtonLabel(label);
+  speakButtonLabel(label);
 }

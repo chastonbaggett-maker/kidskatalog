@@ -7,26 +7,23 @@ import { PlayableVideo } from "./PlayableVideo";
 import { ToyPhoto } from "./ToyPhoto";
 
 const SWIPE_THRESHOLD_PX = 48;
+const INTRO_HOLD_MS = 2000;
+const INTRO_FADE_MS = 700;
 
-/** Main photo first, primary video second, then remaining photos. */
+/** Photos first, videos last in the selector. */
 function buildSelectorMedia(
   images: string[],
   videos: string[] | undefined,
 ): ToyMediaItem[] {
   const photos = (images.length > 0 ? images : [])
     .map((src) => src.trim())
-    .filter(Boolean);
-  const clips = getToyVideos({ videos });
-
-  if (photos.length === 0) {
-    return clips.map((src) => ({ kind: "video" as const, src }));
-  }
-
-  const items: ToyMediaItem[] = [{ kind: "image", src: photos[0]! }];
-  if (clips[0]) items.push({ kind: "video", src: clips[0] });
-  for (const src of photos.slice(1)) items.push({ kind: "image", src });
-  for (const src of clips.slice(1)) items.push({ kind: "video", src });
-  return items;
+    .filter(Boolean)
+    .map((src) => ({ kind: "image" as const, src }));
+  const clips = getToyVideos({ videos }).map((src) => ({
+    kind: "video" as const,
+    src,
+  }));
+  return [...photos, ...clips];
 }
 
 export function ProductGallery({
@@ -36,14 +33,24 @@ export function ProductGallery({
   poster,
 }: {
   images: string[];
-  /** Optional clips — primary clip is shown second in the selector. */
+  /** Optional clips shown at the end of the selector. */
   videos?: string[];
   alt: string;
   /** Poster frame for video thumbs / paused state. */
   poster?: string;
 }) {
   const shots = buildSelectorMedia(images, videos);
+  const videoIndex = shots.findIndex((item) => item.kind === "video");
+  const hasIntroVideo = videoIndex > 0 && shots[0]?.kind === "image";
+  const firstImage = hasIntroVideo ? shots[0]! : null;
+  const primaryVideo =
+    videoIndex >= 0 && shots[videoIndex]?.kind === "video"
+      ? shots[videoIndex]!
+      : null;
+
   const [active, setActive] = useState(0);
+  const [introFading, setIntroFading] = useState(false);
+  const [userTookOver, setUserTookOver] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const thumbRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -52,13 +59,26 @@ export function ProductGallery({
   const posterSrc = poster || images[0] || "";
   const videoSelected = current?.kind === "video";
 
+  const useCrossfadeLayers =
+    Boolean(hasIntroVideo && firstImage && primaryVideo) &&
+    !userTookOver &&
+    (active === 0 || active === videoIndex);
+
+  const selectIndex = useCallback((index: number, fromUser = false) => {
+    if (fromUser) {
+      setUserTookOver(true);
+      setIntroFading(false);
+    }
+    setActive(index);
+  }, []);
+
   const goPrev = useCallback(() => {
-    setActive((index) => (index - 1 + shots.length) % shots.length);
-  }, [shots.length]);
+    selectIndex((active - 1 + shots.length) % shots.length, true);
+  }, [active, shots.length, selectIndex]);
 
   const goNext = useCallback(() => {
-    setActive((index) => (index + 1) % shots.length);
-  }, [shots.length]);
+    selectIndex((active + 1) % shots.length, true);
+  }, [active, shots.length, selectIndex]);
 
   useEffect(() => {
     thumbRefs.current[active]?.scrollIntoView({
@@ -68,7 +88,27 @@ export function ProductGallery({
     });
   }, [active]);
 
-  // When the video thumb is selected, autoplay (muted for browser policy).
+  // Hold on the first image, then fade into the ending video slide.
+  useEffect(() => {
+    if (!hasIntroVideo || videoIndex < 0 || userTookOver) return;
+
+    const hold = window.setTimeout(() => {
+      setIntroFading(true);
+      setActive(videoIndex);
+    }, INTRO_HOLD_MS);
+
+    return () => window.clearTimeout(hold);
+  }, [hasIntroVideo, videoIndex, userTookOver]);
+
+  useEffect(() => {
+    if (!introFading) return;
+    const done = window.setTimeout(() => {
+      setIntroFading(false);
+    }, INTRO_FADE_MS);
+    return () => window.clearTimeout(done);
+  }, [introFading]);
+
+  // Autoplay whenever the video slide is selected.
   useEffect(() => {
     wantPlayRef.current = videoSelected;
     const node = videoRef.current;
@@ -91,7 +131,7 @@ export function ProductGallery({
         video.muted = true;
         await video.play();
       } catch {
-        /* autoplay may still be blocked until another gesture */
+        /* autoplay may still be blocked */
       }
     };
 
@@ -103,7 +143,6 @@ export function ProductGallery({
     return () => {
       wantPlayRef.current = false;
       node?.removeEventListener("canplay", onCanPlay);
-      node?.pause();
     };
   }, [active, videoSelected, current?.src]);
 
@@ -136,6 +175,26 @@ export function ProductGallery({
 
   if (!current) return null;
 
+  const videoPlayer = primaryVideo ? (
+    <PlayableVideo
+      key={primaryVideo.src}
+      ref={videoRef}
+      className="product-gallery__video"
+      src={primaryVideo.src}
+      poster={posterSrc || undefined}
+      controls
+      playsInline
+      muted
+      loop
+      preload="auto"
+      aria-label={alt}
+      onReady={() => {
+        if (!wantPlayRef.current) return;
+        void videoRef.current?.play().catch(() => undefined);
+      }}
+    />
+  ) : null;
+
   return (
     <div className="mb-4">
       <div className="product-gallery__frame mb-3">
@@ -149,25 +208,39 @@ export function ProductGallery({
           aria-roledescription={shots.length > 1 ? "carousel" : undefined}
           aria-label={shots.length > 1 ? `${alt} gallery` : undefined}
         >
-          {current.kind === "video" ? (
-            <PlayableVideo
-              key={current.src}
-              ref={videoRef}
-              className="product-gallery__video"
-              src={current.src}
-              poster={posterSrc || undefined}
-              controls
-              playsInline
-              muted
-              loop
-              preload="auto"
-              aria-label={alt}
-              onReady={() => {
-                const video = videoRef.current;
-                if (!video || !wantPlayRef.current) return;
-                void video.play().catch(() => undefined);
-              }}
-            />
+          {useCrossfadeLayers && firstImage && primaryVideo ? (
+            <>
+              <div
+                className={`product-gallery__fade-layer${
+                  introFading || videoSelected
+                    ? " product-gallery__fade-layer--out"
+                    : ""
+                }`}
+              >
+                <ToyPhoto
+                  src={firstImage.src}
+                  alt={alt}
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
+                  draggable={false}
+                  width={800}
+                  height={800}
+                  className="product-gallery__photo"
+                />
+              </div>
+              <div
+                className={`product-gallery__fade-layer${
+                  introFading || videoSelected
+                    ? " product-gallery__fade-layer--in"
+                    : " product-gallery__fade-layer--hidden"
+                }`}
+              >
+                {videoPlayer}
+              </div>
+            </>
+          ) : current.kind === "video" ? (
+            videoPlayer
           ) : (
             <ToyPhoto
               src={current.src}
@@ -193,7 +266,7 @@ export function ProductGallery({
                 thumbRefs.current[i] = node;
               }}
               type="button"
-              onClick={() => setActive(i)}
+              onClick={() => selectIndex(i, true)}
               className={`product-gallery__thumb-btn relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white ring-2 transition ${
                 i === active
                   ? "ring-[var(--blue)]"

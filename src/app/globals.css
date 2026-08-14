@@ -488,6 +488,29 @@ html.route-changing .bottom-nav__kart-badge--pop {
   border-radius: var(--shelf-radius);
 }
 
+.product-gallery__fade-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity 700ms ease;
+  pointer-events: auto;
+}
+
+.product-gallery__fade-layer--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.product-gallery__fade-layer--out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.product-gallery__fade-layer--in {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .product-gallery__thumb-btn {
   position: relative;
 }

@@ -105,8 +105,21 @@ export function ThumbCarousel() {
   );
 }
 
+const EXPAND_ICON_STROKE = {
+  width: 2.4,
+  linecap: "round" as const,
+  linejoin: "round" as const,
+};
+
+/** Corner colors — rainbow across the four Grow/Shrink marks. */
+const EXPAND_RAINBOW = ["#FF5FA2", "#A855F7", "#3B82F6", "#22C55E"] as const;
+
 function ExpandToggleIcon({ expanded }: { expanded: boolean }) {
   // Expanded → Shrink (arrows inward). Collapsed → Grow (arrows outward).
+  const paths = expanded
+    ? ["M9 4v5H4", "M15 4v5h5", "M9 20v-5H4", "M15 20v-5h5"]
+    : ["M4 9V4h5", "M20 9V4h-5", "M4 15v5h5", "M20 15v5h-5"];
+
   return (
     <svg
       width="22"
@@ -116,69 +129,16 @@ function ExpandToggleIcon({ expanded }: { expanded: boolean }) {
       aria-hidden
       className="thumb-carousel__expand-icon"
     >
-      {expanded ? (
-        <>
-          <path
-            d="M9 4v5H4"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M15 4v5h5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M9 20v-5H4"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M15 20v-5h5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </>
-      ) : (
-        <>
-          <path
-            d="M4 9V4h5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M20 9V4h-5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 15v5h5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M20 15v5h-5"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </>
-      )}
+      {paths.map((d, i) => (
+        <path
+          key={d}
+          d={d}
+          stroke={EXPAND_RAINBOW[i]!}
+          strokeWidth={EXPAND_ICON_STROKE.width}
+          strokeLinecap={EXPAND_ICON_STROKE.Linecap}
+          strokeLinejoin={EXPAND_ICON_STROKE.linejoin}
+        />
+      ))}
     </svg>
   );
 }

@@ -737,6 +737,20 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 .thumb-carousel__expand-icon {
   display: block;
+  transform-origin: center center;
+  animation: thumb-carousel-expand-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes thumb-carousel-expand-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 0.88;
+  }
 }
 
 .thumb-carousel__item {
@@ -810,6 +824,10 @@ html.route-changing .bottom-nav__kart-badge--pop {
   .thumb-carousel__label,
   .thumb-carousel__expand-icon {
     transition: none;
+  }
+
+  .thumb-carousel__expand-icon {
+    animation: none;
   }
 }
 

@@ -496,6 +496,136 @@ html.route-changing .bottom-nav__kart-badge--pop {
   box-sizing: border-box;
 }
 
+/* Category shelf strip — expand control grows tiles and slides chrome down. */
+.thumb-carousel {
+  --thumb-tile: 4rem;
+  --thumb-label-h: 0px;
+  transition:
+    padding 380ms var(--pile-chrome-ease, ease-in-out),
+    background-color 380ms ease;
+}
+
+.thumb-carousel--expanded {
+  --thumb-tile: 7.25rem;
+  --thumb-label-h: 1.35rem;
+}
+
+.thumb-carousel__track {
+  align-items: flex-start;
+}
+
+.thumb-carousel__expand,
+.thumb-carousel__tile {
+  width: var(--thumb-tile);
+  height: var(--thumb-tile);
+  transition:
+    width 380ms var(--pile-chrome-ease, ease-in-out),
+    height 380ms var(--pile-chrome-ease, ease-in-out),
+    transform 160ms ease,
+    box-shadow 240ms ease,
+    background-color 240ms ease;
+}
+
+.thumb-carousel__expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  color: var(--mint);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--mint) 16%, white),
+      color-mix(in srgb, var(--mint) 6%, white)
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--mint) 28%, transparent),
+    0 4px 12px -8px rgba(40, 60, 100, 0.35);
+}
+
+.thumb-carousel__expand:hover {
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--mint) 24%, white),
+      color-mix(in srgb, var(--mint) 10%, white)
+    );
+}
+
+.thumb-carousel__expand:active {
+  transform: scale(0.95);
+}
+
+.thumb-carousel__expand-icon {
+  transition: transform 380ms var(--pile-chrome-ease, ease-in-out);
+}
+
+.thumb-carousel__expand-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.thumb-carousel__item {
+  display: flex;
+  width: var(--thumb-tile);
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: width 380ms var(--pile-chrome-ease, ease-in-out);
+}
+
+.thumb-carousel__tile {
+  display: block;
+  position: relative;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--pile-hue, var(--mint)) 14%, white),
+      color-mix(in srgb, var(--pile-hue, var(--mint)) 6%, white)
+    );
+}
+
+.thumb-carousel__label {
+  display: block;
+  max-width: 100%;
+  height: var(--thumb-label-h);
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition:
+    height 380ms var(--pile-chrome-ease, ease-in-out),
+    opacity 280ms ease;
+}
+
+.thumb-carousel__label.is-visible {
+  opacity: 1;
+}
+
+@media (min-width: 640px) {
+  .thumb-carousel--expanded {
+    --thumb-tile: 8rem;
+    --thumb-label-h: 1.45rem;
+  }
+
+  .thumb-carousel__label {
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumb-carousel,
+  .thumb-carousel__expand,
+  .thumb-carousel__tile,
+  .thumb-carousel__item,
+  .thumb-carousel__label,
+  .thumb-carousel__expand-icon {
+    transition: none;
+  }
+}
+
 .logo-glow {
   filter:
     drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))

@@ -1,4 +1,4 @@
-import type { Category } from "@/types/toy";
+import type { Audience, Category, CategoryId } from "@/types/toy";
 
 export const categories: Category[] = [
   {
@@ -59,6 +59,54 @@ export const categories: Category[] = [
   },
 ];
 
+/**
+ * Top 8 general piles, ordered for each accent mode.
+ * Unisex leads with broadly shared groups; boys/girls lead with
+ * mode-forward favorites while still listing the full set of 8.
+ */
+export const TOP_CATEGORY_IDS_BY_AUDIENCE: Record<Audience, CategoryId[]> = {
+  all: [
+    "blocks",
+    "outside",
+    "games",
+    "stem",
+    "cars",
+    "plush",
+    "pretend",
+    "dinos",
+  ],
+  boys: [
+    "cars",
+    "dinos",
+    "outside",
+    "stem",
+    "blocks",
+    "games",
+    "plush",
+    "pretend",
+  ],
+  girls: [
+    "plush",
+    "pretend",
+    "blocks",
+    "games",
+    "outside",
+    "stem",
+    "cars",
+    "dinos",
+  ],
+};
+
+const categoryById = new Map(categories.map((c) => [c.id, c]));
+
 export function getCategory(id: string): Category | undefined {
-  return categories.find((c) => c.id === id);
+  return categoryById.get(id as CategoryId) ?? categories.find((c) => c.id === id);
+}
+
+/** Top 8 general categories for the active unisex / boys / girls mode. */
+export function getCategoriesForAudience(audience: Audience = "all"): Category[] {
+  const order = TOP_CATEGORY_IDS_BY_AUDIENCE[audience] ?? TOP_CATEGORY_IDS_BY_AUDIENCE.all;
+  return order
+    .map((id) => categoryById.get(id))
+    .filter((c): c is Category => c != null);
 }

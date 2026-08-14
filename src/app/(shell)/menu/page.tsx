@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { categories } from "@/data/categories";
+import { getCategoriesForAudience } from "@/data/categories";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { ShelfHeader } from "@/components/ShelfHeader";
+import { useAccentStore } from "@/lib/accent-store";
 import {
   useCrazyModeStore,
   crazyModeRootClass,
@@ -13,6 +14,8 @@ import type { CategoryId } from "@/types/toy";
 
 export default function MenuPage() {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const audience = useAccentStore((s) => s.audience);
+  const menuCategories = getCategoriesForAudience(audience);
 
   return (
     <div
@@ -22,7 +25,7 @@ export default function MenuPage() {
       <div
         className={`page-scroll star-field grid min-h-0 flex-1 grid-cols-2 gap-3 px-4 py-5 scroll-pad-bottom sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:px-6 ${crazyModeScrollClass(crazyMode)}`}
       >
-        {categories.map((cat) => (
+        {menuCategories.map((cat) => (
           <div
             key={cat.id}
             className="shelf-panel shelf-panel--soft transition active:scale-[0.98]"

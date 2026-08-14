@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { categories } from "@/data/categories";
+import { getCategoriesForAudience } from "@/data/categories";
+import { useAccentStore } from "@/lib/accent-store";
 import { ToyPhoto } from "./ToyPhoto";
 
 export function ThumbCarousel() {
+  const audience = useAccentStore((s) => s.audience);
+  const cats = getCategoriesForAudience(audience);
+
   return (
     <div className="thumb-carousel px-3 py-3">
       <div className="flex gap-3 overflow-x-auto pb-0.5 scrollbar-none">
-        {categories.map((cat) => (
+        {cats.map((cat) => (
           <Link
             key={cat.id}
             href={`/shop/${cat.id}`}

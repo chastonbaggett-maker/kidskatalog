@@ -7,13 +7,20 @@ export type ToyMediaItem = {
   src: string;
 };
 
-/** True when the toy has at least one playable video clip. */
+/** Bundled demo clips under /videos/ — never treat as real catalog media. */
+function isStockDemoVideo(src: string): boolean {
+  return /^\/videos\//i.test(src.trim());
+}
+
+/** True when the toy has at least one playable imported/uploaded clip. */
 export function toyHasVideo(toy: Pick<Toy, "videos">): boolean {
-  return Boolean(toy.videos?.some((src) => Boolean(src?.trim())));
+  return getToyVideos(toy).length > 0;
 }
 
 export function getToyVideos(toy: Pick<Toy, "videos">): string[] {
-  return (toy.videos ?? []).map((src) => src.trim()).filter(Boolean);
+  return (toy.videos ?? [])
+    .map((src) => src.trim())
+    .filter((src) => Boolean(src) && !isStockDemoVideo(src));
 }
 
 /** Detail gallery: photos first, then any videos (for the thumb selector). */

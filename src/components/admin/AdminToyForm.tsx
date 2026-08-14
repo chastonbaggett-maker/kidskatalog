@@ -813,7 +813,7 @@ export function AdminToyForm({
               onChange={(e) =>
                 setForm((f) => ({ ...f, videosText: e.target.value }))
               }
-              placeholder="https://…/clip.mp4 or /videos/clip.mp4"
+              placeholder="https://…/clip.mp4 (from Amazon import)"
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">

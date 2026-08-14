@@ -26,16 +26,9 @@ export function ToyVideoFeed({ toys }: Props) {
   if (toys.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="shelf-panel max-w-md text-center">
-          <div className="shelf-panel__surface px-6 py-10">
-            <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
-              No toy videos yet
-            </p>
-            <p className="mt-2 text-[var(--ink-soft)]">
-              When a toy has a video in its photo selector, it shows up here.
-            </p>
-          </div>
-        </div>
+        <p className="font-[family-name:var(--font-display)] text-center text-2xl font-bold text-[var(--ink)] sm:text-3xl">
+          No video content available
+        </p>
       </div>
     );
   }

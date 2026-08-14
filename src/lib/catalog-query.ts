@@ -4,6 +4,7 @@ import {
   resolveFeaturedTier,
 } from "@/lib/featured-tier";
 import { weightedShuffleWithSeed } from "@/lib/shuffle";
+import { toyHasVideo } from "@/lib/toy-media";
 
 export type CatalogFilters = {
   category?: CategoryId | string;
@@ -46,8 +47,7 @@ export function filterCatalogToys(toys: Toy[], filters: CatalogFilters): Toy[] {
     if (exclude.has(toy.id)) return false;
     if (filters.category && toy.category !== filters.category) return false;
     if (filters.hasVideo) {
-      const hasClip = Boolean(toy.videos?.some((src) => Boolean(src?.trim())));
-      if (!hasClip) return false;
+      if (!toyHasVideo(toy)) return false;
     }
 
     const audienceOk =

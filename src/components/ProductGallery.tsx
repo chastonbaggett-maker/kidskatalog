@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ToyMediaItem } from "@/lib/toy-media";
+import { getToyVideos } from "@/lib/toy-media";
 import { ToyPhoto } from "./ToyPhoto";
 
 const SWIPE_THRESHOLD_PX = 48;
@@ -24,10 +25,10 @@ export function ProductGallery({
       kind: "image" as const,
       src,
     })),
-    ...(videos ?? [])
-      .map((src) => src.trim())
-      .filter(Boolean)
-      .map((src) => ({ kind: "video" as const, src })),
+    ...getToyVideos({ videos }).map((src) => ({
+      kind: "video" as const,
+      src,
+    })),
   ];
   const shots = media.length > 0 ? media : [];
   const [active, setActive] = useState(0);

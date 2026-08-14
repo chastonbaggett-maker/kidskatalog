@@ -214,10 +214,6 @@ export function ClickMelody() {
             </span>
           </button>
         </div>
-
-        <p className="site-music-player__title" title={track.title}>
-          {track.title}
-        </p>
       </div>
     </div>
   );

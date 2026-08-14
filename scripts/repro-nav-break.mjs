@@ -40,7 +40,7 @@ await page.locator('a[href^="/toy/"]').first().click({ timeout: 10000 });
 await page.waitForTimeout(1500);
 const afterToy = await snap("AFTER_TOY_NAV");
 
-await page.locator(".bottom-nav a[href='/shop'], a[href='/shop']").last().click({
+await page.locator(".bottom-nav [aria-label='Home'], a[href='/shop']").last().click({
   timeout: 10000,
   force: true,
 });

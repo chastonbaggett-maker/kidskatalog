@@ -572,11 +572,16 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 }
 
 .app-splash--armed .app-splash__pulse--a {
-  animation: app-splash-k-pulse 1.75s cubic-bezier(0.15, 0.55, 0.3, 1) infinite;
+  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) infinite;
 }
 
 .app-splash--armed .app-splash__pulse--b {
-  animation: app-splash-k-pulse 1.75s cubic-bezier(0.15, 0.55, 0.3, 1) 0.875s
+  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 0.6s
+    infinite;
+}
+
+.app-splash--armed .app-splash__pulse--c {
+  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 1.2s
     infinite;
 }
 
@@ -620,7 +625,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 
 .app-splash--armed .app-splash__logo {
   opacity: 1;
-  animation: app-splash-logo-pulse 1.75s ease-in-out infinite;
+  animation: app-splash-logo-pulse 1.8s ease-in-out infinite;
 }
 
 .app-splash--tap .app-splash__logo {
@@ -656,18 +661,23 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   }
 }
 
-/* Soft K-shaped ripple expanding from the mark. */
+/* Soft K-shaped ripple expanding from the mark.
+   Starts slightly larger than the solid logo so the ghost K reads
+   immediately (not only the star accents at the edge). */
 @keyframes app-splash-k-pulse {
   0% {
-    opacity: 0.78;
-    transform: scale(1.02);
+    opacity: 0.7;
+    transform: scale(1.22);
+    filter: blur(0);
   }
-  40% {
-    opacity: 0.42;
+  45% {
+    opacity: 0.35;
+    filter: blur(0.4px);
   }
   100% {
     opacity: 0;
-    transform: scale(2.45);
+    transform: scale(2.55);
+    filter: blur(1.2px);
   }
 }
 

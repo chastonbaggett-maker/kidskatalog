@@ -125,6 +125,7 @@ export function AppSplash() {
         <div className="app-splash__logo-wrap">
           <span className="app-splash__pulse app-splash__pulse--a" aria-hidden />
           <span className="app-splash__pulse app-splash__pulse--b" aria-hidden />
+          <span className="app-splash__pulse app-splash__pulse--c" aria-hidden />
           <span ref={logoRef} className="app-splash__logo" />
         </div>
       </div>

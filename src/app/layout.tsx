@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Caveat } from "next/font/google";
 import { AccentSync } from "@/components/AccentSync";
+import { AppSplash } from "@/components/AppSplash";
 import { StandaloneClass } from "@/components/StandaloneClass";
+import { SPLASH_BOOT_STYLE } from "@/lib/splash-boot";
 import "./globals.css";
 
 const APP_NAME = "KidsKatalog";
@@ -96,16 +98,24 @@ export default function RootLayout({
     <html
       lang="en"
       data-accent="both"
+      // Boot script (/kk-boot.js) sets data-splash for cold opens only —
+      // do not hardcode it here or client navigations will re-hide .app-shell.
+      suppressHydrationWarning
       className={`${display.variable} ${body.variable} ${script.variable} h-full overflow-hidden antialiased`}
     >
-      <body className="flex h-full min-h-0 flex-col overflow-hidden">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var m=window.matchMedia('(display-mode: standalone)').matches;var ios='standalone' in navigator&&navigator.standalone===true;if(m||ios)document.documentElement.setAttribute('data-standalone','true');}catch(e){}})();`,
-          }}
+      <head>
+        <style
+          id="app-splash-critical"
+          dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_STYLE }}
         />
+        {/* Plain src script — avoids React 19 "script tag while rendering" errors. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/kk-boot.js" />
+      </head>
+      <body className="flex h-full min-h-0 flex-col overflow-hidden">
         <StandaloneClass />
         <AccentSync />
+        <AppSplash />
         {children}
       </body>
     </html>

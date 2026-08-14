@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { categories } from "@/data/categories";
+import { ToyPhoto } from "./ToyPhoto";
 
 export function ThumbCarousel() {
   return (
-    <div className="overflow-hidden rounded-b-[1.5rem] border-t border-black/[0.04] bg-white px-3 py-3 shadow-[0_10px_28px_-10px_rgba(60,70,120,0.28),0_4px_10px_-6px_rgba(60,70,120,0.12)]">
+    <div className="thumb-carousel px-3 py-3">
       <div className="flex gap-3 overflow-x-auto pb-0.5 scrollbar-none">
         {categories.map((cat) => (
           <Link
@@ -14,13 +14,12 @@ export function ThumbCarousel() {
             aria-label={cat.label}
             title={cat.label}
           >
-            <Image
+            <ToyPhoto
               src={cat.image}
               alt={cat.imageAlt}
-              fill
-              unoptimized
-              className="object-cover"
-              sizes="64px"
+              loading="lazy"
+              decoding="async"
+              className="thumb-carousel__photo"
             />
           </Link>
         ))}

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { resolveBurstPoint, type BurstPoint } from "@/lib/burst-point";
+import { playConfettiBurstSound } from "@/lib/burst-sound";
 
 type ConfettiBit = {
   id: string;
@@ -38,11 +40,15 @@ export const GOLD_CONFETTI = [
   "#ffffff",
 ];
 
-export function useConfettiBurst() {
+export function useConfettiBurst(options?: {
+  /** Override portal host (e.g. splash overlay / document.body). */
+  portalRoot?: HTMLElement | null;
+}) {
   const uid = useId();
   const [bursting, setBursting] = useState(false);
   const [bits, setBits] = useState<ConfettiBit[]>([]);
   const [mounted, setMounted] = useState(false);
+  const portalRoot = options?.portalRoot ?? null;
 
   useEffect(() => {
     setMounted(true);
@@ -54,16 +60,21 @@ export function useConfettiBurst() {
     return () => window.clearTimeout(t);
   }, [bits]);
 
+  const clear = useCallback(() => {
+    setBursting(false);
+    setBits([]);
+  }, []);
+
   const fire = useCallback(
     (
-      origin: DOMRect | null | undefined,
+      origin: BurstPoint | DOMRect | null | undefined,
       colors: string[] = CONFETTI_COLORS,
     ) => {
-      if (!origin) return;
+      const point = resolveBurstPoint(origin);
+      if (!point) return;
       const palette = colors.length > 0 ? colors : CONFETTI_COLORS;
 
-      const cx = origin.left + origin.width / 2;
-      const cy = origin.top + origin.height / 2;
+      const { x: cx, y: cy } = point;
       const count = 56;
       const next: ConfettiBit[] = Array.from({ length: count }, (_, i) => {
         const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.55;
@@ -85,15 +96,21 @@ export function useConfettiBurst() {
 
       setBursting(true);
       setBits(next);
-      window.setTimeout(() => setBursting(false), 560);
+      playConfettiBurstSound();
+      window.setTimeout(() => setBursting(false), 760);
     },
     [uid],
   );
 
+  const fxRoot =
+    typeof document !== "undefined"
+      ? portalRoot ?? document.getElementById("kart-fx-root") ?? document.body
+      : null;
+
   const portal =
-    mounted && bits.length > 0
+    mounted && bits.length > 0 && fxRoot
       ? createPortal(
-          <div className="add-kart-confetti" aria-hidden>
+          <div className="add-kart-confetti add-kart-confetti--splash" aria-hidden>
             {bits.map((bit) => (
               <span
                 key={bit.id}
@@ -112,9 +129,9 @@ export function useConfettiBurst() {
               />
             ))}
           </div>,
-          document.body,
+          fxRoot,
         )
       : null;
 
-  return { fire, portal, bursting };
+  return { fire, clear, portal, bursting };
 }

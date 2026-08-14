@@ -1,49 +1,89 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { usePersistHydrated, getStorePersist } from "@/hooks/usePersistHydrated";
+import { useVisualSettled } from "@/hooks/useVisualSettled";
 import { useKartStore } from "@/lib/kart-store";
+import { readBootInKart } from "@/lib/kart-boot";
+import { pingMetrics } from "@/lib/metrics-client";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
+import { fireKartFlyBall, notifyKartFlyBallLand } from "@/lib/kart-fly-ball";
 
+const CLICK_PULSE_MS = 420;
+
+/**
+ * Minimal add/remove: click updates the store and button immediately.
+ * Fly-ball is a deferred decorative paint only (no store/React coupling).
+ */
 export function AddToKartButton({ toyId }: { toyId: string }) {
+  const pathname = usePathname();
   const inKart = useKartStore((s) => s.ids.includes(toyId));
-  const toggle = useKartStore((s) => s.toggle);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [charging, setCharging] = useState(false);
-  const { fire, portal, bursting } = useConfettiBurst();
+  const add = useKartStore((s) => s.add);
+  const remove = useKartStore((s) => s.remove);
+  const kartHydrated = usePersistHydrated(getStorePersist(useKartStore));
+  const visualReady = useVisualSettled(`${pathname}:${toyId}`);
+  const bootInKart = readBootInKart(toyId);
+  const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst();
+  const [pulsing, setPulsing] = useState(false);
+  const pulseTimerRef = useRef<number | undefined>(undefined);
 
-  const handlePointerDown = () => {
-    if (!inKart) setCharging(true);
+  const showInKart = kartHydrated ? inKart : bootInKart === true;
+
+  useEffect(
+    () => () => {
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+    },
+    [],
+  );
+
+  const triggerPulse = () => {
+    setPulsing(false);
+    window.requestAnimationFrame(() => {
+      setPulsing(true);
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = window.setTimeout(() => {
+        setPulsing(false);
+        pulseTimerRef.current = undefined;
+      }, CLICK_PULSE_MS);
+    });
   };
 
-  const clearCharge = () => setCharging(false);
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    triggerPulse();
 
-  const handleClick = () => {
-    const wasIn = inKart;
-    toggle(toyId);
-    clearCharge();
-    if (!wasIn) fire(btnRef.current?.getBoundingClientRect(), GOLD_CONFETTI);
+    if (showInKart) {
+      remove(toyId);
+      return;
+    }
+
+    const point = { x: e.clientX, y: e.clientY };
+    add(toyId);
+    pingMetrics("kart_add");
+
+    // Confetti + fly-ball run on mobile too (SFX unlocks in the click turn on iOS).
+    fireConfetti(point, GOLD_CONFETTI);
+    requestAnimationFrame(() => {
+      if (!fireKartFlyBall(point)) notifyKartFlyBallLand();
+    });
   };
 
   return (
     <>
       <button
-        ref={btnRef}
         type="button"
         onClick={handleClick}
-        onPointerDown={handlePointerDown}
-        onPointerUp={clearCharge}
-        onPointerLeave={clearCharge}
-        onPointerCancel={clearCharge}
-        className={`add-kart-btn rounded-full px-6 py-3.5 text-base font-bold shadow-md transition active:scale-[0.98] ${
-          inKart
-            ? "add-kart-btn--in text-white"
-            : "bg-[var(--blue)] text-white hover:bg-[var(--blue-deep)]"
-        } ${charging ? "add-kart-btn--charging" : ""} ${bursting ? "add-kart-btn--burst" : ""}`}
-        aria-pressed={inKart}
+        className={`add-kart-btn add-kart-btn--pill h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-base font-bold shadow-md ${
+          visualReady ? "add-kart-btn--visual-ready" : ""
+        } ${showInKart ? "add-kart-btn--in" : "add-kart-btn--ready"} ${
+          pulsing ? "add-kart-btn--pulse" : ""
+        }`}
+        aria-pressed={showInKart}
+        aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
       >
-        <span className="add-kart-btn__label relative z-[1] inline-flex items-center">
-          {inKart ? (
-            "In Kart — tap to remove"
+        <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">
+          {showInKart ? (
+            "Tap to remove"
           ) : (
             <>
               <span className="add-kart-btn__plus">+</span>
@@ -51,9 +91,8 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
             </>
           )}
         </span>
-        <span className="add-kart-btn__glow" aria-hidden />
       </button>
-      {portal}
+      {confettiPortal}
     </>
   );
 }

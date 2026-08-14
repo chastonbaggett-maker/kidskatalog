@@ -1,0 +1,133 @@
+"use client";
+
+import { useCallback, useRef, useState } from "react";
+
+type Props = {
+  onDigit: (digit: string) => void;
+  onDelete: () => void;
+  disabled?: boolean;
+};
+
+const LETTER_HINTS: Record<string, string> = {
+  "2": "ABC",
+  "3": "DEF",
+  "4": "GHI",
+  "5": "JKL",
+  "6": "MNO",
+  "7": "PQRS",
+  "8": "TUV",
+  "9": "WXYZ",
+};
+
+export function PinKeypad({ onDigit, onDelete, disabled }: Props) {
+  const [tappedKey, setTappedKey] = useState<string | null>(null);
+  const tapSeq = useRef(0);
+
+  const playTap = useCallback((key: string) => {
+    tapSeq.current += 1;
+    const seq = tapSeq.current;
+    setTappedKey(null);
+    requestAnimationFrame(() => {
+      if (seq === tapSeq.current) setTappedKey(key);
+    });
+  }, []);
+
+  const clearTap = useCallback((key: string) => {
+    setTappedKey((current) => (current === key ? null : current));
+  }, []);
+
+  const rows = [
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+    ["", "0", "del"],
+  ] as const;
+
+  return (
+    <div className="admin-pin-keypad mx-auto w-full max-w-[19rem]">
+      {rows.map((row, rowIndex) => (
+        <div key={`row-${rowIndex}`} className="admin-pin-keypad__row grid grid-cols-3 gap-4">
+          {row.map((key, colIndex) => {
+            if (key === "") {
+              return <div key={`spacer-${rowIndex}-${colIndex}`} aria-hidden />;
+            }
+
+            const isTapped = tappedKey === key;
+            const tapClass = isTapped ? "admin-pin-key--tap" : "";
+
+            if (key === "del") {
+              return (
+                <button
+                  key="del"
+                  type="button"
+                  disabled={disabled}
+                  onPointerDown={() => {
+                    if (disabled) return;
+                    playTap("del");
+                  }}
+                  onClick={() => onDelete()}
+                  onAnimationEnd={() => clearTap("del")}
+                  className={`admin-pin-key admin-pin-key--action flex h-[4.75rem] items-center justify-center rounded-full disabled:opacity-40 ${tapClass}`}
+                  aria-label="Delete"
+                >
+                  <BackspaceIcon />
+                </button>
+              );
+            }
+
+            const letters = LETTER_HINTS[key];
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled={disabled}
+                onPointerDown={() => {
+                  if (disabled) return;
+                  playTap(key);
+                }}
+                onClick={() => onDigit(key)}
+                onAnimationEnd={() => clearTap(key)}
+                className={`admin-pin-key flex h-[4.75rem] flex-col items-center justify-center rounded-full disabled:opacity-40 ${tapClass}`}
+              >
+                <span className="admin-pin-key__digit">{key}</span>
+                {letters ? (
+                  <span className="admin-pin-key__letters">{letters}</span>
+                ) : (
+                  <span className="admin-pin-key__letters" aria-hidden>
+                    &nbsp;
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BackspaceIcon() {
+  return (
+    <svg
+      className="admin-pin-key__delete-icon"
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M9.2 5.8h9.3c1.05 0 1.9.85 1.9 1.9v7.6c0 1.05-.85 1.9-1.9 1.9H9.2L4.5 12l4.7-6.2z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11.8 9.6 14.8 12.6M14.8 9.6 11.8 12.6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

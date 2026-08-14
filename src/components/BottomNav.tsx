@@ -1,9 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { AdminPanel } from "@/components/admin/AdminPanel";
+import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
-import { useKartStore } from "@/lib/kart-store";
+import { useCrazyModeStore } from "@/lib/crazy-mode-store";
+import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
+import { beginRouteChange } from "@/lib/route-change";
+import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
+import { KartNavLink } from "@/components/KartNavLink";
+import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
+import { usePileRevealGate } from "@/hooks/usePileRevealGate";
+
+const BRAND_TAP_TARGET = 10;
+const BRAND_TAP_WINDOW_MS = 2500;
+/** Wait longer than a rapid multi-tap before treating tap 1 as "go home". */
+const BRAND_SINGLE_TAP_NAV_MS = 400;
 
 function useViewAccentClass() {
   const audience = useAccentStore((s) => s.audience);
@@ -21,50 +36,179 @@ function useViewBadgeClass() {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const count = useKartStore((s) => s.ids.length);
+  const router = useRouter();
   const accentClass = useViewAccentClass();
   const badgeClass = useViewBadgeClass();
+  const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
+  const enterPhase = useToyPileModeStore((s) => s.enterPhase);
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const onPileBrowseRoute = isPileBrowseRoute(pathname);
+  const revealGateOpen = usePileRevealGate();
+  // Raised shelf with mode filters only on browse routes; mode itself stays session-wide.
+  const pileNavShelf =
+    onPileBrowseRoute &&
+    toyPileMode &&
+    enterPhase !== "chrome" &&
+    revealGateOpen;
+  const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
+  const pileShelfMounted = pileNavShelf;
+  const [pinGateOpen, setPinGateOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const brandTapCount = useRef(0);
+  const brandTapTimer = useRef<number | null>(null);
+  const brandNavTimer = useRef<number | null>(null);
 
-  const items = [
+  const handleAdminUnlocked = useCallback(() => {
+    setPinGateOpen(false);
+    setAdminOpen(true);
+  }, []);
+
+  function resetBrandTaps() {
+    brandTapCount.current = 0;
+    if (brandTapTimer.current !== null) {
+      window.clearTimeout(brandTapTimer.current);
+      brandTapTimer.current = null;
+    }
+    if (brandNavTimer.current !== null) {
+      window.clearTimeout(brandNavTimer.current);
+      brandNavTimer.current = null;
+    }
+  }
+
+  function handleBrandTap(e: React.MouseEvent) {
+    e.preventDefault();
+    brandTapCount.current += 1;
+
+    if (brandNavTimer.current !== null) {
+      window.clearTimeout(brandNavTimer.current);
+      brandNavTimer.current = null;
+    }
+
+    if (brandTapTimer.current === null) {
+      brandTapTimer.current = window.setTimeout(() => {
+        resetBrandTaps();
+      }, BRAND_TAP_WINDOW_MS);
+    }
+
+    if (brandTapCount.current >= BRAND_TAP_TARGET) {
+      resetBrandTaps();
+      setPinGateOpen(true);
+      return;
+    }
+
+    // Only a lone tap should navigate home — not taps 2–9 of the admin easter egg.
+    if (brandTapCount.current === 1) {
+      brandNavTimer.current = window.setTimeout(() => {
+        if (brandTapCount.current === 1) {
+          const onHome =
+            pathname === "/" ||
+            pathname.startsWith("/shop") ||
+            pathname.startsWith("/toy");
+          if (!onHome) {
+            beginRouteChange();
+            router.push("/shop");
+          }
+        }
+        brandNavTimer.current = null;
+      }, BRAND_SINGLE_TAP_NAV_MS);
+    }
+  }
+
+  const navItems = [
     { href: "/shop", label: "Home", icon: HomeIcon },
-    { href: "/kart", label: "Kart", icon: KartIcon, badge: count },
     { href: "/menu", label: "Menu", icon: MenuIcon },
-    { href: "/", label: "Brand", icon: BrandIcon, brand: true },
   ] as const;
 
+  const brandActive =
+    pathname === "/" || pathname.startsWith("/shop") || pathname.startsWith("/toy");
+
+  const showFrostFill = !pileNavShelf || pileShelfMounted;
+
   return (
-    <nav className="bottom-nav absolute inset-x-0 bottom-0 z-40 rounded-t-[2rem] border-t border-white/40 px-2.5 pt-2 shadow-[0_-8px_24px_-12px_rgba(80,100,180,0.28)]">
-      <ul className="flex items-center justify-around">
-        {items.map((item) => {
-          const active =
-            item.href === "/shop"
-              ? pathname.startsWith("/shop") || pathname.startsWith("/toy")
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
-                  active ? "opacity-100" : "opacity-80"
-                }`}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon active={active} />
-                {"badge" in item && item.badge > 0 && (
-                  <span
-                    className={`absolute right-1.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold text-white ${badgeClass}`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      <nav
+        className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
+          pileNavShelf ? " bottom-nav--pile bottom-nav-enter" : ""
+        }${pileShelfMounted ? " is-shelf-raised" : ""}${
+          pileNavEnterVisible ? " is-enter-visible" : ""
+        }${crazyMode ? " bottom-nav--crazy" : ""}`}
+      >
+        {showFrostFill && (
+          <div className="bottom-nav__frost" aria-hidden="true" />
+        )}
+        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
+          {navItems.slice(0, 1).map((item) => {
+            const active =
+              pathname.startsWith("/shop") || pathname.startsWith("/toy");
+            const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                    active ? "opacity-100" : "opacity-80"
+                  }`}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon active={active} />
+                </Link>
+              </li>
+            );
+          })}
+          <KartNavLink
+            active={pathname === "/kart" || pathname.startsWith("/kart/")}
+            accentClass={accentClass}
+            badgeClass={badgeClass}
+          />
+          {navItems.slice(1).map((item) => {
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                    active ? "opacity-100" : "opacity-80"
+                  }`}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon active={active} />
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              onClick={handleBrandTap}
+              className={`relative flex h-14 w-16 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${accentClass} ${
+                brandActive ? "opacity-100" : "opacity-80"
+              }`}
+              aria-label="Brand"
+            >
+              <BrandIcon />
+            </button>
+          </li>
+        </ul>
+        {pileShelfMounted && (
+          <div
+            ref={registerPileNavModeRow}
+            className="bottom-nav__mode-row"
+            data-testid="pile-nav-mode-row"
+          />
+        )}
+      </nav>
+
+      <AdminPinGate
+        open={pinGateOpen}
+        onClose={() => setPinGateOpen(false)}
+        onUnlocked={handleAdminUnlocked}
+      />
+      <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
+    </>
   );
 }
 
@@ -77,22 +221,6 @@ function HomeIcon({ active }: { active?: boolean }) {
         strokeWidth={active ? 2.4 : 2}
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function KartIcon() {
-  return (
-    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.5L22 8H7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="20" r="1.4" fill="currentColor" />
-      <circle cx="18" cy="20" r="1.4" fill="currentColor" />
     </svg>
   );
 }

@@ -21,6 +21,7 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   abort: () => void;
+  onstart: (() => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
@@ -60,8 +61,11 @@ export function FeedHeader({
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const [micPop, setMicPop] = useState(false);
+  const [keyboardHint, setKeyboardHint] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const baseQueryRef = useRef(query);
+  const hintTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setSupported(Boolean(getSpeechRecognition()));
@@ -71,7 +75,23 @@ export function FeedHeader({
     return () => {
       recognitionRef.current?.abort();
       recognitionRef.current = null;
+      if (hintTimerRef.current != null) {
+        window.clearTimeout(hintTimerRef.current);
+      }
     };
+  }, []);
+
+  const focusSearch = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    // Place caret at end so spoken text appends like keyboard dictation.
+    const end = input.value.length;
+    try {
+      input.setSelectionRange(end, end);
+    } catch {
+      /* some input types reject selection */
+    }
   }, []);
 
   const stopListening = useCallback(() => {
@@ -83,56 +103,101 @@ export function FeedHeader({
     const Ctor = getSpeechRecognition();
     if (!Ctor) {
       setSupported(false);
-      return;
+      return false;
     }
 
     recognitionRef.current?.abort();
     const recognition = new Ctor();
-    recognition.lang = "en-US";
-    recognition.continuous = false;
+    recognition.lang =
+      typeof navigator !== "undefined" && navigator.language
+        ? navigator.language
+        : "en-US";
+    // Keep listening across short pauses — closer to keyboard speak-to-text.
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-    baseQueryRef.current = query;
+    baseQueryRef.current = query.trim();
     recognitionRef.current = recognition;
 
-    recognition.onresult = (event) => {
-      let interim = "";
-      let finalText = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const piece = result[0]?.transcript ?? "";
-        if (result.isFinal) finalText += piece;
-        else interim += piece;
-      }
-      const spoken = (finalText || interim).trim();
-      if (!spoken) return;
-      const base = baseQueryRef.current.trim();
-      onQueryChange(base ? `${base} ${spoken}` : spoken);
+    recognition.onstart = () => {
+      setListening(true);
+      focusSearch();
     };
 
-    recognition.onerror = () => {
+    recognition.onresult = (event) => {
+      let spoken = "";
+      for (let i = 0; i < event.results.length; i++) {
+        spoken += event.results[i]?.[0]?.transcript ?? "";
+      }
+      spoken = spoken.replace(/\s+/g, " ").trim();
+      if (!spoken) return;
+      const base = baseQueryRef.current;
+      onQueryChange(base ? `${base} ${spoken}` : spoken);
+      // Keep the field focused/caret ready while dictating.
+      focusSearch();
+    };
+
+    recognition.onerror = (event) => {
+      // "aborted" / "no-speech" are normal end states — don't flash unsupported.
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setSupported(false);
+      }
       setListening(false);
     };
 
     recognition.onend = () => {
       setListening(false);
+      recognitionRef.current = null;
     };
 
     try {
+      focusSearch();
       recognition.start();
       setListening(true);
+      return true;
     } catch {
       setListening(false);
+      return false;
     }
-  }, [onQueryChange, query]);
+  }, [focusSearch, onQueryChange, query]);
+
+  const showKeyboardHint = useCallback(() => {
+    setKeyboardHint(true);
+    if (hintTimerRef.current != null) {
+      window.clearTimeout(hintTimerRef.current);
+    }
+    hintTimerRef.current = window.setTimeout(() => {
+      setKeyboardHint(false);
+      hintTimerRef.current = null;
+    }, 3200);
+  }, []);
 
   const toggleVoice = () => {
     if (inert) return;
     setMicPop(true);
     window.setTimeout(() => setMicPop(false), 520);
-    if (listening) stopListening();
-    else startListening();
+
+    if (listening) {
+      stopListening();
+      focusSearch();
+      return;
+    }
+
+    // Always open the search field first (brings up the mobile keyboard).
+    focusSearch();
+
+    const started = startListening();
+    if (!started) {
+      // No Web Speech API — rely on the system keyboard mic / dictation key.
+      showKeyboardHint();
+    }
   };
+
+  const placeholder = listening
+    ? "Listening… speak now"
+    : keyboardHint
+      ? "Tap the mic on your keyboard"
+      : "Search toys";
 
   return (
     <header className="bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)]">
@@ -157,9 +222,15 @@ export function FeedHeader({
             <SearchIcon />
           </span>
           <input
+            ref={inputRef}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder={listening ? "Listening…" : "Search toys"}
+            placeholder={placeholder}
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             tabIndex={inert ? -1 : 0}
             readOnly={inert}
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--ink)] outline-none placeholder:text-[var(--ink-soft)]"
@@ -167,19 +238,23 @@ export function FeedHeader({
           <button
             type="button"
             tabIndex={inert ? -1 : 0}
-            disabled={inert || !supported}
+            disabled={inert}
             onClick={toggleVoice}
             className={`voice-mic relative -mr-1 ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50 ${micClass} ${
               listening ? "voice-mic-listening" : ""
             } ${micPop ? "voice-mic-pop" : ""}`}
-            aria-label={listening ? "Stop voice search" : "Voice search"}
+            aria-label={
+              listening
+                ? "Stop speak to text"
+                : "Speak to text"
+            }
             aria-pressed={listening}
             title={
-              supported
-                ? listening
-                  ? "Tap to stop"
-                  : "Talk to type"
-                : "Voice search isn’t supported in this browser"
+              listening
+                ? "Tap to stop"
+                : supported
+                  ? "Speak to type in search"
+                  : "Opens search — use the mic on your keyboard"
             }
           >
             <span className="voice-mic__rings" aria-hidden>

@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { Audience } from "@/types/toy";
 
 type AccentState = {
@@ -11,15 +10,12 @@ type AccentState = {
 
 export type AccentAttr = "both" | "boys" | "girls";
 
-export const useAccentStore = create<AccentState>()(
-  persist(
-    (set) => ({
-      audience: "all",
-      setAudience: (audience) => set({ audience }),
-    }),
-    { name: "kidskatalog-accent" },
-  ),
-);
+/** Session-only — always starts unisex on full page load. */
+export const useAccentStore = create<AccentState>((set) => ({
+  audience: "all",
+  setAudience: (audience) =>
+    set((state) => (state.audience === audience ? state : { audience })),
+}));
 
 export function audienceToAccentAttr(audience: Audience): AccentAttr {
   if (audience === "boys") return "boys";

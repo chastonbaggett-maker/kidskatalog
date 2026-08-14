@@ -22,13 +22,46 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   // next-pwa uses webpack; keep an empty turbopack config for Next 16
   turbopack: {},
+  serverExternalPackages: ["@libsql/client", "libsql"],
+  // Allow Cursor browser / VM chrome / tunnel hosts in dev HMR
+  allowedDevOrigins: [
+    "localhost",
+    "127.0.0.1",
+    "*.trycloudflare.com",
+  ],
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images-na.ssl-images-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images-eu.ssl-images-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+      },
     ],
+  },
+  // metrics.json / test artifacts live in-repo; watching them causes CSS HMR FOUC on kart add
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: /node_modules|\.git|data\/.*\.json|test-results/,
+      };
+    }
+    return config;
   },
 };
 

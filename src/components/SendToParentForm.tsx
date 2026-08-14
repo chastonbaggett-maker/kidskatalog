@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { Toy } from "@/types/toy";
 import { downloadKartPdf } from "@/lib/pdf";
+import { pingMetrics } from "@/lib/metrics-client";
 
 type Props = {
   toys: Toy[];
@@ -45,6 +46,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
       }
 
       downloadKartPdf(toys, kidName);
+      pingMetrics("kart_email");
       setStatus("ok");
       setMessage(
         data.demo
@@ -61,8 +63,9 @@ export function SendToParentForm({ toys, onSent }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-4 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-black/[0.03]"
+      className="shelf-panel shelf-panel--soft"
     >
+      <div className="shelf-panel__surface flex flex-col gap-4 p-5">
       <div>
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
           Send to Mom or Dad
@@ -117,6 +120,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
           {message}
         </p>
       )}
+      </div>
     </form>
   );
 }

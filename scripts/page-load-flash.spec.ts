@@ -1,0 +1,77 @@
+import { test, expect } from "@playwright/test";
+
+test.describe("page load image flash", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      const hits: Array<{ src: string; w: number; h: number; t: number }> = [];
+      (window as unknown as { __flashHits: typeof hits }).__flashHits = hits;
+
+      const scan = () => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        for (const img of document.querySelectorAll<HTMLImageElement>("img")) {
+          const r = img.getBoundingClientRect();
+          if (r.width >= vw * 0.75 && r.height >= vh * 0.75) {
+            hits.push({
+              src: img.src.slice(-56),
+              w: Math.round(r.width),
+              h: Math.round(r.height),
+              t: Math.round(performance.now()),
+            });
+          }
+        }
+        requestAnimationFrame(scan);
+      };
+
+      requestAnimationFrame(scan);
+    });
+  });
+
+  test("toy page load", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("http://localhost:3456/toy/sky-rocket", {
+      waitUntil: "networkidle",
+    });
+    await page.waitForTimeout(1500);
+
+    const hits = await page.evaluate(
+      () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
+    );
+    expect(hits, JSON.stringify(hits.slice(0, 3))).toEqual([]);
+  });
+
+  test("shop page load", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("http://localhost:3456/shop", { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
+
+    const hits = await page.evaluate(
+      () => (window as unknown as { __flashHits: unknown[] }).__flashHits,
+    );
+    expect(hits, JSON.stringify(hits.slice(0, 3))).toEqual([]);
+  });
+
+  test("roar-rex uses direct img URLs without fullscreen flash", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    for (const path of ["/shop", "/toy/roar-rex"]) {
+      await page.goto(`http://localhost:3456${path}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(1200);
+
+      const roarMeta = await page.evaluate(() => {
+        const imgs = Array.from(document.querySelectorAll<HTMLImageElement>("img")).filter(
+          (img) => img.src.includes("roar-rex"),
+        );
+        const oversized = imgs.filter((img) => {
+          const r = img.getBoundingClientRect();
+          return r.width >= window.innerWidth * 0.95 || r.height >= window.innerHeight * 0.85;
+        });
+        const viaNext = imgs.some((img) => img.src.includes("/_next/image"));
+        return { count: imgs.length, oversized: oversized.length, viaNext };
+      });
+
+      expect(roarMeta.oversized, `${path} oversized roar-rex`).toBe(0);
+      expect(roarMeta.viaNext, `${path} roar-rex via _next/image`).toBe(false);
+    }
+  });
+});

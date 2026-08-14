@@ -2343,10 +2343,6 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 
-.bottom-nav__item--active {
-  /* Accent color comes from utility class (mint / boys / girls). */
-}
-
 .bottom-nav__item--active::before {
   content: "";
   position: absolute;

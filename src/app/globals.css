@@ -2405,7 +2405,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   top: 50%;
   width: 3.65rem;
   height: 3.65rem;
-  border-radius: 999px;
+  /* Squircle — match category thumb tiles (`rounded-2xl` / 1rem). */
+  border-radius: 1rem;
   background: var(--bottom-nav-accent, var(--mint));
   transform: translate(-50%, -50%) scale(1);
   pointer-events: none;

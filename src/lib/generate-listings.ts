@@ -304,8 +304,8 @@ export async function buildDraftFromAsin(
     metaContent(html, "description", "name");
   const imageUrls = extractListingImages(html);
   if (imageUrls.length === 0) return null;
-  // One primary video only — keeps Watch/gallery simple for new imports.
-  const videoUrls = extractListingVideos(html).slice(0, 1);
+  // Prefer gallery clips for Watch + product pages (up to MAX_VIDEOS).
+  const videoUrls = extractListingVideos(html);
 
   const enriched = buildOptions?.enrich
     ? await buildOptions.enrich({
@@ -365,7 +365,7 @@ export async function buildDraftFromAsin(
   let videos: string[] | undefined;
   if (videoUrls.length > 0) {
     // Keep remote stream/progressive URLs — do not download or store video files.
-    videos = [videoUrls[0]!];
+    videos = videoUrls;
   }
 
   return {

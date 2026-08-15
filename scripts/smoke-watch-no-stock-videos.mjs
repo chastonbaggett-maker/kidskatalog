@@ -1,5 +1,6 @@
 /**
- * Smoke: stock /videos/ demos are ignored; Watch empty copy is correct.
+ * Smoke: stock /videos/ demos are ignored; Watch empty copy is correct;
+ * Watch expands every product clip into its own card entry.
  * Run: node scripts/smoke-watch-no-stock-videos.mjs
  */
 import assert from "node:assert/strict";
@@ -11,7 +12,9 @@ const jiti = createJiti(import.meta.url, {
   interopDefault: true,
   alias: { "@": "/workspace/src" },
 });
-const { getToyVideos, toyHasVideo } = jiti("../src/lib/toy-media.ts");
+const { getToyVideos, toyHasVideo, buildWatchVideoEntries } = jiti(
+  "../src/lib/toy-media.ts",
+);
 const { filterCatalogToys } = jiti("../src/lib/catalog-query.ts");
 
 assert.deepEqual(getToyVideos({ videos: ["/videos/flower.mp4"] }), []);
@@ -33,6 +36,30 @@ const filtered = filterCatalogToys(
 assert.equal(filtered.length, 1);
 assert.equal(filtered[0].id, "b");
 
+const entries = buildWatchVideoEntries([
+  {
+    id: "multi",
+    name: "Multi",
+    blurb: "x",
+    category: "cars",
+    audience: "all",
+    ageMin: 3,
+    ageMax: 8,
+    image: "/toys/x.jpg",
+    imageAlt: "x",
+    affiliateUrl: "https://example.com",
+    color: "#000",
+    videos: [
+      "https://cdn.example.com/a.mp4",
+      "https://cdn.example.com/b.mp4",
+      "/videos/ignored.mp4",
+    ],
+  },
+]);
+assert.equal(entries.length, 2);
+assert.equal(entries[0].key, "multi::0");
+assert.equal(entries[1].src, "https://cdn.example.com/b.mp4");
+
 const catalog = JSON.parse(readFileSync("data/catalog.json", "utf8"));
 const toys = catalog.toys || catalog;
 const stockLeft = toys.filter((t) =>
@@ -53,7 +80,14 @@ try {
   if (await splash.count()) {
     await splash.click({ force: true }).catch(() => {});
   }
-  await page.getByText("No video content available").waitFor({ timeout: 10000 });
+  // Local seed catalog has no product videos → empty copy.
+  // Production catalogs with videos render .toy-video-feed instead.
+  const empty = page.getByText("No video content available");
+  const feed = page.locator(".toy-video-feed");
+  await Promise.race([
+    empty.waitFor({ timeout: 10000 }).then(() => "empty"),
+    feed.waitFor({ timeout: 10000 }).then(() => "feed"),
+  ]);
   const html = await page.content();
   assert.doesNotMatch(html, /No toy videos yet/i);
   assert.doesNotMatch(html, /\/videos\/(flower|clip-1|demo-mint)\.mp4/);

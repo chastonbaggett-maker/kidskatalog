@@ -39,3 +39,29 @@ export function buildToyGalleryMedia(
   }));
   return [...photos, ...videos];
 }
+
+/** One Watch feed card per playable clip across the catalog. */
+export type WatchVideoEntry = {
+  key: string;
+  toy: Toy;
+  src: string;
+  clipIndex: number;
+};
+
+export function buildWatchVideoEntries(
+  toys: readonly Toy[],
+): WatchVideoEntry[] {
+  const entries: WatchVideoEntry[] = [];
+  for (const toy of toys) {
+    const clips = getToyVideos(toy);
+    clips.forEach((src, clipIndex) => {
+      entries.push({
+        key: `${toy.id}::${clipIndex}`,
+        toy,
+        src,
+        clipIndex,
+      });
+    });
+  }
+  return entries;
+}

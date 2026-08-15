@@ -139,7 +139,7 @@ export function AdminToyForm({
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",
-        videosText: (editing.videos ?? []).slice(0, 1).join("\n"),
+        videosText: (editing.videos ?? []).join("\n"),
       });
       setGalleryIndex(0);
     } else {
@@ -174,7 +174,7 @@ export function AdminToyForm({
             ? [p.image]
             : [];
       const importedVideos = Array.isArray(p.videos)
-        ? p.videos.map((src) => src.trim()).filter(Boolean).slice(0, 1)
+        ? p.videos.map((src) => src.trim()).filter(Boolean)
         : [];
       const mainImage = (p.image || gallery[0] || "").trim();
       const orderedGallery = mainImage
@@ -197,7 +197,7 @@ export function AdminToyForm({
         imageAlt: p.imageAlt || p.name,
         // Local gallery paths are already downloaded — no remote imageUrl needed.
         imageUrl: "",
-        videosText: importedVideos[0] ?? "",
+        videosText: importedVideos.join("\n"),
       });
       if (p.grokWarning) {
         setError(p.grokWarning);
@@ -347,8 +347,7 @@ export function AdminToyForm({
     const videos = form.videosText
       .split(/[\n,]+/)
       .map((src) => src.trim())
-      .filter(Boolean)
-      .slice(0, 1);
+      .filter(Boolean);
 
     const toy: Toy & { imageUrl?: string } = {
       id:
@@ -809,29 +808,34 @@ export function AdminToyForm({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">Video link</span>
-            <input
+            <span className="text-sm font-semibold">Video links</span>
+            <textarea
               value={form.videosText}
               onChange={(e) =>
                 setForm((f) => ({ ...f, videosText: e.target.value }))
               }
-              placeholder="https://…/clip.mp4 or …/….m3u8"
-              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+              placeholder={"https://…/clip.m3u8\nhttps://…/clip.mp4"}
+              rows={3}
+              className="rounded-2xl bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">
-              One primary video link. Amazon import fills this with the remote
-              stream URL (not downloaded). Preview below before you save.
+              One URL per line. Amazon import can fill several remote stream
+              URLs (not downloaded). They appear on the product page and Watch.
             </span>
           </label>
 
-          {form.videosText.trim() ? (
-            <div className="overflow-hidden rounded-xl bg-black">
+          {form.videosText
+            .split(/[\n,]+/)
+            .map((src) => src.trim())
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((src) => (
+            <div key={src} className="overflow-hidden rounded-xl bg-black">
               <p className="bg-[var(--lavender)]/60 px-3 py-1.5 text-xs font-semibold text-[var(--ink)]">
                 Video preview
               </p>
               <PlayableVideo
-                key={form.videosText.trim()}
-                src={form.videosText.trim()}
+                src={src}
                 className="aspect-video w-full bg-black"
                 controls
                 playsInline
@@ -839,7 +843,7 @@ export function AdminToyForm({
                 poster={form.image || undefined}
               />
             </div>
-          ) : null}
+          ))}
 
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
 

@@ -83,8 +83,7 @@ export async function importAmazonListingPreview(
     draft.images && draft.images.length > 0 ? draft.images : [draft.image];
   const videos = (draft.videos ?? [])
     .map((src) => src.trim())
-    .filter(Boolean)
-    .slice(0, 1);
+    .filter(Boolean);
 
   return {
     asin: draft.asin || asin,

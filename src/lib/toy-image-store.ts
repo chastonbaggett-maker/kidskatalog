@@ -46,8 +46,9 @@ export async function processProductJpeg(input: Buffer): Promise<Buffer> {
 }
 
 /**
- * Persist a toy image for production (Vercel Blob) or local `public/toys`.
+ * Persist a toy **image** for production (Vercel Blob) or local `public/toys`.
  * Returns null when neither store is writable (caller may keep the remote URL).
+ * Do not use for videos — product videos stay as remote stream links only.
  */
 export async function persistToyImageBytes(
   bytes: Buffer,
@@ -83,9 +84,10 @@ export async function persistToyImageBytes(
 }
 
 /**
- * Download remote product images, process them, and store via Blob (prod) or disk (dev).
+ * Download remote product **images**, process them, and store via Blob (prod) or disk (dev).
  * Falls back to the original remote URLs when persistence is unavailable so imports
  * still succeed on Vercel without a writable public/ folder.
+ * Videos are never passed through here — keep remote links in `toy.videos`.
  */
 export async function downloadAndStoreGallery(
   imageUrls: string[],

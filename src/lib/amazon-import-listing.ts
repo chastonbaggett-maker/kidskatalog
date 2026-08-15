@@ -5,6 +5,7 @@ import { getDraftToys } from "@/lib/draft-store";
 import { draftListingWithGrok } from "@/lib/grok-listing";
 import { buildDraftFromAsin } from "@/lib/generate-listings";
 import { normalizeGenerateOptions } from "@/lib/generate-options";
+import { normalizeRemoteVideoLinks } from "@/lib/toy-media";
 import type { Audience, CategoryId } from "@/types/toy";
 
 export type AmazonImportPreview = {
@@ -81,10 +82,7 @@ export async function importAmazonListingPreview(
 
   const images =
     draft.images && draft.images.length > 0 ? draft.images : [draft.image];
-  const videos = (draft.videos ?? [])
-    .map((src) => src.trim())
-    .filter(Boolean)
-    .slice(0, 1);
+  const videos = normalizeRemoteVideoLinks(draft.videos);
 
   return {
     asin: draft.asin || asin,

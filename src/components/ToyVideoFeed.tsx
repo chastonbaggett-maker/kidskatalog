@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
-import { getToyVideos } from "@/lib/toy-media";
+import {
+  buildWatchVideoEntries,
+  type WatchVideoEntry,
+} from "@/lib/toy-media";
 import { PlayableVideo } from "./PlayableVideo";
 
 type Props = {
@@ -12,7 +15,7 @@ type Props = {
 };
 
 /**
- * Vertical Watch feed — one video card per toy that has clips.
+ * Vertical Watch feed — one video card per product clip across the catalog.
  * The in-view card autoplays; others pause when the next takes focus.
  */
 export function ToyVideoFeed({ toys }: Props) {
@@ -24,9 +27,10 @@ export function ToyVideoFeed({ toys }: Props) {
         ? "bg-[var(--girls-chip)]"
         : "bg-[var(--mint)]";
 
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const entries = useMemo(() => buildWatchVideoEntries(toys), [toys]);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  if (toys.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-16">
         <p className="font-[family-name:var(--font-display)] text-center text-2xl font-bold text-[var(--ink)] sm:text-3xl">
@@ -39,16 +43,16 @@ export function ToyVideoFeed({ toys }: Props) {
   return (
     <div className="toy-video-feed page-scroll star-field min-h-0 flex-1 scroll-pad-bottom">
       <div className="toy-video-feed__list mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4 sm:max-w-xl sm:px-5 lg:max-w-2xl">
-        {toys.map((toy, index) => (
+        {entries.map((entry, index) => (
           <ToyVideoCard
-            key={toy.id}
-            toy={toy}
+            key={entry.key}
+            entry={entry}
             index={index}
             viewBtnClass={viewBtnClass}
-            active={activeId === toy.id}
+            active={activeKey === entry.key}
             onActiveChange={(isActive) => {
-              if (isActive) setActiveId(toy.id);
-              else setActiveId((cur) => (cur === toy.id ? null : cur));
+              if (isActive) setActiveKey(entry.key);
+              else setActiveKey((cur) => (cur === entry.key ? null : cur));
             }}
           />
         ))}
@@ -58,20 +62,19 @@ export function ToyVideoFeed({ toys }: Props) {
 }
 
 function ToyVideoCard({
-  toy,
+  entry,
   index,
   viewBtnClass,
   active,
   onActiveChange,
 }: {
-  toy: Toy;
+  entry: WatchVideoEntry;
   index: number;
   viewBtnClass: string;
   active: boolean;
   onActiveChange: (active: boolean) => void;
 }) {
-  const clips = getToyVideos(toy);
-  const src = clips[0] ?? "";
+  const { toy, src, clipIndex } = entry;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
   const readyRef = useRef(false);
@@ -114,10 +117,10 @@ function ToyVideoCard({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
+        const entryObs = entries[0];
+        if (!entryObs) return;
         const mostlyVisible =
-          entry.isIntersecting && entry.intersectionRatio >= 0.6;
+          entryObs.isIntersecting && entryObs.intersectionRatio >= 0.6;
         onActiveChange(mostlyVisible);
       },
       { threshold: [0.25, 0.6, 0.85], rootMargin: "0px 0px -10% 0px" },
@@ -129,11 +132,15 @@ function ToyVideoCard({
 
   if (!src) return null;
 
+  const ariaName =
+    clipIndex > 0 ? `${toy.name} video ${clipIndex + 1}` : toy.name;
+
   return (
     <article
       ref={cardRef}
       className="toy-video-card feed-card relative mx-0"
       data-toy-id={toy.id}
+      data-clip-index={clipIndex}
       data-active={active ? "1" : "0"}
       style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
     >
@@ -147,7 +154,7 @@ function ToyVideoCard({
           muted
           loop
           preload="auto"
-          aria-label={`${toy.name} video`}
+          aria-label={`${ariaName} video`}
           onReady={() => {
             readyRef.current = true;
             if (inViewRef.current) void tryPlay();
@@ -171,7 +178,7 @@ function ToyVideoCard({
           <button
             type="button"
             className="toy-video-card__play"
-            aria-label={`Play ${toy.name}`}
+            aria-label={`Play ${ariaName}`}
             onClick={() => void tryPlay()}
           >
             <span aria-hidden />

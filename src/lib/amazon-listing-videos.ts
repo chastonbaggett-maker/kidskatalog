@@ -3,7 +3,7 @@
  * Shared (no server-only) so smokes and import code can both use it.
  */
 
-const MAX_VIDEOS = 1;
+const MAX_VIDEOS = 8;
 
 /** Normalize escaped Amazon URLs from embedded JSON / HTML-encoded blobs. */
 export function normalizeAmazonMediaUrl(raw: string): string {

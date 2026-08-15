@@ -9,12 +9,18 @@ import {
   getCatalogToys,
   updateCatalogToy,
 } from "@/lib/catalog-store";
+import { normalizeRemoteVideoLinks } from "@/lib/toy-media";
 
 type ToyPayload = Toy & { imageUrl?: string };
+
+function looksLikeVideoUrl(src: string): boolean {
+  return /\.(mp4|webm|m3u8)(\?|$)/i.test(src) || /\/vse-vms-transcoding-artifact/i.test(src);
+}
 
 async function resolveToyImages(toy: ToyPayload): Promise<Toy> {
   const slug = slugify(toy.name) || toy.id;
   const { imageUrl: remoteHint, ...rest } = toy;
+  const videos = normalizeRemoteVideoLinks(toy.videos);
 
   const candidates = [
     ...(Array.isArray(toy.images) ? toy.images : []),
@@ -26,6 +32,8 @@ async function resolveToyImages(toy: ToyPayload): Promise<Toy> {
   const seen = new Set<string>();
   for (const src of candidates) {
     if (seen.has(src)) continue;
+    // Never download/store video URLs as catalog images.
+    if (looksLikeVideoUrl(src)) continue;
     seen.add(src);
     unique.push(src);
   }
@@ -51,13 +59,18 @@ async function resolveToyImages(toy: ToyPayload): Promise<Toy> {
   }
 
   if (stored.length === 0) {
-    return { ...rest, image: toy.image || "/categories/plush.svg" };
+    return {
+      ...rest,
+      image: toy.image || "/categories/plush.svg",
+      ...(videos.length > 0 ? { videos } : { videos: undefined }),
+    };
   }
 
   return {
     ...rest,
     image: stored[0]!,
     images: stored,
+    ...(videos.length > 0 ? { videos } : { videos: undefined }),
   };
 }
 

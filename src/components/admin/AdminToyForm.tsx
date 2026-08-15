@@ -12,6 +12,7 @@ import {
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, Toy } from "@/types/toy";
 import { PlayableVideo } from "@/components/PlayableVideo";
+import { normalizeRemoteVideoLinks } from "@/lib/toy-media";
 
 type ImportPreview = {
   asin: string;
@@ -344,10 +345,9 @@ export function AdminToyForm({
       return importedImages.length > 0 ? importedImages : [primaryImage];
     })();
 
-    const videos = form.videosText
-      .split(/[\n,]+/)
-      .map((src) => src.trim())
-      .filter(Boolean);
+    const videos = normalizeRemoteVideoLinks(
+      form.videosText.split(/[\n,]+/),
+    );
 
     const toy: Toy & { imageUrl?: string } = {
       id:
@@ -819,8 +819,9 @@ export function AdminToyForm({
               className="rounded-2xl bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
             <span className="text-xs text-[var(--ink-soft)]">
-              One URL per line. Amazon import can fill several remote stream
-              URLs (not downloaded). They appear on the product page and Watch.
+              One remote URL per line (https://…m3u8 or …mp4). Amazon import
+              fills these with CDN stream links — videos are never downloaded
+              to Blob. They appear on the product page and Watch.
             </span>
           </label>
 

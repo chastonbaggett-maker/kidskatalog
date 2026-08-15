@@ -21,9 +21,10 @@ export type Toy = {
   /** Extra product photos for the detail page gallery */
   images?: string[];
   /**
-   * Optional product video clips shown in the detail gallery selector
-   * and collected on the Watch (/menu) feed.
-   */
+ * Optional remote product video clips (Amazon CDN / HLS / MP4 links).
+ * Stored as URLs only — never downloaded to Blob or local disk.
+ * Shown in the detail gallery selector and the Watch (/menu) feed.
+ */
   videos?: string[];
   imageAlt: string;
   /** Amazon affiliate-ready product URL */

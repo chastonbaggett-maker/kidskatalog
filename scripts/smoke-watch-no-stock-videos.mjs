@@ -25,6 +25,16 @@ assert.deepEqual(
   }),
   ["https://cdn.example.com/real.mp4"],
 );
+assert.deepEqual(
+  getToyVideos({
+    videos: [
+      "https://cdn.example.com/ok.m3u8",
+      "/toys/local-clip.mp4",
+      "https://d5xuirxyqsqf5ctq.public.blob.vercel-storage.com/kidskatalog/toys/clip.mp4",
+    ],
+  }),
+  ["https://cdn.example.com/ok.m3u8"],
+);
 
 const filtered = filterCatalogToys(
   [

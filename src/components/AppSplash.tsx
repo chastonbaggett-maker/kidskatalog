@@ -4,14 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const FADE_IN_MS = 700;
-const AUTO_TAP_MS = 5000;
-const OUT_AFTER_TAP_MS = 420;
-/** Must match `.app-splash--out` animation duration. */
-const FADE_OUT_MS = 850;
-const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
+/** Pause here — medium star at landing, right before it jumps (Untitled3). */
+const STARS_LAND_S = 3.583;
+/** Auto-continue if the ready pose isn't tapped. */
+const AUTO_TAP_MS = 3000;
+/** Hold full-screen white before the fade so the handoff reads clean. */
+const HOLD_WHITE_MS = 160;
+/** Keep in sync with `--splash-fade-ms` / `.app-splash--out` CSS. */
+const FADE_MS = 720;
+const DONE_AFTER_WHITE_MS = HOLD_WHITE_MS + FADE_MS;
 
-type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
+const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=6";
+
+type SplashPhase =
+  | "in"
+  | "playing"
+  | "ready"
+  | "finishing"
+  | "white"
+  | "out"
+  | "done";
 
 function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
@@ -21,18 +33,21 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: fade in the K, logo-shaped pulse until tap (or auto after 5s),
- * then confetti + burst SFX. Whole-screen background + logo fade out together.
- * Mounts once per full document load; client navigations do not remount it.
+ * Cold-open splash: play logo intro until the medium star lands, wait for tap
+ * (or auto-tap), finish through white, then fade into the page.
  */
 export function AppSplash() {
-  const logoRef = useRef<HTMLSpanElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const markRef = useRef<HTMLSpanElement>(null);
   const [phase, setPhase] = useState<SplashPhase>("in");
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
     portalRoot,
   });
-  const firedRef = useRef(false);
+  const pausedForTapRef = useRef(false);
+  const finishingRef = useRef(false);
+  const exitedRef = useRef(false);
+  const autoTapTimerRef = useRef<number | null>(null);
   const outTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
@@ -40,17 +55,33 @@ export function AppSplash() {
     setSplashState("active");
   }, []);
 
+  const clearAutoTap = () => {
+    if (autoTapTimerRef.current != null) {
+      window.clearTimeout(autoTapTimerRef.current);
+      autoTapTimerRef.current = null;
+    }
+  };
+
   const finishSplash = () => {
     setSplashState(null);
     setPhase("done");
   };
 
-  const runTap = () => {
-    if (firedRef.current || phase === "done") return;
-    firedRef.current = true;
+  const beginWhiteExit = () => {
+    if (exitedRef.current) return;
+    exitedRef.current = true;
+    clearAutoTap();
 
-    // Measure center before phase change so confetti originates on the mark.
-    const rect = logoRef.current?.getBoundingClientRect();
+    const video = videoRef.current;
+    if (video) {
+      try {
+        video.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const rect = markRef.current?.getBoundingClientRect();
     const origin = rect
       ? {
           x: rect.left + rect.width / 2,
@@ -58,24 +89,40 @@ export function AppSplash() {
         }
       : {
           x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
+          y: window.innerHeight * 0.42,
         };
 
-    // Unlock + play in the same turn when this came from a real press.
     unlockSharedAudio();
     fireConfetti(origin, GOLD_CONFETTI);
-    setPhase("tap");
+
+    setSplashState("exiting");
+    setPhase("white");
 
     outTimersRef.current.push(
       window.setTimeout(() => {
-        // Reveal nav under the fade so the shelf doesn't pop after splash.
-        setSplashState("exiting");
         setPhase("out");
-      }, OUT_AFTER_TAP_MS),
+      }, HOLD_WHITE_MS),
       window.setTimeout(() => {
         finishSplash();
-      }, DONE_AFTER_TAP_MS),
+      }, DONE_AFTER_WHITE_MS),
     );
+  };
+
+  const resumeFinish = () => {
+    if (finishingRef.current || exitedRef.current) return;
+    finishingRef.current = true;
+    clearAutoTap();
+    setPhase("finishing");
+
+    const video = videoRef.current;
+    if (!video) {
+      beginWhiteExit();
+      return;
+    }
+
+    void video.play().catch(() => {
+      beginWhiteExit();
+    });
   };
 
   useEffect(() => {
@@ -86,13 +133,61 @@ export function AppSplash() {
     }
 
     unlockSharedAudio();
+    setPhase("playing");
 
-    const armTimer = window.setTimeout(() => setPhase("armed"), FADE_IN_MS);
-    const autoTimer = window.setTimeout(() => runTap(), FADE_IN_MS + AUTO_TAP_MS);
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.playsInline = true;
+      void video.play().catch(() => {
+        /* Autoplay may be blocked; still show first frame. */
+      });
+    }
+
+    const onTimeUpdate = () => {
+      if (!video || pausedForTapRef.current || finishingRef.current) return;
+      if (video.currentTime < STARS_LAND_S) return;
+
+      pausedForTapRef.current = true;
+      try {
+        video.pause();
+        video.currentTime = STARS_LAND_S;
+      } catch {
+        /* ignore seek errors */
+      }
+      setPhase("ready");
+      autoTapTimerRef.current = window.setTimeout(() => {
+        resumeFinish();
+      }, AUTO_TAP_MS);
+    };
+
+    // timeupdate is sparse — also poll so the 207ms pause doesn't overshoot.
+    let raf = 0;
+    const pollPause = () => {
+      onTimeUpdate();
+      if (!pausedForTapRef.current && !finishingRef.current) {
+        raf = window.requestAnimationFrame(pollPause);
+      }
+    };
+    raf = window.requestAnimationFrame(pollPause);
+
+    const onEnded = () => {
+      if (!finishingRef.current) {
+        // Safety: if we somehow reach the end before pausing, still exit.
+        beginWhiteExit();
+        return;
+      }
+      beginWhiteExit();
+    };
+
+    video?.addEventListener("timeupdate", onTimeUpdate);
+    video?.addEventListener("ended", onEnded);
 
     return () => {
-      window.clearTimeout(armTimer);
-      window.clearTimeout(autoTimer);
+      window.cancelAnimationFrame(raf);
+      video?.removeEventListener("timeupdate", onTimeUpdate);
+      video?.removeEventListener("ended", onEnded);
+      clearAutoTap();
       for (const t of outTimersRef.current) window.clearTimeout(t);
       outTimersRef.current = [];
     };
@@ -100,9 +195,9 @@ export function AppSplash() {
   }, []);
 
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "out" || phase === "done" || firedRef.current) return;
     if (e.button !== 0) return;
-    runTap();
+    if (phase !== "ready" || finishingRef.current || exitedRef.current) return;
+    resumeFinish();
   };
 
   if (phase === "done") return confettiPortal;
@@ -113,21 +208,28 @@ export function AppSplash() {
         className={`app-splash app-splash--${phase}`}
         role="button"
         tabIndex={0}
-        aria-label="Tap to start KidsKatalog"
+        aria-label={
+          phase === "ready" ? "Tap to continue" : "KidsKatalog intro"
+        }
         onPointerDown={onSplashPointerDown}
         onKeyDown={(e) => {
+          if (phase !== "ready") return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            runTap();
+            resumeFinish();
           }
         }}
       >
-        <div className="app-splash__logo-wrap">
-          <span className="app-splash__pulse app-splash__pulse--a" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--b" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--c" aria-hidden />
-          <span ref={logoRef} className="app-splash__logo" />
-        </div>
+        <video
+          ref={videoRef}
+          className="app-splash__video"
+          src={SPLASH_INTRO_SRC}
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden
+        />
+        <span ref={markRef} className="app-splash__mark" aria-hidden />
       </div>
       {confettiPortal}
     </>

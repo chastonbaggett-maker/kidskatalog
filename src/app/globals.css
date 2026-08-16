@@ -838,23 +838,28 @@ html.route-changing .bottom-nav__kart-badge--pop {
     drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
-/* Cold-open splash: fade in K → logo-shaped pulse → tap/auto → whole screen fades out. */
+/* Cold-open splash: full-screen intro → solid white → fade into the page. */
 :root {
   --splash-bg-solid: #3ecfc0;
   --splash-bg: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
-  --splash-fade-ms: 850ms;
+  /* Keep in sync with FADE_MS in AppSplash.tsx */
+  --splash-fade-ms: 720ms;
 }
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
 html[data-splash="active"],
-html[data-splash="active"] body,
-html[data-splash="exiting"],
-html[data-splash="exiting"] body {
+html[data-splash="active"] body {
   background-color: var(--splash-bg-solid) !important;
   background-image: none;
 }
 
-/* Nav / shell frost paints before CSS arrives — also mirrored in splash-boot critical CSS. */
+html[data-splash="exiting"],
+html[data-splash="exiting"] body {
+  background-color: #fff !important;
+  background-image: none;
+}
+
+/* Hide shell during intro; reveal under the white fade while exiting. */
 html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost,
@@ -862,6 +867,16 @@ html[data-splash="active"] .bottom-nav__mode-row,
 html[data-splash="active"] .bottom-nav__icons {
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-splash="exiting"] .app-shell,
+html[data-splash="exiting"] .bottom-nav,
+html[data-splash="exiting"] .bottom-nav__frost,
+html[data-splash="exiting"] .bottom-nav__mode-row,
+html[data-splash="exiting"] .bottom-nav__icons {
+  visibility: visible !important;
+  opacity: 1 !important;
   pointer-events: none !important;
 }
 
@@ -893,6 +908,13 @@ html[data-splash="active"]::before {
   content: "";
 }
 
+html[data-splash="exiting"]::before,
+html[data-splash="exiting"] #app-splash-boot {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   display: none !important;
 }
@@ -903,22 +925,22 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   top: 0;
   left: 0;
   right: 0;
-  /* Extra bottom bleed covers home-indicator / short visual-viewport gaps. */
   bottom: 0;
   width: 100%;
+  width: 100vw;
+  width: 100dvw;
   height: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-width: 100%;
   min-height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   min-height: 100svh;
   min-height: -webkit-fill-available;
-  height: calc(100dvh + env(safe-area-inset-bottom, 0px) + 2rem);
   max-height: none;
-  /* Bleed past safe areas so notches / home indicator never show page chrome. */
   margin: 0;
   padding: 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
   display: grid;
   place-items: center;
@@ -933,179 +955,59 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   visibility: visible;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  /* One paint layer so logo + field fade together. */
   isolation: isolate;
   transform: translateZ(0);
+  overflow: hidden;
 }
 
+/* Full-screen white hold, then fade into the page. */
+.app-splash--white,
 .app-splash--out {
-  animation: app-splash-overlay-out var(--splash-fade-ms)
-    cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
+  background-color: #fff !important;
+  background-image: none !important;
   pointer-events: none;
   cursor: default;
 }
 
-.app-splash__logo-wrap {
-  position: relative;
-  display: grid;
-  place-items: center;
-  /* Room for expanding K-shaped pulses without clipping the mark. */
-  width: min(52vw, 12rem);
-  height: min(72vw, 16rem);
-  margin: 0;
-  transform: translateZ(0);
+.app-splash--out {
+  animation: app-splash-fade-out var(--splash-fade-ms)
+    cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
 }
 
-/* Expanding K silhouettes — same mask as the splash mark. */
-.app-splash__pulse {
+.app-splash__video {
   position: absolute;
   inset: 0;
-  margin: auto;
-  width: min(11vw, 3.4rem);
-  height: min(16vw, 5rem);
-  max-height: 22vh;
-  background-color: rgba(255, 255, 255, 0.72);
-  transform: scale(1);
-  transform-origin: center center;
-  opacity: 0;
+  z-index: 0;
+  /* Full-viewport plane — video animation fills the whole screen. */
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  object-position: center center;
   pointer-events: none;
-  -webkit-mask-image: url(/logo-icon.png);
-  mask-image: url(/logo-icon.png);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  will-change: transform, opacity;
+  mix-blend-mode: screen;
+  transform: none;
 }
 
-.app-splash--armed .app-splash__pulse--a {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) infinite;
-}
-
-.app-splash--armed .app-splash__pulse--b {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 0.6s
-    infinite;
-}
-
-.app-splash--armed .app-splash__pulse--c {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 1.2s
-    infinite;
-}
-
-.app-splash--tap .app-splash__pulse,
-.app-splash--out .app-splash__pulse {
-  animation: none;
+.app-splash--white .app-splash__video,
+.app-splash--out .app-splash__video {
   opacity: 0;
+  visibility: hidden;
 }
 
-.app-splash__logo {
-  display: block;
-  position: relative;
+.app-splash__mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
   z-index: 1;
-  width: min(11vw, 3.4rem);
-  height: min(16vw, 5rem);
-  max-height: 22vh;
-  opacity: 0;
-  transform: scale(0.9);
-  transform-origin: center center;
-  user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
-  background-color: #fff;
-  border: 0;
-  outline: none;
-  box-shadow: none;
-  /* Mask avoids img + drop-shadow bounding-box artifacts on iOS. */
-  -webkit-mask-image: url(/logo-icon.png);
-  mask-image: url(/logo-icon.png);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
 }
 
-.app-splash--in .app-splash__logo {
-  animation: app-splash-logo-in 0.7s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
-}
-
-.app-splash--armed .app-splash__logo {
-  opacity: 1;
-  animation: app-splash-logo-pulse 1.8s ease-in-out infinite;
-}
-
-.app-splash--tap .app-splash__logo {
-  opacity: 1;
-  animation: app-splash-logo-tap 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Logo stays fully opaque during exit — parent overlay fades the whole screen. */
-.app-splash--out .app-splash__logo {
-  opacity: 1;
-  transform: scale(1);
-  animation: none;
-}
-
-@keyframes app-splash-logo-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes app-splash-logo-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.04);
-  }
-}
-
-/* Soft K-shaped ripple expanding from the mark.
-   Starts slightly larger than the solid logo so the ghost K reads
-   immediately (not only the star accents at the edge). */
-@keyframes app-splash-k-pulse {
-  0% {
-    opacity: 0.7;
-    transform: scale(1.22);
-    filter: blur(0);
-  }
-  45% {
-    opacity: 0.35;
-    filter: blur(0.4px);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2.55);
-    filter: blur(1.2px);
-  }
-}
-
-@keyframes app-splash-logo-tap {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  35% {
-    opacity: 1;
-    transform: scale(0.88);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes app-splash-overlay-out {
+@keyframes app-splash-fade-out {
   0% {
     opacity: 1;
     visibility: visible;
@@ -1118,8 +1020,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
-  .app-splash__logo,
-  .app-splash__pulse {
+  .app-splash__video {
     animation: none !important;
   }
 

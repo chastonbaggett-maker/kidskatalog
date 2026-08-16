@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-/** Pause here — stars have landed on the K (Untitled2). */
-const STARS_LAND_S = 2.4;
+/** Pause here — ready pose in Untitled3 (207ms). */
+const STARS_LAND_S = 0.207;
 /** Auto-continue if the ready pose isn't tapped. */
 const AUTO_TAP_MS = 3000;
 /** Hold full-screen white before the fade so the handoff reads clean. */
@@ -14,7 +14,7 @@ const HOLD_WHITE_MS = 160;
 const FADE_MS = 720;
 const DONE_AFTER_WHITE_MS = HOLD_WHITE_MS + FADE_MS;
 
-const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=4";
+const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=5";
 
 type SplashPhase =
   | "in"
@@ -33,7 +33,7 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: play logo intro until stars land, wait for tap
+ * Cold-open splash: play logo intro until the ready pose (207ms), wait for tap
  * (or auto-tap), finish through white, then fade into the page.
  */
 export function AppSplash() {
@@ -161,6 +161,16 @@ export function AppSplash() {
       }, AUTO_TAP_MS);
     };
 
+    // timeupdate is sparse — also poll so the 207ms pause doesn't overshoot.
+    let raf = 0;
+    const pollPause = () => {
+      onTimeUpdate();
+      if (!pausedForTapRef.current && !finishingRef.current) {
+        raf = window.requestAnimationFrame(pollPause);
+      }
+    };
+    raf = window.requestAnimationFrame(pollPause);
+
     const onEnded = () => {
       if (!finishingRef.current) {
         // Safety: if we somehow reach the end before pausing, still exit.
@@ -174,6 +184,7 @@ export function AppSplash() {
     video?.addEventListener("ended", onEnded);
 
     return () => {
+      window.cancelAnimationFrame(raf);
       video?.removeEventListener("timeupdate", onTimeUpdate);
       video?.removeEventListener("ended", onEnded);
       clearAutoTap();

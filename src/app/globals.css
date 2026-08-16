@@ -926,18 +926,20 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   right: 0;
   bottom: 0;
   width: 100%;
+  width: 100vw;
+  width: 100dvw;
   height: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-width: 100%;
   min-height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   min-height: 100svh;
   min-height: -webkit-fill-available;
-  height: calc(100dvh + env(safe-area-inset-bottom, 0px) + 2rem);
   max-height: none;
   margin: 0;
   padding: 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
   display: grid;
   place-items: center;
@@ -1015,19 +1017,19 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 }
 
 .app-splash__video {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 0;
-  /* 0.75× prior footprint (was min(100vw, 48rem) @ scale(3)). */
-  width: min(75vw, 36rem);
-  height: auto;
-  aspect-ratio: 16 / 9;
-  max-height: 64vh;
-  object-fit: contain;
-  object-position: center;
+  /* Full-viewport plane — video animation fills the whole screen. */
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  object-position: center center;
   pointer-events: none;
   mix-blend-mode: screen;
-  transform: scale(2.25);
-  transform-origin: center center;
+  transform: none;
 }
 
 .app-splash--out .app-splash__video {

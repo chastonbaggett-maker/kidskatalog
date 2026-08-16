@@ -942,11 +942,11 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 .app-splash__video {
   position: relative;
   z-index: 0;
-  /* Compact center mark — white-on-black clip; screen blend drops the black. */
-  width: min(96vw, 24rem);
+  /* Large center mark — white-on-black clip; screen blend drops the black. */
+  width: min(100vw, 48rem);
   height: auto;
   aspect-ratio: 16 / 9;
-  max-height: 52vh;
+  max-height: 85vh;
   object-fit: contain;
   object-position: center;
   pointer-events: none;

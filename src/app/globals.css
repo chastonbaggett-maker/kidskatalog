@@ -942,7 +942,8 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 .app-splash__video {
   position: relative;
   z-index: 0;
-  /* Large center mark — white-on-black clip; screen blend drops the black. */
+  /* Large center mark — white-on-black clip; screen blend drops the black.
+     300% scale zooms the K/stars; splash overflow clips the edges. */
   width: min(100vw, 48rem);
   height: auto;
   aspect-ratio: 16 / 9;
@@ -951,6 +952,8 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   object-position: center;
   pointer-events: none;
   mix-blend-mode: screen;
+  transform: scale(3);
+  transform-origin: center center;
 }
 
 .app-splash__mark {

@@ -144,7 +144,7 @@ export function AppSplash() {
         <video
           ref={videoRef}
           className="app-splash__video"
-          src="/splash-intro.mp4"
+          src="/splash-intro.mp4?v=3"
           muted
           playsInline
           preload="auto"

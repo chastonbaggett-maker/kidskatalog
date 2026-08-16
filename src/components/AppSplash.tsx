@@ -4,17 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
+/** Pause here — stars have landed on the K (Untitled2). */
+const STARS_LAND_S = 2.4;
+/** Auto-continue if the ready pose isn't tapped. */
+const AUTO_TAP_MS = 3000;
 /** Hold full-screen white before the fade so the handoff reads clean. */
 const HOLD_WHITE_MS = 160;
 /** Keep in sync with `--splash-fade-ms` / `.app-splash--out` CSS. */
 const FADE_MS = 720;
 const DONE_AFTER_WHITE_MS = HOLD_WHITE_MS + FADE_MS;
-/** Fallback if the video never fires `ended`. */
-const AUTO_END_FALLBACK_MS = 5000;
 
 const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=4";
 
-type SplashPhase = "in" | "armed" | "white" | "out" | "done";
+type SplashPhase =
+  | "in"
+  | "playing"
+  | "ready"
+  | "finishing"
+  | "white"
+  | "out"
+  | "done";
 
 function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
@@ -24,8 +33,8 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: full-screen logo intro on mint, then solid white,
- * then a fade into the already-loaded page.
+ * Cold-open splash: play logo intro until stars land, wait for tap
+ * (or auto-tap), finish through white, then fade into the page.
  */
 export function AppSplash() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,7 +44,10 @@ export function AppSplash() {
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
     portalRoot,
   });
-  const firedRef = useRef(false);
+  const pausedForTapRef = useRef(false);
+  const finishingRef = useRef(false);
+  const exitedRef = useRef(false);
+  const autoTapTimerRef = useRef<number | null>(null);
   const outTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
@@ -43,14 +55,22 @@ export function AppSplash() {
     setSplashState("active");
   }, []);
 
+  const clearAutoTap = () => {
+    if (autoTapTimerRef.current != null) {
+      window.clearTimeout(autoTapTimerRef.current);
+      autoTapTimerRef.current = null;
+    }
+  };
+
   const finishSplash = () => {
     setSplashState(null);
     setPhase("done");
   };
 
-  const beginExit = () => {
-    if (firedRef.current || phase === "done") return;
-    firedRef.current = true;
+  const beginWhiteExit = () => {
+    if (exitedRef.current) return;
+    exitedRef.current = true;
+    clearAutoTap();
 
     const video = videoRef.current;
     if (video) {
@@ -75,7 +95,6 @@ export function AppSplash() {
     unlockSharedAudio();
     fireConfetti(origin, GOLD_CONFETTI);
 
-    // Full-screen white, then fade into the page.
     setSplashState("exiting");
     setPhase("white");
 
@@ -89,6 +108,23 @@ export function AppSplash() {
     );
   };
 
+  const resumeFinish = () => {
+    if (finishingRef.current || exitedRef.current) return;
+    finishingRef.current = true;
+    clearAutoTap();
+    setPhase("finishing");
+
+    const video = videoRef.current;
+    if (!video) {
+      beginWhiteExit();
+      return;
+    }
+
+    void video.play().catch(() => {
+      beginWhiteExit();
+    });
+  };
+
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
@@ -97,24 +133,50 @@ export function AppSplash() {
     }
 
     unlockSharedAudio();
-    setPhase("armed");
+    setPhase("playing");
 
     const video = videoRef.current;
     if (video) {
       video.muted = true;
       video.playsInline = true;
       void video.play().catch(() => {
-        /* Autoplay may be blocked; still show first frame + allow tap. */
+        /* Autoplay may be blocked; still show first frame. */
       });
     }
 
-    const onEnded = () => beginExit();
+    const onTimeUpdate = () => {
+      if (!video || pausedForTapRef.current || finishingRef.current) return;
+      if (video.currentTime < STARS_LAND_S) return;
+
+      pausedForTapRef.current = true;
+      try {
+        video.pause();
+        video.currentTime = STARS_LAND_S;
+      } catch {
+        /* ignore seek errors */
+      }
+      setPhase("ready");
+      autoTapTimerRef.current = window.setTimeout(() => {
+        resumeFinish();
+      }, AUTO_TAP_MS);
+    };
+
+    const onEnded = () => {
+      if (!finishingRef.current) {
+        // Safety: if we somehow reach the end before pausing, still exit.
+        beginWhiteExit();
+        return;
+      }
+      beginWhiteExit();
+    };
+
+    video?.addEventListener("timeupdate", onTimeUpdate);
     video?.addEventListener("ended", onEnded);
-    const fallback = window.setTimeout(() => beginExit(), AUTO_END_FALLBACK_MS);
 
     return () => {
+      video?.removeEventListener("timeupdate", onTimeUpdate);
       video?.removeEventListener("ended", onEnded);
-      window.clearTimeout(fallback);
+      clearAutoTap();
       for (const t of outTimersRef.current) window.clearTimeout(t);
       outTimersRef.current = [];
     };
@@ -122,10 +184,9 @@ export function AppSplash() {
   }, []);
 
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "white" || phase === "out" || phase === "done" || firedRef.current)
-      return;
     if (e.button !== 0) return;
-    beginExit();
+    if (phase !== "ready" || finishingRef.current || exitedRef.current) return;
+    resumeFinish();
   };
 
   if (phase === "done") return confettiPortal;
@@ -136,12 +197,15 @@ export function AppSplash() {
         className={`app-splash app-splash--${phase}`}
         role="button"
         tabIndex={0}
-        aria-label="Tap to start KidsKatalog"
+        aria-label={
+          phase === "ready" ? "Tap to continue" : "KidsKatalog intro"
+        }
         onPointerDown={onSplashPointerDown}
         onKeyDown={(e) => {
+          if (phase !== "ready") return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            beginExit();
+            resumeFinish();
           }
         }}
       >

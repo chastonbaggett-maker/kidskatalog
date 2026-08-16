@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-/** Pause here — ready pose in Untitled3 (207ms). */
-const STARS_LAND_S = 0.207;
+/** Pause here — medium star at landing, right before it jumps (Untitled3). */
+const STARS_LAND_S = 3.583;
 /** Auto-continue if the ready pose isn't tapped. */
 const AUTO_TAP_MS = 3000;
 /** Hold full-screen white before the fade so the handoff reads clean. */
@@ -14,7 +14,7 @@ const HOLD_WHITE_MS = 160;
 const FADE_MS = 720;
 const DONE_AFTER_WHITE_MS = HOLD_WHITE_MS + FADE_MS;
 
-const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=5";
+const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=6";
 
 type SplashPhase =
   | "in"
@@ -33,7 +33,7 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: play logo intro until the ready pose (207ms), wait for tap
+ * Cold-open splash: play logo intro until the medium star lands, wait for tap
  * (or auto-tap), finish through white, then fade into the page.
  */
 export function AppSplash() {

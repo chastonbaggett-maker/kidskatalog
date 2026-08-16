@@ -7,12 +7,14 @@ export const SPLASH_BG_GRADIENT =
 /**
  * Critical first-paint CSS.
  * ::before sits UNDER .app-splash during the intro video.
- * During exiting, the shell is visible under a logo-shaped veil hole.
+ * During exiting, the shell stays under the white→fade overlay.
  */
 export const SPLASH_BOOT_STYLE = `
-html[data-splash="active"],html[data-splash="active"] body,
-html[data-splash="exiting"],html[data-splash="exiting"] body{
+html[data-splash="active"],html[data-splash="active"] body{
   background-color:${SPLASH_BG_SOLID}!important;background-image:none!important;
+}
+html[data-splash="exiting"],html[data-splash="exiting"] body{
+  background-color:#fff!important;background-image:none!important;
 }
 html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,

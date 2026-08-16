@@ -838,26 +838,28 @@ html.route-changing .bottom-nav__kart-badge--pop {
     drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
 }
 
-/* Cold-open splash: intro video → logo becomes a window onto the loaded page. */
+/* Cold-open splash: full-screen intro → solid white → fade into the page. */
 :root {
   --splash-bg-solid: #3ecfc0;
   --splash-bg: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
-  /* Keep in sync with WINDOW_ZOOM_MS in AppSplash.tsx */
-  --splash-window-ms: 1150ms;
-  /* Starting K window — 0.75× prior (was min(72vw, 26rem)). */
-  --splash-hole-w: min(54vw, 19.5rem);
+  /* Keep in sync with FADE_MS in AppSplash.tsx */
+  --splash-fade-ms: 720ms;
 }
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
 html[data-splash="active"],
-html[data-splash="active"] body,
-html[data-splash="exiting"],
-html[data-splash="exiting"] body {
+html[data-splash="active"] body {
   background-color: var(--splash-bg-solid) !important;
   background-image: none;
 }
 
-/* Hide shell during intro; reveal under the logo window while exiting. */
+html[data-splash="exiting"],
+html[data-splash="exiting"] body {
+  background-color: #fff !important;
+  background-image: none;
+}
+
+/* Hide shell during intro; reveal under the white fade while exiting. */
 html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost,
@@ -906,7 +908,6 @@ html[data-splash="active"]::before {
   content: "";
 }
 
-/* Boot cover must drop so the shell can show through the logo hole. */
 html[data-splash="exiting"]::before,
 html[data-splash="exiting"] #app-splash-boot {
   opacity: 0 !important;
@@ -959,61 +960,18 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   overflow: hidden;
 }
 
-/* Transparent overlay — mint lives on the veil so the page shows through the hole. */
-.app-splash--out,
-.app-splash--tap.app-splash--out {
-  background: transparent !important;
+/* Full-screen white hold, then fade into the page. */
+.app-splash--white,
+.app-splash--out {
+  background-color: #fff !important;
   background-image: none !important;
   pointer-events: none;
   cursor: default;
-  /* Full viewport plane for the window zoom (no safe-area inset shrink). */
-  inset: 0;
-  width: 100vw;
-  width: 100dvw;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: 0;
-  overflow: hidden;
 }
 
-.app-splash__veil {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  width: 100dvw;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 2;
-  pointer-events: none;
-  background-color: var(--splash-bg-solid);
-  background-image: var(--splash-bg);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  /* Full mint, then punch a K-shaped hole (logo white = removed). */
-  -webkit-mask-image: linear-gradient(#fff 0 0), url(/logo-icon.png);
-  mask-image: linear-gradient(#fff 0 0), url(/logo-icon.png);
-  -webkit-mask-size: 100% 100%, var(--splash-hole-w) auto;
-  mask-size: 100% 100%, var(--splash-hole-w) auto;
-  -webkit-mask-position: center, center;
-  mask-position: center, center;
-  -webkit-mask-repeat: no-repeat, no-repeat;
-  mask-repeat: no-repeat, no-repeat;
-  -webkit-mask-composite: destination-out;
-  mask-composite: subtract;
-  will-change: mask-size, -webkit-mask-size, opacity;
-}
-
-.app-splash--out .app-splash__veil {
-  display: block;
-  animation: app-splash-window-open var(--splash-window-ms)
-    cubic-bezier(0.65, 0, 0.35, 1) forwards;
+.app-splash--out {
+  animation: app-splash-fade-out var(--splash-fade-ms)
+    cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
 }
 
 .app-splash__video {
@@ -1032,6 +990,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   transform: none;
 }
 
+.app-splash--white .app-splash__video,
 .app-splash--out .app-splash__video {
   opacity: 0;
   visibility: hidden;
@@ -1048,33 +1007,19 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   z-index: 1;
 }
 
-/* Hole starts at logo size, then fills the whole screen before the veil fades. */
-@keyframes app-splash-window-open {
+@keyframes app-splash-fade-out {
   0% {
-    -webkit-mask-size: 100% 100%, min(54vw, 19.5rem) auto;
-    mask-size: 100% 100%, min(54vw, 19.5rem) auto;
     opacity: 1;
-  }
-  55% {
-    -webkit-mask-size: 100% 100%, 140vmax auto;
-    mask-size: 100% 100%, 140vmax auto;
-    opacity: 1;
-  }
-  85% {
-    -webkit-mask-size: 100% 100%, 280vmax auto;
-    mask-size: 100% 100%, 280vmax auto;
-    opacity: 1;
+    visibility: visible;
   }
   100% {
-    -webkit-mask-size: 100% 100%, 400vmax auto;
-    mask-size: 100% 100%, 400vmax auto;
     opacity: 0;
+    visibility: hidden;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
-  .app-splash__veil,
   .app-splash__video {
     animation: none !important;
   }

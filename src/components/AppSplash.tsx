@@ -4,16 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const OUT_AFTER_TAP_MS = 280;
-/** Logo-window zoom duration — keep in sync with `.app-splash--out` CSS. */
-const WINDOW_ZOOM_MS = 1150;
-const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + WINDOW_ZOOM_MS;
+/** Hold full-screen white before the fade so the handoff reads clean. */
+const HOLD_WHITE_MS = 160;
+/** Keep in sync with `--splash-fade-ms` / `.app-splash--out` CSS. */
+const FADE_MS = 720;
+const DONE_AFTER_WHITE_MS = HOLD_WHITE_MS + FADE_MS;
 /** Fallback if the video never fires `ended`. */
-const AUTO_TAP_FALLBACK_MS = 5000;
+const AUTO_END_FALLBACK_MS = 5000;
 
 const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=4";
 
-type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
+type SplashPhase = "in" | "armed" | "white" | "out" | "done";
 
 function setSplashState(state: "active" | "exiting" | null) {
   if (typeof document === "undefined") return;
@@ -23,8 +24,8 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: unisex mint + muted logo intro, then the K becomes a
- * growing window onto the already-loaded page. Tap or video-end starts it.
+ * Cold-open splash: full-screen logo intro on mint, then solid white,
+ * then a fade into the already-loaded page.
  */
 export function AppSplash() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -47,7 +48,7 @@ export function AppSplash() {
     setPhase("done");
   };
 
-  const runTap = () => {
+  const beginExit = () => {
     if (firedRef.current || phase === "done") return;
     firedRef.current = true;
 
@@ -73,17 +74,18 @@ export function AppSplash() {
 
     unlockSharedAudio();
     fireConfetti(origin, GOLD_CONFETTI);
-    setPhase("tap");
+
+    // Full-screen white, then fade into the page.
+    setSplashState("exiting");
+    setPhase("white");
 
     outTimersRef.current.push(
       window.setTimeout(() => {
-        // Shell stays painted underneath; veil hole zooms open onto it.
-        setSplashState("exiting");
         setPhase("out");
-      }, OUT_AFTER_TAP_MS),
+      }, HOLD_WHITE_MS),
       window.setTimeout(() => {
         finishSplash();
-      }, DONE_AFTER_TAP_MS),
+      }, DONE_AFTER_WHITE_MS),
     );
   };
 
@@ -106,9 +108,9 @@ export function AppSplash() {
       });
     }
 
-    const onEnded = () => runTap();
+    const onEnded = () => beginExit();
     video?.addEventListener("ended", onEnded);
-    const fallback = window.setTimeout(() => runTap(), AUTO_TAP_FALLBACK_MS);
+    const fallback = window.setTimeout(() => beginExit(), AUTO_END_FALLBACK_MS);
 
     return () => {
       video?.removeEventListener("ended", onEnded);
@@ -120,9 +122,10 @@ export function AppSplash() {
   }, []);
 
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "out" || phase === "done" || firedRef.current) return;
+    if (phase === "white" || phase === "out" || phase === "done" || firedRef.current)
+      return;
     if (e.button !== 0) return;
-    runTap();
+    beginExit();
   };
 
   if (phase === "done") return confettiPortal;
@@ -138,12 +141,10 @@ export function AppSplash() {
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            runTap();
+            beginExit();
           }
         }}
       >
-        {/* Mint veil with a K-shaped hole that zooms open onto the page. */}
-        <div className="app-splash__veil" aria-hidden />
         <video
           ref={videoRef}
           className="app-splash__video"

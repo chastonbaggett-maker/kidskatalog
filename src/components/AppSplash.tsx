@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const FADE_IN_MS = 700;
-const AUTO_TAP_MS = 5000;
 const OUT_AFTER_TAP_MS = 420;
 /** Must match `.app-splash--out` animation duration. */
 const FADE_OUT_MS = 850;
 const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
+/** Fallback if the video never fires `ended`. */
+const AUTO_TAP_FALLBACK_MS = 7000;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
@@ -21,12 +21,13 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: fade in the K, logo-shaped pulse until tap (or auto after 5s),
- * then confetti + burst SFX. Whole-screen background + logo fade out together.
+ * Cold-open splash: branded intro video (muted), tap or video-end to dismiss,
+ * then confetti + burst SFX. Whole-screen fades out together.
  * Mounts once per full document load; client navigations do not remount it.
  */
 export function AppSplash() {
-  const logoRef = useRef<HTMLSpanElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const markRef = useRef<HTMLSpanElement>(null);
   const [phase, setPhase] = useState<SplashPhase>("in");
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
@@ -49,8 +50,17 @@ export function AppSplash() {
     if (firedRef.current || phase === "done") return;
     firedRef.current = true;
 
-    // Measure center before phase change so confetti originates on the mark.
-    const rect = logoRef.current?.getBoundingClientRect();
+    const video = videoRef.current;
+    if (video) {
+      try {
+        video.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Prefer the invisible center mark; fall back to viewport center.
+    const rect = markRef.current?.getBoundingClientRect();
     const origin = rect
       ? {
           x: rect.left + rect.width / 2,
@@ -58,17 +68,15 @@ export function AppSplash() {
         }
       : {
           x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
+          y: window.innerHeight * 0.42,
         };
 
-    // Unlock + play in the same turn when this came from a real press.
     unlockSharedAudio();
     fireConfetti(origin, GOLD_CONFETTI);
     setPhase("tap");
 
     outTimersRef.current.push(
       window.setTimeout(() => {
-        // Reveal nav under the fade so the shelf doesn't pop after splash.
         setSplashState("exiting");
         setPhase("out");
       }, OUT_AFTER_TAP_MS),
@@ -86,13 +94,24 @@ export function AppSplash() {
     }
 
     unlockSharedAudio();
+    setPhase("armed");
 
-    const armTimer = window.setTimeout(() => setPhase("armed"), FADE_IN_MS);
-    const autoTimer = window.setTimeout(() => runTap(), FADE_IN_MS + AUTO_TAP_MS);
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.playsInline = true;
+      void video.play().catch(() => {
+        /* Autoplay may be blocked; still show first frame + allow tap. */
+      });
+    }
+
+    const onEnded = () => runTap();
+    video?.addEventListener("ended", onEnded);
+    const fallback = window.setTimeout(() => runTap(), AUTO_TAP_FALLBACK_MS);
 
     return () => {
-      window.clearTimeout(armTimer);
-      window.clearTimeout(autoTimer);
+      video?.removeEventListener("ended", onEnded);
+      window.clearTimeout(fallback);
       for (const t of outTimersRef.current) window.clearTimeout(t);
       outTimersRef.current = [];
     };
@@ -122,12 +141,17 @@ export function AppSplash() {
           }
         }}
       >
-        <div className="app-splash__logo-wrap">
-          <span className="app-splash__pulse app-splash__pulse--a" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--b" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--c" aria-hidden />
-          <span ref={logoRef} className="app-splash__logo" />
-        </div>
+        <video
+          ref={videoRef}
+          className="app-splash__video"
+          src="/splash.mp4"
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden
+        />
+        {/* Confetti origin — roughly where the K sits in the intro frame. */}
+        <span ref={markRef} className="app-splash__mark" aria-hidden />
       </div>
       {confettiPortal}
     </>

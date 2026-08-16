@@ -940,12 +940,13 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 }
 
 .app-splash__video {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  /* Much smaller than full-bleed — K + sparkle sit as a compact center mark. */
+  width: min(28vw, 6.5rem);
+  height: min(40vw, 9.25rem);
+  max-height: 22vh;
+  object-fit: contain;
   object-position: center;
   pointer-events: none;
 }
@@ -953,7 +954,7 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 .app-splash__mark {
   position: absolute;
   left: 50%;
-  top: 42%;
+  top: 50%;
   width: 1px;
   height: 1px;
   transform: translate(-50%, -50%);

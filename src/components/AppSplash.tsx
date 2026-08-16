@@ -9,7 +9,7 @@ const OUT_AFTER_TAP_MS = 420;
 const FADE_OUT_MS = 850;
 const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
 /** Fallback if the video never fires `ended`. */
-const AUTO_TAP_FALLBACK_MS = 7000;
+const AUTO_TAP_FALLBACK_MS = 5000;
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
@@ -21,8 +21,8 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: branded intro video (muted), tap or video-end to dismiss,
- * then confetti + burst SFX. Whole-screen fades out together.
+ * Cold-open splash: unisex mint field + muted logo intro video, tap or
+ * video-end to dismiss, then confetti + burst SFX. Whole-screen fades out.
  * Mounts once per full document load; client navigations do not remount it.
  */
 export function AppSplash() {
@@ -144,7 +144,7 @@ export function AppSplash() {
         <video
           ref={videoRef}
           className="app-splash__video"
-          src="/splash.mp4"
+          src="/splash-intro.mp4"
           muted
           playsInline
           preload="auto"

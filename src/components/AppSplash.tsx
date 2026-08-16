@@ -11,7 +11,7 @@ const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + WINDOW_ZOOM_MS;
 /** Fallback if the video never fires `ended`. */
 const AUTO_TAP_FALLBACK_MS = 5000;
 
-const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=3";
+const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=4";
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 

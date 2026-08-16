@@ -943,10 +943,10 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   position: relative;
   z-index: 0;
   /* Compact center mark — white-on-black clip; screen blend drops the black. */
-  width: min(48vw, 12rem);
+  width: min(96vw, 24rem);
   height: auto;
   aspect-ratio: 16 / 9;
-  max-height: 26vh;
+  max-height: 52vh;
   object-fit: contain;
   object-position: center;
   pointer-events: none;

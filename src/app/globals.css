@@ -844,7 +844,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
   --splash-bg: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
   /* Keep in sync with WINDOW_ZOOM_MS in AppSplash.tsx */
   --splash-window-ms: 1150ms;
-  --splash-hole-w: min(72vw, 26rem);
+  /* Starting K window — 0.75× prior (was min(72vw, 26rem)). */
+  --splash-hole-w: min(54vw, 19.5rem);
 }
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
@@ -963,12 +964,29 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   background-image: none !important;
   pointer-events: none;
   cursor: default;
+  /* Full viewport plane for the window zoom (no safe-area inset shrink). */
+  inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  overflow: hidden;
 }
 
 .app-splash__veil {
   display: none;
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
   z-index: 2;
   pointer-events: none;
   background-color: var(--splash-bg-solid);
@@ -999,15 +1017,16 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 .app-splash__video {
   position: relative;
   z-index: 0;
-  width: min(100vw, 48rem);
+  /* 0.75× prior footprint (was min(100vw, 48rem) @ scale(3)). */
+  width: min(75vw, 36rem);
   height: auto;
   aspect-ratio: 16 / 9;
-  max-height: 85vh;
+  max-height: 64vh;
   object-fit: contain;
   object-position: center;
   pointer-events: none;
   mix-blend-mode: screen;
-  transform: scale(3);
+  transform: scale(2.25);
   transform-origin: center center;
 }
 
@@ -1027,20 +1046,26 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   z-index: 1;
 }
 
+/* Hole starts at logo size, then fills the whole screen before the veil fades. */
 @keyframes app-splash-window-open {
   0% {
-    -webkit-mask-size: 100% 100%, min(72vw, 26rem) auto;
-    mask-size: 100% 100%, min(72vw, 26rem) auto;
+    -webkit-mask-size: 100% 100%, min(54vw, 19.5rem) auto;
+    mask-size: 100% 100%, min(54vw, 19.5rem) auto;
     opacity: 1;
   }
-  72% {
-    -webkit-mask-size: 100% 100%, 220vmax auto;
-    mask-size: 100% 100%, 220vmax auto;
+  55% {
+    -webkit-mask-size: 100% 100%, 140vmax auto;
+    mask-size: 100% 100%, 140vmax auto;
+    opacity: 1;
+  }
+  85% {
+    -webkit-mask-size: 100% 100%, 280vmax auto;
+    mask-size: 100% 100%, 280vmax auto;
     opacity: 1;
   }
   100% {
-    -webkit-mask-size: 100% 100%, 320vmax auto;
-    mask-size: 100% 100%, 320vmax auto;
+    -webkit-mask-size: 100% 100%, 400vmax auto;
+    mask-size: 100% 100%, 400vmax auto;
     opacity: 0;
   }
 }

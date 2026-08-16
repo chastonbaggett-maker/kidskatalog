@@ -1142,7 +1142,8 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
   .app-splash__logo,
-  .app-splash__pulse {
+  .app-splash__pulse,
+  .app-splash__video {
     animation: none !important;
   }
 

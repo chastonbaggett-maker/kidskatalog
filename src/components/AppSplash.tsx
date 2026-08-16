@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const OUT_AFTER_TAP_MS = 420;
-/** Must match `.app-splash--out` animation duration. */
-const FADE_OUT_MS = 850;
-const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
+const OUT_AFTER_TAP_MS = 280;
+/** Logo-window zoom duration — keep in sync with `.app-splash--out` CSS. */
+const WINDOW_ZOOM_MS = 1150;
+const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + WINDOW_ZOOM_MS;
 /** Fallback if the video never fires `ended`. */
 const AUTO_TAP_FALLBACK_MS = 5000;
+
+const SPLASH_INTRO_SRC = "/splash-intro.mp4?v=3";
 
 type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
 
@@ -21,9 +23,8 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: unisex mint field + muted logo intro video, tap or
- * video-end to dismiss, then confetti + burst SFX. Whole-screen fades out.
- * Mounts once per full document load; client navigations do not remount it.
+ * Cold-open splash: unisex mint + muted logo intro, then the K becomes a
+ * growing window onto the already-loaded page. Tap or video-end starts it.
  */
 export function AppSplash() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -59,7 +60,6 @@ export function AppSplash() {
       }
     }
 
-    // Prefer the invisible center mark; fall back to viewport center.
     const rect = markRef.current?.getBoundingClientRect();
     const origin = rect
       ? {
@@ -77,6 +77,7 @@ export function AppSplash() {
 
     outTimersRef.current.push(
       window.setTimeout(() => {
+        // Shell stays painted underneath; veil hole zooms open onto it.
         setSplashState("exiting");
         setPhase("out");
       }, OUT_AFTER_TAP_MS),
@@ -141,16 +142,17 @@ export function AppSplash() {
           }
         }}
       >
+        {/* Mint veil with a K-shaped hole that zooms open onto the page. */}
+        <div className="app-splash__veil" aria-hidden />
         <video
           ref={videoRef}
           className="app-splash__video"
-          src="/splash-intro.mp4?v=3"
+          src={SPLASH_INTRO_SRC}
           muted
           playsInline
           preload="auto"
           aria-hidden
         />
-        {/* Confetti origin — roughly where the K sits in the intro frame. */}
         <span ref={markRef} className="app-splash__mark" aria-hidden />
       </div>
       {confettiPortal}

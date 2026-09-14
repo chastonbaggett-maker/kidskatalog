@@ -135,7 +135,7 @@ export function AdminToyForm({
         ageMin: editing.ageMin,
         ageMax: editing.ageMax,
         featuredTier: resolveFeaturedTier(editing),
-        affiliateUrl: editing.affiliateUrl,
+        affiliateUrl: editing.affiliateUrl ?? "",
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",

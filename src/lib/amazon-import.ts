@@ -1,4 +1,6 @@
-const AFFILIATE_TAG = process.env.NEXT_PUBLIC_AFFILIATE_TAG || "kidskatalog-20";
+import { getAffiliateTag } from "@/lib/affiliate";
+
+const AFFILIATE_TAG = getAffiliateTag();
 
 export function parseAsin(url: string): string | null {
   const raw = url.trim();

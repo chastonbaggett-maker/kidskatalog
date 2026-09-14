@@ -89,7 +89,7 @@ export async function importAmazonListingPreview(
   return {
     asin: draft.asin || asin,
     id: draft.id,
-    affiliateUrl: draft.affiliateUrl,
+    affiliateUrl: draft.affiliateUrl ?? "",
     name: draft.name,
     blurb: draft.blurb,
     category: draft.category,

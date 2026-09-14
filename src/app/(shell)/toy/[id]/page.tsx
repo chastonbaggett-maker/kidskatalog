@@ -3,6 +3,8 @@ import { ToyPageView } from "@/components/ToyPageView";
 import { getCategory } from "@/data/categories";
 import { getCatalogToy } from "@/lib/catalog-store";
 import { queryCatalogPage } from "@/lib/catalog-page";
+import { toKidToy } from "@/lib/kid-surface";
+import type { Toy } from "@/types/toy";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -23,7 +25,7 @@ export default async function ToyPage({ params }: Props) {
 
   return (
     <ToyPageView
-      toy={toy}
+      toy={toKidToy(toy) as Toy}
       categoryLabel={cat?.label ?? "Toy"}
       gallery={gallery}
       moreInitialPage={moreInitialPage}

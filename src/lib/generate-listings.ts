@@ -257,11 +257,11 @@ async function searchAmazonAsins(
 
 /** Live-catalog Amazon product ids only — drafts/names/images are not duplicates. */
 function liveAsinSet(
-  live: Array<{ affiliateUrl: string }>,
+  live: Array<{ affiliateUrl?: string }>,
 ): Set<string> {
   const asins = new Set<string>();
   for (const toy of live) {
-    const asin = parseAsin(toy.affiliateUrl);
+    const asin = parseAsin(toy.affiliateUrl ?? "");
     if (asin) asins.add(asin.toUpperCase());
   }
   return asins;
@@ -488,7 +488,7 @@ export async function generateDraftListings(
         continue;
       }
 
-      const draftAsin = (draft.asin || parseAsin(draft.affiliateUrl) || a).toUpperCase();
+      const draftAsin = (draft.asin || parseAsin(draft.affiliateUrl ?? "") || a).toUpperCase();
       if (liveAsins.has(draftAsin)) {
         skippedExisting += 1;
         emit({

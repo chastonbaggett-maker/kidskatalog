@@ -29,10 +29,10 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function liveAsinSet(live: Array<{ affiliateUrl: string }>): Set<string> {
+function liveAsinSet(live: Array<{ affiliateUrl?: string }>): Set<string> {
   const asins = new Set<string>();
   for (const toy of live) {
-    const asin = parseAsin(toy.affiliateUrl);
+    const asin = parseAsin(toy.affiliateUrl ?? "");
     if (asin) asins.add(asin.toUpperCase());
   }
   return asins;
@@ -134,7 +134,7 @@ export async function bulkAddDraftListings(
 
       const draftAsin = (
         draft.asin ||
-        parseAsin(draft.affiliateUrl) ||
+        parseAsin(draft.affiliateUrl ?? "") ||
         asin
       ).toUpperCase();
       if (liveAsins.has(draftAsin)) {

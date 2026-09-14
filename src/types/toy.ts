@@ -26,8 +26,8 @@ export type Toy = {
    */
   videos?: string[];
   imageAlt: string;
-  /** Amazon affiliate-ready product URL */
-  affiliateUrl: string;
+  /** Amazon affiliate-ready product URL — parent/admin only; stripped from kid surfaces */
+  affiliateUrl?: string;
   ageMin: number;
   ageMax: number;
   color: string;

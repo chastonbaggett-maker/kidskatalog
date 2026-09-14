@@ -5,6 +5,7 @@ import {
   pickRandomCatalogToys,
   type CatalogFilters,
 } from "@/lib/catalog-query";
+import { toKidCatalogPage, toKidToys } from "@/lib/kid-surface";
 import type { Audience, CategoryId } from "@/types/toy";
 
 function parseFilters(req: NextRequest): CatalogFilters {
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
   const idsParam = req.nextUrl.searchParams.get("ids");
   if (idsParam) {
     const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
-    const toys = await getCatalogToysByIds(ids);
+    const toys = toKidToys(await getCatalogToysByIds(ids));
     return NextResponse.json({ toys });
   }
 
@@ -47,11 +48,13 @@ export async function GET(req: NextRequest) {
 
   if (randomCount > 0) {
     const seed = Number(req.nextUrl.searchParams.get("seed") ?? "1");
-    const toys = pickRandomCatalogToys(
-      all,
-      filters,
-      Math.min(Math.max(1, randomCount), 12),
-      Number.isFinite(seed) ? seed : 1,
+    const toys = toKidToys(
+      pickRandomCatalogToys(
+        all,
+        filters,
+        Math.min(Math.max(1, randomCount), 12),
+        Number.isFinite(seed) ? seed : 1,
+      ),
     );
     return NextResponse.json({ toys });
   }
@@ -60,7 +63,9 @@ export async function GET(req: NextRequest) {
   const limit = Math.max(1, Math.min(Number(req.nextUrl.searchParams.get("limit") ?? "20"), 60));
   const seedRaw = Number(req.nextUrl.searchParams.get("seed") ?? "");
   const seed = Number.isFinite(seedRaw) ? seedRaw : Date.now();
-  const page = paginateCatalogToys(all, { ...filters, offset, limit, seed });
+  const page = toKidCatalogPage(
+    paginateCatalogToys(all, { ...filters, offset, limit, seed }),
+  );
 
   return NextResponse.json(page);
 }

@@ -1,13 +1,16 @@
 # KidsKatalog
 
-A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and email mom or dad a PDF with affiliate buy links. Nothing is sold on the site.
+A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and email mom or dad a PDF. Kids never see buy links. Grown-ups buy in **Parent Mode** (`/p/{id}`).
+
+**Revert point:** see [`HANDOFF.md`](./HANDOFF.md) (`pre-profit-handoff-2026-09-14`).
 
 ## Features
 
 - Big, simple browse UI with category “piles”
 - Toy detail pages with one-tap **Add to Kart**
 - Persistent Kart (saved in the browser)
-- **Send to Mom or Dad** — emails a PDF + HTML list of affiliate links (via [Resend](https://resend.com))
+- **Send to Mom or Dad** — emails a PDF + Parent Mode links (via [Resend](https://resend.com))
+- **Parent Mode** (`/p/{id}`) — wish list + Buy on Amazon with Associates disclosure
 
 ## Quick start
 

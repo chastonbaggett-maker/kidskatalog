@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getCatalogToysByIds } from "@/lib/catalog-store";
 import { incrementMetric } from "@/lib/metrics-store";
+import { parentToyUrl, parentWishlistUrl } from "@/lib/parent-paths";
 import { buildKartPdf, pdfToBase64 } from "@/lib/pdf";
+import { siteOriginFromRequest } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 
@@ -46,19 +48,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const pdf = buildKartPdf(toys, kidName);
+  const origin = siteOriginFromRequest(request);
+  const wishlistUrl = parentWishlistUrl(
+    toys.map((t) => t.id),
+    origin,
+  );
+  const pdf = await buildKartPdf(toys, kidName, origin);
   const pdfBase64 = pdfToBase64(pdf);
   const filename = `kidskatalog-${kidName.replace(/[^\w.-]+/g, "-")}.pdf`;
 
   const listHtml = toys
-    .map(
-      (t, i) =>
-        `<li style="margin:0 0 12px">
+    .map((t, i) => {
+      const parentUrl = parentToyUrl(t.id, origin);
+      return `<li style="margin:0 0 12px">
           <strong>${i + 1}. ${escapeHtml(t.name)}</strong><br/>
           <span style="color:#555">${escapeHtml(t.blurb)}</span><br/>
-          <a href="${t.affiliateUrl}">Buy link</a>
-        </li>`,
-    )
+          <a href="${parentUrl}">Open Parent Mode — Buy</a>
+        </li>`;
+    })
     .join("");
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -77,9 +84,10 @@ export async function POST(request: Request) {
     html: `
       <div style="font-family:Georgia,serif;color:#1B4D3E">
         <h1 style="margin:0 0 8px">KidsKatalog</h1>
-        <p style="color:#444">${escapeHtml(kidName)} picked these toys. PDF attached with affiliate links.</p>
+        <p style="color:#444">${escapeHtml(kidName)} picked these toys. Open the wish list in Parent Mode to buy.</p>
+        <p><a href="${wishlistUrl}">Open the full wish list</a></p>
         <ol style="padding-left:18px">${listHtml}</ol>
-        <p style="color:#888;font-size:12px">KidsKatalog is browse-only. Purchases happen on retailer sites.</p>
+        <p style="color:#888;font-size:12px">KidsKatalog is a participant in the Amazon Services LLC Associates Program. As an Amazon Associate we earn from qualifying purchases. Kids never see buy links.</p>
       </div>
     `,
     attachments: [

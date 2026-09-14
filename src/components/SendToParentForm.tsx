@@ -45,7 +45,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
         throw new Error(data.error || "Could not send");
       }
 
-      downloadKartPdf(toys, kidName);
+      await downloadKartPdf(toys, kidName, window.location.origin);
       pingMetrics("kart_email");
       setStatus("ok");
       setMessage(
@@ -71,7 +71,7 @@ export function SendToParentForm({ toys, onSent }: Props) {
           Send to Mom or Dad
         </h2>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          They get a PDF with every toy and buy links.
+          They get a PDF with Parent Mode links and QRs. Kids never see buy links.
         </p>
       </div>
 

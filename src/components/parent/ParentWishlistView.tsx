@@ -1,0 +1,173 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { ShelfHeader } from "@/components/ShelfHeader";
+import { ToyPhoto } from "@/components/ToyPhoto";
+import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
+import { parentToyPath } from "@/lib/parent-paths";
+import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
+import type { Toy } from "@/types/toy";
+
+type Props = {
+  initialToys: Toy[];
+  buyUrls: Record<string, string>;
+};
+
+export function ParentWishlistView({ initialToys, buyUrls }: Props) {
+  const storedIds = useParentWishlistStore((s) => s.ids);
+  const importIds = useParentWishlistStore((s) => s.importIds);
+  const remove = useParentWishlistStore((s) => s.remove);
+  const clear = useParentWishlistStore((s) => s.clear);
+  const [extraToys, setExtraToys] = useState<Toy[]>([]);
+  const [resolvedBuyUrls, setResolvedBuyUrls] = useState<Record<string, string>>(buyUrls);
+
+  useEffect(() => {
+    if (initialToys.length === 0) return;
+    importIds(initialToys.map((toy) => toy.id));
+  }, [importIds, initialToys]);
+
+  const initialById = useMemo(() => {
+    const map = new Map(initialToys.map((toy) => [toy.id, toy]));
+    return map;
+  }, [initialToys]);
+
+  const knownIds = useMemo(() => {
+    const set = new Set(initialToys.map((toy) => toy.id));
+    for (const id of storedIds) set.add(id);
+    return [...set];
+  }, [initialToys, storedIds]);
+
+  useEffect(() => {
+    const missing = knownIds.filter((id) => !initialById.has(id));
+    if (missing.length === 0) {
+      setExtraToys([]);
+    } else {
+      const query = encodeURIComponent(missing.join(","));
+      void fetch(`/api/catalog?ids=${query}`)
+        .then((r) => r.json())
+        .then((data: { toys?: Toy[] }) => setExtraToys(data.toys ?? []))
+        .catch(() => setExtraToys([]));
+    }
+
+    if (knownIds.length === 0) return;
+    const buyQuery = encodeURIComponent(knownIds.join(","));
+    void fetch(`/api/parent/buy-urls?ids=${buyQuery}`)
+      .then((r) => r.json())
+      .then((data: { urls?: Record<string, string> }) => {
+        setResolvedBuyUrls((prev) => ({ ...prev, ...buyUrls, ...(data.urls ?? {}) }));
+      })
+      .catch(() => setResolvedBuyUrls((prev) => ({ ...prev, ...buyUrls })));
+  }, [buyUrls, initialById, knownIds]);
+
+  const toys = useMemo(() => {
+    const extraById = new Map(extraToys.map((toy) => [toy.id, toy]));
+    return knownIds
+      .map((id) => initialById.get(id) ?? extraById.get(id))
+      .filter((toy): toy is Toy => Boolean(toy));
+  }, [extraToys, initialById, knownIds]);
+
+  return (
+    <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ShelfHeader
+        title="Parent wish list"
+        subtitle={
+          toys.length === 0
+            ? "Scan a QR or open a Kart email"
+            : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
+        }
+        logoHref="/p"
+        trailing={<span className="w-11" aria-hidden />}
+      />
+
+      <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
+        {toys.length > 0 ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => clear()}
+              className="text-sm font-bold text-[var(--ink-soft)]"
+            >
+              Clear
+            </button>
+          </div>
+        ) : null}
+
+        {toys.length === 0 ? (
+          <div className="shelf-panel">
+            <div className="shelf-panel__surface px-6 py-14 text-center">
+              <p className="mb-2 text-[var(--ink-soft)]">
+                No toys on this list yet.
+              </p>
+              <p className="text-sm text-[var(--ink-soft)]">
+                Kids send a Kart. Grown-ups buy here.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {toys.map((toy) => {
+              const buyUrl = resolvedBuyUrls[toy.id] || buyUrls[toy.id];
+              return (
+                <li key={toy.id} className="shelf-panel shelf-panel--soft">
+                  <div className="shelf-panel__surface flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
+                    <Link
+                      href={parentToyPath(toy.id)}
+                      prefetch={false}
+                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
+                    >
+                      <ToyPhoto
+                        src={toy.image}
+                        alt={toy.imageAlt}
+                        loading="lazy"
+                        decoding="async"
+                        className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
+                      />
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <Link href={parentToyPath(toy.id)} prefetch={false}>
+                        <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
+                          {toy.name}
+                        </p>
+                      </Link>
+                      <p className="truncate text-sm text-[var(--ink-soft)]">
+                        {toy.blurb}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {buyUrl ? (
+                        <ParentBuyButton href={buyUrl} className="min-w-[9.5rem] flex-none px-4" />
+                      ) : (
+                        <Link
+                          href={parentToyPath(toy.id)}
+                          className="add-kart-btn add-kart-btn--pill add-kart-btn--ready add-kart-btn--visual-ready inline-flex h-[3.9rem] items-center rounded-full px-5 text-base font-bold"
+                        >
+                          Buy on Amazon
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => remove(toy.id)}
+                        className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                        aria-label={`Remove ${toy.name}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="shelf-panel shelf-panel--soft">
+          <div className="shelf-panel__surface p-5">
+            <AssociatesDisclosure />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

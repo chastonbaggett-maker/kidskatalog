@@ -22,6 +22,8 @@ type ShelfHeaderProps = {
   className?: string;
   /** Right-side action, e.g. crazy mode toggle in browse shelf */
   trailing?: ReactNode;
+  /** Logo click target — kid shop by default, Parent Mode can point at /p */
+  logoHref?: string;
 };
 
 function findPageScroller(from: HTMLElement | null): HTMLElement | null {
@@ -42,6 +44,7 @@ export function ShelfHeader({
   altGradient = false,
   className = "",
   trailing,
+  logoHref = "/shop",
 }: ShelfHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -106,7 +109,7 @@ export function ShelfHeader({
           </div>
         ) : null}
 
-        <Logo variant="icon" light glow href="/shop" size={44} />
+        <Logo variant="icon" light glow href={logoHref} size={44} />
         {trailing ?? <ShelfCrazyTrailing />}
       </div>
 

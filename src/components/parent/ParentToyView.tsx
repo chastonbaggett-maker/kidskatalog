@@ -13,9 +13,16 @@ type Props = {
   categoryLabel: string;
   gallery: string[];
   buyUrl: string;
+  buyPlaceholder?: boolean;
 };
 
-export function ParentToyView({ toy, categoryLabel, gallery, buyUrl }: Props) {
+export function ParentToyView({
+  toy,
+  categoryLabel,
+  gallery,
+  buyUrl,
+  buyPlaceholder = true,
+}: Props) {
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
       <ShelfHeader
@@ -54,9 +61,11 @@ export function ParentToyView({ toy, categoryLabel, gallery, buyUrl }: Props) {
               </div>
 
               <p className="mt-4 text-sm text-[var(--ink-soft)]">
-                Opens Amazon in your phone&apos;s browser — not inside the app.
+                {buyPlaceholder
+                  ? "Associates link goes here when approved."
+                  : "Opens Amazon in your phone's browser — not inside the app."}
               </p>
-              <AssociatesDisclosure className="mt-3 max-w-md" />
+              <AssociatesDisclosure className="mt-3 max-w-md" placeholder={buyPlaceholder} />
 
               <p className="mt-5">
                 <Link

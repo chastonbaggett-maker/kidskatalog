@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveParentBuyUrls } from "@/lib/associates";
 import { getCatalogToysByIds } from "@/lib/catalog-store";
 
-/** Parent Mode only — returns Amazon Special Links. Never called from kid shop. */
+/** Parent Mode Buy targets. Placeholder until AMAZON_ASSOCIATES_LIVE. */
 export async function GET(req: NextRequest) {
   const idsParam = req.nextUrl.searchParams.get("ids") ?? "";
   const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
@@ -10,9 +11,5 @@ export async function GET(req: NextRequest) {
   }
 
   const toys = await getCatalogToysByIds(ids);
-  const urls: Record<string, string> = {};
-  for (const toy of toys) {
-    if (toy.affiliateUrl) urls[toy.id] = toy.affiliateUrl;
-  }
-  return NextResponse.json({ urls });
+  return NextResponse.json({ urls: resolveParentBuyUrls(toys) });
 }

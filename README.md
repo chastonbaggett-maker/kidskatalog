@@ -10,7 +10,7 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - Toy detail pages with one-tap **Add to Kart**
 - Persistent Kart (saved in the browser)
 - **Send to Mom or Dad** — emails a PDF + Parent Mode links (via [Resend](https://resend.com))
-- **Parent Mode** (`/p/{id}`) — wish list + Buy on Amazon with Associates disclosure
+- **Parent Mode** (`/p/{id}`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
 
 ## Quick start
 

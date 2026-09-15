@@ -4,6 +4,11 @@ export function parentToyPath(id: string): string {
   return `/p/${encodeURIComponent(id)}`;
 }
 
+/** Stub Buy target until Associates is approved. */
+export function parentBuyPlaceholderPath(id: string): string {
+  return `/p/buy-placeholder?toy=${encodeURIComponent(id)}#buy-placeholder`;
+}
+
 export function parentWishlistPath(ids?: string[]): string {
   if (!ids?.length) return "/p";
   const value = ids.map((id) => encodeURIComponent(id)).join(",");

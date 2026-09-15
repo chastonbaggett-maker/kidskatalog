@@ -6,16 +6,21 @@ import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
-import { parentToyPath } from "@/lib/parent-paths";
+import { parentBuyPlaceholderPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
 
 type Props = {
   initialToys: Toy[];
   buyUrls: Record<string, string>;
+  buyPlaceholder?: boolean;
 };
 
-export function ParentWishlistView({ initialToys, buyUrls }: Props) {
+export function ParentWishlistView({
+  initialToys,
+  buyUrls,
+  buyPlaceholder = true,
+}: Props) {
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
   const remove = useParentWishlistStore((s) => s.remove);
@@ -108,7 +113,10 @@ export function ParentWishlistView({ initialToys, buyUrls }: Props) {
         ) : (
           <ul className="flex flex-col gap-3">
             {toys.map((toy) => {
-              const buyUrl = resolvedBuyUrls[toy.id] || buyUrls[toy.id];
+              const buyUrl =
+                resolvedBuyUrls[toy.id] ||
+                buyUrls[toy.id] ||
+                parentBuyPlaceholderPath(toy.id);
               return (
                 <li key={toy.id} className="shelf-panel shelf-panel--soft">
                   <div className="shelf-panel__surface flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
@@ -136,16 +144,7 @@ export function ParentWishlistView({ initialToys, buyUrls }: Props) {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {buyUrl ? (
-                        <ParentBuyButton href={buyUrl} className="min-w-[9.5rem] flex-none px-4" />
-                      ) : (
-                        <Link
-                          href={parentToyPath(toy.id)}
-                          className="add-kart-btn add-kart-btn--pill add-kart-btn--ready add-kart-btn--visual-ready inline-flex h-[3.9rem] items-center rounded-full px-5 text-base font-bold"
-                        >
-                          Buy on Amazon
-                        </Link>
-                      )}
+                      <ParentBuyButton href={buyUrl} className="min-w-[9.5rem] flex-none px-4" />
                       <button
                         type="button"
                         onClick={() => remove(toy.id)}
@@ -164,7 +163,7 @@ export function ParentWishlistView({ initialToys, buyUrls }: Props) {
 
         <div className="shelf-panel shelf-panel--soft">
           <div className="shelf-panel__surface p-5">
-            <AssociatesDisclosure />
+            <AssociatesDisclosure placeholder={buyPlaceholder} />
           </div>
         </div>
       </div>

@@ -32,5 +32,6 @@ Then in Vercel: promote / redeploy commit `27bdd5cbff949b84dd3d87812eb61657e49ad
 ## Money path (after this handoff ships)
 
 - Kids: shop / toy / kart / watch — **no** Amazon `tag=` or product buy URLs.
-- Parents: `/p/{id}` toy page and `/p?ids=…` wish list — **Buy on Amazon** opens the Associates Special Link in the system browser, with FTC disclosure.
-- Print/email PDFs and QRs point at those Parent Mode URLs, not Amazon.
+- Parents: `/p/{id}` and `/p?ids=…` — Buy opens a **placeholder** confirmation (`/p/buy-placeholder?toy=ID#buy-placeholder`) until Associates is approved.
+- Flip later (no redesign): set `AMAZON_ASSOCIATES_LIVE=true` and `AMAZON_ASSOCIATES_TAG`, plus per-toy `affiliateUrl`. `resolveParentBuy()` is the only swap.
+- Print/email/QRs point at Parent Mode pages, not Amazon.

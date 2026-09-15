@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
+import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
@@ -112,7 +113,8 @@ export function ParentWishlistView({
                 No toys on this list yet.
               </p>
               <p className="text-sm text-[var(--ink-soft)]">
-                Kids send a Kart. Grown-ups buy here.
+                Kids send a Kart, or open a shared /p?ids= link. Grown-ups buy
+                here.
               </p>
             </div>
           </div>
@@ -166,6 +168,23 @@ export function ParentWishlistView({
             })}
           </ul>
         )}
+
+        {toys.length > 0 ? (
+          <div className="shelf-panel shelf-panel--soft">
+            <div className="shelf-panel__surface flex flex-col gap-3 p-5">
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
+                Share this list
+              </h2>
+              <p className="text-sm text-[var(--ink-soft)]">
+                Same /p?ids= link the Kart builds. Text it to another grown-up.
+              </p>
+              <ShareWishlistActions
+                ids={toys.map((toy) => toy.id)}
+                showOpenLink={false}
+              />
+            </div>
+          </div>
+        ) : null}
 
         <div className="shelf-panel shelf-panel--soft">
           <div className="shelf-panel__surface p-5">

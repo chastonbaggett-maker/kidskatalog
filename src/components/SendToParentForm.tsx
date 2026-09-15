@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import type { Toy } from "@/types/toy";
 import { downloadKartPdf } from "@/lib/pdf";
 import { pingMetrics } from "@/lib/metrics-client";
 
 type Props = {
   toys: Toy[];
+  /** Kart ids for the share URL — may be ready before toy rows load. */
+  wishlistIds?: string[];
   onSent?: () => void;
 };
 
-export function SendToParentForm({ toys, onSent }: Props) {
+export function SendToParentForm({ toys, wishlistIds, onSent }: Props) {
   const [kidName, setKidName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">(
@@ -71,9 +74,15 @@ export function SendToParentForm({ toys, onSent }: Props) {
           Send to Mom or Dad
         </h2>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          They get a PDF with Parent Mode links and QRs. Kids never see buy links.
+          Copy or open the Parent Mode wish list, or send a PDF. Kids never see
+          buy links.
         </p>
       </div>
+
+      <ShareWishlistActions
+        ids={wishlistIds ?? toys.map((toy) => toy.id)}
+        showForParents
+      />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-[var(--ink)]">Your name</span>

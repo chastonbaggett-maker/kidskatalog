@@ -115,7 +115,7 @@ export default function KartPage() {
           </ul>
         )}
 
-        <SendToParentForm toys={toys} />
+        <SendToParentForm toys={toys} wishlistIds={ids} />
       </div>
     </div>
   );

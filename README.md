@@ -9,9 +9,9 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - Big, simple browse UI with category “piles”
 - Toy detail pages with one-tap **Add to Kart**
 - Persistent Kart (saved in the browser)
-- **Send to Mom or Dad** — emails a PDF + Parent Mode links (via [Resend](https://resend.com))
-- **Parent Mode** (`/p/{id}`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
-- **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md`)
+- **Send to Mom or Dad** — copy/open a `/p?ids=` wish list, or email a PDF + Parent Mode links (via [Resend](https://resend.com))
+- **Parent Mode** (`/p/{id}` and `/p?ids=…`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
+- **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md`; outreach templates in `docs/brand-outreach.md`)
 
 ## Quick start
 

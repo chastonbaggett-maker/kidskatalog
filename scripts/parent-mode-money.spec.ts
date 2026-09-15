@@ -148,6 +148,82 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
 });
 
+test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
+  page,
+  request,
+  context,
+}) => {
+  test.setTimeout(90_000);
+  const ids = await allCatalogIds(request);
+  const sample = pickSample(ids).slice(0, Math.min(3, ids.length));
+  expect(sample.length).toBeGreaterThan(1);
+  const expectedPath = `/p?ids=${sample.map((id) => encodeURIComponent(id)).join(",")}`;
+
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript((seedIds: string[]) => {
+    localStorage.setItem(
+      "kidskatalog-kart",
+      JSON.stringify({ state: { ids: seedIds }, version: 0 }),
+    );
+    localStorage.removeItem("kidskatalog-parent-wishlist");
+  }, sample);
+
+  await page.goto("/kart", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+
+  expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
+  await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
+  await expect(page.getByText(/Brand partner link/i)).toHaveCount(0);
+
+  const shareUrl = page.getByTestId("wishlist-share-url");
+  await expect(shareUrl).toBeVisible();
+  await expect(shareUrl).toHaveValue(new RegExp(`${expectedPath.replace("?", "\\?")}$`));
+
+  const openParent = page.getByTestId("open-parent-wishlist");
+  await expect(openParent).toHaveAttribute("href", expectedPath);
+
+  await page.getByTestId("copy-wishlist-link").click();
+  await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
+  try {
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toMatch(new RegExp(`${expectedPath.replace("?", "\\?")}$`));
+  } catch {
+    // Clipboard read can be blocked; the generated URL field is the source of truth.
+  }
+
+  await expect(page.getByTestId("for-parents-entry")).toHaveAttribute("href", "/p/deals");
+
+  await openParent.click();
+  await page.waitForURL((url) => url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","));
+  await dismissSplash(page);
+
+  const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
+  await expect(buyLinks).toHaveCount(sample.length);
+  await expect(page.locator('a[href*="/p/buy-placeholder?toy="]')).toHaveCount(sample.length);
+  expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+  for (const id of sample) {
+    await expect(page.locator(`a[href="/p/${id}"]`).first()).toBeVisible();
+  }
+  await expect(page.getByText(/Associates link goes here when approved/i).first()).toBeVisible();
+
+  await page.goto("/shop", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
+  await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
+
+  await page.goto(`/toy/${sample[0]}`, { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
+  await expect(page.locator(".add-kart-btn")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
+  await expect(page.getByText(/Brand partner link/i)).toHaveCount(0);
+
+  await page.goto("/menu", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
+  await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
+});
+
 test("wish list accepts multiple real ids", async ({ page, request }) => {
   test.setTimeout(60_000);
   const ids = await allCatalogIds(request);

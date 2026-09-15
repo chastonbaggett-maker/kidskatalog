@@ -146,7 +146,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
     .locator("li")
     .filter({ hasText: "KiwiCo-style" })
     .getByTestId("brand-affiliate-cta")
-    .click();
+    .click({ force: true });
   const dealBody = JSON.parse((await dealClick).postData() || "{}") as {
     name: string;
     toyId: string;

@@ -7,6 +7,7 @@ import { ShelfHeader } from "@/components/ShelfHeader";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { BrandDealCta } from "@/components/parent/BrandDealCta";
 import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
+import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentWishlistButton } from "@/components/parent/ParentWishlistButton";
@@ -38,7 +39,7 @@ export function ParentToyView({
         subtitle="Wish list + Buy — kids never see these links"
         backHref="/p"
         logoHref="/p"
-        trailing={<span className="w-11" aria-hidden />}
+        trailing={<ParentAuthLinks returnTo={`/p/${toy.id}`} />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 py-4 scroll-pad-bottom">

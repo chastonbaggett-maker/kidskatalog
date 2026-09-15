@@ -1,4 +1,4 @@
-/** Resolve the public site origin for parent / print / email / share links. */
+/** Resolve the public site origin for parent share links. */
 
 export const DEFAULT_SITE_ORIGIN = "https://kidskatalog.vercel.app";
 

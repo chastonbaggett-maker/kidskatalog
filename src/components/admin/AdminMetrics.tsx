@@ -26,7 +26,7 @@ export function AdminMetrics({ metrics, loading }: Props) {
         { label: "Unique sessions", value: metrics.uniqueSessions },
         { label: "Toys in catalog", value: metrics.toysInCatalog },
         { label: "Kart adds", value: metrics.kartAdds },
-        { label: "Kart emails", value: metrics.kartEmailsSent },
+        { label: "Kart emails (legacy)", value: metrics.kartEmailsSent },
         { label: "Crazy mode", value: metrics.crazyModeActivations },
       ]
     : [];

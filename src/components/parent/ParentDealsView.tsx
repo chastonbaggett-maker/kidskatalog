@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandDealCta } from "@/components/parent/BrandDealCta";
 import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
+import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { getBrandDealToys, resolveBrandDeal } from "@/lib/brand-deals";
@@ -24,7 +25,7 @@ export function ParentDealsView({ toys }: { toys: Toy[] }) {
         subtitle="Parent-only partner links — not Amazon"
         backHref="/p"
         logoHref="/p"
-        trailing={<span className="w-11" aria-hidden />}
+        trailing={<ParentAuthLinks returnTo="/p/deals" />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">

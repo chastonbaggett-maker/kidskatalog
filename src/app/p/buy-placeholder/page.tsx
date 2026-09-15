@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { getCatalogToy } from "@/lib/catalog-store";
@@ -25,7 +26,7 @@ export default async function BuyPlaceholderPage({ searchParams }: Props) {
         subtitle="Buy confirmation"
         backHref={toy ? parentToyPath(toy.id) : "/p"}
         logoHref="/p"
-        trailing={<span className="w-11" aria-hidden />}
+        trailing={<ParentAuthLinks />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 px-4 py-4 scroll-pad-bottom">

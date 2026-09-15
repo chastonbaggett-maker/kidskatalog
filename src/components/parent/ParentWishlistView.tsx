@@ -6,8 +6,10 @@ import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
+import { ParentSaveList } from "@/components/parent/ParentSaveList";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
@@ -16,12 +18,16 @@ type Props = {
   initialToys: Toy[];
   buyUrls: Record<string, string>;
   buyPlaceholder?: boolean;
+  savedListName?: string;
+  returnTo?: string;
 };
 
 export function ParentWishlistView({
   initialToys,
   buyUrls,
   buyPlaceholder = true,
+  savedListName,
+  returnTo = "/p",
 }: Props) {
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
@@ -91,11 +97,13 @@ export function ParentWishlistView({
         title="Parent wish list"
         subtitle={
           toys.length === 0
-            ? "Scan a QR or open a Kart email"
-            : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
+            ? "Open a Kart link or a saved list"
+            : savedListName
+              ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
+              : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
         logoHref="/p"
-        trailing={<span className="w-11" aria-hidden />}
+        trailing={<ParentAuthLinks returnTo={returnTo} />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
@@ -124,8 +132,8 @@ export function ParentWishlistView({
                 No toys on this list yet.
               </p>
               <p className="text-sm text-[var(--ink-soft)]">
-                Kids send a Kart, or open a shared /p?ids= link. Grown-ups buy
-                here.
+                Kids send a Kart, open a shared /p?ids= link, or log in to a
+                saved list. Grown-ups buy here.
               </p>
             </div>
           </div>
@@ -186,20 +194,27 @@ export function ParentWishlistView({
         )}
 
         {toys.length > 0 ? (
-          <div className="shelf-panel shelf-panel--soft">
-            <div className="shelf-panel__surface flex flex-col gap-3 p-5">
-              <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
-                Share this list
-              </h2>
-              <p className="text-sm text-[var(--ink-soft)]">
-                Same /p?ids= link the Kart builds. Text it to another grown-up.
-              </p>
-              <ShareWishlistActions
-                ids={toys.map((toy) => toy.id)}
-                showOpenLink={false}
-              />
+          <>
+            <ParentSaveList
+              toyIds={toys.map((toy) => toy.id)}
+              returnTo={returnTo}
+            />
+            <div className="shelf-panel shelf-panel--soft">
+              <div className="shelf-panel__surface flex flex-col gap-3 p-5">
+                <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--ink)]">
+                  Share this list
+                </h2>
+                <p className="text-sm text-[var(--ink-soft)]">
+                  Same /p?ids= link the Kart builds. Text it to another grown-up.
+                  No PDF.
+                </p>
+                <ShareWishlistActions
+                  ids={toys.map((toy) => toy.id)}
+                  showOpenLink={false}
+                />
+              </div>
             </div>
-          </div>
+          </>
         ) : null}
 
         <div className="shelf-panel shelf-panel--soft">

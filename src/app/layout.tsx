@@ -10,7 +10,7 @@ const APP_NAME = "KidsKatalog";
 const APP_DEFAULT_TITLE = "KidsKatalog — Browse toys. Build a Kart.";
 const APP_TITLE_TEMPLATE = "%s · KidsKatalog";
 const APP_DESCRIPTION =
-  "A kid-friendly virtual toy catalog. Browse, save favorites to a Kart, and email mom or dad a PDF with affiliate buy links.";
+  "A kid-friendly virtual toy catalog. Browse, save favorites to a Kart, and send mom or dad a Parent Mode wish list link.";
 
 const display = Fredoka({
   variable: "--font-display",

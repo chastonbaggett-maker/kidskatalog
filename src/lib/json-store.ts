@@ -13,13 +13,21 @@ async function getDbModule() {
   return import("@/lib/db");
 }
 
-export type StoreKey = "catalog" | "admin" | "metrics" | "drafts";
+export type StoreKey =
+  | "catalog"
+  | "admin"
+  | "metrics"
+  | "drafts"
+  | "parent-accounts"
+  | "parent-lists";
 
 const FILE_NAMES: Record<StoreKey, string> = {
   catalog: "catalog.json",
   admin: "admin.json",
   metrics: "metrics.json",
   drafts: "drafts.json",
+  "parent-accounts": "parent-accounts.json",
+  "parent-lists": "parent-lists.json",
 };
 
 const BLOB_PATHS: Record<StoreKey, string> = {
@@ -27,6 +35,8 @@ const BLOB_PATHS: Record<StoreKey, string> = {
   admin: "kidskatalog/admin.json",
   metrics: "kidskatalog/metrics.json",
   drafts: "kidskatalog/drafts.json",
+  "parent-accounts": "kidskatalog/parent-accounts.json",
+  "parent-lists": "kidskatalog/parent-lists.json",
 };
 
 function isDevLocalStore(): boolean {

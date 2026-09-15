@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ParentClerkProvider } from "@/components/parent/ParentClerkProvider";
 
 export const metadata: Metadata = {
   title: "Parent Mode",
@@ -13,10 +14,12 @@ export default function ParentLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-      <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">
-        {children}
+    <ParentClerkProvider>
+      <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+        <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+          {children}
+        </div>
       </div>
-    </div>
+    </ParentClerkProvider>
   );
 }

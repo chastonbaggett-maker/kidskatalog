@@ -10,7 +10,7 @@ function getSessionId(): string {
   return id;
 }
 
-export function pingMetrics(event?: "kart_add" | "kart_email" | "crazy_mode") {
+export function pingMetrics(event?: "kart_add" | "crazy_mode") {
   if (typeof window === "undefined") return;
   void fetch("/api/metrics/ping", {
     method: "POST",

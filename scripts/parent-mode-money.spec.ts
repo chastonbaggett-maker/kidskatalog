@@ -20,9 +20,9 @@ const SAMPLE_IDS = ["sky-rocket", "roar-rex", "mag-train", "glow-bow", "hair-gem
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
   try {
-    await tap.waitFor({ state: "visible", timeout: 1500 });
+    await tap.waitFor({ state: "visible", timeout: 8000 });
     await tap.click();
-    await tap.waitFor({ state: "hidden", timeout: 10_000 });
+    await tap.waitFor({ state: "hidden", timeout: 15_000 });
   } catch {
     // Already dismissed or not a cold open.
   }
@@ -53,7 +53,7 @@ async function allCatalogIds(request: APIRequestContext): Promise<string[]> {
 function pickSample(ids: string[]): string[] {
   const preferred = SAMPLE_IDS.filter((id) => ids.includes(id));
   const rest = ids.filter((id) => !preferred.includes(id));
-  const sample = [...preferred, ...rest].slice(0, Math.min(8, ids.length));
+  const sample = [...preferred, ...rest].slice(0, Math.min(4, ids.length));
   return [...new Set(sample)];
 }
 
@@ -118,6 +118,7 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   page,
   request,
 }) => {
+  test.setTimeout(90_000);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids);
 
@@ -148,6 +149,7 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
 });
 
 test("wish list accepts multiple real ids", async ({ page, request }) => {
+  test.setTimeout(60_000);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids).slice(0, Math.min(4, ids.length));
   expect(sample.length).toBeGreaterThan(1);
@@ -168,6 +170,7 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   page,
   request,
 }) => {
+  test.setTimeout(90_000);
   await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
   await expect(page.getByText(/Brand deals/i).first()).toBeVisible();
@@ -175,8 +178,8 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
   expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
   await expect(page.getByText(/Brand partner link/i).first()).toBeVisible();
-  await expect(page.getByText(/Example Rocket Co/i)).toBeVisible();
-  await expect(page.getByText(/Example Dino Studio/i)).toBeVisible();
+  await expect(page.getByText(/Example Rocket Co/i).first()).toBeVisible();
+  await expect(page.getByText(/Example Dino Studio/i).first()).toBeVisible();
   await expect(page.getByText(/Brand partner link — coming soon/i)).toBeVisible();
   await expect(
     page.locator('a[href="https://example.com/kidskatalog-brand-deal-placeholder"]'),

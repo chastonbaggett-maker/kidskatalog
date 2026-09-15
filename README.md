@@ -2,7 +2,7 @@
 
 A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and email mom or dad a PDF. Kids never see buy links. Grown-ups buy in **Parent Mode** (`/p/{id}`).
 
-**Revert point:** see [`HANDOFF.md`](./HANDOFF.md) (`pre-profit-handoff-2026-09-14`).
+**Revert point:** see [`HANDOFF.md`](./HANDOFF.md) (`pre-profit-handoff-2026-09-14`). Associates flip: [`docs/associates-flip.md`](./docs/associates-flip.md). Parent funnel: [`docs/parent-funnel.md`](./docs/parent-funnel.md).
 
 ## Features
 
@@ -32,7 +32,9 @@ Copy `.env.example` to `.env.local` and fill in:
 |---|---|
 | `RESEND_API_KEY` | Send parent emails |
 | `RESEND_FROM_EMAIL` | Verified Resend from address |
-| `NEXT_PUBLIC_AFFILIATE_TAG` | Amazon Associates tag on product links |
+| `NEXT_PUBLIC_SITE_URL` | Canonical origin for parent share/email/QR (default `https://kidskatalog.vercel.app`) |
+| `AMAZON_ASSOCIATES_LIVE` / `AMAZON_ASSOCIATES_TAG` | Off until Associates is approved — see `docs/associates-flip.md` |
+| `NEXT_PUBLIC_AFFILIATE_TAG` | Stored import tag only; never shown on kid surfaces |
 
 ## Stack
 

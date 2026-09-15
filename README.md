@@ -11,6 +11,7 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - Persistent Kart (saved in the browser)
 - **Send to Mom or Dad** — emails a PDF + Parent Mode links (via [Resend](https://resend.com))
 - **Parent Mode** (`/p/{id}`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
+- **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md`)
 
 ## Quick start
 

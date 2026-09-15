@@ -5,6 +5,7 @@ import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import type { Toy } from "@/types/toy";
 import { downloadKartPdf } from "@/lib/pdf";
 import { pingMetrics } from "@/lib/metrics-client";
+import { siteOriginFromWindow } from "@/lib/site-url";
 
 type Props = {
   toys: Toy[];
@@ -48,7 +49,7 @@ export function SendToParentForm({ toys, wishlistIds, onSent }: Props) {
         throw new Error(data.error || "Could not send");
       }
 
-      await downloadKartPdf(toys, kidName, window.location.origin);
+      await downloadKartPdf(toys, kidName, siteOriginFromWindow());
       pingMetrics("kart_email");
       setStatus("ok");
       setMessage(

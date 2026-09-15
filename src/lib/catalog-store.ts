@@ -1,6 +1,7 @@
 import "server-only";
 import type { Toy } from "@/types/toy";
 import { toys as seedToys } from "@/data/toys";
+import { applySeededBrandDeals } from "@/lib/brand-deals";
 import { readStore, writeStore } from "@/lib/json-store";
 
 type CatalogData = {
@@ -19,33 +20,37 @@ async function loadCatalog(): Promise<CatalogData> {
   return data;
 }
 
+function withBrandDeals(data: CatalogData): CatalogData {
+  return { ...data, toys: applySeededBrandDeals(data.toys) };
+}
+
 async function saveCatalog(data: CatalogData): Promise<void> {
   await writeStore("catalog", data);
 }
 
 export async function getCatalogToys(): Promise<Toy[]> {
-  const data = await loadCatalog();
+  const data = withBrandDeals(await loadCatalog());
   return data.toys;
 }
 
 export async function getCatalogToy(id: string): Promise<Toy | undefined> {
-  const data = await loadCatalog();
+  const data = withBrandDeals(await loadCatalog());
   return data.toys.find((t) => t.id === id);
 }
 
 export async function getCatalogToysByIds(ids: string[]): Promise<Toy[]> {
-  const data = await loadCatalog();
+  const data = withBrandDeals(await loadCatalog());
   const byId = new Map(data.toys.map((t) => [t.id, t]));
   return ids.map((id) => byId.get(id)).filter((t): t is Toy => Boolean(t));
 }
 
 export async function getCatalogToysByCategory(category: string): Promise<Toy[]> {
-  const data = await loadCatalog();
+  const data = withBrandDeals(await loadCatalog());
   return data.toys.filter((t) => t.category === category);
 }
 
 export async function getMoreCatalogToys(currentId: string): Promise<Toy[]> {
-  const data = await loadCatalog();
+  const data = withBrandDeals(await loadCatalog());
   const current = data.toys.find((t) => t.id === currentId);
   const rest = data.toys.filter((t) => t.id !== currentId);
   if (!current) return rest;

@@ -53,6 +53,9 @@ const emptyForm = {
   ageMax: 12,
   featuredTier: 0 as FeaturedTier,
   affiliateUrl: "",
+  brandDeal: false,
+  brandPartner: "",
+  brandDealUrl: "",
   image: "",
   imageAlt: "",
   imageUrl: "",
@@ -136,6 +139,9 @@ export function AdminToyForm({
         ageMax: editing.ageMax,
         featuredTier: resolveFeaturedTier(editing),
         affiliateUrl: editing.affiliateUrl ?? "",
+        brandDeal: Boolean(editing.brandDeal || editing.brandDealUrl || editing.brandPartner),
+        brandPartner: editing.brandPartner ?? "",
+        brandDealUrl: editing.brandDealUrl ?? "",
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",
@@ -193,6 +199,9 @@ export function AdminToyForm({
         ageMax: typeof p.ageMax === "number" ? p.ageMax : 12,
         featuredTier: 0,
         affiliateUrl: p.affiliateUrl,
+        brandDeal: false,
+        brandPartner: "",
+        brandDealUrl: "",
         image: mainImage || orderedGallery[0] || "",
         imageAlt: p.imageAlt || p.name,
         // Local gallery paths are already downloaded — no remote imageUrl needed.
@@ -364,6 +373,9 @@ export function AdminToyForm({
       featuredTier: form.featuredTier,
       featured: form.featuredTier > 0,
       affiliateUrl: form.affiliateUrl.trim(),
+      brandDeal: form.brandDeal || Boolean(form.brandPartner.trim() || form.brandDealUrl.trim()),
+      brandPartner: form.brandPartner.trim() || undefined,
+      brandDealUrl: form.brandDealUrl.trim() || undefined,
       image: primaryImage,
       images: galleryForSave,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
@@ -790,6 +802,36 @@ export function AdminToyForm({
               onChange={(e) => setForm((f) => ({ ...f, affiliateUrl: e.target.value }))}
               className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
             />
+          </label>
+
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={form.brandDeal}
+              onChange={(e) => setForm((f) => ({ ...f, brandDeal: e.target.checked }))}
+            />
+            Brand deal (parent-only, not Amazon)
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Brand partner</span>
+            <input
+              value={form.brandPartner}
+              onChange={(e) => setForm((f) => ({ ...f, brandPartner: e.target.value }))}
+              placeholder="Partner name"
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Brand deal URL</span>
+            <input
+              value={form.brandDealUrl}
+              onChange={(e) => setForm((f) => ({ ...f, brandDealUrl: e.target.value }))}
+              placeholder="https://partner.example (empty = coming soon)"
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+            <span className="text-xs text-[var(--ink-soft)]">
+              Off-Amazon only. Never an Amazon dp/tag link. Kids never see this.
+            </span>
           </label>
 
           <label className="flex flex-col gap-1">

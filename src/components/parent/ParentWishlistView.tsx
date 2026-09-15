@@ -6,7 +6,7 @@ import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
-import { parentBuyPlaceholderPath, parentToyPath } from "@/lib/parent-paths";
+import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
 
@@ -87,8 +87,14 @@ export function ParentWishlistView({
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
-        {toys.length > 0 ? (
-          <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={parentDealsPath()}
+            className="text-sm font-bold text-[var(--blue-deep)]"
+          >
+            Brand deals
+          </Link>
+          {toys.length > 0 ? (
             <button
               type="button"
               onClick={() => clear()}
@@ -96,8 +102,8 @@ export function ParentWishlistView({
             >
               Clear
             </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         {toys.length === 0 ? (
           <div className="shelf-panel">

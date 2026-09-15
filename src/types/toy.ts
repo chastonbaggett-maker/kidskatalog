@@ -28,6 +28,16 @@ export type Toy = {
   imageAlt: string;
   /** Amazon affiliate-ready product URL — parent/admin only; stripped from kid surfaces */
   affiliateUrl?: string;
+  /**
+   * Parent-only brand-deal flag (video permission + featured video card + parent CTA).
+   * Default empty — existing toys stay Amazon-catalog-only.
+   * Never shown on kid surfaces. Never mixed with Amazon on the same click.
+   */
+  brandDeal?: boolean;
+  /** External partner URL. Empty = “coming soon” placeholder. Not an Amazon PAC link. */
+  brandDealUrl?: string;
+  /** Partner name for the parent disclosure. */
+  brandPartner?: string;
   ageMin: number;
   ageMax: number;
   color: string;

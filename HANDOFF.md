@@ -35,3 +35,6 @@ Then in Vercel: promote / redeploy commit `27bdd5cbff949b84dd3d87812eb61657e49ad
 - Parents: `/p/{id}` and `/p?ids=…` — Buy opens a **placeholder** confirmation (`/p/buy-placeholder?toy=ID#buy-placeholder`) until Associates is approved.
 - Flip later (no redesign): set `AMAZON_ASSOCIATES_LIVE=true` and `AMAZON_ASSOCIATES_TAG`, plus per-toy `affiliateUrl`. `resolveParentBuy()` is the only swap.
 - Print/email/QRs point at Parent Mode pages, not Amazon.
+- Brand deals (parent-only): `/p/deals` and per-toy CTA when `brandDeal` / `brandDealUrl` / `brandPartner` is set. Not Amazon. Kids never see it. See `docs/brand-deals.md`.
+
+Do not delete tag `pre-profit-handoff-2026-09-14`.

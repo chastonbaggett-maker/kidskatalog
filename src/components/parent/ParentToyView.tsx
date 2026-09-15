@@ -5,8 +5,12 @@ import type { Toy } from "@/types/toy";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { BrandDealCta } from "@/components/parent/BrandDealCta";
+import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentWishlistButton } from "@/components/parent/ParentWishlistButton";
+import type { ResolvedBrandDeal } from "@/lib/brand-deals";
+import { parentDealsPath } from "@/lib/parent-paths";
 
 type Props = {
   toy: Toy;
@@ -14,6 +18,7 @@ type Props = {
   gallery: string[];
   buyUrl: string;
   buyPlaceholder?: boolean;
+  brandDeal?: ResolvedBrandDeal | null;
 };
 
 export function ParentToyView({
@@ -22,6 +27,7 @@ export function ParentToyView({
   gallery,
   buyUrl,
   buyPlaceholder = true,
+  brandDeal = null,
 }: Props) {
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
@@ -67,12 +73,34 @@ export function ParentToyView({
               </p>
               <AssociatesDisclosure className="mt-3 max-w-md" placeholder={buyPlaceholder} />
 
-              <p className="mt-5">
+              {brandDeal ? (
+                <div className="mt-6 max-w-md">
+                  <div className="flex flex-col gap-3">
+                    <BrandDealCta deal={brandDeal} />
+                  </div>
+                  <p className="mt-3 text-sm text-[var(--ink-soft)]">
+                    Separate from Amazon Buy. This click is not an Associates
+                    link.
+                  </p>
+                  <BrandDealDisclosure
+                    className="mt-2"
+                    partner={brandDeal.partner}
+                  />
+                </div>
+              ) : null}
+
+              <p className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
                 <Link
                   href="/p"
                   className="text-sm font-bold text-[var(--blue-deep)]"
                 >
                   Open your wish list
+                </Link>
+                <Link
+                  href={parentDealsPath()}
+                  className="text-sm font-bold text-[var(--blue-deep)]"
+                >
+                  Brand deals
                 </Link>
               </p>
             </div>

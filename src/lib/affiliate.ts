@@ -40,3 +40,24 @@ export function hasAffiliateLeak(value: unknown): boolean {
   }
   return false;
 }
+
+/** Kid HTML/JSON must not ship Amazon PAC or brand-deal commerce. */
+export function hasKidCommerceLeak(value: unknown): boolean {
+  if (hasAffiliateLeak(value)) return true;
+  if (typeof value === "string") {
+    return /brandDeal|Brand partner link|Buy on Amazon/i.test(value);
+  }
+  if (Array.isArray(value)) return value.some(hasKidCommerceLeak);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (
+      "brandDeal" in record ||
+      "brandDealUrl" in record ||
+      "brandPartner" in record
+    ) {
+      return true;
+    }
+    return Object.values(record).some(hasKidCommerceLeak);
+  }
+  return false;
+}

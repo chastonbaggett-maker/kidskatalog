@@ -2118,7 +2118,12 @@
       "imageAlt": "Kids motorized rocket launcher toy",
       "affiliateUrl": "https://www.amazon.com/dp/B0BBRGJTD7?tag=kidskatalog-20",
       "brandDeal": true,
-      "brandPartner": "Example Rocket Co.",
+      "brandPartner": "Yoto-style",
+      "brandAffiliate": {
+        "partner": "Yoto-style",
+        "network": "impact",
+        "live": false
+      },
       "ageMin": 8,
       "ageMax": 12,
       "color": "#E74C3C"
@@ -2164,8 +2169,12 @@
       "imageAlt": "Remote control walking T-Rex dinosaur",
       "affiliateUrl": "https://www.amazon.com/dp/B0GR4H66J5?tag=kidskatalog-20",
       "brandDeal": true,
-      "brandPartner": "Example Dino Studio",
-      "brandDealUrl": "https://example.com/kidskatalog-brand-deal-placeholder",
+      "brandPartner": "KiwiCo-style",
+      "brandAffiliate": {
+        "partner": "KiwiCo-style",
+        "network": "impact",
+        "live": false
+      },
       "ageMin": 3,
       "ageMax": 7,
       "color": "#27AE60"

@@ -34,6 +34,7 @@ export function ParentBuyButton({
         });
         if (external) openSystemBrowser(href, event);
       }}
+      data-testid="parent-buy-cta"
       className={`add-kart-btn add-kart-btn--pill add-kart-btn--ready add-kart-btn--visual-ready h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-center text-base font-bold shadow-md ${className}`}
     >
       <span className="add-kart-btn__label relative z-[2] inline-flex items-center justify-center">

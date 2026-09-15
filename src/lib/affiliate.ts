@@ -45,7 +45,7 @@ export function hasAffiliateLeak(value: unknown): boolean {
 export function hasKidCommerceLeak(value: unknown): boolean {
   if (hasAffiliateLeak(value)) return true;
   if (typeof value === "string") {
-    return /brandDeal|Brand partner link|Buy on Amazon/i.test(value);
+    return /brandDeal|brandAffiliate|Brand partner link|Buy on Amazon/i.test(value);
   }
   if (Array.isArray(value)) return value.some(hasKidCommerceLeak);
   if (value && typeof value === "object") {
@@ -53,7 +53,8 @@ export function hasKidCommerceLeak(value: unknown): boolean {
     if (
       "brandDeal" in record ||
       "brandDealUrl" in record ||
-      "brandPartner" in record
+      "brandPartner" in record ||
+      "brandAffiliate" in record
     ) {
       return true;
     }

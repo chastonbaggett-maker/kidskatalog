@@ -10,6 +10,17 @@ export type CategoryId =
 
 export type Audience = "all" | "boys" | "girls";
 
+/**
+ * Parent-only brand-network overlay. Empty / `live: false` is the default.
+ * Never mixed with Amazon Buy on the same click. Never shown in Kid Mode.
+ */
+export type BrandAffiliate = {
+  partner?: string;
+  network?: string;
+  url?: string;
+  live?: boolean;
+};
+
 export type Toy = {
   id: string;
   name: string;
@@ -38,6 +49,11 @@ export type Toy = {
   brandDealUrl?: string;
   /** Partner name for the parent disclosure. */
   brandPartner?: string;
+  /**
+   * Optional brand-network CTA overlay (`{ partner, network, url, live }`).
+   * Default empty and not live. Separate from Amazon Associates Buy.
+   */
+  brandAffiliate?: BrandAffiliate;
   ageMin: number;
   ageMax: number;
   color: string;

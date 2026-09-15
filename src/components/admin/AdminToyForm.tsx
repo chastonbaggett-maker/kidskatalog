@@ -12,6 +12,7 @@ import {
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, Toy } from "@/types/toy";
 import { PlayableVideo } from "@/components/PlayableVideo";
+import { normalizeBrandAffiliate } from "@/lib/brand-deals";
 
 type ImportPreview = {
   asin: string;
@@ -56,6 +57,8 @@ const emptyForm = {
   brandDeal: false,
   brandPartner: "",
   brandDealUrl: "",
+  brandNetwork: "",
+  brandAffiliateLive: false,
   image: "",
   imageAlt: "",
   imageUrl: "",
@@ -139,9 +142,18 @@ export function AdminToyForm({
         ageMax: editing.ageMax,
         featuredTier: resolveFeaturedTier(editing),
         affiliateUrl: editing.affiliateUrl ?? "",
-        brandDeal: Boolean(editing.brandDeal || editing.brandDealUrl || editing.brandPartner),
-        brandPartner: editing.brandPartner ?? "",
-        brandDealUrl: editing.brandDealUrl ?? "",
+        brandDeal: Boolean(
+          editing.brandDeal ||
+            editing.brandDealUrl ||
+            editing.brandPartner ||
+            editing.brandAffiliate?.partner ||
+            editing.brandAffiliate?.url ||
+            editing.brandAffiliate?.live,
+        ),
+        brandPartner: editing.brandAffiliate?.partner || editing.brandPartner || "",
+        brandDealUrl: editing.brandAffiliate?.url || editing.brandDealUrl || "",
+        brandNetwork: editing.brandAffiliate?.network || "",
+        brandAffiliateLive: editing.brandAffiliate?.live === true,
         image: editing.image,
         imageAlt: editing.imageAlt,
         imageUrl: "",
@@ -202,6 +214,8 @@ export function AdminToyForm({
         brandDeal: false,
         brandPartner: "",
         brandDealUrl: "",
+        brandNetwork: "",
+        brandAffiliateLive: false,
         image: mainImage || orderedGallery[0] || "",
         imageAlt: p.imageAlt || p.name,
         // Local gallery paths are already downloaded — no remote imageUrl needed.
@@ -373,9 +387,17 @@ export function AdminToyForm({
       featuredTier: form.featuredTier,
       featured: form.featuredTier > 0,
       affiliateUrl: form.affiliateUrl.trim(),
-      brandDeal: form.brandDeal || Boolean(form.brandPartner.trim() || form.brandDealUrl.trim()),
+      brandDeal:
+        form.brandDeal ||
+        Boolean(form.brandPartner.trim() || form.brandDealUrl.trim() || form.brandNetwork.trim()),
       brandPartner: form.brandPartner.trim() || undefined,
       brandDealUrl: form.brandDealUrl.trim() || undefined,
+      brandAffiliate: normalizeBrandAffiliate({
+        partner: form.brandPartner.trim(),
+        network: form.brandNetwork.trim(),
+        url: form.brandDealUrl.trim(),
+        live: form.brandAffiliateLive,
+      }),
       image: primaryImage,
       images: galleryForSave,
       imageAlt: form.imageAlt.trim() || form.name.trim(),
@@ -832,6 +854,25 @@ export function AdminToyForm({
             <span className="text-xs text-[var(--ink-soft)]">
               Off-Amazon only. Never an Amazon dp/tag link. Kids never see this.
             </span>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Brand network</span>
+            <input
+              value={form.brandNetwork}
+              onChange={(e) => setForm((f) => ({ ...f, brandNetwork: e.target.value }))}
+              placeholder="impact, cj, direct…"
+              className="rounded-full bg-[var(--lavender)] px-4 py-2.5 text-sm outline-none"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={form.brandAffiliateLive}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, brandAffiliateLive: e.target.checked }))
+              }
+            />
+            Live brand partner link (off = coming soon)
           </label>
 
           <label className="flex flex-col gap-1">

@@ -25,10 +25,15 @@ Do **not** put Amazon Product Advertising Content on a card that sells off-Amazo
 ## Data fields (optional on every product)
 
 - `brandDeal` — flag; default unset/false
-- `brandDealUrl` — external partner URL; empty = “coming soon”
-- `brandPartner` — name for disclosure
+- `brandDealUrl` — external partner URL; unused until `brandAffiliate.live` is true
+- `brandPartner` — name for disclosure (legacy; prefer `brandAffiliate.partner`)
+- `brandAffiliate` — `{ partner, network, url, live }`; default empty / not live. Flip runbook: [`docs/brand-affiliates.md`](./brand-affiliates.md)
 
-Existing toys stay unchanged until a field is set. Demo seeds: `sky-rocket` (coming soon) and `roar-rex` (example.com placeholder).
+Existing toys stay unchanged until a field is set. Demo overlays: `sky-rocket` (**Yoto-style**, `live: false`) and `roar-rex` (**KiwiCo-style**, `live: false`).
+
+## Dual-claim
+
+Amazon Associates and a brand network must never share a click. See **Amazon dual-claim rule** in [`docs/brand-affiliates.md`](./brand-affiliates.md).
 
 ## FTC
 

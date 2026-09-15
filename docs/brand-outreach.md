@@ -40,4 +40,4 @@ Hi [Brand] — KidsKatalog is a kid toy catalog with **no buy buttons for kids**
 
 ## Follow-up (if they reply “send more”)
 
-Point them at `docs/brand-deals.md`: fields (`brandDeal`, `brandDealUrl`, `brandPartner`), FTC split (partner disclosure ≠ Amazon Associates), and that we do not put Amazon Product Advertising Content on an off-Amazon card.
+Point them at `docs/brand-deals.md` and `docs/brand-affiliates.md`: fields (`brandAffiliate` `{ partner, network, url, live }`, plus legacy `brandDeal` / `brandDealUrl` / `brandPartner`), FTC split (partner disclosure ≠ Amazon Associates), dual-claim (separate clicks only), and that we do not put Amazon Product Advertising Content on an off-Amazon card.

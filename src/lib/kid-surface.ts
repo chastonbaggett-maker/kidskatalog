@@ -4,7 +4,7 @@ import type { Toy } from "@/types/toy";
 /** Kid-facing toy: commerce fields stripped (Amazon + brand deals). */
 export type KidToy = Omit<
   Toy,
-  "affiliateUrl" | "brandDeal" | "brandDealUrl" | "brandPartner"
+  "affiliateUrl" | "brandDeal" | "brandDealUrl" | "brandPartner" | "brandAffiliate"
 >;
 
 const KID_COMMERCE_KEYS = [
@@ -12,6 +12,7 @@ const KID_COMMERCE_KEYS = [
   "brandDeal",
   "brandDealUrl",
   "brandPartner",
+  "brandAffiliate",
 ] as const;
 
 export function toKidToy(toy: Toy): KidToy {
@@ -20,6 +21,7 @@ export function toKidToy(toy: Toy): KidToy {
     brandDeal: _brandDeal,
     brandDealUrl: _brandDealUrl,
     brandPartner: _brandPartner,
+    brandAffiliate: _brandAffiliate,
     ...rest
   } = toy;
   return rest;

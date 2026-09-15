@@ -34,6 +34,7 @@ export function BrandDealCta({
         href={deal.href}
         target="_blank"
         rel="noopener noreferrer"
+        data-testid="brand-affiliate-cta"
         onClick={(event) => {
           pingClick();
           openSystemBrowser(deal.href!, event);
@@ -52,6 +53,7 @@ export function BrandDealCta({
       role="button"
       tabIndex={0}
       aria-disabled="true"
+      data-testid="brand-affiliate-cta"
       onClick={pingClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {

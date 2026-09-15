@@ -142,11 +142,10 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   );
   await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
-  page.on("popup", (popup) => {
-    void popup.close();
-  });
   await page
-    .locator('a[href="https://example.com/kidskatalog-brand-deal-placeholder"]')
+    .locator("li")
+    .filter({ hasText: "KiwiCo-style" })
+    .getByTestId("brand-affiliate-cta")
     .click();
   const dealBody = JSON.parse((await dealClick).postData() || "{}") as {
     name: string;

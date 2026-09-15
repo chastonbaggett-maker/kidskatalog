@@ -38,6 +38,6 @@ Then in Vercel: promote / redeploy commit `27bdd5cbff949b84dd3d87812eb61657e49ad
 - Parent funnel (views / Buy / wish list / brand-deal clicks): `POST /api/events`, how to read it in `docs/parent-funnel.md`.
 - Kart **Send to Mom or Dad** builds a shareable `/p?ids=id1,id2` wish list (copy + Open Parent Mode). Small **For parents** entry → `/p/deals`. Not kid-primary.
 - Parent accounts (Parent Mode only): sign up / log in, **Save list**, **My lists**. See `docs/parent-auth.md`. Clerk keys optional (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); password accounts work until those are set. Do not force kids to log in.
-- Brand deals (parent-only): `/p/deals` and per-toy CTA when `brandDeal` / `brandDealUrl` / `brandPartner` is set. Not Amazon. Kids never see it. See `docs/brand-deals.md`. Outreach templates (do not send): `docs/brand-outreach.md`.
+- Brand deals (parent-only): `/p/{id}` and `/p/deals` get a **separate** CTA from Amazon Buy when `brandAffiliate` / `brandDeal` is set. Not live until `brandAffiliate.live` + a non-Amazon `url`. Kids never see it. See `docs/brand-deals.md` and `docs/brand-affiliates.md`. Outreach templates (do not send): `docs/brand-outreach.md`.
 
 Do not delete tag `pre-profit-handoff-2026-09-14`.

@@ -2,7 +2,7 @@
 
 A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and send mom or dad a Parent Mode wish list link. Kids never see buy links. Grown-ups buy in **Parent Mode** (`/p/{id}`).
 
-**Revert point:** see [`HANDOFF.md`](./HANDOFF.md) (`pre-profit-handoff-2026-09-14`). Associates flip: [`docs/associates-flip.md`](./docs/associates-flip.md). Parent funnel: [`docs/parent-funnel.md`](./docs/parent-funnel.md). Parent accounts: [`docs/parent-auth.md`](./docs/parent-auth.md).
+**Revert point:** see [`HANDOFF.md`](./HANDOFF.md) (`pre-profit-handoff-2026-09-14`). Associates flip: [`docs/associates-flip.md`](./docs/associates-flip.md). Brand affiliates: [`docs/brand-affiliates.md`](./docs/brand-affiliates.md). Parent funnel: [`docs/parent-funnel.md`](./docs/parent-funnel.md). Parent accounts: [`docs/parent-auth.md`](./docs/parent-auth.md).
 
 ## Features
 
@@ -12,7 +12,7 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - **Send to Mom or Dad** — copy/open a `/p?ids=` wish list (link only, no PDF)
 - **Parent Mode** (`/p/{id}` and `/p?ids=…`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
 - **Parent sign up / log in** — save wish lists and reopen them from **My lists**
-- **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md`; outreach templates in `docs/brand-outreach.md`)
+- **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md` and `docs/brand-affiliates.md`; outreach templates in `docs/brand-outreach.md`)
 
 ## Quick start
 

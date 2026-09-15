@@ -1,6 +1,12 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 
-const KID_COMMERCE_KEYS = ["affiliateUrl", "brandDeal", "brandDealUrl", "brandPartner"];
+const KID_COMMERCE_KEYS = [
+  "affiliateUrl",
+  "brandDeal",
+  "brandDealUrl",
+  "brandPartner",
+  "brandAffiliate",
+];
 
 function hasKidCommerceFields(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(hasKidCommerceFields);
@@ -13,7 +19,8 @@ function hasKidCommerceFields(value: unknown): boolean {
 }
 
 const AFFILIATE_LEAK = /[?&]tag=|amazon\.[^"'<\s]+\/(?:dp|gp\/product)\//i;
-const KID_COMMERCE_HTML = /[?&]tag=|amazon\.com\/dp|Buy on Amazon|brandDealUrl|Brand partner link/i;
+const KID_COMMERCE_HTML =
+  /[?&]tag=|amazon\.com\/dp|Buy on Amazon|brandDealUrl|brandAffiliate|Brand partner link/i;
 
 const SAMPLE_IDS = ["sky-rocket", "roar-rex", "mag-train", "glow-bow", "hair-gem", "ocean-rescue"];
 
@@ -258,38 +265,46 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   await expect(page.getByText(/Brand deals/i).first()).toBeVisible();
   await expect(page.getByText(/not Amazon/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
+  await expect(page.getByTestId("parent-buy-cta")).toHaveCount(0);
   expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
-  await expect(page.getByText(/Brand partner link/i).first()).toBeVisible();
-  await expect(page.getByText(/Example Rocket Co/i).first()).toBeVisible();
-  await expect(page.getByText(/Example Dino Studio/i).first()).toBeVisible();
-  await expect(page.getByText(/Brand partner link — coming soon/i)).toBeVisible();
-  await expect(
-    page.locator('a[href="https://example.com/kidskatalog-brand-deal-placeholder"]'),
-  ).toBeVisible();
+  await expect(page.getByTestId("brand-affiliate-cta").first()).toBeVisible();
+  await expect(page.getByText(/Yoto-style/i).first()).toBeVisible();
+  await expect(page.getByText(/KiwiCo-style/i).first()).toBeVisible();
+  await expect(page.getByText(/Brand partner link — coming soon/i).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Brand partner link/i })).toHaveCount(0);
 
-  await page.goto("/p/sky-rocket", { waitUntil: "domcontentloaded" });
-  await dismissSplash(page);
-  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toBeVisible();
-  await expect(page.getByText(/Brand partner link — coming soon/i)).toBeVisible();
-  await expect(page.getByText(/This is a brand partner link/i).first()).toBeVisible();
-  expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+  async function assertSeparatePlaceholderCtas(path: string, partner: RegExp) {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+    await dismissSplash(page);
+    const buy = page.getByTestId("parent-buy-cta");
+    const brand = page.getByTestId("brand-affiliate-cta");
+    await expect(buy).toHaveCount(1);
+    await expect(brand).toHaveCount(1);
+    await expect(buy).toHaveText("Buy on Amazon");
+    await expect(brand).toHaveText("Brand partner link — coming soon");
+    await expect(buy).toHaveAttribute("href", /\/p\/buy-placeholder\?toy=/);
+    await expect(buy).not.toHaveText(/Brand partner/);
+    await expect(brand).not.toHaveText(/Amazon/);
+    await expect(page.getByRole("link", { name: "Buy on Amazon" })).not.toHaveText(
+      /Brand partner/,
+    );
+    await expect(page.getByText(partner).first()).toBeVisible();
+    await expect(page.getByText(/This is a brand partner link/i).first()).toBeVisible();
+    await expect(page.getByText(/not Amazon/i).first()).toBeVisible();
+    expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+  }
 
-  await page.goto("/p/roar-rex", { waitUntil: "domcontentloaded" });
-  await dismissSplash(page);
-  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toBeVisible();
-  const partner = page.locator(
-    'a[href="https://example.com/kidskatalog-brand-deal-placeholder"]',
-  );
-  await expect(partner).toBeVisible();
-  await expect(partner).toHaveText(/Brand partner link/);
-  await expect(partner).not.toHaveText(/Amazon/);
+  await assertSeparatePlaceholderCtas("/p/sky-rocket", /Yoto-style/i);
+  await assertSeparatePlaceholderCtas("/p/roar-rex", /KiwiCo-style/i);
 
   const catalog = await request.get("/api/catalog?ids=sky-rocket,roar-rex");
   const catalogJson = await catalog.json();
   expect(hasKidCommerceFields(catalogJson)).toBeFalsy();
+  expect(JSON.stringify(catalogJson)).not.toMatch(/brandAffiliate/);
 
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
   expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
   await expect(page.getByText(/Brand partner link/i)).toHaveCount(0);
+  await expect(page.getByTestId("brand-affiliate-cta")).toHaveCount(0);
 });

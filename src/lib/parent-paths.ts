@@ -1,6 +1,12 @@
 /** Parent Mode routes — safe to import from client or server. */
 
-export const PARENT_RESERVED_IDS = ["buy-placeholder", "deals"] as const;
+export const PARENT_RESERVED_IDS = [
+  "buy-placeholder",
+  "deals",
+  "sign-in",
+  "sign-up",
+  "lists",
+] as const;
 
 export function parentToyPath(id: string): string {
   return `/p/${encodeURIComponent(id)}`;
@@ -29,6 +35,35 @@ export function parentWishlistUrl(ids: string[], origin: string): string {
   return `${origin.replace(/\/$/, "")}${parentWishlistPath(ids)}`;
 }
 
+export function parentSignInPath(returnTo?: string): string {
+  if (!returnTo) return "/p/sign-in";
+  return `/p/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+export function parentSignUpPath(returnTo?: string): string {
+  if (!returnTo) return "/p/sign-up";
+  return `/p/sign-up?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+export function parentListsPath(): string {
+  return "/p/lists";
+}
+
+export function parentSavedListPath(id: string): string {
+  return `/p/lists/${encodeURIComponent(id)}`;
+}
+
+export function parentSavedListQueryPath(id: string): string {
+  return `/p?list=${encodeURIComponent(id)}`;
+}
+
+export function parseSavedListId(raw: string | string[] | undefined): string | null {
+  const text = Array.isArray(raw) ? raw[0] : raw;
+  const id = (text ?? "").trim();
+  if (!/^lst_[a-z0-9]+$/i.test(id)) return null;
+  return id;
+}
+
 export function parseWishlistIds(raw: string | string[] | undefined): string[] {
   const text = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
   const seen = new Set<string>();
@@ -40,4 +75,12 @@ export function parseWishlistIds(raw: string | string[] | undefined): string[] {
     ids.push(id);
   }
   return ids;
+}
+
+export function parentReturnPath(raw: string | string[] | undefined): string {
+  const text = Array.isArray(raw) ? raw[0] : raw;
+  const path = (text ?? "").trim();
+  if (!path.startsWith("/p")) return "/p";
+  if (path.startsWith("//") || path.includes("://")) return "/p";
+  return path;
 }

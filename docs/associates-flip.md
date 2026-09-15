@@ -56,14 +56,14 @@ Complete before and after the flip. Parent pages already include the Associates 
 
 - [ ] Site discloses participation in the **Amazon Services LLC Associates Program** in plain language near the Buy control (not only in a buried footer).
 - [ ] Copy states that **as an Amazon Associate we earn from qualifying purchases**.
-- [ ] Disclosure is on **every** parent surface that can start a Buy (`/p/{id}`, `/p?ids=`, emails/PDF that point parents at those pages).
+- [ ] Disclosure is on **every** parent surface that can start a Buy (`/p/{id}`, `/p?ids=`).
 - [ ] After flip, placeholder-only sentences are gone; the paid-relationship disclosure **stays**.
 - [ ] Special Links use the **approved** Associates tag for this site; no other network’s tag on the Amazon Buy click.
 - [ ] Brand-deal CTAs are labeled as a **brand partner** link, **not Amazon**, and never share the Amazon Buy click.
 - [ ] Kid Mode has **no** affiliate URLs, Buy buttons, or partner CTAs (FTC + Associates: advertising content is for the appropriate audience / placement).
 - [ ] Do not imply Amazon endorses KidsKatalog or the toys.
 - [ ] Material connection is clear **before** the parent clicks Buy (FTC Endorsement Guides / 16 CFR 255).
-- [ ] Emails and print/QR still send parents to **Parent Mode pages**, not raw Amazon URLs from kid surfaces.
+- [ ] Emails and print/QR still send parents to **Parent Mode pages**, not raw Amazon URLs from kid surfaces. Kart share is the `/p?ids=` link only (no PDF).
 - [ ] If Associates policy or the site URL in the Associates application changes, update the application **before** driving traffic.
 
 If any box fails, keep `AMAZON_ASSOCIATES_LIVE` unset/false.

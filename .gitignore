@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# parent account/list JSON written in local dev (Turso in production)
+/data/parent-accounts.json
+/data/parent-lists.json
+
 # vercel
 .vercel
 

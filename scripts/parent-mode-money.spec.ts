@@ -174,6 +174,9 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
   expect(await page.content()).not.toMatch(KID_COMMERCE_HTML);
   await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
   await expect(page.getByText(/Brand partner link/i)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Send Kart PDF/i })).toHaveCount(0);
+  await expect(page.getByLabel(/Parent email/i)).toHaveCount(0);
+  await expect(page.getByTestId("parent-signup-link")).toHaveCount(0);
 
   const shareUrl = page.getByTestId("wishlist-share-url");
   await expect(shareUrl).toBeVisible();

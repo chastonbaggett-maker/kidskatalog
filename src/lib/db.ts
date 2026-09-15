@@ -32,6 +32,28 @@ export async function ensureSchema(): Promise<void> {
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
       `);
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS parent_accounts (
+          id TEXT PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS parent_wishlists (
+          id TEXT PRIMARY KEY,
+          owner_id TEXT NOT NULL,
+          name TEXT,
+          toy_ids TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS parent_wishlists_owner
+        ON parent_wishlists(owner_id)
+      `);
     })();
   }
   await schemaReady;

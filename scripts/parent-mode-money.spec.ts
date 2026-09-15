@@ -204,7 +204,10 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
   for (const id of sample) {
     await expect(page.locator(`a[href="/p/${id}"]`).first()).toBeVisible();
   }
-  await expect(page.getByText(/Associates link goes here when approved/i).first()).toBeVisible();
+  await expect(page.getByText(/Amazon Services LLC Associates Program/i).first()).toBeVisible();
+  await expect(
+    page.getByText(/Buy links are placeholders until Associates is approved/i).first(),
+  ).toBeVisible();
 
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);

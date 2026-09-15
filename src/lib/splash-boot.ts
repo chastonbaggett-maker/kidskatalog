@@ -6,17 +6,25 @@ export const SPLASH_BG_GRADIENT =
 
 /**
  * Critical first-paint CSS.
- * ::before sits UNDER .app-splash so the K logo/pulse stay visible.
+ * ::before sits UNDER .app-splash during the intro video.
+ * During exiting, the shell stays under the white→fade overlay.
  */
 export const SPLASH_BOOT_STYLE = `
-html[data-splash="active"],html[data-splash="active"] body,
-html[data-splash="exiting"],html[data-splash="exiting"] body{
+html[data-splash="active"],html[data-splash="active"] body{
   background-color:${SPLASH_BG_SOLID}!important;background-image:none!important;
+}
+html[data-splash="exiting"],html[data-splash="exiting"] body{
+  background-color:#fff!important;background-image:none!important;
 }
 html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost{
   visibility:hidden!important;opacity:0!important;pointer-events:none!important;
+}
+html[data-splash="exiting"] .app-shell,
+html[data-splash="exiting"] .bottom-nav,
+html[data-splash="exiting"] .bottom-nav__frost{
+  visibility:visible!important;opacity:1!important;pointer-events:none!important;
 }
 html[data-splash="active"]::before{
   content:"";
@@ -29,5 +37,9 @@ html[data-splash="active"]::before{
   background-image:${SPLASH_BG_GRADIENT};
   background-size:100% 100%;background-repeat:no-repeat;background-position:center;
   pointer-events:none;
+}
+html[data-splash="exiting"]::before,
+html[data-splash="exiting"] #app-splash-boot{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
 }
 `.trim();

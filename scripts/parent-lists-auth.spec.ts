@@ -54,8 +54,10 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   await dismissSplash(page);
   await expect(page.getByText("Park toys")).toBeVisible();
 
-  await page.getByRole("link", { name: "Open" }).click();
-  await page.waitForURL(/\/p\?list=/);
+  const savedHref = await page.getByTestId("open-saved-list-row").getAttribute("href");
+  expect(savedHref).toMatch(/\/p\/lists\/lst_/);
+  await page.goto(savedHref!, { waitUntil: "domcontentloaded" });
+  await page.waitForURL(/[?&]list=lst_/);
   await dismissSplash(page);
   await expect(page.getByText(/Park toys/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);

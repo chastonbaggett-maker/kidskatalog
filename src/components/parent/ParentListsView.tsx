@@ -121,6 +121,7 @@ export function ParentListsView() {
                   <Link
                     href={parentSavedListPath(list.id)}
                     className="rounded-full bg-[var(--blue)] px-4 py-2 text-sm font-bold text-white"
+                    data-testid="open-saved-list-row"
                   >
                     Open
                   </Link>

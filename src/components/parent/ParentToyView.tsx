@@ -8,6 +8,7 @@ import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { BrandDealCta } from "@/components/parent/BrandDealCta";
 import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
+import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentWishlistButton } from "@/components/parent/ParentWishlistButton";
 import type { ResolvedBrandDeal } from "@/lib/brand-deals";
 import { parentDealsPath } from "@/lib/parent-paths";
@@ -31,6 +32,7 @@ export function ParentToyView({
 }: Props) {
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col">
+      <ParentFunnelPing event={{ name: "parent_toy_view", toyId: toy.id }} />
       <ShelfHeader
         title="Parent Mode"
         subtitle="Wish list + Buy — kids never see these links"
@@ -62,7 +64,11 @@ export function ParentToyView({
               </p>
 
               <div className="mt-6 flex max-w-md flex-col gap-3 sm:flex-row sm:items-stretch">
-                <ParentBuyButton href={buyUrl} />
+                <ParentBuyButton
+                  href={buyUrl}
+                  toyId={toy.id}
+                  mode={buyPlaceholder ? "placeholder" : "associates"}
+                />
                 <ParentWishlistButton toyId={toy.id} />
               </div>
 
@@ -76,7 +82,7 @@ export function ParentToyView({
               {brandDeal ? (
                 <div className="mt-6 max-w-md">
                   <div className="flex flex-col gap-3">
-                    <BrandDealCta deal={brandDeal} />
+                    <BrandDealCta deal={brandDeal} toyId={toy.id} source="toy" />
                   </div>
                   <p className="mt-3 text-sm text-[var(--ink-soft)]">
                     Separate from Amazon Buy. This click is not an Associates

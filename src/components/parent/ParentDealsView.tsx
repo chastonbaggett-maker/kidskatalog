@@ -71,7 +71,12 @@ export function ParentDealsView({ toys }: { toys: Toy[] }) {
                       <p className="text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
                     </div>
                   </div>
-                  <BrandDealCta deal={deal} className="w-full flex-none" />
+                  <BrandDealCta
+                    deal={deal}
+                    toyId={toy.id}
+                    source="deals"
+                    className="w-full flex-none"
+                  />
                   <BrandDealDisclosure partner={deal.partner} />
                 </div>
               </li>

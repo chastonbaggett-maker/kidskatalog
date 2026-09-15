@@ -1,5 +1,7 @@
 "use client";
 
+import { trackParentFunnel } from "@/lib/parent-funnel-client";
+import type { ParentBuyClickMode } from "@/lib/parent-funnel";
 import { openSystemBrowser } from "@/lib/open-system-browser";
 
 function isExternalBuy(href: string): boolean {
@@ -8,9 +10,13 @@ function isExternalBuy(href: string): boolean {
 
 export function ParentBuyButton({
   href,
+  toyId,
+  mode = "placeholder",
   className = "",
 }: {
   href: string;
+  toyId: string;
+  mode?: ParentBuyClickMode;
   className?: string;
 }) {
   const external = isExternalBuy(href);
@@ -21,6 +27,11 @@ export function ParentBuyButton({
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer sponsored" : undefined}
       onClick={(event) => {
+        trackParentFunnel({
+          name: "parent_buy_click",
+          toyId,
+          mode,
+        });
         if (external) openSystemBrowser(href, event);
       }}
       className={`add-kart-btn add-kart-btn--pill add-kart-btn--ready add-kart-btn--visual-ready h-[3.9rem] min-w-0 flex-1 rounded-full px-5 text-center text-base font-bold shadow-md ${className}`}

@@ -1,5 +1,11 @@
 import "server-only";
 import { readStore, writeStore } from "@/lib/json-store";
+import {
+  applyParentFunnelEvent,
+  EMPTY_PARENT_FUNNEL,
+  type ParentFunnelEvent,
+  type ParentFunnelTotals,
+} from "@/lib/parent-funnel";
 
 export type MetricsData = {
   version: number;
@@ -10,6 +16,7 @@ export type MetricsData = {
   kartAdds: number;
   kartEmailsSent: number;
   crazyModeActivations: number;
+  parentFunnel?: ParentFunnelTotals;
 };
 
 const DEFAULT_METRICS: MetricsData = {
@@ -21,6 +28,7 @@ const DEFAULT_METRICS: MetricsData = {
   kartAdds: 0,
   kartEmailsSent: 0,
   crazyModeActivations: 0,
+  parentFunnel: { ...EMPTY_PARENT_FUNNEL },
 };
 
 const MAX_SESSION_IDS = 5000;
@@ -77,6 +85,21 @@ export async function incrementMetric(
   await saveMetrics(data);
 }
 
+function parentFunnelOf(data: MetricsData): ParentFunnelTotals {
+  return { ...EMPTY_PARENT_FUNNEL, ...data.parentFunnel };
+}
+
+export async function recordParentFunnelEvent(event: ParentFunnelEvent): Promise<void> {
+  const data = await loadMetrics();
+  data.parentFunnel = applyParentFunnelEvent(parentFunnelOf(data), event);
+  await saveMetrics(data);
+}
+
+export async function getParentFunnelTotals(): Promise<ParentFunnelTotals> {
+  const data = await loadMetrics();
+  return parentFunnelOf(data);
+}
+
 export async function getMetricsSummary() {
   const data = await loadMetrics();
   return {
@@ -87,5 +110,6 @@ export async function getMetricsSummary() {
     kartEmailsSent: data.kartEmailsSent,
     crazyModeActivations: data.crazyModeActivations,
     dailyVisits: data.dailyVisits,
+    parentFunnel: parentFunnelOf(data),
   };
 }

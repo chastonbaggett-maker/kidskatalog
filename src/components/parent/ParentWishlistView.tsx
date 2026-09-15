@@ -7,6 +7,7 @@ import { ToyPhoto } from "@/components/ToyPhoto";
 import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
+import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
@@ -74,8 +75,18 @@ export function ParentWishlistView({
       .filter((toy): toy is Toy => Boolean(toy));
   }, [extraToys, initialById, knownIds]);
 
+  const sharedFromQuery = initialToys.length > 0;
+
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
+      {sharedFromQuery ? (
+        <ParentFunnelPing
+          event={{
+            name: "parent_wishlist_view",
+            toyCount: initialToys.length,
+          }}
+        />
+      ) : null}
       <ShelfHeader
         title="Parent wish list"
         subtitle={
@@ -152,7 +163,12 @@ export function ParentWishlistView({
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <ParentBuyButton href={buyUrl} className="min-w-[9.5rem] flex-none px-4" />
+                      <ParentBuyButton
+                        href={buyUrl}
+                        toyId={toy.id}
+                        mode={buyPlaceholder ? "placeholder" : "associates"}
+                        className="min-w-[9.5rem] flex-none px-4"
+                      />
                       <button
                         type="button"
                         onClick={() => remove(toy.id)}

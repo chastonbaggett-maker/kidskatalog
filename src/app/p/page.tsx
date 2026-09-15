@@ -1,7 +1,7 @@
 import { ParentWishlistView } from "@/components/parent/ParentWishlistView";
 import { isAssociatesLive, resolveParentBuyUrls } from "@/lib/associates";
 import { getCatalogToysByIds } from "@/lib/catalog-store";
-import { toKidToys } from "@/lib/kid-surface";
+import { toParentToys } from "@/lib/kid-surface";
 import { parseWishlistIds } from "@/lib/parent-paths";
 import type { Toy } from "@/types/toy";
 
@@ -16,7 +16,7 @@ export default async function ParentWishlistPage({ searchParams }: Props) {
 
   return (
     <ParentWishlistView
-      initialToys={toKidToys(toys) as Toy[]}
+      initialToys={toParentToys(toys) as Toy[]}
       buyUrls={resolveParentBuyUrls(toys)}
       buyPlaceholder={!isAssociatesLive()}
     />

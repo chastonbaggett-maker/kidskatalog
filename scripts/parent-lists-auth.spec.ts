@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedParentGateUnlock } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
@@ -15,6 +16,7 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   page,
 }) => {
   test.setTimeout(90_000);
+  await seedParentGateUnlock(page);
   const email = `pw-${Date.now()}@example.com`;
   const password = "test-pass-123";
 

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { sanitizeParentFunnelEvent } from "../src/lib/parent-funnel";
+import { seedParentGateUnlock } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
@@ -84,6 +85,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   page,
 }) => {
   test.setTimeout(90_000);
+  await seedParentGateUnlock(page);
 
   const toyView = page.waitForRequest(
     (req) =>

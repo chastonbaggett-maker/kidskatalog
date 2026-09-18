@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
+import { seedParentGateUnlock } from "./parent-gate";
 
 const KID_COMMERCE_KEYS = [
   "affiliateUrl",
@@ -126,6 +127,7 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   request,
 }) => {
   test.setTimeout(90_000);
+  await seedParentGateUnlock(page);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids);
 
@@ -207,6 +209,12 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
   await page.waitForURL((url) => url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","));
   await dismissSplash(page);
 
+  await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
+  await page.getByTestId("parent-birth-year").fill("1990");
+  await page.getByTestId("parent-birth-year-submit").click();
+  await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
+
   const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
   await expect(buyLinks).toHaveCount(sample.length);
   await expect(page.locator('a[href*="/p/buy-placeholder?toy="]')).toHaveCount(sample.length);
@@ -239,6 +247,7 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
 
 test("wish list accepts multiple real ids", async ({ page, request }) => {
   test.setTimeout(60_000);
+  await seedParentGateUnlock(page);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids).slice(0, Math.min(4, ids.length));
   expect(sample.length).toBeGreaterThan(1);
@@ -260,6 +269,7 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   request,
 }) => {
   test.setTimeout(90_000);
+  await seedParentGateUnlock(page);
   await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
   await expect(page.getByText(/Brand deals/i).first()).toBeVisible();

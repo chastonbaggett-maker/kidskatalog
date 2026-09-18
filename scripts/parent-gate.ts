@@ -12,8 +12,3 @@ export async function unlockParentGate(page: Page, year = "1990") {
   await page.getByTestId("parent-birth-year-submit").click();
   await expect(gate).toHaveCount(0);
 }
-
-/** @deprecated Use unlockParentGate after navigating to a /p route. */
-export async function seedParentGateUnlock(page: Page) {
-  await unlockParentGate(page);
-}

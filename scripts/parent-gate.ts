@@ -1,19 +1,14 @@
-import type { Page } from "@playwright/test";
-import {
-  PARENT_GATE_STORAGE_KEY,
-  PARENT_GATE_UNLOCKED_FLAG,
-} from "../src/lib/parent-birth-year";
+import { expect, type Page } from "@playwright/test";
 
-/** Pretend this browser tab already passed the Parent Mode year gate. */
-export async function seedParentGateUnlock(page: Page) {
-  await page.addInitScript(
-    ({ key, flag }: { key: string; flag: string }) => {
-      try {
-        sessionStorage.setItem(key, flag);
-      } catch {
-        // Storage can be blocked; tests that need a real prompt should not call this.
-      }
-    },
-    { key: PARENT_GATE_STORAGE_KEY, flag: PARENT_GATE_UNLOCKED_FLAG },
-  );
+/** Pass the Parent Mode birth-year gate on the current page (required every entry). */
+export async function unlockParentGate(page: Page, year = "1990") {
+  const gate = page.getByTestId("parent-birth-year-gate");
+  try {
+    await gate.waitFor({ state: "visible", timeout: 15_000 });
+  } catch {
+    return;
+  }
+  await page.getByTestId("parent-birth-year").fill(year);
+  await page.getByTestId("parent-birth-year-submit").click();
+  await expect(gate).toHaveCount(0);
 }

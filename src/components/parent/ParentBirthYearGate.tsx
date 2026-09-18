@@ -1,25 +1,16 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
-import {
-  isAllowedParentBirthYear,
-  persistParentGateUnlock,
-  readParentGateUnlocked,
-} from "@/lib/parent-birth-year";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
+import { isAllowedParentBirthYear } from "@/lib/parent-birth-year";
 
-const ERROR_TEXT = "Enter a birth year between 1901 and 2008.";
+const ERROR_TEXT = "Enter a valid birth year.";
 
 export function ParentBirthYearGate({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [year, setYear] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setUnlocked(readParentGateUnlocked());
-    setReady(true);
-  }, []);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,13 +18,12 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
       setError(ERROR_TEXT);
       return;
     }
-    persistParentGateUnlock();
     setError("");
     setYear("");
     setUnlocked(true);
   }
 
-  if (!ready || !unlocked) {
+  if (!unlocked) {
     return (
       <div
         className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden"
@@ -42,6 +32,7 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
         <ShelfHeader
           title="Parent Mode"
           subtitle="Grown-ups only"
+          backToPrevious
           backHref="/shop"
           logoHref="/shop"
         />
@@ -58,7 +49,7 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
                     What&apos;s your birth year?
                   </h2>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                    Type the year you were born. Kids stay on shop and Watch.
+                    Enter parents birth year to continue
                   </p>
                 </div>
 
@@ -109,5 +100,12 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return children;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
+      <ParentSignOutFooter />
+    </div>
+  );
 }

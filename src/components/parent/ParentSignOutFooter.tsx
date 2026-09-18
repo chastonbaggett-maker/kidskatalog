@@ -7,7 +7,10 @@ type Me = {
   provider?: string;
 };
 
-/** Fixed to the bottom of Parent Mode once signed in. */
+/**
+ * Quiet Sign out at the end of scrollable Parent Mode content — not sticky.
+ * Meant to stay out of the way; most parents should never need it.
+ */
 export function ParentSignOutFooter() {
   const [me, setMe] = useState<Me | null>(null);
 
@@ -41,13 +44,13 @@ export function ParentSignOutFooter() {
 
   return (
     <div
-      className="shrink-0 border-t border-black/10 bg-white/70 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-[2px]"
+      className="pt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center"
       data-testid="parent-signout-footer"
     >
       <button
         type="button"
         onClick={() => void signOut()}
-        className="mx-auto block w-full max-w-md rounded-full bg-[var(--lavender)] px-5 py-3 text-base font-bold text-[var(--purple-deep)] shadow-md transition active:scale-[0.98]"
+        className="text-xs font-medium text-[var(--ink-soft)] underline-offset-2 hover:underline"
         data-testid="parent-signout"
       >
         Sign out

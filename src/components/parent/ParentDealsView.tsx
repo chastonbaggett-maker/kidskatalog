@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandDealCta } from "@/components/parent/BrandDealCta";
 import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { getBrandDealToys, resolveBrandDeal } from "@/lib/brand-deals";
@@ -95,6 +96,8 @@ export function ParentDealsView({ toys }: { toys: Toy[] }) {
             </p>
           </div>
         </div>
+
+        <ParentSignOutFooter />
       </div>
     </div>
   );

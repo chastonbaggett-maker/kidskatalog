@@ -45,7 +45,7 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   await page.waitForFunction(() => !document.documentElement.dataset.splash).catch(() => undefined);
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByTestId("parent-profile-icon")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByTestId("parent-signout-footer")).toBeVisible();
+  await expect(page.getByTestId("parent-signout-footer")).toBeAttached();
   await expect(page.getByTestId("my-lists-link")).toHaveCount(0);
   await page.getByTestId("save-list-name").fill("Park toys");
   await page.getByTestId("save-list-button").click();
@@ -78,6 +78,7 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   await expect(page.getByText(/Park toys/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
 
+  await page.getByTestId("parent-signout").scrollIntoViewIfNeeded();
   await page.getByTestId("parent-signout").click();
   await page.waitForURL(/\/p/);
   await dismissSplash(page);

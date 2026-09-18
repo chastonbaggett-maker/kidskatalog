@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ParentAddKid } from "@/components/parent/ParentAddKid";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import {
   parentSavedListPath,
@@ -152,6 +153,7 @@ export function ParentListsView() {
             ))}
           </ul>
         ) : null}
+        <ParentSignOutFooter />
       </div>
     </div>
   );

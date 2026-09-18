@@ -11,6 +11,7 @@ import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
 import { useAccentStore } from "@/lib/accent-store";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
@@ -247,6 +248,8 @@ export function ParentWishlistView({
             <AssociatesDisclosure placeholder={buyPlaceholder} />
           </div>
         </div>
+
+        <ParentSignOutFooter />
       </div>
     </div>
   );

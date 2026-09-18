@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
-import { seedParentGateUnlock } from "./parent-gate";
+import { unlockParentGate } from "./parent-gate";
 
 const KID_COMMERCE_KEYS = [
   "affiliateUrl",
@@ -108,8 +108,7 @@ test("every live catalog id resolves at /p/{id} with Parent Buy placeholder + FT
     const pageRes = await request.get(`/p/${id}`);
     expect(pageRes.ok(), `/p/${id} should be 200`).toBeTruthy();
     const html = await pageRes.text();
-    expect(html, id).toContain("parent-birth-year-gate");
-    expect(html, id).toMatch(/What(?:'|’|&#x27;)s your birth year/i);
+    expect(html, id).toMatch(/parent-(?:birth-year|auth|entry)-gate|parent-entry-loading/);
     expect(html, id).not.toContain("Buy on Amazon");
     expect(html, id).not.toMatch(AFFILIATE_LEAK);
     expect(html, id).toMatch(/\/p\/buy-placeholder\?toy=/);
@@ -127,9 +126,14 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   request,
 }) => {
   test.setTimeout(90_000);
-  await seedParentGateUnlock(page);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids);
+
+  const email = `money-buy-${Date.now()}@example.com`;
+  const signup = await page.request.post("/api/parent/auth/signup", {
+    data: { email, password: "test-pass-123" },
+  });
+  expect(signup.ok()).toBeTruthy();
 
   for (const id of sample) {
     const stub = await request.get(`/api/buy-placeholder?toy=${id}`, { maxRedirects: 0 });
@@ -138,6 +142,7 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
 
     await page.goto(`/p/${id}`, { waitUntil: "domcontentloaded" });
     await dismissSplash(page);
+    await unlockParentGate(page);
     const buyLink = page.getByRole("link", { name: "Buy on Amazon" });
     await expect(buyLink).toBeVisible();
     await expect(buyLink).toHaveAttribute("href", /\/p\/buy-placeholder\?toy=/);
@@ -149,9 +154,11 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   const first = sample[0]!;
   await page.goto(`/p/${first}`, { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await unlockParentGate(page);
   await page.getByRole("link", { name: "Buy on Amazon" }).click();
   await page.waitForURL(/\/p\/buy-placeholder/);
   await dismissSplash(page);
+  await unlockParentGate(page);
   await expect(page.locator("#buy-placeholder")).toBeAttached();
   await expect(page.getByText(/Associates link goes here when approved/i)).toBeVisible();
   expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
@@ -191,8 +198,12 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
   await expect(shareUrl).toBeVisible();
   await expect(shareUrl).toHaveValue(new RegExp(`${expectedPath.replace("?", "\\?")}$`));
 
-  const openParent = page.getByTestId("open-parent-wishlist");
-  await expect(openParent).toHaveAttribute("href", expectedPath);
+  const openParentAuth = page.getByTestId("open-parent-auth-prompt");
+  await expect(openParentAuth).toBeVisible();
+  await expect(page.getByTestId("open-parent-signup")).toHaveAttribute(
+    "href",
+    /\/p\/sign-up\?returnTo=/,
+  );
 
   await page.getByTestId("copy-wishlist-link").click();
   await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
@@ -203,17 +214,26 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
     // Clipboard read can be blocked; the generated URL field is the source of truth.
   }
 
-  await expect(page.getByTestId("for-parents-entry")).toHaveAttribute("href", "/p/deals");
+  await expect(
+    page.getByText(/Send your kids list to friends and family/i),
+  ).toBeVisible();
+  await expect(page.getByTestId("for-parents-entry")).toHaveCount(0);
 
-  await openParent.click();
-  await page.waitForURL((url) => url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","));
+  await page.getByTestId("open-parent-signup").click();
+  await page.waitForURL(/\/p\/sign-up/);
+  await dismissSplash(page);
+  const email = `money-kart-${Date.now()}@example.com`;
+  await page.getByTestId("parent-email").fill(email);
+  await page.getByTestId("parent-password").fill("test-pass-123");
+  await page.getByTestId("parent-auth-submit").click();
+  await page.waitForURL(
+    (url) =>
+      url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","),
+  );
   await dismissSplash(page);
 
-  await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
-  await page.getByTestId("parent-birth-year").fill("1990");
-  await page.getByTestId("parent-birth-year-submit").click();
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
+  await expect(page.getByTestId("parent-auth-gate")).toHaveCount(0);
 
   const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
   await expect(buyLinks).toHaveCount(sample.length);
@@ -247,13 +267,18 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
 
 test("wish list accepts multiple real ids", async ({ page, request }) => {
   test.setTimeout(60_000);
-  await seedParentGateUnlock(page);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids).slice(0, Math.min(4, ids.length));
   expect(sample.length).toBeGreaterThan(1);
 
+  const signup = await page.request.post("/api/parent/auth/signup", {
+    data: { email: `money-list-${Date.now()}@example.com`, password: "test-pass-123" },
+  });
+  expect(signup.ok()).toBeTruthy();
+
   await page.goto(`/p?ids=${sample.join(",")}`, { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await unlockParentGate(page);
 
   const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
   await expect(buyLinks).toHaveCount(sample.length);
@@ -269,9 +294,14 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   request,
 }) => {
   test.setTimeout(90_000);
-  await seedParentGateUnlock(page);
+  const signup = await page.request.post("/api/parent/auth/signup", {
+    data: { email: `money-deals-${Date.now()}@example.com`, password: "test-pass-123" },
+  });
+  expect(signup.ok()).toBeTruthy();
+
   await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await unlockParentGate(page);
   await expect(page.getByText(/Brand deals/i).first()).toBeVisible();
   await expect(page.getByText(/not Amazon/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
@@ -286,6 +316,7 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
   async function assertSeparatePlaceholderCtas(path: string, partner: RegExp) {
     await page.goto(path, { waitUntil: "domcontentloaded" });
     await dismissSplash(page);
+    await unlockParentGate(page);
     const buy = page.getByTestId("parent-buy-cta");
     const brand = page.getByTestId("brand-affiliate-cta");
     await expect(buy).toHaveCount(1);

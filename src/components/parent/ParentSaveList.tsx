@@ -42,7 +42,7 @@ export function ParentSaveList({
       const res = await fetch("/api/parent/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, toyIds }),
+        body: JSON.stringify({ name, toyIds, audience: "all" }),
       });
       const data = (await res.json()) as {
         error?: string;
@@ -53,7 +53,7 @@ export function ParentSaveList({
       }
       setSavedId(data.list.id);
       setStatus("ok");
-      setMessage("Saved. Open it anytime from My lists.");
+      setMessage("Saved. Open it anytime from the link below.");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Could not save list");

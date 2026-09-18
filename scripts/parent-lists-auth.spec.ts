@@ -1,33 +1,31 @@
 import { test, expect, type Page } from "@playwright/test";
-import { seedParentGateUnlock } from "./parent-gate";
+import { unlockParentGate } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
-  const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
-  try {
-    await tap.waitFor({ state: "visible", timeout: 8000 });
-    await tap.click();
-    await tap.waitFor({ state: "hidden", timeout: 15_000 });
-  } catch {
-    // Already dismissed or not a cold open.
+  const splash = page.locator(".app-splash");
+  if (await splash.count()) {
+    await splash.first().click({ force: true });
+    await page
+      .waitForFunction(() => !document.documentElement.dataset.splash, null, {
+        timeout: 10_000,
+      })
+      .catch(() => undefined);
   }
 }
 
 test("parent can sign up, save a list, and reopen it after reload", async ({
   page,
 }) => {
-  test.setTimeout(90_000);
-  await seedParentGateUnlock(page);
+  test.setTimeout(120_000);
   const email = `pw-${Date.now()}@example.com`;
   const password = "test-pass-123";
 
   await page.goto("/p?ids=sky-rocket,roar-rex", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
-
-  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
-  await expect(page.getByTestId("parent-save-list")).toBeVisible();
-  await expect(page.getByTestId("save-list-signup")).toBeVisible();
-
-  await page.getByTestId("save-list-signup").click();
+  await expect(page.getByTestId("parent-auth-gate")).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByTestId("parent-auth-gate-signup").click();
   await page.waitForURL(/\/p\/sign-up/);
   await dismissSplash(page);
 
@@ -39,22 +37,30 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
     (url) => url.pathname === "/p" && url.searchParams.get("ids") === "sky-rocket,roar-rex",
   );
   await dismissSplash(page);
-  await dismissSplash(page);
-  await page.waitForFunction(() => !document.documentElement.dataset.splash).catch(() => undefined);
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
-  await expect(page.getByTestId("my-lists-link")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("parent-profile-icon")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("parent-signout-footer")).toBeAttached();
+  await expect(page.getByTestId("my-lists-link")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
   await page.getByTestId("save-list-name").fill("Park toys");
   await page.getByTestId("save-list-button").click();
   await expect(page.getByText(/Saved/i)).toBeVisible();
 
-  await page.getByTestId("my-lists-link").click();
-  await page.waitForURL(/\/p\/lists/);
+  await page.getByTestId("open-saved-list").click();
+  await page.waitForURL(/[?&]list=lst_/);
   await dismissSplash(page);
+  await expect(page.getByText(/Park toys/i).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
+
+  await page.goto("/p/lists", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  await unlockParentGate(page);
   await expect(page.getByTestId("saved-lists")).toBeVisible();
   await expect(page.getByText("Park toys")).toBeVisible();
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await unlockParentGate(page);
   await expect(page.getByText("Park toys")).toBeVisible();
 
   const savedHref = await page.getByTestId("open-saved-list-row").getAttribute("href");
@@ -62,8 +68,16 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   await page.goto(savedHref!, { waitUntil: "domcontentloaded" });
   await page.waitForURL(/[?&]list=lst_/);
   await dismissSplash(page);
+  await unlockParentGate(page);
   await expect(page.getByText(/Park toys/i).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
+
+  await page.getByTestId("parent-signout").scrollIntoViewIfNeeded();
+  await page.getByTestId("parent-signout").click();
+  await page.waitForURL(/\/p/);
+  await dismissSplash(page);
+  await expect(page.getByTestId("parent-auth-gate")).toBeVisible();
+  await expect(page.getByTestId("parent-signout-footer")).toHaveCount(0);
 
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);

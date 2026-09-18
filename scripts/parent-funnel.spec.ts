@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { sanitizeParentFunnelEvent } from "../src/lib/parent-funnel";
-import { seedParentGateUnlock } from "./parent-gate";
+import { unlockParentGate } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
@@ -85,7 +85,11 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   page,
 }) => {
   test.setTimeout(90_000);
-  await seedParentGateUnlock(page);
+
+  const signup = await page.request.post("/api/parent/auth/signup", {
+    data: { email: `funnel-${Date.now()}@example.com`, password: "test-pass-123" },
+  });
+  expect(signup.ok()).toBeTruthy();
 
   const toyView = page.waitForRequest(
     (req) =>
@@ -94,14 +98,14 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
       (req.postData() || "").includes('"parent_toy_view"'),
   );
   await page.goto("/p/sky-rocket", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  await unlockParentGate(page);
   const toyBody = JSON.parse((await toyView).postData() || "{}") as {
     name: string;
     toyId: string;
   };
   expect(toyBody).toMatchObject({ name: "parent_toy_view", toyId: "sky-rocket" });
   expect(JSON.stringify(toyBody)).not.toMatch(/[?&]tag=/i);
-
-  await dismissSplash(page);
 
   const buyClick = page.waitForRequest(
     (req) =>
@@ -129,6 +133,8 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
       (req.postData() || "").includes('"parent_wishlist_view"'),
   );
   await page.goto("/p?ids=sky-rocket,roar-rex", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  await unlockParentGate(page);
   const listBody = JSON.parse((await listView).postData() || "{}") as {
     name: string;
     toyCount: number;
@@ -144,6 +150,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   );
   await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await unlockParentGate(page);
   await page
     .locator("li")
     .filter({ hasText: "KiwiCo-style" })

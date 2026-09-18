@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  parentDealsPath,
   parentWishlistPath,
   parentWishlistUrl,
 } from "@/lib/parent-paths";
@@ -82,14 +81,8 @@ export function ShareWishlistActions({
       ) : null}
       {showForParents ? (
         <p className="text-sm text-[var(--ink-soft)]">
-          <Link
-            href={parentDealsPath()}
-            className="font-bold text-[var(--blue-deep)]"
-            data-testid="for-parents-entry"
-          >
-            For parents
-          </Link>
-          {" — "}partner deals and wish-list help. Kids stay on shop and Watch.
+          Send your kids list to friends and family! Dont leave grandma guessing
+          on Billys birthday :)
         </p>
       ) : null}
     </div>

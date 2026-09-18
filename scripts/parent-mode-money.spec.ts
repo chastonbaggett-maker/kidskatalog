@@ -203,7 +203,10 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
     // Clipboard read can be blocked; the generated URL field is the source of truth.
   }
 
-  await expect(page.getByTestId("for-parents-entry")).toHaveAttribute("href", "/p/deals");
+  await expect(
+    page.getByText(/Send your kids list to friends and family/i),
+  ).toBeVisible();
+  await expect(page.getByTestId("for-parents-entry")).toHaveCount(0);
 
   await openParent.click();
   await page.waitForURL((url) => url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","));

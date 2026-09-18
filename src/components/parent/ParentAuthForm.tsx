@@ -36,6 +36,8 @@ export function ParentAuthForm({
       if (!res.ok) {
         throw new Error(data.error || "Could not continue");
       }
+      const { markParentAuthBypass } = await import("@/lib/parent-auth-bypass");
+      markParentAuthBypass();
       window.location.assign(returnTo.startsWith("/p") ? returnTo : "/p");
     } catch (error) {
       setStatus("error");

@@ -36,6 +36,8 @@ export function ParentSignOutFooter() {
       ).Clerk;
       await clerk?.signOut?.();
     }
+    const { clearParentAuthBypass } = await import("@/lib/parent-auth-bypass");
+    clearParentAuthBypass();
     await fetch("/api/parent/auth/logout", { method: "POST" });
     window.location.assign("/p");
   }

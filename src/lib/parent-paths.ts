@@ -45,6 +45,12 @@ export function parentSignUpPath(returnTo?: string): string {
   return `/p/sign-up?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
+/** Append fromAuth=1 so Parent Mode skips birth year right after Clerk auth. */
+export function parentReturnWithAuthFlag(returnTo: string): string {
+  const path = returnTo.startsWith("/p") ? returnTo : "/p";
+  return path.includes("?") ? `${path}&fromAuth=1` : `${path}?fromAuth=1`;
+}
+
 export function parentListsPath(): string {
   return "/p/lists";
 }

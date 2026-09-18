@@ -2,13 +2,14 @@ import { test, expect, type Page } from "@playwright/test";
 import { unlockParentGate } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
-  const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
-  try {
-    await tap.waitFor({ state: "visible", timeout: 8000 });
-    await tap.click();
-    await tap.waitFor({ state: "hidden", timeout: 15_000 });
-  } catch {
-    // Already dismissed or not a cold open.
+  const splash = page.locator(".app-splash");
+  if (await splash.count()) {
+    await splash.first().click({ force: true });
+    await page
+      .waitForFunction(() => !document.documentElement.dataset.splash, null, {
+        timeout: 10_000,
+      })
+      .catch(() => undefined);
   }
 }
 
@@ -19,23 +20,19 @@ test("parent can add a kid list with name and gender mode", async ({ page }) => 
 
   await page.goto("/p", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
-  await unlockParentGate(page);
-
-  await expect(page.getByTestId("parent-add-kid")).toBeVisible();
-  await page.getByTestId("add-kid-open").click();
-  await expect(page.getByTestId("add-kid-signup")).toBeVisible();
-
-  await page.getByTestId("add-kid-signup").click();
+  await expect(page.getByTestId("parent-auth-gate")).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByTestId("parent-auth-gate-signup").click();
   await page.waitForURL(/\/p\/sign-up/);
   await dismissSplash(page);
-  await unlockParentGate(page);
 
   await page.getByTestId("parent-email").fill(email);
   await page.getByTestId("parent-password").fill(password);
   await page.getByTestId("parent-auth-submit").click();
   await page.waitForURL((url) => url.pathname === "/p");
   await dismissSplash(page);
-  await unlockParentGate(page);
+  await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByTestId("parent-profile-icon")).toBeVisible({
     timeout: 20_000,
   });
@@ -47,8 +44,7 @@ test("parent can add a kid list with name and gender mode", async ({ page }) => 
 
   await page.waitForURL(/[?&]list=lst_/);
   await dismissSplash(page);
-  await unlockParentGate(page);
-
+  // Soft nav keeps layout unlocked after auth bypass.
   await expect(page.getByText(/Milo/i).first()).toBeVisible();
   await expect(page.getByText(/empty list|No toys on Milo/i).first()).toBeVisible();
   await expect

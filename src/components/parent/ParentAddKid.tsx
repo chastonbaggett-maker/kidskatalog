@@ -104,7 +104,8 @@ export function ParentAddKid({ returnTo = "/p" }: { returnTo?: string }) {
             </h2>
             <p className="text-sm text-[var(--ink-soft)]">
               Start a new wish list for one kid. We&apos;ll name it after them
-              and set boys or girls mode.
+              and set boys or girls mode. Adding a kid helps organize lists when
+              more than one kid is making lists.
             </p>
             <button
               type="button"

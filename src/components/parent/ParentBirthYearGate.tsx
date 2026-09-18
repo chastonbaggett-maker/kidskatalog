@@ -58,7 +58,7 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
                     What&apos;s your birth year?
                   </h2>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                    Type the year you were born. Kids stay on shop and Watch.
+                    Enter parents birth year to continue
                   </p>
                 </div>
 

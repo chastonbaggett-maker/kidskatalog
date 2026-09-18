@@ -45,11 +45,20 @@ export async function ensureSchema(): Promise<void> {
           id TEXT PRIMARY KEY,
           owner_id TEXT NOT NULL,
           name TEXT,
+          audience TEXT NOT NULL DEFAULT 'all',
           toy_ids TEXT NOT NULL,
           created_at TEXT NOT NULL DEFAULT (datetime('now')),
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
       `);
+      // Existing DBs created before audience — add column if missing.
+      try {
+        await db.execute(
+          `ALTER TABLE parent_wishlists ADD COLUMN audience TEXT NOT NULL DEFAULT 'all'`,
+        );
+      } catch {
+        // Column already present.
+      }
       await db.execute(`
         CREATE INDEX IF NOT EXISTS parent_wishlists_owner
         ON parent_wishlists(owner_id)

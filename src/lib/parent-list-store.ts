@@ -2,11 +2,14 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { getDb, ensureSchema, tursoConfigured } from "@/lib/db";
 import { readStore, writeStore } from "@/lib/json-store";
+import type { Audience } from "@/types/toy";
 
 export type SavedParentList = {
   id: string;
   ownerId: string;
   name: string;
+  /** Default gender mode for this kid's list. */
+  audience: Audience;
   toyIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -27,6 +30,11 @@ const MAX_NAME = 80;
 export function sanitizeListName(name: string | undefined): string {
   const trimmed = (name ?? "").trim().slice(0, MAX_NAME);
   return trimmed || "Wish list";
+}
+
+export function sanitizeListAudience(value: unknown): Audience {
+  if (value === "boys" || value === "girls" || value === "all") return value;
+  return "all";
 }
 
 export function sanitizeToyIds(ids: unknown): string[] {
@@ -70,6 +78,7 @@ function rowToList(row: Record<string, unknown>): SavedParentList {
     id: String(row.id),
     ownerId: String(row.owner_id),
     name: String(row.name || "Wish list"),
+    audience: sanitizeListAudience(row.audience),
     toyIds,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -83,7 +92,7 @@ export async function listParentLists(ownerId: string): Promise<SavedParentList[
     await ensureSchema();
     const db = getDb();
     const result = await db.execute({
-      sql: `SELECT id, owner_id, name, toy_ids, created_at, updated_at
+      sql: `SELECT id, owner_id, name, audience, toy_ids, created_at, updated_at
             FROM parent_wishlists
             WHERE owner_id = ?
             ORDER BY updated_at DESC`,
@@ -95,6 +104,10 @@ export async function listParentLists(ownerId: string): Promise<SavedParentList[
   const data = await readStore("parent-lists", DEFAULT_STORE);
   return data.lists
     .filter((list) => list.ownerId === ownerId)
+    .map((list) => ({
+      ...list,
+      audience: sanitizeListAudience(list.audience),
+    }))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
@@ -108,7 +121,7 @@ export async function getParentList(
     await ensureSchema();
     const db = getDb();
     const result = await db.execute({
-      sql: `SELECT id, owner_id, name, toy_ids, created_at, updated_at
+      sql: `SELECT id, owner_id, name, audience, toy_ids, created_at, updated_at
             FROM parent_wishlists WHERE id = ?`,
       args: [id],
     });
@@ -120,26 +133,29 @@ export async function getParentList(
   }
 
   const data = await readStore("parent-lists", DEFAULT_STORE);
-  const list = data.lists.find((row) => row.id === id) ?? null;
-  if (!list) return null;
+  const raw = data.lists.find((row) => row.id === id) ?? null;
+  if (!raw) return null;
+  const list: SavedParentList = {
+    ...raw,
+    audience: sanitizeListAudience(raw.audience),
+  };
   if (ownerId && list.ownerId !== ownerId) return null;
   return list;
 }
 
 export async function createParentList(
   ownerId: string,
-  input: { name?: string; toyIds: unknown },
+  input: { name?: string; toyIds?: unknown; audience?: unknown },
 ): Promise<SavedParentList> {
   const toyIds = sanitizeToyIds(input.toyIds);
-  if (toyIds.length === 0) {
-    throw new Error("Pick at least one toy to save");
-  }
+  const audience = sanitizeListAudience(input.audience);
 
   const now = new Date().toISOString();
   const list: SavedParentList = {
     id: newListId(),
     ownerId,
     name: sanitizeListName(input.name),
+    audience,
     toyIds,
     createdAt: now,
     updatedAt: now,
@@ -153,12 +169,13 @@ export async function createParentList(
     }
     const db = getDb();
     await db.execute({
-      sql: `INSERT INTO parent_wishlists (id, owner_id, name, toy_ids, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO parent_wishlists (id, owner_id, name, audience, toy_ids, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
       args: [
         list.id,
         list.ownerId,
         list.name,
+        list.audience,
         JSON.stringify(list.toyIds),
         list.createdAt,
         list.updatedAt,
@@ -182,7 +199,7 @@ export async function createParentList(
 export async function updateParentList(
   id: string,
   ownerId: string,
-  patch: { name?: string; toyIds?: unknown },
+  patch: { name?: string; toyIds?: unknown; audience?: unknown },
 ): Promise<SavedParentList | null> {
   const existing = await getParentList(id, ownerId);
   if (!existing) return null;
@@ -191,22 +208,30 @@ export async function updateParentList(
     ...existing,
     name:
       patch.name !== undefined ? sanitizeListName(patch.name) : existing.name,
+    audience:
+      patch.audience !== undefined
+        ? sanitizeListAudience(patch.audience)
+        : existing.audience,
     toyIds:
       patch.toyIds !== undefined ? sanitizeToyIds(patch.toyIds) : existing.toyIds,
     updatedAt: new Date().toISOString(),
   };
-  if (next.toyIds.length === 0) {
-    throw new Error("Pick at least one toy to save");
-  }
 
   if (tursoConfigured()) {
     await ensureSchema();
     const db = getDb();
     await db.execute({
       sql: `UPDATE parent_wishlists
-            SET name = ?, toy_ids = ?, updated_at = ?
+            SET name = ?, audience = ?, toy_ids = ?, updated_at = ?
             WHERE id = ? AND owner_id = ?`,
-      args: [next.name, JSON.stringify(next.toyIds), next.updatedAt, id, ownerId],
+      args: [
+        next.name,
+        next.audience,
+        JSON.stringify(next.toyIds),
+        next.updatedAt,
+        id,
+        ownerId,
+      ],
     });
     return next;
   }

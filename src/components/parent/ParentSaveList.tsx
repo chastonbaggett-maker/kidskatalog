@@ -42,7 +42,7 @@ export function ParentSaveList({
       const res = await fetch("/api/parent/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, toyIds }),
+        body: JSON.stringify({ name, toyIds, audience: "all" }),
       });
       const data = (await res.json()) as {
         error?: string;

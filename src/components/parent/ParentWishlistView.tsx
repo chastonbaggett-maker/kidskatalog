@@ -1,24 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { ParentAddKid } from "@/components/parent/ParentAddKid";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
+import { useAccentStore } from "@/lib/accent-store";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
-import type { Toy } from "@/types/toy";
+import type { Audience, Toy } from "@/types/toy";
 
 type Props = {
   initialToys: Toy[];
   buyUrls: Record<string, string>;
   buyPlaceholder?: boolean;
   savedListName?: string;
+  savedListAudience?: Audience;
   returnTo?: string;
 };
 
@@ -27,19 +30,32 @@ export function ParentWishlistView({
   buyUrls,
   buyPlaceholder = true,
   savedListName,
+  savedListAudience,
   returnTo = "/p",
 }: Props) {
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
+  const replaceIds = useParentWishlistStore((s) => s.replaceIds);
   const remove = useParentWishlistStore((s) => s.remove);
   const clear = useParentWishlistStore((s) => s.clear);
+  const setAudience = useAccentStore((s) => s.setAudience);
   const [extraToys, setExtraToys] = useState<Toy[]>([]);
   const [resolvedBuyUrls, setResolvedBuyUrls] = useState<Record<string, string>>(buyUrls);
+  const isSavedList = Boolean(savedListName);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (isSavedList) {
+      replaceIds(initialToys.map((toy) => toy.id));
+      return;
+    }
     if (initialToys.length === 0) return;
     importIds(initialToys.map((toy) => toy.id));
-  }, [importIds, initialToys]);
+  }, [importIds, initialToys, isSavedList, replaceIds]);
+
+  useEffect(() => {
+    if (!savedListAudience) return;
+    setAudience(savedListAudience);
+  }, [savedListAudience, setAudience]);
 
   const initialById = useMemo(() => {
     const map = new Map(initialToys.map((toy) => [toy.id, toy]));
@@ -47,10 +63,11 @@ export function ParentWishlistView({
   }, [initialToys]);
 
   const knownIds = useMemo(() => {
+    if (isSavedList) return storedIds;
     const set = new Set(initialToys.map((toy) => toy.id));
     for (const id of storedIds) set.add(id);
     return [...set];
-  }, [initialToys, storedIds]);
+  }, [initialToys, isSavedList, storedIds]);
 
   useEffect(() => {
     const missing = knownIds.filter((id) => !initialById.has(id));
@@ -97,7 +114,9 @@ export function ParentWishlistView({
         title="Parents"
         subtitle={
           toys.length === 0
-            ? "Open a Kart link or a saved list"
+            ? savedListName
+              ? `${savedListName} · empty list`
+              : "Open a Kart link or add a kid"
             : savedListName
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
@@ -116,7 +135,7 @@ export function ParentWishlistView({
           >
             Brand deals
           </Link>
-          {toys.length > 0 ? (
+          {toys.length > 0 && !isSavedList ? (
             <button
               type="button"
               onClick={() => clear()}
@@ -127,15 +146,19 @@ export function ParentWishlistView({
           ) : null}
         </div>
 
+        <ParentAddKid returnTo={returnTo} />
+
         {toys.length === 0 ? (
           <div className="shelf-panel">
             <div className="shelf-panel__surface px-6 py-14 text-center">
               <p className="mb-2 text-[var(--ink-soft)]">
-                No toys on this list yet.
+                {savedListName
+                  ? `No toys on ${savedListName}'s list yet.`
+                  : "No toys on this list yet."}
               </p>
               <p className="text-sm text-[var(--ink-soft)]">
-                Kids send a Kart, open a shared /p?ids= link, or log in to a
-                saved list. Grown-ups buy here.
+                Kids send a Kart, open a shared /p?ids= link, or add a kid to
+                start a fresh list. Grown-ups buy here.
               </p>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ParentAddKid } from "@/components/parent/ParentAddKid";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import {
@@ -9,13 +10,21 @@ import {
   parentSignInPath,
   parentSignUpPath,
 } from "@/lib/parent-paths";
+import type { Audience } from "@/types/toy";
 
 type SavedList = {
   id: string;
   name: string;
+  audience?: Audience;
   toyIds: string[];
   updatedAt: string;
 };
+
+function audienceLabel(audience: Audience | undefined): string {
+  if (audience === "boys") return "Boys";
+  if (audience === "girls") return "Girls";
+  return "Both";
+}
 
 export function ParentListsView() {
   const [lists, setLists] = useState<SavedList[] | null>(null);
@@ -66,8 +75,8 @@ export function ParentListsView() {
   return (
     <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
       <ShelfHeader
-        title="My lists"
-        subtitle="Saved Parent Mode wish lists"
+        title="Kids"
+        subtitle="Wish lists by kid"
         backHref="/p"
         logoHref="/p"
         trailing={<ParentAuthLinks returnTo="/p/lists" />}
@@ -92,11 +101,14 @@ export function ParentListsView() {
           <p className="text-sm font-medium text-red-600">{error}</p>
         ) : null}
 
+        {signedIn ? <ParentAddKid returnTo="/p/lists" /> : null}
+
         {signedIn && lists && lists.length === 0 ? (
           <div className="shelf-panel">
             <div className="shelf-panel__surface px-6 py-14 text-center">
               <p className="text-[var(--ink-soft)]">
-                No saved lists yet. Open a /p?ids= link and tap Save list.
+                No kids yet. Add a kid to start a list, or open a /p?ids= link
+                and tap Save list.
               </p>
             </div>
           </div>
@@ -114,6 +126,8 @@ export function ParentListsView() {
                       </p>
                     </Link>
                     <p className="text-sm text-[var(--ink-soft)]">
+                      {audienceLabel(list.audience)}
+                      {" · "}
                       {list.toyIds.length} toy
                       {list.toyIds.length === 1 ? "" : "s"}
                     </p>

@@ -31,9 +31,13 @@ export async function PATCH(req: Request, { params }: Props) {
     return NextResponse.json({ error: "Sign in to update a list" }, { status: 401 });
   }
   const { id } = await params;
-  let body: { name?: string; toyIds?: unknown };
+  let body: { name?: string; toyIds?: unknown; audience?: unknown };
   try {
-    body = (await req.json()) as { name?: string; toyIds?: unknown };
+    body = (await req.json()) as {
+      name?: string;
+      toyIds?: unknown;
+      audience?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }

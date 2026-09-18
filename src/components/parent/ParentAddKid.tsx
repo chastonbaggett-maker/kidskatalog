@@ -80,6 +80,11 @@ export function ParentAddKid({ returnTo = "/p" }: { returnTo?: string }) {
       }
       setAudience(gender);
       replaceIds([]);
+      setOpen(false);
+      setKidName("");
+      setGender("");
+      setStatus("idle");
+      setMessage("");
       router.push(parentSavedListQueryPath(data.list.id));
     } catch (error) {
       setStatus("error");

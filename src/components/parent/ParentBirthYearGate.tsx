@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
 import { isAllowedParentBirthYear } from "@/lib/parent-birth-year";
 
 const ERROR_TEXT = "Enter a valid birth year.";
@@ -99,5 +100,12 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return children;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
+      <ParentSignOutFooter />
+    </div>
+  );
 }

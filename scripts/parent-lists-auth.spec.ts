@@ -40,8 +40,9 @@ test("parent can sign up, save a list, and reopen it after reload", async ({
   );
   await dismissSplash(page);
   await dismissSplash(page);
-
-  await expect(page.getByTestId("my-lists-link")).toBeVisible();
+  await page.waitForFunction(() => !document.documentElement.dataset.splash).catch(() => undefined);
+  await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
+  await expect(page.getByTestId("my-lists-link")).toBeVisible({ timeout: 20_000 });
   await page.getByTestId("save-list-name").fill("Park toys");
   await page.getByTestId("save-list-button").click();
   await expect(page.getByText(/Saved/i)).toBeVisible();

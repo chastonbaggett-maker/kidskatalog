@@ -108,9 +108,9 @@ test("every live catalog id resolves at /p/{id} with Parent Buy placeholder + FT
     const pageRes = await request.get(`/p/${id}`);
     expect(pageRes.ok(), `/p/${id} should be 200`).toBeTruthy();
     const html = await pageRes.text();
-    expect(html, id).toContain("Buy on Amazon");
-    expect(html, id).toMatch(/Amazon Services LLC Associates Program/i);
-    expect(html, id).toMatch(/Associates link goes here when approved/i);
+    expect(html, id).toContain("parent-birth-year-gate");
+    expect(html, id).toMatch(/What(?:'|’|&#x27;)s your birth year/i);
+    expect(html, id).not.toContain("Buy on Amazon");
     expect(html, id).not.toMatch(AFFILIATE_LEAK);
     expect(html, id).toMatch(/\/p\/buy-placeholder\?toy=/);
 

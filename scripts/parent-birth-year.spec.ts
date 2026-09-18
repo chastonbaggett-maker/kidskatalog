@@ -131,7 +131,7 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
   await openLockedParent(page, "/p");
   await submitYear(page, "1901");
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /Parent wish list/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Parents$/i })).toBeVisible();
 
   const other = await context.newPage();
   await other.goto("/p/sign-in", { waitUntil: "domcontentloaded" });

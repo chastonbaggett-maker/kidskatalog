@@ -94,7 +94,7 @@ export function ParentWishlistView({
         />
       ) : null}
       <ShelfHeader
-        title="Parent wish list"
+        title="Parents"
         subtitle={
           toys.length === 0
             ? "Open a Kart link or a saved list"

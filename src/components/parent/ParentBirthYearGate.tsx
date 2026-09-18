@@ -42,6 +42,7 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
         <ShelfHeader
           title="Parent Mode"
           subtitle="Grown-ups only"
+          backToPrevious
           backHref="/shop"
           logoHref="/shop"
         />

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { ShelfCrazyTrailing } from "./ShelfCrazyTrailing";
 
@@ -15,6 +16,11 @@ type ShelfHeaderProps = {
   subtitle?: string;
   /** Show back chevron — takes priority over back-to-top */
   backHref?: string;
+  /**
+   * Use browser history for Back (previous page).
+   * Falls back to `backHref` (or `/shop`) when there is no prior history.
+   */
+  backToPrevious?: boolean;
   /** Taller product-style bar with soft bottom corners */
   rounded?: boolean;
   /** Use alternate gradient (profile) */
@@ -40,6 +46,7 @@ export function ShelfHeader({
   title,
   subtitle,
   backHref,
+  backToPrevious = false,
   rounded = true,
   altGradient = false,
   className = "",
@@ -48,9 +55,12 @@ export function ShelfHeader({
 }: ShelfHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const router = useRouter();
+  const showBack = Boolean(backHref) || backToPrevious;
+  const backFallback = backHref || logoHref || "/shop";
 
   useEffect(() => {
-    if (backHref) {
+    if (showBack) {
       setShowBackToTop(false);
       return;
     }
@@ -68,12 +78,20 @@ export function ShelfHeader({
     update();
     scroller.addEventListener("scroll", update, { passive: true });
     return () => scroller.removeEventListener("scroll", update);
-  }, [backHref]);
+  }, [showBack]);
 
   const scrollToTop = useCallback(() => {
     const scroller = findPageScroller(headerRef.current);
     scroller?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const goToPrevious = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(backFallback);
+  }, [backFallback, router]);
 
   const headerClass = [
     "shelf-header shrink-0",
@@ -90,11 +108,23 @@ export function ShelfHeader({
   return (
     <header ref={headerRef} className={headerClass}>
       <div className="relative flex min-h-11 items-center justify-center px-3">
-        {backHref ? (
+        {showBack ? (
           <div className="shelf-back-btn">
-            <Link href={backHref} className={cornerBtnClass} aria-label="Back">
-              <BackChevronIcon />
-            </Link>
+            {backToPrevious ? (
+              <button
+                type="button"
+                className={cornerBtnClass}
+                aria-label="Back"
+                data-testid="shelf-back-previous"
+                onClick={goToPrevious}
+              >
+                <BackChevronIcon />
+              </button>
+            ) : (
+              <Link href={backHref!} className={cornerBtnClass} aria-label="Back">
+                <BackChevronIcon />
+              </Link>
+            )}
           </div>
         ) : showBackToTop ? (
           <div className="shelf-back-btn">

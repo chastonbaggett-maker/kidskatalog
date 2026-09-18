@@ -72,7 +72,7 @@ test("deep links stay locked for empty, junk, and out-of-range years", async ({
 
   await page.getByTestId("parent-birth-year-submit").click();
   await expect(page.getByTestId("parent-birth-year-error")).toHaveText(
-    /1901 and 2008/i,
+    /enter a valid birth year/i,
   );
   await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
 

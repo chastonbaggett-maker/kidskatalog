@@ -8,7 +8,7 @@ import {
   readParentGateUnlocked,
 } from "@/lib/parent-birth-year";
 
-const ERROR_TEXT = "Enter a birth year between 1901 and 2008.";
+const ERROR_TEXT = "Enter a valid birth year.";
 
 export function ParentBirthYearGate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);

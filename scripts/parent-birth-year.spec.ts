@@ -3,10 +3,8 @@ import {
   isAllowedParentBirthYear,
   PARENT_BIRTH_YEAR_MAX,
   PARENT_BIRTH_YEAR_MIN,
-  PARENT_GATE_COOKIE,
-  PARENT_GATE_STORAGE_KEY,
-  PARENT_GATE_UNLOCKED_FLAG,
 } from "../src/lib/parent-birth-year";
+import { unlockParentGate } from "./parent-gate";
 
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
@@ -88,7 +86,7 @@ test("deep links stay locked for empty, junk, and out-of-range years", async ({
   expect(logs.join("\n")).not.toMatch(/\b(1899|2009)\b/);
 });
 
-test("1901, 1990, and 2008 unlock Parent Mode for the browser session", async ({
+test("valid year unlocks now; leaving Parent Mode requires the gate again", async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -98,26 +96,30 @@ test("1901, 1990, and 2008 unlock Parent Mode for the browser session", async ({
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toBeVisible();
 
-  const stored = await page.evaluate((key) => sessionStorage.getItem(key), PARENT_GATE_STORAGE_KEY);
-  expect(stored).toBe(PARENT_GATE_UNLOCKED_FLAG);
+  const stored = await page.evaluate(() => {
+    try {
+      return sessionStorage.getItem("kk_parent_gate");
+    } catch {
+      return null;
+    }
+  });
+  expect(stored).toBeNull();
   const cookies = await page.context().cookies();
-  expect(
-    cookies.some(
-      (cookie) =>
-        cookie.name === PARENT_GATE_COOKIE &&
-        cookie.value === PARENT_GATE_UNLOCKED_FLAG &&
-        cookie.expires === -1,
-    ),
-  ).toBeTruthy();
+  expect(cookies.some((cookie) => cookie.name === "kk_parent_gate")).toBeFalsy();
   expect(cookies.some((cookie) => cookie.value === "1990")).toBeFalsy();
 
-  await page.goto("/p/deals", { waitUntil: "domcontentloaded" });
+  await page.goto("/kart", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
+
+  await openLockedParent(page, "/p/deals");
+  await expect(page.getByText(/Brand deals/i)).toHaveCount(0);
+  await submitYear(page, "2008");
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByText(/Brand deals/i).first()).toBeVisible();
 
-  await page.goto("/p?ids=sky-rocket,roar-rex", { waitUntil: "domcontentloaded" });
-  await dismissSplash(page);
+  await openLockedParent(page, "/p?ids=sky-rocket,roar-rex");
+  await submitYear(page, "1901");
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
 });
@@ -134,20 +136,15 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
   await expect(page.getByRole("heading", { name: /^Parents$/i })).toBeVisible();
 
   const other = await context.newPage();
-  await other.goto("/p/sign-in", { waitUntil: "domcontentloaded" });
-  await dismissSplash(other);
-  await expect(other.getByTestId("parent-birth-year-gate")).toHaveCount(0);
+  await openLockedParent(other, "/p/sign-in");
+  await submitYear(other, "1990");
   await expect(other.getByTestId("parent-login-form")).toBeVisible();
   await other.close();
 
   const fresh = await context.browser()?.newContext();
   if (!fresh) throw new Error("expected a browser");
   const locked = await fresh.newPage();
-  await locked.goto("/p/buy-placeholder?toy=sky-rocket", {
-    waitUntil: "domcontentloaded",
-  });
-  await dismissSplash(locked);
-  await expect(locked.getByTestId("parent-birth-year-gate")).toBeVisible();
+  await openLockedParent(locked, "/p/buy-placeholder?toy=sky-rocket");
   await submitYear(locked, "2008");
   await expect(locked.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(locked.locator("#buy-placeholder")).toBeAttached();
@@ -160,4 +157,40 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
     await expect(page.getByRole("heading", { name: /What'?s your birth year\?/i })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Buy on Amazon/i })).toHaveCount(0);
   }
+});
+
+test("Open Parent Mode from Kart always hits the birth-year gate", async ({
+  page,
+  request,
+  context,
+}) => {
+  test.setTimeout(90_000);
+  const catalog = await request.get("/api/catalog?ids=sky-rocket,roar-rex");
+  expect(catalog.ok()).toBeTruthy();
+  const sample = ["sky-rocket", "roar-rex"];
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => undefined);
+  await page.addInitScript((seedIds: string[]) => {
+    localStorage.setItem(
+      "kidskatalog-kart",
+      JSON.stringify({ state: { ids: seedIds }, version: 0 }),
+    );
+  }, sample);
+
+  await page.goto("/kart", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  await page.getByTestId("open-parent-wishlist").click();
+  await page.waitForURL((url) => url.pathname === "/p");
+  await dismissSplash(page);
+  await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
+
+  await unlockParentGate(page);
+  await expect(page.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(2);
+
+  await page.goto("/kart", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
+  await page.getByTestId("open-parent-wishlist").click();
+  await page.waitForURL((url) => url.pathname === "/p");
+  await dismissSplash(page);
+  await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
 });

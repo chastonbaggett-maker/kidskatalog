@@ -1,25 +1,15 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
-import {
-  isAllowedParentBirthYear,
-  persistParentGateUnlock,
-  readParentGateUnlocked,
-} from "@/lib/parent-birth-year";
+import { isAllowedParentBirthYear } from "@/lib/parent-birth-year";
 
 const ERROR_TEXT = "Enter a valid birth year.";
 
 export function ParentBirthYearGate({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [year, setYear] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setUnlocked(readParentGateUnlocked());
-    setReady(true);
-  }, []);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,13 +17,12 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
       setError(ERROR_TEXT);
       return;
     }
-    persistParentGateUnlock();
     setError("");
     setYear("");
     setUnlocked(true);
   }
 
-  if (!ready || !unlocked) {
+  if (!unlocked) {
     return (
       <div
         className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden"

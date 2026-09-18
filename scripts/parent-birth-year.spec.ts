@@ -1,4 +1,4 @@
-import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   isAllowedParentBirthYear,
   PARENT_BIRTH_YEAR_MAX,
@@ -18,8 +18,8 @@ async function dismissSplash(page: Page) {
   }
 }
 
-async function signUpViaApi(request: APIRequestContext, email: string) {
-  const res = await request.post("/api/parent/auth/signup", {
+async function signUpViaApi(page: Page, email: string) {
+  const res = await page.request.post("/api/parent/auth/signup", {
     data: { email, password: "test-pass-123" },
   });
   expect(res.ok()).toBeTruthy();
@@ -133,10 +133,9 @@ test("sign-up from Kart lands in Parent Mode without birth year", async ({
 
 test("deep links stay locked for empty, junk, and out-of-range years", async ({
   page,
-  request,
 }) => {
   test.setTimeout(90_000);
-  await signUpViaApi(request, `gate-junk-${Date.now()}@example.com`);
+  await signUpViaApi(page, `gate-junk-${Date.now()}@example.com`);
 
   const posted: string[] = [];
   const logs: string[] = [];
@@ -168,10 +167,9 @@ test("deep links stay locked for empty, junk, and out-of-range years", async ({
 
 test("valid year unlocks now; leaving Parent Mode requires the gate again", async ({
   page,
-  request,
 }) => {
   test.setTimeout(90_000);
-  await signUpViaApi(request, `gate-again-${Date.now()}@example.com`);
+  await signUpViaApi(page, `gate-again-${Date.now()}@example.com`);
 
   await openBirthYearGate(page, "/p/sky-rocket");
   await submitYear(page, "1990");
@@ -205,10 +203,9 @@ test("valid year unlocks now; leaving Parent Mode requires the gate again", asyn
 test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async ({
   page,
   context,
-  request,
 }) => {
   test.setTimeout(90_000);
-  await signUpViaApi(request, `gate-bound-${Date.now()}@example.com`);
+  await signUpViaApi(page, `gate-bound-${Date.now()}@example.com`);
 
   await openBirthYearGate(page, "/p");
   await submitYear(page, "1901");
@@ -225,13 +222,7 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
   const fresh = await context.browser()?.newContext();
   if (!fresh) throw new Error("expected a browser");
   const locked = await fresh.newPage();
-  const signup = await fresh.request.post("/api/parent/auth/signup", {
-    data: {
-      email: `gate-buy-${Date.now()}@example.com`,
-      password: "test-pass-123",
-    },
-  });
-  expect(signup.ok()).toBeTruthy();
+  await signUpViaApi(locked, `gate-buy-${Date.now()}@example.com`);
   await openBirthYearGate(locked, "/p/buy-placeholder?toy=sky-rocket");
   await submitYear(locked, "2008");
   await expect(locked.getByTestId("parent-birth-year-gate")).toHaveCount(0);

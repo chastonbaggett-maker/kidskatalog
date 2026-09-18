@@ -83,11 +83,10 @@ test("POST /api/events accepts allowlisted parent events and rejects junk", asyn
 
 test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async ({
   page,
-  request,
 }) => {
   test.setTimeout(90_000);
 
-  const signup = await request.post("/api/parent/auth/signup", {
+  const signup = await page.request.post("/api/parent/auth/signup", {
     data: { email: `funnel-${Date.now()}@example.com`, password: "test-pass-123" },
   });
   expect(signup.ok()).toBeTruthy();

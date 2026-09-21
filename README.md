@@ -33,7 +33,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for parent share links (default `https://kidskatalog.vercel.app`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Optional Clerk for Parent Mode. Password sign-up works until these are set. See `docs/parent-auth.md` |
 | `PARENT_SESSION_SECRET` | HMAC for password parent sessions (falls back to `ADMIN_SESSION_SECRET`) |
-| `ADMIN_INGEST_KEY` | Optional Bearer token for `POST /api/admin/toy-proposals` |
+| `ADMIN_INGEST_KEY` | Optional Bearer token for proposal ingest, listing, pending `name` / `blurb` / `images` edits, and reject. Approve and Submit Approval stay PIN-only. `ADMIN_API_KEY` is the fallback name for the same secret |
 | `AMAZON_ASSOCIATES_LIVE` / `AMAZON_ASSOCIATES_TAG` | Off until Associates is approved — see `docs/associates-flip.md` |
 | `NEXT_PUBLIC_AFFILIATE_TAG` | Stored import tag only; never shown on kid surfaces |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Catalog, metrics, parent accounts, and saved lists |

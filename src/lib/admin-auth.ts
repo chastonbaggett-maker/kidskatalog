@@ -93,8 +93,10 @@ export type AdminAccess =
   | { kind: "ingest" };
 
 /**
- * PIN session (queue + publish) or ingest API key (drop proposals only).
- * Approve / Reject / Submit Approval still require a PIN session.
+ * PIN session, or the ingest API key (`ADMIN_INGEST_KEY`, else `ADMIN_API_KEY`).
+ * The ingest key may list and create proposals, reject pending or staged rows,
+ * and edit `name` / `blurb` / `images` while a row is pending.
+ * Approve, Submit Approval, publish, and PIN management stay PIN-only.
  */
 export function requireAdminAccess(req: NextRequest): AdminAccess | null {
   const session = getSessionFromRequest(req);

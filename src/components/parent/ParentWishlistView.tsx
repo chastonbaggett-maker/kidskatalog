@@ -94,7 +94,7 @@ export function ParentWishlistView({
         />
       ) : null}
       <ShelfHeader
-        title="Parent wish list"
+        title="Parents"
         subtitle={
           toys.length === 0
             ? "Open a Kart link or a saved list"
@@ -102,6 +102,8 @@ export function ParentWishlistView({
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
+        backToPrevious
+        backHref="/shop"
         logoHref="/p"
         trailing={<ParentAuthLinks returnTo={returnTo} />}
       />

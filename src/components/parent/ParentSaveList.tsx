@@ -53,7 +53,7 @@ export function ParentSaveList({
       }
       setSavedId(data.list.id);
       setStatus("ok");
-      setMessage("Saved. Open it anytime from My lists.");
+      setMessage("Saved. Open it anytime from the link below.");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Could not save list");

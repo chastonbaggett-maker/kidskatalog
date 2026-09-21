@@ -10,10 +10,13 @@ import {
   setDraftReviewStatus,
 } from "@/lib/draft-store";
 import {
+  extractRequiredProposalAsin,
   isProposalParseError,
   parseProposalInput,
   type ProposalInput,
 } from "@/lib/proposal";
+import { isShortAmazonLink } from "@/lib/amazon-asin";
+import { resolveAmazonAsin } from "@/lib/resolve-amazon-asin";
 import {
   MAX_TOY_PROPOSAL_BATCH,
   isQueueStatus,
@@ -144,6 +147,20 @@ export async function ingestToyProposals(
       source: raw.source || source,
       source_ref: raw.source_ref || raw.sourceRef || source_ref,
     };
+    if (!extractRequiredProposalAsin(input)) {
+      const candidate = [
+        input.asin,
+        input.amazon_url,
+        input.amazonUrl,
+        input.amazon,
+        input.affiliate_url,
+        input.affiliateUrl,
+      ].find((value) => typeof value === "string" && isShortAmazonLink(value));
+      if (candidate) {
+        const resolved = await resolveAmazonAsin(candidate);
+        if (resolved) input.asin = resolved;
+      }
+    }
     const parsed = parseProposalInput(input, usedIds);
     if (isProposalParseError(parsed)) {
       errors.push({ name: input.name, error: parsed.error });

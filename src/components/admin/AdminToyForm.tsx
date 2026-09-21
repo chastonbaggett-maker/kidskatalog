@@ -13,6 +13,7 @@ import {
 import type { Audience, CategoryId, Toy } from "@/types/toy";
 import { PlayableVideo } from "@/components/PlayableVideo";
 import { normalizeBrandAffiliate } from "@/lib/brand-deals";
+import { parseBulkAmazonInputs } from "@/lib/amazon-asin";
 
 type ImportPreview = {
   asin: string;
@@ -69,33 +70,7 @@ const emptyForm = {
 const MAX_BULK = 100;
 
 function countUniqueBulkUrls(text: string): number {
-  const tokens = text
-    .split(/[\s,;]+/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-  const seen = new Set<string>();
-  for (const token of tokens) {
-    const bare = /^[A-Z0-9]{10}$/i.test(token) ? token.toUpperCase() : null;
-    if (bare) {
-      seen.add(bare);
-      continue;
-    }
-    try {
-      const u = new URL(token);
-      const m = u.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
-      if (m?.[1]) seen.add(m[1].toUpperCase());
-      else {
-        const asin = u.searchParams.get("asin");
-        if (asin && /^[A-Z0-9]{10}$/i.test(asin)) seen.add(asin.toUpperCase());
-      }
-    } catch {
-      const embedded = token.match(
-        /(?:\/(?:dp|gp\/product)\/|asin=)([A-Z0-9]{10})/i,
-      );
-      if (embedded?.[1]) seen.add(embedded[1].toUpperCase());
-    }
-  }
-  return Math.min(seen.size, MAX_BULK);
+  return parseBulkAmazonInputs(text).asins.length;
 }
 
 export function AdminToyForm({
@@ -222,7 +197,8 @@ export function AdminToyForm({
         imageUrl: "",
         videosText: importedVideos[0] ?? "",
       });
-      if (p.grokWarning) {
+      if (p.affiliateUrl) setAmazonUrl(p.affiliateUrl);
+      if (p.grokWarning && !p.manualFieldsRequired) {
         setError(p.grokWarning);
       }
     } catch (e) {
@@ -233,13 +209,14 @@ export function AdminToyForm({
   }
 
   async function handleBulkAdd() {
-    if (!bulkText.trim() || bulkCount === 0) return;
+    if (!bulkText.trim()) return;
     setBulkBusy(true);
     setError("");
     setBulkProgress({
       current: 0,
-      total: bulkCount,
-      message: "Starting bulk add…",
+      total: Math.max(bulkCount, 1),
+      message:
+        bulkCount > 0 ? "Starting bulk add…" : "Resolving short affiliate links…",
     });
 
     let createdCount = 0;
@@ -543,7 +520,8 @@ export function AdminToyForm({
           </p>
           {preview?.manualFieldsRequired ? (
             <p className="text-xs text-amber-700">
-              Amazon blocked metadata — fill in name and image manually.
+              {preview.grokWarning ||
+                "Amazon blocked metadata — the affiliate link was kept. Fill in name and image, then save."}
             </p>
           ) : null}
           {preview && !preview.manualFieldsRequired ? (
@@ -569,21 +547,26 @@ export function AdminToyForm({
               rows={8}
               disabled={bulkBusy}
               placeholder={
-                "https://www.amazon.com/dp/B0...\nhttps://www.amazon.com/dp/B0...\n(or bare ASINs, one per line)"
+                "https://www.amazon.com/dp/B0...?tag=kidskatalog-20\nhttps://amzn.to/...\n(or bare ASINs, one per line)"
               }
               className="rounded-2xl bg-[var(--lavender)] px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-[var(--purple)] disabled:opacity-60"
             />
           </label>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-[var(--ink-soft)]">
-              {bulkCount} unique URL{bulkCount === 1 ? "" : "s"} ready
-              {bulkCount >= MAX_BULK ? " (max reached)" : ""}. Grok drafts
-              name, blurb, category, audience, and ages per catalog guidelines;
-              results land in Review.
+              {bulkCount > 0
+                ? `${bulkCount} unique URL${bulkCount === 1 ? "" : "s"} ready${
+                    bulkCount >= MAX_BULK ? " (max reached)" : ""
+                  }. `
+                : bulkText.trim()
+                  ? "No ASIN in the paste yet. Short links (amzn.to, a.co) still work — Bulk add will open them. "
+                  : "0 unique URLs ready. "}
+              Grok drafts name, blurb, category, audience, and ages per catalog
+              guidelines; results land in Review.
             </p>
             <button
               type="button"
-              disabled={bulkBusy || bulkCount === 0}
+              disabled={bulkBusy || !bulkText.trim()}
               onClick={() => void handleBulkAdd()}
               className="shrink-0 rounded-full bg-[var(--purple-deep)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >

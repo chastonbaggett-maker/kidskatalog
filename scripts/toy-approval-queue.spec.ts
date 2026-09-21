@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 import { FALLBACK_AFFILIATE_TAG, storedParentAffiliateUrl } from "../src/lib/affiliate";
+import { parseAsin, parseBulkAmazonInputs } from "../src/lib/amazon-asin";
 import { resolveParentBuy } from "../src/lib/associates";
 import {
   isProposalParseError,
@@ -65,6 +66,27 @@ test("proposal parser stores kidskatalog-20 and stages as pending", () => {
   expect(parsed.source).toBe("chief");
   expect(parsed.sourceRef).toBe("demo");
   expect(parseAgeRange({ age: "5+" })).toEqual({ ageMin: 5, ageMax: 13 });
+
+  expect(parseAsin("https://www.amazon.com/dp/B07YNLXJ4L?tag=kidskatalog-20")).toBe(
+    "B07YNLXJ4L",
+  );
+  expect(
+    parseAsin(
+      "https://www.amazon.com/Magna-Tiles/dp/B07YNLXJ4L/ref=sr_1_1?tag=kidskatalog-20&linkCode=sl1",
+    ),
+  ).toBe("B07YNLXJ4L");
+  expect(parseAsin("https://www.amazon.com/gp/aw/d/B00JHDC0K6/?tag=kidskatalog-20")).toBe(
+    "B00JHDC0K6",
+  );
+  expect(
+    parseAsin("https://www.amazon.com/gp/product/B00005LBVS?creativeASIN=B00005LBVS&tag=kidskatalog-20"),
+  ).toBe("B00005LBVS");
+  expect(parseAsin("www.amazon.com/dp/B08GTYHNDM?tag=kidskatalog-20")).toBe("B08GTYHNDM");
+  const bulk = parseBulkAmazonInputs(
+    "https://amzn.to/3abc\nhttps://www.amazon.com/gp/aw/d/B00JHDC0K6/?tag=kidskatalog-20",
+  );
+  expect(bulk.asins).toEqual(["B00JHDC0K6"]);
+  expect(bulk.invalid.some((token) => token.includes("amzn.to"))).toBeTruthy();
 
   const missingAmazon = parseProposalInput(
     {

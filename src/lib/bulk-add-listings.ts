@@ -1,5 +1,7 @@
 import "server-only";
-import { parseAsin, parseBulkAmazonInputs } from "@/lib/amazon-import";
+import { storedParentAffiliateUrl } from "@/lib/affiliate";
+import { isShortAmazonLink, parseAsin, parseBulkAmazonInputs } from "@/lib/amazon-asin";
+import { resolveAmazonAsin } from "@/lib/resolve-amazon-asin";
 import { getCatalogToys } from "@/lib/catalog-store";
 import { addDraftToys, getDraftToys } from "@/lib/draft-store";
 import {
@@ -12,6 +14,8 @@ import {
   type GenerateProgressHandler,
 } from "@/lib/generate-listings";
 import { normalizeGenerateOptions } from "@/lib/generate-options";
+import { slugify } from "@/lib/slugify";
+import { categoryColor } from "@/lib/toy-card-style";
 import type { DraftToy } from "@/types/toy";
 
 export type BulkAddResult = {
@@ -27,6 +31,34 @@ export type BulkAddResult = {
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function manualBlockedDraft(asin: string, usedIds: Set<string>): DraftToy {
+  let id = `toy-${asin.toLowerCase()}`;
+  if (usedIds.has(id)) id = `${id}-${asin.slice(-4).toLowerCase()}`;
+  if (usedIds.has(id)) id = `${slugify(asin)}-${Date.now().toString(36)}`;
+  usedIds.add(id);
+  return {
+    id,
+    name: `Amazon ${asin}`,
+    blurb: "Amazon blocked the page. Edit the name and photo.",
+    category: "games",
+    audience: "all",
+    ageMin: 3,
+    ageMax: 12,
+    image: "/categories/games.svg",
+    images: ["/categories/games.svg"],
+    imageAlt: `Amazon ${asin} toy`,
+    affiliateUrl: storedParentAffiliateUrl(asin),
+    color: categoryColor("games"),
+    featuredTier: 0,
+    featured: false,
+    asin,
+    reviewStatus: "pending",
+    createdAt: new Date().toISOString(),
+    notes: "Imported from an affiliate link. Amazon did not return the product page.",
+    sourceNotes: "Imported from an affiliate link. Amazon did not return the product page.",
+  };
 }
 
 function liveAsinSet(live: Array<{ affiliateUrl?: string }>): Set<string> {
@@ -51,10 +83,17 @@ export async function bulkAddDraftListings(
   };
 
   const parsed = parseBulkAmazonInputs(text);
+  for (const token of parsed.invalid) {
+    if (parsed.asins.length >= 100) break;
+    if (!isShortAmazonLink(token)) continue;
+    const asin = await resolveAmazonAsin(token);
+    if (!asin || parsed.asins.includes(asin)) continue;
+    parsed.asins.push(asin);
+  }
   if (parsed.asins.length === 0) {
     throw new Error(
       parsed.invalid.length > 0
-        ? "No valid Amazon URLs or ASINs found in the paste."
+        ? "No Amazon product link found. Paste /dp/ URLs, ASINs, or amzn.to / a.co short links."
         : "Paste up to 100 Amazon product URLs (one per line).",
     );
   }
@@ -121,13 +160,22 @@ export async function bulkAddDraftListings(
       });
 
       if (!draft) {
-        failed += 1;
+        const manual = manualBlockedDraft(asin, usedIds);
+        generated.push(manual);
+        batchAsins.add(asin);
         emit({
           type: "item",
           current: generated.length,
           total,
-          name: asin,
-          ok: false,
+          name: manual.name,
+          ok: true,
+        });
+        emit({
+          type: "stage",
+          stage: "import",
+          message: `Kept affiliate link for ${asin} (${generated.length}/${total})`,
+          current: generated.length,
+          total,
         });
         continue;
       }

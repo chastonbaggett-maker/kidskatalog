@@ -1,10 +1,12 @@
 import "server-only";
-import { parseAsin } from "@/lib/amazon-import";
+import { storedParentAffiliateUrl } from "@/lib/affiliate";
 import { getCatalogToys } from "@/lib/catalog-store";
 import { getDraftToys } from "@/lib/draft-store";
 import { draftListingWithGrok } from "@/lib/grok-listing";
 import { buildDraftFromAsin } from "@/lib/generate-listings";
 import { normalizeGenerateOptions } from "@/lib/generate-options";
+import { resolveAmazonAsin } from "@/lib/resolve-amazon-asin";
+import { categoryColor } from "@/lib/toy-card-style";
 import type { Audience, CategoryId } from "@/types/toy";
 
 export type AmazonImportPreview = {
@@ -37,9 +39,11 @@ export type AmazonImportPreview = {
 export async function importAmazonListingPreview(
   url: string,
 ): Promise<AmazonImportPreview> {
-  const asin = parseAsin(url);
+  const asin = await resolveAmazonAsin(url);
   if (!asin) {
-    throw new Error("Could not find an Amazon ASIN in that link");
+    throw new Error(
+      "Could not find an Amazon ASIN in that link. Use a /dp/ URL, a 10-character ASIN, or an amzn.to / a.co short link.",
+    );
   }
 
   const [live, drafts] = await Promise.all([getCatalogToys(), getDraftToys()]);
@@ -74,9 +78,27 @@ export async function importAmazonListingPreview(
   );
 
   if (!draft) {
-    throw new Error(
-      "Could not import that Amazon listing. Amazon may have blocked the product page from the server, or images were missing. Try again in a minute, or paste a different /dp/ link.",
-    );
+    const affiliateUrl = storedParentAffiliateUrl(asin);
+    return {
+      asin,
+      id: `toy-${asin.toLowerCase()}`,
+      affiliateUrl,
+      name: "",
+      blurb: "",
+      category: "games",
+      audience: "all",
+      ageMin: 3,
+      ageMax: 12,
+      image: "/categories/games.svg",
+      images: ["/categories/games.svg"],
+      videos: [],
+      imageAlt: "Toy",
+      color: categoryColor("games"),
+      manualFieldsRequired: true,
+      usedGrok: false,
+      grokWarning:
+        "Amazon blocked the product page, so the link was kept. Fill in the name, blurb, and photo, then save.",
+    };
   }
 
   const images =

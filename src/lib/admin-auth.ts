@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 
-const SESSION_COOKIE = "kk_admin_session";
+export const SESSION_COOKIE = "kk_admin_session";
 const SESSION_MS = 8 * 60 * 60 * 1000;
 
 export function hashPin(pin: string): string {

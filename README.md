@@ -11,7 +11,7 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - Persistent Kart (saved in the browser)
 - **Send to Mom or Dad** — copy/open a `/p?ids=` wish list (link only, no PDF)
 - **Parent Mode** (`/p/{id}` and `/p?ids=…`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
-- **Approval queue** (`/admin`, PIN) — ingest proposed toy cards, Approve / Reject, **Submit Approval** to publish. See [`docs/toy-approval-queue.md`](./docs/toy-approval-queue.md)
+- **Approval queue** (`/admin/toys`, PIN) — ingest proposed toy cards, Approve / Reject, **Submit Approval** to publish. See [`docs/toy-approval-queue.md`](./docs/toy-approval-queue.md)
 - **Parent sign up / log in** — save wish lists and reopen them from **My lists**
 - **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md` and `docs/brand-affiliates.md`; outreach templates in `docs/brand-outreach.md`)
 
@@ -33,7 +33,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin for parent share links (default `https://kidskatalog.vercel.app`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Optional Clerk for Parent Mode. Password sign-up works until these are set. See `docs/parent-auth.md` |
 | `PARENT_SESSION_SECRET` | HMAC for password parent sessions (falls back to `ADMIN_SESSION_SECRET`) |
-| `ADMIN_INGEST_KEY` | Optional Bearer token for `POST /api/admin/proposals` |
+| `ADMIN_INGEST_KEY` | Optional Bearer token for `POST /api/admin/toy-proposals` |
 | `AMAZON_ASSOCIATES_LIVE` / `AMAZON_ASSOCIATES_TAG` | Off until Associates is approved — see `docs/associates-flip.md` |
 | `NEXT_PUBLIC_AFFILIATE_TAG` | Stored import tag only; never shown on kid surfaces |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Catalog, metrics, parent accounts, and saved lists |

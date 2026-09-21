@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       error:
-        "New toys must go through the approval queue. POST /api/admin/proposals, Approve, then Submit Approval.",
+        "New toys must go through the approval queue. POST /api/admin/toy-proposals, Approve, then Submit Approval.",
     },
     { status: 400 },
   );

@@ -41,26 +41,39 @@ function sampleToy(partial: Partial<Toy> & Pick<Toy, "id" | "name">): Toy {
   };
 }
 
-test("proposal parser stores kidskatalog-20 and stages as proposed", () => {
+test("proposal parser stores kidskatalog-20 and stages as pending", () => {
   const parsed = parseProposalInput(
     {
       name: "Mag Tiles",
       blurb: "Click-together building squares.",
       age: "4-8",
       category: "blocks",
-      amazonUrl: "https://www.amazon.com/dp/B07YNLXJ4L",
-      sourceNotes: "Amazon search demo",
+      amazon_url: "https://www.amazon.com/dp/B07YNLXJ4L",
+      notes: "Amazon search demo",
+      source: "chief",
+      source_ref: "demo",
     },
     new Set(),
   );
   expect(isProposalParseError(parsed)).toBeFalsy();
   if (isProposalParseError(parsed)) return;
-  expect(parsed.reviewStatus).toBe("proposed");
+  expect(parsed.reviewStatus).toBe("pending");
   expect(parsed.asin).toBe("B07YNLXJ4L");
   expect(parsed.affiliateUrl).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
   expect(parsed.ageMin).toBe(4);
   expect(parsed.ageMax).toBe(8);
+  expect(parsed.source).toBe("chief");
+  expect(parsed.sourceRef).toBe("demo");
   expect(parseAgeRange({ age: "5+" })).toEqual({ ageMin: 5, ageMax: 13 });
+
+  const missingAmazon = parseProposalInput(
+    {
+      name: "No Amazon",
+      affiliate_url: "https://www.amazon.com/dp/B07YNLXJ4L?tag=other-20",
+    },
+    new Set(),
+  );
+  expect(isProposalParseError(missingAmazon)).toBeTruthy();
 });
 
 test("Counsel locks: tag= only when LIVE; kid projection stays clean", () => {
@@ -123,19 +136,20 @@ async function cleanupProbe(request: APIRequestContext, id: string) {
   await request.delete(`/api/admin/drafts?id=${encodeURIComponent(id)}`);
 }
 
-test("ingest is auth-gated and /admin is not a public queue", async ({ request, page }) => {
-  const denied = await request.post("/api/admin/proposals", {
+test("ingest is auth-gated and /admin/toys is not a public queue", async ({ request, page }) => {
+  const denied = await request.post("/api/admin/toy-proposals", {
     data: {
       name: "Nope",
-      amazonUrl: "https://www.amazon.com/dp/B07YNLXJ4L",
+      amazon_url: "https://www.amazon.com/dp/B07YNLXJ4L",
     },
   });
   expect(denied.status()).toBe(401);
 
-  await page.goto("/admin", { waitUntil: "domcontentloaded" });
+  await page.goto("/admin/toys", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
+  await expect(page).toHaveURL(/\/admin(\?|$)/);
   await expect(page.getByRole("heading", { name: /Enter Passcode/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Submit Approval" })).toHaveCount(0);
+  await expect(page.getByTestId("submit-approval")).toHaveCount(0);
 });
 
 test("ingest → approve stages only → Submit Approval publishes; kid HTML stays clean", async ({
@@ -147,17 +161,20 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
   await adminLogin(request);
 
   try {
-    const ingest = await request.post("/api/admin/proposals", {
+    const ingest = await request.post("/api/admin/toy-proposals", {
       data: {
+        source: "playwright",
+        source_ref: "kk-toy-approval-queue-2026-09-21",
         id,
         name: "Queue Probe",
         blurb: "Queue path proof card.",
         images: ["/categories/blocks.svg"],
         age: "4-8",
         category: "blocks",
-        amazonUrl: "https://www.amazon.com/dp/B07YNLXJ4L",
-        affiliateUrl: "https://www.amazon.com/dp/B07YNLXJ4L?tag=other-tag-20",
-        sourceNotes: "ticket kk-toy-approval-queue-2026-09-21",
+        asin: "B0KKQUEUE1",
+        amazon_url: "https://www.amazon.com/dp/B0KKQUEUE1",
+        affiliate_url: "https://www.amazon.com/dp/B0KKQUEUE1?tag=other-tag-20",
+        notes: "ticket kk-toy-approval-queue-2026-09-21",
       },
     });
     expect(ingest.status(), await ingest.text()).toBe(201);
@@ -165,14 +182,18 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
       proposals: Array<{ id: string; reviewStatus?: string; affiliateUrl?: string }>;
     };
     expect(ingested.proposals[0]?.id).toBe(id);
-    expect(ingested.proposals[0]?.reviewStatus).toBe("proposed");
+    expect(ingested.proposals[0]?.reviewStatus).toBe("pending");
     expect(ingested.proposals[0]?.affiliateUrl).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
+
+    const pending = await request.get("/api/admin/toy-proposals?status=pending");
+    const pendingJson = (await pending.json()) as { proposals: Array<{ id: string }> };
+    expect(pendingJson.proposals.some((t) => t.id === id)).toBeTruthy();
 
     const catalogBefore = await request.get(`/api/catalog?ids=${id}`);
     const beforeJson = (await catalogBefore.json()) as { toys: Array<{ id: string }> };
     expect(beforeJson.toys.some((t) => t.id === id)).toBeFalsy();
 
-    const submitEarly = await request.post("/api/admin/drafts/submit-approval", {
+    const submitEarly = await request.post("/api/admin/toy-proposals/submit", {
       data: { ids: [id] },
     });
     expect(submitEarly.ok()).toBeTruthy();
@@ -183,26 +204,28 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     expect(earlyJson.count).toBe(0);
     expect(earlyJson.skipped.some((s) => s.id === id)).toBeTruthy();
 
-    const approve = await request.post("/api/admin/drafts/approve", {
-      data: { id },
-    });
+    const approve = await request.post(`/api/admin/toy-proposals/${id}/approve`);
     expect(approve.ok(), await approve.text()).toBeTruthy();
-    const stillDraft = await request.get("/api/admin/drafts");
-    const drafts = (await stillDraft.json()) as {
-      drafts: Array<{ id: string; reviewStatus?: string }>;
+    const staged = await request.get("/api/admin/toy-proposals?status=staged");
+    const stagedList = (await staged.json()) as {
+      proposals: Array<{ id: string; reviewStatus?: string }>;
     };
-    expect(drafts.drafts.find((d) => d.id === id)?.reviewStatus).toBe("approved");
+    expect(stagedList.proposals.find((d) => d.id === id)?.reviewStatus).toBe("staged");
 
     const catalogStaged = await request.get(`/api/catalog?ids=${id}`);
     const stagedJson = (await catalogStaged.json()) as { toys: Array<{ id: string }> };
     expect(stagedJson.toys.some((t) => t.id === id)).toBeFalsy();
 
-    const submit = await request.post("/api/admin/drafts/submit-approval", {
+    const submit = await request.post("/api/admin/toy-proposals/submit", {
       data: {},
     });
     expect(submit.ok(), await submit.text()).toBeTruthy();
     const submitted = (await submit.json()) as { count: number; published: Array<{ id: string }> };
     expect(submitted.published.some((t) => t.id === id)).toBeTruthy();
+
+    const published = await request.get("/api/admin/toy-proposals?status=published");
+    const publishedJson = (await published.json()) as { proposals: Array<{ id: string }> };
+    expect(publishedJson.proposals.some((t) => t.id === id)).toBeTruthy();
 
     const catalog = await request.get(`/api/catalog?ids=${id}`);
     const catalogJson = (await catalog.json()) as { toys: Array<{ id: string }> };
@@ -244,24 +267,52 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
   }
 });
 
-test("reject drops a proposal", async ({ request }) => {
+test("reject keeps an audit row and dedupes ASINs in a batch", async ({ request }) => {
   const id = `kk-queue-reject-${Date.now()}`;
   await adminLogin(request);
   try {
-    const ingest = await request.post("/api/admin/proposals", {
+    const ingest = await request.post("/api/admin/toy-proposals", {
       data: {
+        source: "playwright",
         id,
         name: "Reject Probe",
-        amazonUrl: "B00JHDC0K6",
+        asin: "B0KKREJCT1",
         category: "games",
       },
     });
     expect(ingest.status()).toBe(201);
-    const reject = await request.post("/api/admin/drafts/reject", { data: { id } });
+
+    const dup = await request.post("/api/admin/toy-proposals", {
+      data: {
+        name: "Reject Probe Dup",
+        asin: "B0KKREJCT1",
+        category: "games",
+      },
+    });
+    expect(dup.status()).toBe(400);
+    const dupJson = (await dup.json()) as { skipped?: Array<{ error: string }> };
+    expect(dupJson.skipped?.some((s) => s.error === "duplicate ASIN")).toBeTruthy();
+
+    const oversize = await request.post("/api/admin/toy-proposals", {
+      data: {
+        proposals: Array.from({ length: 26 }, (_, i) => ({
+          name: `Too Many ${i}`,
+          asin: "B07YNLXJ4L",
+        })),
+      },
+    });
+    expect(oversize.status()).toBe(400);
+
+    const reject = await request.post(`/api/admin/toy-proposals/${id}/reject`);
     expect(reject.ok()).toBeTruthy();
-    const drafts = await request.get("/api/admin/drafts");
-    const json = (await drafts.json()) as { drafts: Array<{ id: string }> };
-    expect(json.drafts.some((d) => d.id === id)).toBeFalsy();
+    const pending = await request.get("/api/admin/toy-proposals?status=pending");
+    const pendingJson = (await pending.json()) as { proposals: Array<{ id: string }> };
+    expect(pendingJson.proposals.some((t) => t.id === id)).toBeFalsy();
+    const rejected = await request.get("/api/admin/toy-proposals?status=rejected");
+    const rejectedJson = (await rejected.json()) as {
+      proposals: Array<{ id: string; reviewStatus?: string }>;
+    };
+    expect(rejectedJson.proposals.find((t) => t.id === id)?.reviewStatus).toBe("rejected");
   } finally {
     await cleanupProbe(request, id);
   }

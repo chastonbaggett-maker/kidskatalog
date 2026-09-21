@@ -13,6 +13,7 @@ import {
   resolveFeaturedTier,
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
+import { isStagedDraft } from "@/lib/queue-status";
 
 type Tab = "live" | "review";
 type ViewMode = "list" | "grid";
@@ -38,8 +39,8 @@ type Props = {
   editingId?: string | null;
 };
 
-function draftReviewStatus(draft: DraftToy): "proposed" | "approved" {
-  return draft.reviewStatus === "approved" ? "approved" : "proposed";
+function isStagedQueueDraft(draft: DraftToy): boolean {
+  return isStagedDraft(draft);
 }
 
 function ListViewIcon() {
@@ -321,9 +322,13 @@ export function AdminToyList({
   const [tab, setTab] = useState<Tab>("live");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  const items = tab === "live" ? toys : drafts;
+  const queueDrafts = drafts.filter((d) => {
+    const status = d.reviewStatus;
+    return status !== "published" && status !== "rejected";
+  });
+  const items = tab === "live" ? toys : queueDrafts;
   const isGrid = viewMode === "grid";
-  const stagedCount = drafts.filter((d) => draftReviewStatus(d) === "approved").length;
+  const stagedCount = queueDrafts.filter(isStagedQueueDraft).length;
 
   function handleEdit(toy: Toy) {
     onEdit(toy, tab);
@@ -423,11 +428,11 @@ export function AdminToyList({
                 : "text-[var(--ink-soft)]"
             }`}
           >
-            Queue ({drafts.length})
+            Queue ({queueDrafts.length})
           </button>
         </div>
 
-        {tab === "review" && drafts.length > 0 ? (
+        {tab === "review" && queueDrafts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -446,8 +451,8 @@ export function AdminToyList({
 
       {tab === "review" ? (
         <p className="mb-3 text-xs font-semibold text-[var(--ink-soft)]">
-          Proposed cards stay off the shop. Approve stages. Reject drops.
-          Submit Approval is the only publish.
+          Proposed cards stay off the shop. Approve stages. Reject drops
+          (audit in Rejected). Submit Approval is the only publish.
         </p>
       ) : null}
 
@@ -462,9 +467,7 @@ export function AdminToyList({
           <ul className="admin-toy-list__grid">
             {items.map((toy) => {
               const selected = editingId === toy.id;
-              const staged =
-                tab === "review" &&
-                draftReviewStatus(toy as DraftToy) === "approved";
+              const staged = tab === "review" && isStagedQueueDraft(toy as DraftToy);
               return (
                 <li
                   key={toy.id}
@@ -474,7 +477,7 @@ export function AdminToyList({
                 >
                   {tab === "review" ? (
                     <span className="absolute left-2 top-2 z-10 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] shadow-sm ring-1 ring-black/5">
-                      {staged ? "Staged" : "Proposed"}
+                      {staged ? "Staged" : "Pending"}
                     </span>
                   ) : null}
                   <div className="admin-toy-list__card-media">
@@ -515,7 +518,7 @@ export function AdminToyList({
                           onClick={() => onApprove(toy.id)}
                           className="flex-1 rounded-full bg-[var(--mint)] py-2 text-xs font-bold text-white transition disabled:opacity-40 active:scale-[0.98]"
                         >
-                          {staged ? "Approved" : approveBusyId === toy.id ? "…" : "Approve"}
+                          {staged ? "Staged" : approveBusyId === toy.id ? "…" : "Approve"}
                         </button>
                         <button
                           type="button"
@@ -555,9 +558,7 @@ export function AdminToyList({
         <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
           {items.map((toy) => {
             const selected = editingId === toy.id;
-            const staged =
-              tab === "review" &&
-              draftReviewStatus(toy as DraftToy) === "approved";
+            const staged = tab === "review" && isStagedQueueDraft(toy as DraftToy);
             return (
               <li
                 key={toy.id}
@@ -579,7 +580,7 @@ export function AdminToyList({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-[var(--ink)]">{toy.name}</p>
                   <p className="truncate text-xs text-[var(--ink-soft)]">
-                    {tab === "review" ? (staged ? "Staged · " : "Proposed · ") : ""}
+                    {tab === "review" ? (staged ? "Staged · " : "Pending · ") : ""}
                     {toy.category} · ages {toy.ageMin}–{toy.ageMax} ·{" "}
                     {featuredTierLabel(resolveFeaturedTier(toy))} · {toy.blurb}
                   </p>
@@ -600,7 +601,7 @@ export function AdminToyList({
                         onClick={() => onApprove(toy.id)}
                         className="rounded-full bg-[var(--mint)] px-2.5 py-1 text-xs font-bold text-white disabled:opacity-40"
                       >
-                        {staged ? "Approved" : approveBusyId === toy.id ? "…" : "Approve"}
+                        {staged ? "Staged" : approveBusyId === toy.id ? "…" : "Approve"}
                       </button>
                       <button
                         type="button"

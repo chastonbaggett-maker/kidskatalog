@@ -25,18 +25,19 @@ export function AdminProposalForm({ onIngested }: Props) {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/proposals", {
+      const res = await fetch("/api/admin/toy-proposals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          source: "admin-form",
           name,
           blurb,
           category: category || undefined,
           age,
           images,
-          amazonUrl: amazon,
-          affiliateUrl,
-          sourceNotes,
+          amazon_url: amazon,
+          affiliate_url: affiliateUrl,
+          notes: sourceNotes,
         }),
       });
       const data = (await res.json()) as {
@@ -69,7 +70,7 @@ export function AdminProposalForm({ onIngested }: Props) {
         Ingest proposal
       </h3>
       <p className="mb-3 text-xs font-semibold text-[var(--ink-soft)]">
-        Drops a card into the queue as proposed. Approve stages it. Submit
+        Drops a card into the queue as pending. Approve stages it. Submit
         Approval is the only publish.
       </p>
       <form className="flex flex-col gap-2.5" onSubmit={(e) => void handleSubmit(e)}>

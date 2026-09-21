@@ -2,12 +2,12 @@ import "server-only";
 import type { Toy } from "@/types/toy";
 import { addCatalogToy, getCatalogToy } from "@/lib/catalog-store";
 import {
-  deleteDraftToy,
-  getApprovedDraftToys,
   getDraftToy,
+  getStagedDraftToys,
+  setDraftReviewStatus,
   toLiveToy,
 } from "@/lib/draft-store";
-import { isApprovedDraft } from "@/lib/proposal";
+import { isStagedDraft } from "@/lib/queue-status";
 import { assertLiveToyPublishable } from "@/lib/publish-locks";
 
 export type SubmitApprovalResult = {
@@ -32,7 +32,7 @@ export async function submitApprovedDrafts(
   const targets =
     requested.length > 0
       ? await Promise.all(requested.map((id) => getDraftToy(id)))
-      : await getApprovedDraftToys();
+      : await getStagedDraftToys();
 
   const seen = new Set<string>();
 
@@ -46,10 +46,10 @@ export async function submitApprovedDrafts(
     if (seen.has(draft.id)) continue;
     seen.add(draft.id);
 
-    if (!isApprovedDraft(draft)) {
+    if (!isStagedDraft(draft)) {
       skipped.push({
         id: draft.id,
-        reason: "Approve stages only — Submit Approval publishes approved cards",
+        reason: "Approve stages only — Submit Approval publishes staged cards",
       });
       continue;
     }
@@ -68,7 +68,7 @@ export async function submitApprovedDrafts(
 
     try {
       const created = await addCatalogToy(toy);
-      await deleteDraftToy(draft.id);
+      await setDraftReviewStatus(draft.id, "published");
       published.push(created);
     } catch (error) {
       skipped.push({

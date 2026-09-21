@@ -1,44 +1,56 @@
 # Toy approval queue
 
-Auth-gated queue for proposed toy cards. Approve stages. Reject drops. **Submit Approval** is the only publish to the live kid catalog and parent `/p/{id}` pages.
+Auth-gated queue for proposed toy cards. Approve stages. Reject drops (audit kept in Rejected). **Submit Approval** is the only publish to the live kid catalog and parent `/p/{id}` pages.
 
 Sacred revert tag: `pre-profit-handoff-2026-09-14`. This work does not restyle kid or parent craft.
 
 ## Admin URL
 
-- **https://kidskatalog.com/admin** (PIN-gated; also the hidden admin overlay from the kid logo taps)
-- Preview/local: `/admin` on the same origin (dev: http://localhost:3456/admin)
+- **https://kidskatalog.com/admin/toys** (PIN session required; unauthenticated visits redirect to `/admin`)
+- PIN pad: **https://kidskatalog.com/admin** (also the hidden admin overlay from the kid logo taps)
+- Preview/local: `/admin/toys` on the same origin (dev: http://localhost:3456/admin/toys)
 
-Unauthenticated visits show the existing admin PIN pad. There is no public queue.
+Unauthenticated visits never see the queue. There is no public queue.
+
+Pending list: **Approve** (stages) / **Reject** (drops, kept under Rejected). Sticky **Submit Approval** batch-publishes **staged** cards only (browser confirm). Tabs: Pending | Staged | Published | Rejected.
 
 ## Ingest a proposal
 
 Chief/bots drop cards after Amazon search.
 
-`POST /api/admin/proposals`
+`POST /api/admin/toy-proposals`
 
 Auth (either):
 
 1. Admin PIN session cookie (`POST /api/admin/auth` with `{ "action": "verify", "pin": "••••" }`)
-2. Bearer ingest key when `ADMIN_INGEST_KEY` (or `ADMIN_API_KEY`) is set:
+2. Bearer ingest key when `ADMIN_INGEST_KEY` (or `ADMIN_API_KEY`) is set
+
+Batch max **25**. `asin` **or** `amazon_url` is required. Duplicate ASINs (live catalog, pending, staged, or published) are skipped. Rejected ASINs may be re-ingested.
 
 ```bash
-curl -sS -X POST https://kidskatalog.com/api/admin/proposals \
+curl -sS -X POST https://kidskatalog.com/api/admin/toy-proposals \
   -H "Authorization: Bearer $ADMIN_INGEST_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Mag Tiles",
-    "blurb": "Click-together building squares.",
-    "images": ["https://example.com/toy.jpg"],
-    "age": "4-8",
-    "category": "blocks",
-    "amazonUrl": "https://www.amazon.com/dp/B07YNLXJ4L",
-    "affiliateUrl": "https://www.amazon.com/dp/B07YNLXJ4L",
-    "sourceNotes": "Amazon search: magnetic tiles ages 4-8"
+    "source": "chief",
+    "source_ref": "amazon-search-magnetic-tiles",
+    "proposals": [
+      {
+        "name": "Mag Tiles",
+        "images": ["https://example.com/toy.jpg"],
+        "blurb": "Click-together building squares.",
+        "age": "4-8",
+        "category": "blocks",
+        "asin": "B07YNLXJ4L",
+        "amazon_url": "https://www.amazon.com/dp/B07YNLXJ4L",
+        "affiliate_url": "https://www.amazon.com/dp/B07YNLXJ4L",
+        "notes": "Amazon search: magnetic tiles ages 4-8"
+      }
+    ]
   }'
 ```
 
-Same payload works as a single object or `{ "proposals": [ ... ] }`.
+Same payload works as a single object, an array, or `{ "proposals": [ ... ] }`. Envelope `source` / `source_ref` apply to every item unless the item overrides them.
 
 | Field | Notes |
 |---|---|
@@ -47,27 +59,28 @@ Same payload works as a single object or `{ "proposals": [ ... ] }`.
 | `blurb` | Optional short card copy |
 | `age` | `"8-12"`, `"5+"`, `8`, or `{ "min": 4, "max": 8 }` |
 | `category` | `dinos` `plush` `cars` `blocks` `outside` `games` `stem` `pretend` (aliases like `dinosaur` work) |
-| `amazonUrl` / `asin` / `amazon` | Amazon ASIN or `/dp/` URL |
-| `affiliateUrl` | Optional proposed affiliate link; stored with tag `kidskatalog-20` |
-| `sourceNotes` | Search notes for admins; never shown in Kid Mode |
+| `asin` **or** `amazon_url` | Required. Bare ASIN or Amazon `/dp/` URL |
+| `affiliate_url` | Optional proposed affiliate link; stored Parent Buy URL always uses tag `kidskatalog-20` |
+| `notes` | Search notes for admins; never shown in Kid Mode |
+| `source` / `source_ref` | Ingest provenance; never shown in Kid Mode |
 
 Stored `affiliateUrl` always uses Associates tag **`kidskatalog-20`** for the later Parent Buy flip. Public Parent Buy still goes through `resolveParentBuy()` and **does not emit `tag=` until `AMAZON_ASSOCIATES_LIVE` is on.**
 
-The admin **Ingest proposal** form on `/admin` posts to the same path.
+The admin **Ingest proposal** form on `/admin/toys` posts to the same path.
 
-`GET /api/admin/proposals` lists the queue (PIN session or ingest key).
+`GET /api/admin/toy-proposals?status=pending|staged|published|rejected` lists the queue (PIN session or ingest key). Omit `status` for all rows.
 
 ## Approve / Reject / Submit Approval
 
-All three require a PIN session (ingest key cannot publish).
+Approve, Reject, and Submit Approval require a PIN session (ingest key cannot publish).
 
 | Action | Endpoint | Effect |
 |---|---|---|
-| **Approve** | `POST /api/admin/drafts/approve` `{ "id": "…" }` | Stages the card. Not live. |
-| **Reject** | `POST /api/admin/drafts/reject` `{ "id": "…" }` | Drops the card from the queue. |
-| **Submit Approval** | `POST /api/admin/drafts/submit-approval` `{}` | Publishes **approved** cards to the live catalog + `/p/{id}`. Unapproved ids are skipped. |
+| **Approve** | `POST /api/admin/toy-proposals/:id/approve` | Stages the card. Not live. |
+| **Reject** | `POST /api/admin/toy-proposals/:id/reject` | Drops the card from Pending/Staged. Audit row stays in Rejected. |
+| **Submit Approval** | `POST /api/admin/toy-proposals/submit` | **Only publish path.** Publishes **staged** cards to the live catalog + `/p/{id}`. Pending ids are skipped. Published rows stay in the Published tab. |
 
-Amazon generate / bulk-add still land in this queue as **proposed**. They do not go live until Approve + Submit Approval.
+Amazon generate / bulk-add still land in this queue as **pending**. They do not go live until Approve + Submit Approval.
 
 `POST /api/admin/toys` no longer creates live toys. Edit live cards with `PATCH`; add new cards through the queue.
 

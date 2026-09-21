@@ -1,14 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 
 export function AdminPageClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [unlocked, setUnlocked] = useState(false);
   const [pinOpen, setPinOpen] = useState(true);
 
   function handleUnlocked() {
+    const next = searchParams.get("next");
+    if (next === "/admin/toys") {
+      router.replace("/admin/toys");
+      return;
+    }
     setUnlocked(true);
     setPinOpen(false);
   }

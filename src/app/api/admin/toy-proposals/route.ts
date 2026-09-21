@@ -8,19 +8,16 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** @deprecated Prefer GET/POST /api/admin/toy-proposals */
 export async function GET(req: NextRequest) {
   if (!requireAdminAccess(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const listed = await listToyProposals(req.nextUrl.searchParams.get("status"));
+  const status = req.nextUrl.searchParams.get("status");
+  const listed = await listToyProposals(status);
   if ("error" in listed) {
     return NextResponse.json({ error: listed.error }, { status: 400 });
   }
-  return NextResponse.json({
-    ...listed,
-    drafts: listed.proposals,
-  });
+  return NextResponse.json(listed);
 }
 
 export async function POST(req: NextRequest) {
@@ -41,6 +38,9 @@ export async function POST(req: NextRequest) {
   }
 
   const { proposals, count, errors, skipped } = ingested.result;
+  const status =
+    count > 0 ? 201 : errors.length > 0 || skipped.length > 0 ? 400 : 400;
+
   return NextResponse.json(
     {
       proposals: proposals.map(toProposalApi),
@@ -49,6 +49,6 @@ export async function POST(req: NextRequest) {
       errors,
       skipped,
     },
-    { status: count > 0 ? 201 : 400 },
+    { status },
   );
 }

@@ -387,7 +387,7 @@ export async function buildDraftFromAsin(
     asin,
     createdAt: new Date().toISOString(),
     sourceTitle,
-    reviewStatus: "proposed",
+    reviewStatus: "pending",
   };
 }
 
@@ -435,8 +435,11 @@ export async function generateDraftListings(
   });
 
   const [live, drafts] = await Promise.all([getCatalogToys(), getDraftToys()]);
-  // Only skip Amazon URLs/ASINs that already exist on the live shop.
-  const liveAsins = liveAsinSet(live);
+  // Skip live shop ASINs plus pending/staged/published queue rows.
+  const liveAsins = liveAsinSet([
+    ...live,
+    ...drafts.filter((d) => d.reviewStatus !== "rejected"),
+  ]);
   const usedIds = new Set<string>([
     ...live.map((t) => t.id),
     ...drafts.map((t) => t.id),

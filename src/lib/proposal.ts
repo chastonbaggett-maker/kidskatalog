@@ -1,9 +1,12 @@
 import {
   FALLBACK_AFFILIATE_TAG,
   storedParentAffiliateUrl,
-  withStoredAssociatesTag,
 } from "@/lib/affiliate";
 import { parseAsin } from "@/lib/amazon-import";
+import {
+  isStagedDraft,
+  normalizeQueueStatus,
+} from "@/lib/queue-status";
 import { slugify } from "@/lib/slugify";
 import { categoryColor } from "@/lib/toy-card-style";
 import type {
@@ -12,6 +15,10 @@ import type {
   DraftReviewStatus,
   DraftToy,
 } from "@/types/toy";
+
+export { FALLBACK_AFFILIATE_TAG };
+export { isStagedDraft, normalizeQueueStatus };
+export { MAX_TOY_PROPOSAL_BATCH } from "@/lib/queue-status";
 
 export const PROPOSAL_CATEGORIES: CategoryId[] = [
   "dinos",
@@ -63,13 +70,18 @@ export type ProposalInput = {
   category?: string;
   audience?: string;
   asin?: string;
+  amazon_url?: string;
   amazonUrl?: string;
   amazon?: string;
   url?: string;
+  affiliate_url?: string;
   affiliateUrl?: string;
+  notes?: string;
   sourceNotes?: string;
   sourceTitle?: string;
   source?: string;
+  source_ref?: string;
+  sourceRef?: string;
 };
 
 export type ProposalParseError = {
@@ -172,15 +184,29 @@ function imageList(input: ProposalInput): string[] {
   return unique;
 }
 
-export function extractProposalAsin(input: ProposalInput): string | null {
-  const candidates = [
-    input.asin,
-    input.amazonUrl,
-    input.amazon,
-    input.url,
-    input.affiliateUrl,
-  ];
+function firstString(...values: Array<string | undefined>): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+/** Spec: asin OR amazon_url is required. affiliate_url alone is not enough. */
+export function extractRequiredProposalAsin(input: ProposalInput): string | null {
+  const candidates = [input.asin, input.amazon_url, input.amazonUrl, input.amazon];
   for (const value of candidates) {
+    if (!value) continue;
+    const asin = parseAsin(String(value));
+    if (asin) return asin;
+  }
+  return null;
+}
+
+export function extractProposalAsin(input: ProposalInput): string | null {
+  const required = extractRequiredProposalAsin(input);
+  if (required) return required;
+  const extras = [input.url, input.affiliate_url, input.affiliateUrl];
+  for (const value of extras) {
     if (!value) continue;
     const asin = parseAsin(String(value));
     if (asin) return asin;
@@ -195,18 +221,12 @@ export function parseProposalInput(
   const name = (input.name || "").trim();
   if (!name) return { error: "Missing name" };
 
-  const asin = extractProposalAsin(input);
-  const proposedLink = (input.affiliateUrl || "").trim();
-  let affiliateUrl = "";
-  if (asin) {
-    affiliateUrl = storedParentAffiliateUrl(asin);
-  } else if (proposedLink) {
-    affiliateUrl = withStoredAssociatesTag(proposedLink);
-  }
-  if (!affiliateUrl) {
-    return { error: "Missing Amazon ASIN/URL or proposed affiliate link" };
+  const asin = extractRequiredProposalAsin(input);
+  if (!asin) {
+    return { error: "asin or amazon_url is required" };
   }
 
+  const affiliateUrl = storedParentAffiliateUrl(asin);
   const category = parseCategoryId(input.category);
   const audience = parseAudience(input.audience);
   const { ageMin, ageMax } = parseAgeRange(input);
@@ -214,12 +234,14 @@ export function parseProposalInput(
   const fallbackImage = `/categories/${category}.svg`;
   const gallery = images.length > 0 ? images : [fallbackImage];
   const blurb = (input.blurb || "").trim() || "Fun pick for playtime.";
-  const sourceNotes = (input.sourceNotes || input.source || "").trim();
-  const sourceTitle = (input.sourceTitle || "").trim();
+  const notes = firstString(input.notes, input.sourceNotes);
+  const source = firstString(input.source);
+  const sourceRef = firstString(input.source_ref, input.sourceRef);
+  const sourceTitle = firstString(input.sourceTitle);
 
-  let id = (input.id || "").trim() || slugify(name) || (asin ? `toy-${asin.toLowerCase()}` : "");
+  let id = (input.id || "").trim() || slugify(name) || `toy-${asin.toLowerCase()}`;
   if (!id) id = `toy-${Date.now()}`;
-  if (usedIds.has(id) && asin) id = `${id}-${asin.slice(-4).toLowerCase()}`;
+  if (usedIds.has(id)) id = `${id}-${asin.slice(-4).toLowerCase()}`;
   if (usedIds.has(id)) id = `${id}-${Date.now().toString(36)}`;
 
   const draft: DraftToy = {
@@ -237,21 +259,25 @@ export function parseProposalInput(
     color: categoryColor(category),
     featuredTier: 0,
     featured: false,
-    reviewStatus: "proposed",
+    reviewStatus: "pending",
     createdAt: new Date().toISOString(),
+    asin,
   };
-  if (asin) draft.asin = asin;
-  if (sourceNotes) draft.sourceNotes = sourceNotes;
+  if (notes) {
+    draft.notes = notes;
+    draft.sourceNotes = notes;
+  }
+  if (source) draft.source = source;
+  if (sourceRef) draft.sourceRef = sourceRef;
   if (sourceTitle) draft.sourceTitle = sourceTitle;
   return draft;
 }
 
 export function draftReviewStatus(draft: DraftToy): DraftReviewStatus {
-  return draft.reviewStatus === "approved" ? "approved" : "proposed";
+  return normalizeQueueStatus(draft.reviewStatus);
 }
 
+/** @deprecated Use isStagedDraft. Approve stages; it does not publish. */
 export function isApprovedDraft(draft: DraftToy): boolean {
-  return draftReviewStatus(draft) === "approved";
+  return isStagedDraft(draft);
 }
-
-export { FALLBACK_AFFILIATE_TAG };

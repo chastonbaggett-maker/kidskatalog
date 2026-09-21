@@ -26,7 +26,14 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as DraftToy;
   const [live, drafts] = await Promise.all([getCatalogToys(), getDraftToys()]);
   const usedIds = new Set<string>([...live.map((t) => t.id), ...drafts.map((t) => t.id)]);
-  const parsed = parseProposalInput(body, usedIds);
+  const parsed = parseProposalInput(
+    {
+      ...body,
+      asin: body.asin,
+      amazon_url: body.asin || body.affiliateUrl,
+    },
+    usedIds,
+  );
   if (isProposalParseError(parsed)) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
     ...body,
     id: parsed.id,
     affiliateUrl: parsed.affiliateUrl,
-    reviewStatus: "proposed",
+    reviewStatus: "pending",
   };
   if (!isDraftToyPayload(merged)) {
     return NextResponse.json({ error: "Invalid draft" }, { status: 400 });

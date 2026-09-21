@@ -415,13 +415,21 @@ export function AdminToyForm({
       const url = savingDraft
         ? "/api/admin/drafts"
         : creating
-          ? "/api/admin/proposals"
+          ? "/api/admin/toy-proposals"
           : "/api/admin/toys";
+      const createPayload = {
+        ...toy,
+        source: "admin-form",
+        asin: preview?.asin,
+        amazon_url:
+          amazonUrl.trim() || preview?.affiliateUrl || form.affiliateUrl.trim(),
+        affiliate_url: form.affiliateUrl.trim(),
+      };
       const res = await fetch(url, {
         method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          editing ? { id: editing.id, patch: toy } : toy,
+          editing ? { id: editing.id, patch: toy } : createPayload,
         ),
       });
       const data = await res.json();

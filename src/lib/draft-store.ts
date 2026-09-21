@@ -1,7 +1,12 @@
 import "server-only";
 import type { DraftReviewStatus, DraftToy, Toy } from "@/types/toy";
 import { readStore, writeStore } from "@/lib/json-store";
-import { draftReviewStatus, isApprovedDraft } from "@/lib/proposal";
+import { parseAsin } from "@/lib/amazon-import";
+import {
+  occupiesAsin,
+  normalizeQueueStatus,
+  isStagedDraft,
+} from "@/lib/queue-status";
 
 export type { DraftToy };
 
@@ -15,10 +20,20 @@ const DEFAULT_DRAFTS: DraftsData = {
   drafts: [],
 };
 
+export function draftAsin(draft: Pick<DraftToy, "asin" | "affiliateUrl">): string | null {
+  const fromField = (draft.asin || "").trim().toUpperCase();
+  if (fromField) return fromField;
+  const parsed = parseAsin(draft.affiliateUrl ?? "");
+  return parsed ? parsed.toUpperCase() : null;
+}
+
 function normalizeDraft(draft: DraftToy): DraftToy {
+  const status = normalizeQueueStatus(draft.reviewStatus);
+  const notes = (draft.notes || draft.sourceNotes || "").trim();
   return {
     ...draft,
-    reviewStatus: draftReviewStatus(draft),
+    reviewStatus: status,
+    ...(notes ? { notes, sourceNotes: notes } : {}),
   };
 }
 
@@ -43,29 +58,65 @@ export async function getDraftToys(): Promise<DraftToy[]> {
   return data.drafts;
 }
 
+export async function getDraftToysByStatus(
+  status?: DraftReviewStatus,
+): Promise<DraftToy[]> {
+  const drafts = await getDraftToys();
+  if (!status) return drafts;
+  return drafts.filter((d) => normalizeQueueStatus(d.reviewStatus) === status);
+}
+
 export async function getDraftToy(id: string): Promise<DraftToy | undefined> {
   const data = await loadDrafts();
   return data.drafts.find((t) => t.id === id);
 }
 
-export async function getApprovedDraftToys(): Promise<DraftToy[]> {
+export async function getStagedDraftToys(): Promise<DraftToy[]> {
   const data = await loadDrafts();
-  return data.drafts.filter(isApprovedDraft);
+  return data.drafts.filter(isStagedDraft);
+}
+
+/** @deprecated Use getStagedDraftToys */
+export async function getApprovedDraftToys(): Promise<DraftToy[]> {
+  return getStagedDraftToys();
+}
+
+export async function occupiedProposalAsins(
+  extraLive: Array<{ affiliateUrl?: string; asin?: string }> = [],
+): Promise<Set<string>> {
+  const drafts = await getDraftToys();
+  const asins = new Set<string>();
+  for (const draft of drafts) {
+    if (!occupiesAsin(draft)) continue;
+    const asin = draftAsin(draft);
+    if (asin) asins.add(asin);
+  }
+  for (const toy of extraLive) {
+    const asin = draftAsin(toy);
+    if (asin) asins.add(asin);
+  }
+  return asins;
 }
 
 export async function addDraftToys(toys: DraftToy[]): Promise<DraftToy[]> {
   const data = await loadDrafts();
   const existingIds = new Set(data.drafts.map((t) => t.id));
+  const existingAsins = new Set(
+    data.drafts.filter(occupiesAsin).map(draftAsin).filter((v): v is string => Boolean(v)),
+  );
   const added: DraftToy[] = [];
   for (const toy of toys) {
     if (existingIds.has(toy.id)) continue;
+    const asin = draftAsin(toy);
+    if (asin && existingAsins.has(asin)) continue;
     const next = normalizeDraft({
       ...toy,
-      reviewStatus: toy.reviewStatus === "approved" ? "approved" : "proposed",
+      reviewStatus: normalizeQueueStatus(toy.reviewStatus),
       createdAt: toy.createdAt || new Date().toISOString(),
     });
     data.drafts.unshift(next);
     existingIds.add(next.id);
+    if (asin) existingAsins.add(asin);
     added.push(next);
   }
   await saveDrafts(data);
@@ -89,10 +140,14 @@ export async function setDraftReviewStatus(
   id: string,
   reviewStatus: DraftReviewStatus,
 ): Promise<DraftToy | null> {
-  return updateDraftToy(id, {
-    reviewStatus,
-    reviewedAt: new Date().toISOString(),
-  });
+  const now = new Date().toISOString();
+  const patch: Partial<DraftToy> = {
+    reviewStatus: normalizeQueueStatus(reviewStatus),
+    reviewedAt: now,
+  };
+  if (patch.reviewStatus === "published") patch.publishedAt = now;
+  if (patch.reviewStatus === "rejected") patch.rejectedAt = now;
+  return updateDraftToy(id, patch);
 }
 
 export async function deleteDraftToy(id: string): Promise<boolean> {
@@ -122,8 +177,13 @@ export function toLiveToy(draft: DraftToy): Toy {
     createdAt: _createdAt,
     sourceTitle: _sourceTitle,
     sourceNotes: _sourceNotes,
+    notes: _notes,
+    source: _source,
+    sourceRef: _sourceRef,
     reviewStatus: _reviewStatus,
     reviewedAt: _reviewedAt,
+    publishedAt: _publishedAt,
+    rejectedAt: _rejectedAt,
     ...toy
   } = draft;
   return toy;

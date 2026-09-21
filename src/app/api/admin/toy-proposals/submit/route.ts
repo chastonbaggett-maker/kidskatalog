@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
-import { submitToyProposals } from "@/lib/toy-proposals";
+import { submitToyProposals, toProposalApi } from "@/lib/toy-proposals";
 
 export const dynamic = "force-dynamic";
 
-/** @deprecated Prefer POST /api/admin/toy-proposals/submit */
 export async function POST(req: NextRequest) {
   if (!requireAdminSession(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,5 +18,8 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await submitToyProposals(ids);
-  return NextResponse.json(result);
+  return NextResponse.json({
+    ...result,
+    proposals: result.published.map((toy) => toProposalApi({ ...toy, reviewStatus: "published" })),
+  });
 }

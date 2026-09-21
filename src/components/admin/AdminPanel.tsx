@@ -44,7 +44,7 @@ export function AdminPanel({ open, onClose }: Props) {
       const [metricsRes, toysRes, draftsRes, pinsRes] = await Promise.all([
         fetch("/api/admin/metrics"),
         fetch("/api/admin/toys"),
-        fetch("/api/admin/drafts"),
+        fetch("/api/admin/toy-proposals"),
         fetch("/api/admin/pins"),
       ]);
 
@@ -56,8 +56,8 @@ export function AdminPanel({ open, onClose }: Props) {
         setToys(data.toys);
       }
       if (draftsRes.ok) {
-        const data = (await draftsRes.json()) as { drafts: DraftToy[] };
-        setDrafts(data.drafts);
+        const data = (await draftsRes.json()) as { proposals?: DraftToy[]; drafts?: DraftToy[] };
+        setDrafts(data.proposals || data.drafts || []);
       }
       if (pinsRes.ok) {
         const data = (await pinsRes.json()) as { pins: PinRecord[] };
@@ -222,11 +222,10 @@ export function AdminPanel({ open, onClose }: Props) {
   async function handleApprove(id: string) {
     setApproveBusyId(id);
     try {
-      const res = await fetch("/api/admin/drafts/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+      const res = await fetch(
+        `/api/admin/toy-proposals/${encodeURIComponent(id)}/approve`,
+        { method: "POST" },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Approve failed");
       await refresh();
@@ -238,14 +237,13 @@ export function AdminPanel({ open, onClose }: Props) {
   }
 
   async function handleReject(id: string) {
-    if (!confirm("Reject this proposal? It will be dropped from the queue.")) return;
+    if (!confirm("Reject this proposal? It is dropped from the queue and kept in Rejected.")) return;
     setDeleteBusyId(id);
     try {
-      const res = await fetch("/api/admin/drafts/reject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+      const res = await fetch(
+        `/api/admin/toy-proposals/${encodeURIComponent(id)}/reject`,
+        { method: "POST" },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Reject failed");
       if (editing?.id === id) {
@@ -261,7 +259,7 @@ export function AdminPanel({ open, onClose }: Props) {
   }
 
   async function handleSubmitApproval() {
-    const staged = drafts.filter((d) => d.reviewStatus === "approved").length;
+    const staged = drafts.filter((d) => d.reviewStatus === "staged").length;
     if (staged === 0) {
       alert("Approve at least one card first. Submit Approval publishes staged cards only.");
       return;
@@ -275,7 +273,7 @@ export function AdminPanel({ open, onClose }: Props) {
     }
     setPublishing(true);
     try {
-      const res = await fetch("/api/admin/drafts/submit-approval", {
+      const res = await fetch("/api/admin/toy-proposals/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -311,6 +309,12 @@ export function AdminPanel({ open, onClose }: Props) {
           </h2>
         </div>
         <div className="flex gap-2 pb-0.5 sm:pb-0">
+          <a
+            href="/admin/toys"
+            className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+          >
+            Queue
+          </a>
           <button
             type="button"
             onClick={() => void refresh()}

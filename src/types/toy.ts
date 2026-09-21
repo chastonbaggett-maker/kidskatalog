@@ -69,8 +69,12 @@ export type Toy = {
   featuredTier?: 0 | 1 | 2 | 3;
 };
 
-/** Queue state. Approve stages; Reject drops; Submit Approval publishes. */
-export type DraftReviewStatus = "proposed" | "approved";
+/**
+ * Queue state. Approve stages; Reject drops (audit kept);
+ * Submit Approval publishes staged cards only.
+ * Legacy `proposed`/`approved` normalize to `pending`/`staged`.
+ */
+export type DraftReviewStatus = "pending" | "staged" | "published" | "rejected";
 
 /** Unpublished listing awaiting admin review before going live. */
 export type DraftToy = Toy & {
@@ -79,12 +83,20 @@ export type DraftToy = Toy & {
   sourceTitle?: string;
   /** Chief/bot notes from Amazon search ingest. Never shown in Kid Mode. */
   sourceNotes?: string;
+  notes?: string;
+  /** Ingest source label (Chief, bot name, search). Never shown in Kid Mode. */
+  source?: string;
+  /** External ref for the ingest batch/item. Never shown in Kid Mode. */
+  sourceRef?: string;
   /**
-   * `proposed` (default) sits in the queue.
-   * `approved` is staged only — live publish is Submit Approval.
+   * `pending` sits in the queue.
+   * `staged` is Approve-only — live publish is Submit Approval.
+   * `published` / `rejected` are audit rows.
    */
   reviewStatus?: DraftReviewStatus;
   reviewedAt?: string;
+  publishedAt?: string;
+  rejectedAt?: string;
 };
 
 export type Category = {

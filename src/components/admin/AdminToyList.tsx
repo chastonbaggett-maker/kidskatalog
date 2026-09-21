@@ -13,6 +13,7 @@ import {
   resolveFeaturedTier,
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
+import { draftReviewStatus } from "@/lib/proposal";
 
 type Tab = "live" | "review";
 type ViewMode = "list" | "grid";
@@ -23,7 +24,9 @@ type Props = {
   onEdit: (toy: Toy, source: Tab) => void;
   onDelete: (id: string, source: Tab) => void;
   onGenerate: (options: GenerateListingsOptions) => void;
-  onPublish: (ids: string[]) => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  onSubmitApproval: () => void;
   generating: boolean;
   generateProgress?: {
     current: number;
@@ -32,6 +35,7 @@ type Props = {
   } | null;
   publishing: boolean;
   busyId: string | null;
+  approveBusyId?: string | null;
   editingId?: string | null;
 };
 
@@ -301,31 +305,22 @@ export function AdminToyList({
   onEdit,
   onDelete,
   onGenerate,
-  onPublish,
+  onApprove,
+  onReject,
+  onSubmitApproval,
   generating,
   generateProgress = null,
   publishing,
   busyId,
+  approveBusyId = null,
   editingId = null,
 }: Props) {
   const [tab, setTab] = useState<Tab>("live");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-
-  useEffect(() => {
-    setSelectedDraftIds((prev) => {
-      const next = new Set<string>();
-      for (const id of prev) {
-        if (drafts.some((d) => d.id === id)) next.add(id);
-      }
-      return next;
-    });
-  }, [drafts]);
 
   const items = tab === "live" ? toys : drafts;
   const isGrid = viewMode === "grid";
+  const stagedCount = drafts.filter((d) => draftReviewStatus(d) === "approved").length;
 
   function handleEdit(toy: Toy) {
     onEdit(toy, tab);
@@ -334,19 +329,6 @@ export function AdminToyList({
         .getElementById("admin-toy-form")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }
-
-  function toggleDraftSelected(id: string) {
-    setSelectedDraftIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function selectAllDrafts() {
-    setSelectedDraftIds(new Set(drafts.map((d) => d.id)));
   }
 
   if (toys.length === 0 && drafts.length === 0) {
@@ -438,7 +420,7 @@ export function AdminToyList({
                 : "text-[var(--ink-soft)]"
             }`}
           >
-            Review ({drafts.length})
+            Queue ({drafts.length})
           </button>
         </div>
 
@@ -446,28 +428,14 @@ export function AdminToyList({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={selectAllDrafts}
-              className="rounded-full bg-[var(--lavender)] px-3 py-1.5 text-xs font-bold text-[var(--ink-soft)]"
-            >
-              Select all
-            </button>
-            <button
-              type="button"
-              disabled={publishing || selectedDraftIds.size === 0}
-              onClick={() => onPublish([...selectedDraftIds])}
+              disabled={publishing || stagedCount === 0}
+              onClick={() => onSubmitApproval()}
+              data-testid="submit-approval"
               className="rounded-full bg-[var(--mint)] px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
             >
               {publishing
-                ? "Publishing…"
-                : `Publish selected (${selectedDraftIds.size})`}
-            </button>
-            <button
-              type="button"
-              disabled={publishing}
-              onClick={() => onPublish(drafts.map((d) => d.id))}
-              className="rounded-full bg-[var(--mint)]/85 px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
-            >
-              Publish all
+                ? "Submitting…"
+                : `Submit Approval (${stagedCount})`}
             </button>
           </div>
         ) : null}
@@ -475,14 +443,15 @@ export function AdminToyList({
 
       {tab === "review" ? (
         <p className="mb-3 text-xs font-semibold text-[var(--ink-soft)]">
-          Drafts stay off the shop until you publish. Edit or delete before going live.
+          Proposed cards stay off the shop. Approve stages. Reject drops.
+          Submit Approval is the only publish.
         </p>
       ) : null}
 
       {items.length === 0 ? (
         <p className="rounded-xl bg-[var(--lavender)]/25 px-4 py-8 text-center text-sm text-[var(--ink-soft)]">
           {tab === "review"
-            ? "No drafts yet — generate listings to review them here."
+            ? "No proposals yet — ingest or generate listings to review them here."
             : "No live toys."}
         </p>
       ) : isGrid ? (
@@ -490,7 +459,9 @@ export function AdminToyList({
           <ul className="admin-toy-list__grid">
             {items.map((toy) => {
               const selected = editingId === toy.id;
-              const checked = selectedDraftIds.has(toy.id);
+              const staged =
+                tab === "review" &&
+                draftReviewStatus(toy as DraftToy) === "approved";
               return (
                 <li
                   key={toy.id}
@@ -499,15 +470,9 @@ export function AdminToyList({
                   }`}
                 >
                   {tab === "review" ? (
-                    <label className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-sm ring-1 ring-black/5">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleDraftSelected(toy.id)}
-                        className="h-3.5 w-3.5 accent-[var(--mint)]"
-                        aria-label={`Select ${toy.name}`}
-                      />
-                    </label>
+                    <span className="absolute left-2 top-2 z-10 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] shadow-sm ring-1 ring-black/5">
+                      {staged ? "Staged" : "Proposed"}
+                    </span>
                   ) : null}
                   <div className="admin-toy-list__card-media">
                     <Image
@@ -531,22 +496,52 @@ export function AdminToyList({
                       {toy.blurb}
                     </p>
                   </div>
-                  <div className="mt-auto flex gap-2 border-t border-black/[0.04] px-3 py-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(toy)}
-                      className="flex-1 rounded-full bg-[var(--purple-deep)] py-2 text-xs font-bold text-white transition active:scale-[0.98]"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === toy.id}
-                      onClick={() => onDelete(toy.id, tab)}
-                      className="flex-1 rounded-full bg-red-50 py-2 text-xs font-bold text-red-600 ring-1 ring-red-100 transition disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      {busyId === toy.id ? "…" : "Delete"}
-                    </button>
+                  <div className="mt-auto flex flex-wrap gap-2 border-t border-black/[0.04] px-3 py-2.5">
+                    {tab === "review" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(toy)}
+                          className="rounded-full bg-[var(--lavender)] py-2 px-3 text-xs font-bold text-[var(--purple-deep)]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={staged || approveBusyId === toy.id}
+                          onClick={() => onApprove(toy.id)}
+                          className="flex-1 rounded-full bg-[var(--mint)] py-2 text-xs font-bold text-white transition disabled:opacity-40 active:scale-[0.98]"
+                        >
+                          {staged ? "Approved" : approveBusyId === toy.id ? "…" : "Approve"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId === toy.id}
+                          onClick={() => onReject(toy.id)}
+                          className="flex-1 rounded-full bg-red-50 py-2 text-xs font-bold text-red-600 ring-1 ring-red-100 transition disabled:opacity-40 active:scale-[0.98]"
+                        >
+                          {busyId === toy.id ? "…" : "Reject"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(toy)}
+                          className="flex-1 rounded-full bg-[var(--purple-deep)] py-2 text-xs font-bold text-white transition active:scale-[0.98]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId === toy.id}
+                          onClick={() => onDelete(toy.id, tab)}
+                          className="flex-1 rounded-full bg-red-50 py-2 text-xs font-bold text-red-600 ring-1 ring-red-100 transition disabled:opacity-40 active:scale-[0.98]"
+                        >
+                          {busyId === toy.id ? "…" : "Delete"}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </li>
               );
@@ -557,7 +552,9 @@ export function AdminToyList({
         <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
           {items.map((toy) => {
             const selected = editingId === toy.id;
-            const checked = selectedDraftIds.has(toy.id);
+            const staged =
+              tab === "review" &&
+              draftReviewStatus(toy as DraftToy) === "approved";
             return (
               <li
                 key={toy.id}
@@ -567,15 +564,6 @@ export function AdminToyList({
                     : "bg-[var(--lavender)]/35"
                 }`}
               >
-                {tab === "review" ? (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleDraftSelected(toy.id)}
-                    className="h-4 w-4 shrink-0 accent-[var(--mint)]"
-                    aria-label={`Select ${toy.name}`}
-                  />
-                ) : null}
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white">
                   <Image
                     src={toy.image}
@@ -588,26 +576,57 @@ export function AdminToyList({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-[var(--ink)]">{toy.name}</p>
                   <p className="truncate text-xs text-[var(--ink-soft)]">
+                    {tab === "review" ? (staged ? "Staged · " : "Proposed · ") : ""}
                     {toy.category} · ages {toy.ageMin}–{toy.ageMax} ·{" "}
                     {featuredTierLabel(resolveFeaturedTier(toy))} · {toy.blurb}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(toy)}
-                    className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--purple-deep)] shadow-sm ring-1 ring-black/5"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busyId === toy.id}
-                    onClick={() => onDelete(toy.id, tab)}
-                    className="rounded-full px-2.5 py-1 text-xs font-bold text-red-600 disabled:opacity-40"
-                  >
-                    {busyId === toy.id ? "…" : "Delete"}
-                  </button>
+                  {tab === "review" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(toy)}
+                        className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--purple-deep)] shadow-sm ring-1 ring-black/5"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={staged || approveBusyId === toy.id}
+                        onClick={() => onApprove(toy.id)}
+                        className="rounded-full bg-[var(--mint)] px-2.5 py-1 text-xs font-bold text-white disabled:opacity-40"
+                      >
+                        {staged ? "Approved" : approveBusyId === toy.id ? "…" : "Approve"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === toy.id}
+                        onClick={() => onReject(toy.id)}
+                        className="rounded-full px-2.5 py-1 text-xs font-bold text-red-600 disabled:opacity-40"
+                      >
+                        {busyId === toy.id ? "…" : "Reject"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(toy)}
+                        className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--purple-deep)] shadow-sm ring-1 ring-black/5"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === toy.id}
+                        onClick={() => onDelete(toy.id, tab)}
+                        className="rounded-full px-2.5 py-1 text-xs font-bold text-red-600 disabled:opacity-40"
+                      >
+                        {busyId === toy.id ? "…" : "Delete"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
             );

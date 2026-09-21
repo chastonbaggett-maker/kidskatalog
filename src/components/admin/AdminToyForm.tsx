@@ -411,16 +411,19 @@ export function AdminToyForm({
 
     try {
       const savingDraft = Boolean(editing && editSource === "review");
-      const res = await fetch(
-        savingDraft ? "/api/admin/drafts" : "/api/admin/toys",
-        {
-          method: editing ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            editing ? { id: editing.id, patch: toy } : toy,
-          ),
-        },
-      );
+      const creating = !editing;
+      const url = savingDraft
+        ? "/api/admin/drafts"
+        : creating
+          ? "/api/admin/proposals"
+          : "/api/admin/toys";
+      const res = await fetch(url, {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          editing ? { id: editing.id, patch: toy } : toy,
+        ),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
 

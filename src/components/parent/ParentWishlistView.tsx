@@ -170,21 +170,23 @@ export function ParentWishlistView({
                         {toy.blurb}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <ParentBuyButton
-                        href={buyUrl}
-                        toyId={toy.id}
-                        mode={buyPlaceholder ? "placeholder" : "associates"}
-                        className="min-w-[9.5rem] flex-none px-4"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => remove(toy.id)}
-                        className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-                        aria-label={`Remove ${toy.name}`}
-                      >
-                        Remove
-                      </button>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="flex items-center gap-2">
+                        <ParentBuyButton
+                          href={buyUrl}
+                          toyId={toy.id}
+                          mode={buyPlaceholder ? "placeholder" : "associates"}
+                          className="min-w-[9.5rem] flex-none px-4"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => remove(toy.id)}
+                          className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                          aria-label={`Remove ${toy.name}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </li>

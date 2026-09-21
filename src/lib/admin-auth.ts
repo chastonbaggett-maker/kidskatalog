@@ -62,3 +62,51 @@ export function getSessionFromRequest(req: NextRequest): { pinId: string } | nul
 export function requireAdminSession(req: NextRequest): { pinId: string } | null {
   return getSessionFromRequest(req);
 }
+
+function ingestKeyFromEnv(): string | null {
+  const key =
+    process.env.ADMIN_INGEST_KEY?.trim() ||
+    process.env.ADMIN_API_KEY?.trim() ||
+    "";
+  return key || null;
+}
+
+function providedIngestKey(req: NextRequest): string | null {
+  const auth = req.headers.get("authorization") || "";
+  const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  if (bearer) return bearer;
+  const header =
+    req.headers.get("x-admin-ingest-key")?.trim() ||
+    req.headers.get("x-admin-key")?.trim() ||
+    "";
+  return header || null;
+}
+
+function keysMatch(provided: string, expected: string): boolean {
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+export type AdminAccess =
+  | { kind: "session"; pinId: string }
+  | { kind: "ingest" };
+
+/**
+ * PIN session (queue + publish) or ingest API key (drop proposals only).
+ * Approve / Reject / Submit Approval still require a PIN session.
+ */
+export function requireAdminAccess(req: NextRequest): AdminAccess | null {
+  const session = getSessionFromRequest(req);
+  if (session) return { kind: "session", pinId: session.pinId };
+
+  const expected = ingestKeyFromEnv();
+  const provided = providedIngestKey(req);
+  if (!expected || !provided) return null;
+  if (!keysMatch(provided, expected)) return null;
+  return { kind: "ingest" };
+}
+
+export function requireAdminSessionOrIngest(req: NextRequest): AdminAccess | null {
+  return requireAdminAccess(req);
+}

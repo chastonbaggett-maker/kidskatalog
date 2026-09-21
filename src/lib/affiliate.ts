@@ -3,6 +3,7 @@
  * Kid-facing catalog payloads must go through `toKidToy` so `tag=` never ships.
  */
 
+/** Stored on catalog/drafts for the later Associates flip. Never emitted on kid surfaces. */
 export const FALLBACK_AFFILIATE_TAG = "kidskatalog-20";
 
 export function getAffiliateTag(): string {
@@ -15,6 +16,28 @@ export function getAffiliateTag(): string {
 
 export function buildAffiliateUrl(asin: string): string {
   return `https://www.amazon.com/dp/${asin}?tag=${getAffiliateTag()}`;
+}
+
+/**
+ * Parent-Buy storage URL. Always uses `kidskatalog-20` so the flip has a tag
+ * ready. Public hrefs still go through `resolveParentBuy()` and only include
+ * `tag=` when `AMAZON_ASSOCIATES_LIVE` is on.
+ */
+export function storedParentAffiliateUrl(asin: string): string {
+  const clean = asin.trim().toUpperCase();
+  return `https://www.amazon.com/dp/${clean}?tag=${FALLBACK_AFFILIATE_TAG}`;
+}
+
+/** Rewrite a proposed Amazon link to the stored Associates tag. */
+export function withStoredAssociatesTag(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes("amazon.")) return url;
+    parsed.searchParams.set("tag", FALLBACK_AFFILIATE_TAG);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 export function isAmazonProductUrl(url: string): boolean {

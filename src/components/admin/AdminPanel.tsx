@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AdminMetrics, type MetricsSummary } from "./AdminMetrics";
 import { AdminPinManager, type PinRecord } from "./AdminPinManager";
+import { AdminProposalForm } from "./AdminProposalForm";
 import { AdminToyForm } from "./AdminToyForm";
 import { AdminToyList } from "./AdminToyList";
 import type { GenerateListingsOptions } from "@/lib/generate-options";
@@ -33,6 +34,7 @@ export function AdminPanel({ open, onClose }: Props) {
     message: string;
   } | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [approveBusyId, setApproveBusyId] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -217,34 +219,79 @@ export function AdminPanel({ open, onClose }: Props) {
     }
   }
 
-  async function handlePublish(ids: string[]) {
-    if (ids.length === 0) return;
+  async function handleApprove(id: string) {
+    setApproveBusyId(id);
+    try {
+      const res = await fetch("/api/admin/drafts/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Approve failed");
+      await refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Approve failed");
+    } finally {
+      setApproveBusyId(null);
+    }
+  }
+
+  async function handleReject(id: string) {
+    if (!confirm("Reject this proposal? It will be dropped from the queue.")) return;
+    setDeleteBusyId(id);
+    try {
+      const res = await fetch("/api/admin/drafts/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Reject failed");
+      if (editing?.id === id) {
+        setEditing(null);
+        setEditSource("live");
+      }
+      await refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Reject failed");
+    } finally {
+      setDeleteBusyId(null);
+    }
+  }
+
+  async function handleSubmitApproval() {
+    const staged = drafts.filter((d) => d.reviewStatus === "approved").length;
+    if (staged === 0) {
+      alert("Approve at least one card first. Submit Approval publishes staged cards only.");
+      return;
+    }
     if (
       !confirm(
-        `Publish ${ids.length} draft${ids.length === 1 ? "" : "s"} to the live shop?`,
+        `Submit Approval for ${staged} staged card${staged === 1 ? "" : "s"}? This publishes to the live shop and Parent Mode.`,
       )
     ) {
       return;
     }
     setPublishing(true);
     try {
-      const res = await fetch("/api/admin/drafts/publish", {
+      const res = await fetch("/api/admin/drafts/submit-approval", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Publish failed");
+      if (!res.ok) throw new Error(data.error || "Submit Approval failed");
       await refresh();
       const n = typeof data.count === "number" ? data.count : 0;
-      const conflicts = Array.isArray(data.conflicts) ? data.conflicts.length : 0;
+      const skipped = Array.isArray(data.skipped) ? data.skipped.length : 0;
       alert(
-        conflicts > 0
-          ? `Published ${n}. ${conflicts} skipped (id conflict).`
+        skipped > 0
+          ? `Published ${n}. ${skipped} skipped.`
           : `Published ${n} toy${n === 1 ? "" : "s"} to the live shop.`,
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Publish failed");
+      alert(e instanceof Error ? e.message : "Submit Approval failed");
     } finally {
       setPublishing(false);
     }
@@ -300,17 +347,21 @@ export function AdminPanel({ open, onClose }: Props) {
             setEditSource("live");
           }}
         />
+        <AdminProposalForm onIngested={() => void refresh()} />
         <AdminToyList
           toys={toys}
           drafts={drafts}
           onEdit={handleEdit}
           onDelete={(id, source) => void handleDelete(id, source)}
           onGenerate={(options) => void handleGenerate(options)}
-          onPublish={(ids) => void handlePublish(ids)}
+          onApprove={(id) => void handleApprove(id)}
+          onReject={(id) => void handleReject(id)}
+          onSubmitApproval={() => void handleSubmitApproval()}
           generating={generating}
           generateProgress={generateProgress}
           publishing={publishing}
           busyId={deleteBusyId}
+          approveBusyId={approveBusyId}
           editingId={editing?.id ?? null}
         />
         <AdminPinManager pins={pins} onRefresh={() => void refresh()} />

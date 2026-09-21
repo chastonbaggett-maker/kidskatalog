@@ -64,21 +64,23 @@ export function ParentToyView({
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>
 
-              <div className="mt-6 flex max-w-md flex-col gap-3 sm:flex-row sm:items-stretch">
-                <ParentBuyButton
-                  href={buyUrl}
-                  toyId={toy.id}
-                  mode={buyPlaceholder ? "placeholder" : "associates"}
-                />
-                <ParentWishlistButton toyId={toy.id} />
-              </div>
+              <div data-testid="parent-buy-cluster" className="mt-6 max-w-md">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  <ParentBuyButton
+                    href={buyUrl}
+                    toyId={toy.id}
+                    mode={buyPlaceholder ? "placeholder" : "associates"}
+                  />
+                  <ParentWishlistButton toyId={toy.id} />
+                </div>
 
-              <p className="mt-4 text-sm text-[var(--ink-soft)]">
-                {buyPlaceholder
-                  ? "Associates link goes here when approved."
-                  : "Opens Amazon in your phone's browser — not inside the app."}
-              </p>
-              <AssociatesDisclosure className="mt-3 max-w-md" placeholder={buyPlaceholder} />
+                <p className="mt-4 text-sm text-[var(--ink-soft)]">
+                  {buyPlaceholder
+                    ? "Associates link goes here when approved."
+                    : "Opens Amazon in your phone's browser — not inside the app."}
+                </p>
+                <AssociatesDisclosure className="mt-3" placeholder={buyPlaceholder} />
+              </div>
 
               {brandDeal ? (
                 <div className="mt-6 max-w-md">

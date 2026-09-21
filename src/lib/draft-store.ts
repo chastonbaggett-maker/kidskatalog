@@ -1,6 +1,7 @@
 import "server-only";
-import type { DraftToy, Toy } from "@/types/toy";
+import type { DraftReviewStatus, DraftToy, Toy } from "@/types/toy";
 import { readStore, writeStore } from "@/lib/json-store";
+import { draftReviewStatus, isApprovedDraft } from "@/lib/proposal";
 
 export type { DraftToy };
 
@@ -14,14 +15,27 @@ const DEFAULT_DRAFTS: DraftsData = {
   drafts: [],
 };
 
+function normalizeDraft(draft: DraftToy): DraftToy {
+  return {
+    ...draft,
+    reviewStatus: draftReviewStatus(draft),
+  };
+}
+
 async function loadDrafts(): Promise<DraftsData> {
   const data = await readStore("drafts", DEFAULT_DRAFTS);
   if (!Array.isArray(data.drafts)) return DEFAULT_DRAFTS;
-  return data;
+  return {
+    ...data,
+    drafts: data.drafts.map(normalizeDraft),
+  };
 }
 
 async function saveDrafts(data: DraftsData): Promise<void> {
-  await writeStore("drafts", data);
+  await writeStore("drafts", {
+    ...data,
+    drafts: data.drafts.map(normalizeDraft),
+  });
 }
 
 export async function getDraftToys(): Promise<DraftToy[]> {
@@ -34,15 +48,25 @@ export async function getDraftToy(id: string): Promise<DraftToy | undefined> {
   return data.drafts.find((t) => t.id === id);
 }
 
+export async function getApprovedDraftToys(): Promise<DraftToy[]> {
+  const data = await loadDrafts();
+  return data.drafts.filter(isApprovedDraft);
+}
+
 export async function addDraftToys(toys: DraftToy[]): Promise<DraftToy[]> {
   const data = await loadDrafts();
   const existingIds = new Set(data.drafts.map((t) => t.id));
   const added: DraftToy[] = [];
   for (const toy of toys) {
     if (existingIds.has(toy.id)) continue;
-    data.drafts.unshift(toy);
-    existingIds.add(toy.id);
-    added.push(toy);
+    const next = normalizeDraft({
+      ...toy,
+      reviewStatus: toy.reviewStatus === "approved" ? "approved" : "proposed",
+      createdAt: toy.createdAt || new Date().toISOString(),
+    });
+    data.drafts.unshift(next);
+    existingIds.add(next.id);
+    added.push(next);
   }
   await saveDrafts(data);
   return added;
@@ -55,10 +79,20 @@ export async function updateDraftToy(
   const data = await loadDrafts();
   const index = data.drafts.findIndex((t) => t.id === id);
   if (index < 0) return null;
-  const next = { ...data.drafts[index]!, ...patch, id };
+  const next = normalizeDraft({ ...data.drafts[index]!, ...patch, id });
   data.drafts[index] = next;
   await saveDrafts(data);
   return next;
+}
+
+export async function setDraftReviewStatus(
+  id: string,
+  reviewStatus: DraftReviewStatus,
+): Promise<DraftToy | null> {
+  return updateDraftToy(id, {
+    reviewStatus,
+    reviewedAt: new Date().toISOString(),
+  });
 }
 
 export async function deleteDraftToy(id: string): Promise<boolean> {
@@ -87,6 +121,9 @@ export function toLiveToy(draft: DraftToy): Toy {
     asin: _asin,
     createdAt: _createdAt,
     sourceTitle: _sourceTitle,
+    sourceNotes: _sourceNotes,
+    reviewStatus: _reviewStatus,
+    reviewedAt: _reviewedAt,
     ...toy
   } = draft;
   return toy;

@@ -387,6 +387,7 @@ export async function buildDraftFromAsin(
     asin,
     createdAt: new Date().toISOString(),
     sourceTitle,
+    reviewStatus: "proposed",
   };
 }
 

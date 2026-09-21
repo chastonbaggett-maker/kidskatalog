@@ -6,6 +6,7 @@ import {
   type CatalogFilters,
 } from "@/lib/catalog-query";
 import { toKidCatalogPage, toKidToys } from "@/lib/kid-surface";
+import { kidJsonLooksClean } from "@/lib/publish-locks";
 import type { Audience, CategoryId } from "@/types/toy";
 
 function parseFilters(req: NextRequest): CatalogFilters {
@@ -39,6 +40,9 @@ export async function GET(req: NextRequest) {
   if (idsParam) {
     const ids = idsParam.split(",").map((id) => id.trim()).filter(Boolean);
     const toys = toKidToys(await getCatalogToysByIds(ids));
+    if (!kidJsonLooksClean(toys)) {
+      return NextResponse.json({ toys: toys.filter((toy) => kidJsonLooksClean(toy)) });
+    }
     return NextResponse.json({ toys });
   }
 

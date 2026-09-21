@@ -4,7 +4,6 @@ import { requireAdminSession } from "@/lib/admin-auth";
 import { downloadToyImage } from "@/lib/amazon-import";
 import { slugify } from "@/lib/slugify";
 import {
-  addCatalogToy,
   deleteCatalogToy,
   getCatalogToys,
   updateCatalogToy,
@@ -73,20 +72,13 @@ export async function POST(req: NextRequest) {
   if (!requireAdminSession(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const toy = (await req.json()) as ToyPayload;
-  if (!toy.id || !toy.name || !toy.affiliateUrl) {
-    return NextResponse.json({ error: "Missing required toy fields" }, { status: 400 });
-  }
-  try {
-    const resolved = await resolveToyImages(toy);
-    const created = await addCatalogToy(resolved);
-    return NextResponse.json({ toy: created });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Could not add toy" },
-      { status: 400 },
-    );
-  }
+  return NextResponse.json(
+    {
+      error:
+        "New toys must go through the approval queue. POST /api/admin/proposals, Approve, then Submit Approval.",
+    },
+    { status: 400 },
+  );
 }
 
 export async function PATCH(req: NextRequest) {

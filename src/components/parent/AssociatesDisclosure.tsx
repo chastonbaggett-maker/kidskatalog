@@ -6,7 +6,10 @@ export function AssociatesDisclosure({
   placeholder?: boolean;
 }) {
   return (
-    <p className={`text-xs leading-relaxed text-[var(--ink-soft)] ${className}`}>
+    <p
+      data-testid="associates-disclosure"
+      className={`text-xs leading-relaxed text-[var(--ink-soft)] ${className}`}
+    >
       KidsKatalog is a participant in the Amazon Services LLC Associates Program,
       an affiliate advertising program designed to provide a means for sites to
       earn advertising fees by advertising and linking to Amazon.com. As an

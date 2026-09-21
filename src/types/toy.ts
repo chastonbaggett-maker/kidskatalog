@@ -69,11 +69,22 @@ export type Toy = {
   featuredTier?: 0 | 1 | 2 | 3;
 };
 
+/** Queue state. Approve stages; Reject drops; Submit Approval publishes. */
+export type DraftReviewStatus = "proposed" | "approved";
+
 /** Unpublished listing awaiting admin review before going live. */
 export type DraftToy = Toy & {
   asin?: string;
   createdAt?: string;
   sourceTitle?: string;
+  /** Chief/bot notes from Amazon search ingest. Never shown in Kid Mode. */
+  sourceNotes?: string;
+  /**
+   * `proposed` (default) sits in the queue.
+   * `approved` is staged only — live publish is Submit Approval.
+   */
+  reviewStatus?: DraftReviewStatus;
+  reviewedAt?: string;
 };
 
 export type Category = {

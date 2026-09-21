@@ -42,6 +42,10 @@ function specialLinkFromStored(affiliateUrl: string | undefined, tag: string): s
   }
 }
 
+function isTaggedOrAmazonBuyHref(href: string): boolean {
+  return /[?&]tag=/i.test(href) || /amazon\.[^/]*\/(?:dp|gp\/product)\//i.test(href);
+}
+
 /** Single swap point for Parent Mode Buy. */
 export function resolveParentBuy(
   toyId: string,
@@ -54,7 +58,12 @@ export function resolveParentBuy(
       if (href) return { href, mode: "associates" };
     }
   }
-  return { href: parentBuyPlaceholderPath(toyId), mode: "placeholder" };
+  const placeholder = parentBuyPlaceholderPath(toyId);
+  // Counsel lock: tag=kidskatalog-20 (or any tag=) only when LIVE is on.
+  if (isTaggedOrAmazonBuyHref(placeholder)) {
+    return { href: `/p/buy-placeholder?toy=${encodeURIComponent(toyId)}`, mode: "placeholder" };
+  }
+  return { href: placeholder, mode: "placeholder" };
 }
 
 export function resolveParentBuyUrls(

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/admin-auth";
+import { requireAdminAccess } from "@/lib/admin-auth";
 import { rejectToyProposal, toProposalApi } from "@/lib/toy-proposals";
 
 export const dynamic = "force-dynamic";
 
 /** @deprecated Prefer POST /api/admin/toy-proposals/:id/reject */
 export async function POST(req: NextRequest) {
-  if (!requireAdminSession(req)) {
+  if (!requireAdminAccess(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

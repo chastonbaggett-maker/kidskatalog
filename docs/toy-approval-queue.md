@@ -70,15 +70,49 @@ The admin **Ingest proposal** form on `/admin/toys` posts to the same path.
 
 `GET /api/admin/toy-proposals?status=pending|staged|published|rejected` lists the queue (PIN session or ingest key). Omit `status` for all rows.
 
-## Approve / Reject / Submit Approval
+## Queue craft with the ingest key
 
-Approve, Reject, and Submit Approval require a PIN session (ingest key cannot publish).
+The same Bearer key used for ingest (`ADMIN_INGEST_KEY`, falling back to `ADMIN_API_KEY`) may clear or tidy a bad batch. It cannot stage or publish.
+
+| Action | Endpoint | Auth |
+|---|---|---|
+| **Reject** | `POST /api/admin/toy-proposals/:id/reject` | PIN session **or** ingest key |
+| **Reject batch** | `POST /api/admin/drafts/reject` with `{ "ids": ["…"] }` | PIN session **or** ingest key |
+| **Edit pending** | `PATCH` or `PUT /api/admin/toy-proposals/:id` | PIN session **or** ingest key |
+
+Reject drops **pending** and **staged** cards. The audit row stays in Rejected. Published rows cannot be rejected. Nothing is published.
+
+Pending edits accept only `name`, `blurb`, and `images` (a string, a list, or newline/comma-separated text). Singular `image` is the same gallery input. Other fields return 400. Staged, published, and rejected rows return 409. Amazon `/dp/` buy URLs are dropped from images, same as ingest.
+
+```bash
+curl -sS -X POST "https://kidskatalog.com/api/admin/toy-proposals/$ID/reject" \
+  -H "Authorization: Bearer $ADMIN_INGEST_KEY"
+
+curl -sS -X POST https://kidskatalog.com/api/admin/drafts/reject \
+  -H "Authorization: Bearer $ADMIN_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"ids":["id-1","id-2"]}'
+
+curl -sS -X PATCH "https://kidskatalog.com/api/admin/toy-proposals/$ID" \
+  -H "Authorization: Bearer $ADMIN_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mag Tiles",
+    "blurb": "Click-together building squares.",
+    "images": ["https://example.com/toy.jpg"]
+  }'
+```
+
+## Approve / Submit Approval stay PIN-only
+
+The ingest key **cannot** call these. A valid Bearer token still gets **401**. A PIN session cookie from `POST /api/admin/auth` is required.
 
 | Action | Endpoint | Effect |
 |---|---|---|
 | **Approve** | `POST /api/admin/toy-proposals/:id/approve` | Stages the card. Not live. |
-| **Reject** | `POST /api/admin/toy-proposals/:id/reject` | Drops the card from Pending/Staged. Audit row stays in Rejected. |
 | **Submit Approval** | `POST /api/admin/toy-proposals/submit` | **Only publish path.** Publishes **staged** cards to the live catalog + `/p/{id}`. Pending ids are skipped. Published rows stay in the Published tab. |
+
+Also PIN-only: `POST /api/admin/drafts/approve`, `POST /api/admin/drafts/submit-approval`, `POST /api/admin/drafts/publish`, live toy writes on `/api/admin/toys`, and PIN management on `/api/admin/pins`.
 
 Amazon generate / bulk-add still land in this queue as **pending**. They do not go live until Approve + Submit Approval.
 

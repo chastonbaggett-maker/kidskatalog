@@ -339,3 +339,157 @@ test("reject keeps an audit row and dedupes ASINs in a batch", async ({ request 
     await cleanupProbe(request, id);
   }
 });
+
+function probeAsin(seed: string): string {
+  const body = seed.replace(/[^A-Z0-9]/gi, "").toUpperCase().padEnd(8, "0").slice(0, 8);
+  return `B0${body}`;
+}
+
+test("ingest key can reject and edit pending proposals but cannot publish", async ({
+  playwright,
+  request,
+}) => {
+  const ingestKey = process.env.ADMIN_INGEST_KEY?.trim();
+  test.skip(
+    !ingestKey,
+    "Set ADMIN_INGEST_KEY on the dev server and this process (same value as ingest).",
+  );
+
+  const stamp = Date.now().toString(36);
+  const id = `kk-queue-bearer-${stamp}`;
+  const batchId = `kk-queue-bearer-batch-${stamp}`;
+  const stagedId = `kk-queue-bearer-staged-${stamp}`;
+  const bearer = await playwright.request.newContext({
+    baseURL: "http://localhost:3456",
+    extraHTTPHeaders: { Authorization: `Bearer ${ingestKey}` },
+  });
+  const wrong = await playwright.request.newContext({
+    baseURL: "http://localhost:3456",
+    extraHTTPHeaders: { Authorization: "Bearer not-the-ingest-key" },
+  });
+  const pin = await playwright.request.newContext({ baseURL: "http://localhost:3456" });
+
+  try {
+    const denied = await wrong.post(`/api/admin/toy-proposals/${id}/reject`);
+    expect(denied.status()).toBe(401);
+
+    const ingest = await bearer.post("/api/admin/toy-proposals", {
+      data: {
+        source: "playwright",
+        id,
+        name: "Bearer Probe",
+        blurb: "Before the craft fix.",
+        images: ["/categories/games.svg"],
+        category: "games",
+        asin: probeAsin(`R${stamp}`),
+      },
+    });
+    expect(ingest.status(), await ingest.text()).toBe(201);
+
+    const patched = await bearer.patch(`/api/admin/toy-proposals/${id}`, {
+      data: {
+        name: "Queue Craft",
+        blurb: "Fixed card copy.",
+        images: ["/categories/blocks.svg"],
+      },
+    });
+    expect(patched.ok(), await patched.text()).toBeTruthy();
+    const patchedJson = (await patched.json()) as {
+      proposal: { name: string; blurb: string; images?: string[]; reviewStatus?: string };
+    };
+    expect(patchedJson.proposal.name).toBe("Queue Craft");
+    expect(patchedJson.proposal.blurb).toBe("Fixed card copy.");
+    expect(patchedJson.proposal.images).toContain("/categories/blocks.svg");
+    expect(patchedJson.proposal.reviewStatus).toBe("pending");
+
+    const put = await bearer.put(`/api/admin/toy-proposals/${id}`, {
+      data: { blurb: "Put copy." },
+    });
+    expect(put.ok(), await put.text()).toBeTruthy();
+
+    const extra = await bearer.patch(`/api/admin/toy-proposals/${id}`, {
+      data: { name: "Should Not Stick", reviewStatus: "published", affiliateUrl: "https://example.com" },
+    });
+    expect(extra.status()).toBe(400);
+
+    const approve = await bearer.post(`/api/admin/toy-proposals/${id}/approve`);
+    expect(approve.status()).toBe(401);
+    const submit = await bearer.post("/api/admin/toy-proposals/submit", {
+      data: { ids: [id] },
+    });
+    expect(submit.status()).toBe(401);
+    const deprecatedSubmit = await bearer.post("/api/admin/drafts/submit-approval", {
+      data: { ids: [id] },
+    });
+    expect(deprecatedSubmit.status()).toBe(401);
+
+    const catalog = await request.get(`/api/catalog?ids=${id}`);
+    const catalogJson = (await catalog.json()) as { toys: Array<{ id: string }> };
+    expect(catalogJson.toys.some((toy) => toy.id === id)).toBeFalsy();
+
+    const reject = await bearer.post(`/api/admin/toy-proposals/${id}/reject`);
+    expect(reject.ok(), await reject.text()).toBeTruthy();
+    const rejected = await bearer.get("/api/admin/toy-proposals?status=rejected");
+    const rejectedJson = (await rejected.json()) as {
+      proposals: Array<{ id: string; reviewStatus?: string }>;
+    };
+    expect(rejectedJson.proposals.find((row) => row.id === id)?.reviewStatus).toBe("rejected");
+
+    const editRejected = await bearer.patch(`/api/admin/toy-proposals/${id}`, {
+      data: { name: "Too Late" },
+    });
+    expect(editRejected.status()).toBe(409);
+
+    const batch = await bearer.post("/api/admin/toy-proposals", {
+      data: {
+        source: "playwright",
+        id: batchId,
+        name: "Batch Reject Probe",
+        category: "games",
+        asin: probeAsin(`B${stamp}`),
+      },
+    });
+    expect(batch.status(), await batch.text()).toBe(201);
+    const batchDenied = await wrong.post("/api/admin/drafts/reject", {
+      data: { ids: [batchId] },
+    });
+    expect(batchDenied.status()).toBe(401);
+    const batchReject = await bearer.post("/api/admin/drafts/reject", {
+      data: { ids: [batchId] },
+    });
+    expect(batchReject.ok(), await batchReject.text()).toBeTruthy();
+    const batchJson = (await batchReject.json()) as { rejected: string[] };
+    expect(batchJson.rejected).toContain(batchId);
+
+    const staged = await bearer.post("/api/admin/toy-proposals", {
+      data: {
+        source: "playwright",
+        id: stagedId,
+        name: "Staged Reject Probe",
+        category: "blocks",
+        asin: probeAsin(`S${stamp}`),
+      },
+    });
+    expect(staged.status(), await staged.text()).toBe(201);
+    await adminLogin(pin);
+    const stage = await pin.post(`/api/admin/toy-proposals/${stagedId}/approve`);
+    expect(stage.ok(), await stage.text()).toBeTruthy();
+    const submitStaged = await bearer.post("/api/admin/toy-proposals/submit", {
+      data: { ids: [stagedId] },
+    });
+    expect(submitStaged.status()).toBe(401);
+    const rejectStaged = await bearer.post(`/api/admin/toy-proposals/${stagedId}/reject`);
+    expect(rejectStaged.ok(), await rejectStaged.text()).toBeTruthy();
+    const live = await request.get(`/api/catalog?ids=${stagedId}`);
+    const liveJson = (await live.json()) as { toys: Array<{ id: string }> };
+    expect(liveJson.toys.some((toy) => toy.id === stagedId)).toBeFalsy();
+  } finally {
+    await adminLogin(pin);
+    await cleanupProbe(pin, id);
+    await cleanupProbe(pin, batchId);
+    await cleanupProbe(pin, stagedId);
+    await bearer.dispose();
+    await wrong.dispose();
+    await pin.dispose();
+  }
+});

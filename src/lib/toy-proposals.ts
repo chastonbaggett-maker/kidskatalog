@@ -8,8 +8,10 @@ import {
   getDraftToysByStatus,
   occupiedProposalAsins,
   setDraftReviewStatus,
+  updateDraftToy,
 } from "@/lib/draft-store";
 import {
+  collectProposalImages,
   extractRequiredProposalAsin,
   isProposalParseError,
   parseProposalInput,
@@ -210,6 +212,82 @@ export async function approveToyProposal(
       : await setDraftReviewStatus(id, "staged");
   if (!next) return { error: "Proposal not found", status: 404 } as const;
   return { proposal: next };
+}
+
+const PENDING_EDIT_FIELDS = new Set(["name", "blurb", "images", "image"]);
+
+/**
+ * Queue-craft edit. Only `name`, `blurb`, and `images` (plus singular `image`)
+ * while the row is still pending. Does not stage or publish.
+ */
+export async function patchPendingToyProposal(
+  id: string,
+  body: unknown,
+): Promise<{ proposal: DraftToy } | { error: string; status: number }> {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { error: "Expected JSON object", status: 400 };
+  }
+  const record = body as Record<string, unknown>;
+  const unknown = Object.keys(record).filter((key) => !PENDING_EDIT_FIELDS.has(key));
+  if (unknown.length > 0) {
+    return {
+      error: "Only name, blurb, and images can be updated",
+      status: 400,
+    };
+  }
+  if (!("name" in record) && !("blurb" in record) && !("images" in record) && !("image" in record)) {
+    return { error: "No fields to update", status: 400 };
+  }
+
+  const existing = await getDraftToy(id);
+  if (!existing) return { error: "Proposal not found", status: 404 };
+  if (normalizeQueueStatus(existing.reviewStatus) !== "pending") {
+    return { error: "Only pending proposals can be edited", status: 409 };
+  }
+
+  const patch: Partial<DraftToy> = {};
+  if ("name" in record) {
+    if (typeof record.name !== "string" || !record.name.trim()) {
+      return { error: "name must be a non-empty string", status: 400 };
+    }
+    patch.name = record.name.trim();
+    patch.imageAlt = `${patch.name} toy`;
+  }
+  if ("blurb" in record) {
+    if (typeof record.blurb !== "string" || !record.blurb.trim()) {
+      return { error: "blurb must be a non-empty string", status: 400 };
+    }
+    patch.blurb = record.blurb.trim();
+  }
+  if ("images" in record || "image" in record) {
+    if ("images" in record && !isImageField(record.images)) {
+      return { error: "images must be a string or list of strings", status: 400 };
+    }
+    if ("image" in record && typeof record.image !== "string") {
+      return { error: "image must be a string", status: 400 };
+    }
+    const images = collectProposalImages({
+      images: isImageField(record.images) ? record.images : undefined,
+      image: typeof record.image === "string" ? record.image : undefined,
+    });
+    if (images.length === 0) {
+      return {
+        error: "images must include at least one allowed image URL",
+        status: 400,
+      };
+    }
+    patch.image = images[0];
+    patch.images = images;
+  }
+
+  const next = await updateDraftToy(id, patch);
+  if (!next) return { error: "Proposal not found", status: 404 };
+  return { proposal: next };
+}
+
+function isImageField(value: unknown): value is string | string[] {
+  if (typeof value === "string") return true;
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 export async function rejectToyProposal(

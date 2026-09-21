@@ -154,7 +154,10 @@ export function parseAudience(raw: string | undefined): Audience {
   return "all";
 }
 
-function imageList(input: ProposalInput): string[] {
+/** Kid-safe image list. Drops Amazon `/dp/` buy URLs and `tag=` links. */
+export function collectProposalImages(
+  input: Pick<ProposalInput, "images" | "image">,
+): string[] {
   const raw: string[] = [];
   if (Array.isArray(input.images)) raw.push(...input.images);
   else if (typeof input.images === "string" && input.images.trim()) {
@@ -230,7 +233,7 @@ export function parseProposalInput(
   const category = parseCategoryId(input.category);
   const audience = parseAudience(input.audience);
   const { ageMin, ageMax } = parseAgeRange(input);
-  const images = imageList(input);
+  const images = collectProposalImages(input);
   const fallbackImage = `/categories/${category}.svg`;
   const gallery = images.length > 0 ? images : [fallbackImage];
   const blurb = (input.blurb || "").trim() || "Fun pick for playtime.";

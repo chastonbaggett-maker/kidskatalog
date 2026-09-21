@@ -1,4 +1,4 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 import { FALLBACK_AFFILIATE_TAG, storedParentAffiliateUrl } from "../src/lib/affiliate";
 import { resolveParentBuy } from "../src/lib/associates";
 import {
@@ -11,6 +11,17 @@ import { toKidToy } from "../src/lib/kid-surface";
 import { resolveBrandDeal } from "../src/lib/brand-deals";
 import { seedParentGateUnlock } from "./parent-gate";
 import type { Toy } from "../src/types/toy";
+
+async function dismissSplash(page: Page) {
+  const tap = page.getByRole("button", { name: /Tap to start KidsKatalog/i });
+  try {
+    await tap.waitFor({ state: "visible", timeout: 8000 });
+    await tap.click();
+    await tap.waitFor({ state: "hidden", timeout: 15_000 });
+  } catch {
+    // Already dismissed or not a cold open.
+  }
+}
 
 const ADMIN_PIN = "2114";
 const AFFILIATE_LEAK = /[?&]tag=|amazon\.[^"'<\s]+\/(?:dp|gp\/product)\//i;
@@ -122,6 +133,7 @@ test("ingest is auth-gated and /admin is not a public queue", async ({ request, 
   expect(denied.status()).toBe(401);
 
   await page.goto("/admin", { waitUntil: "domcontentloaded" });
+  await dismissSplash(page);
   await expect(page.getByRole("heading", { name: /Enter Passcode/i })).toBeVisible();
   await expect(page.getByRole("button", { name: "Submit Approval" })).toHaveCount(0);
 });
@@ -206,9 +218,7 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     const parentPage = await request.get(`/p/${id}`);
     expect(parentPage.ok()).toBeTruthy();
     const parentHtml = await parentPage.text();
-    expect(parentHtml).toContain("parent-buy-cluster");
-    expect(parentHtml).toContain("associates-disclosure");
-    expect(parentHtml).toMatch(/Amazon Services LLC Associates Program/);
+    expect(parentHtml).toContain("parent-birth-year-gate");
     expect(parentHtml).toMatch(/\/p\/buy-placeholder\?toy=/);
     expect(parentHtml).not.toMatch(AFFILIATE_LEAK);
 
@@ -219,9 +229,11 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
 
     await seedParentGateUnlock(page);
     await page.goto(`/p/${id}`, { waitUntil: "domcontentloaded" });
+    await dismissSplash(page);
     await expect(page.getByTestId("parent-buy-cluster")).toBeVisible();
     await expect(page.getByTestId("parent-buy-cta")).toBeVisible();
     await expect(page.getByTestId("associates-disclosure")).toBeVisible();
+    await expect(page.getByText(/Amazon Services LLC Associates Program/i)).toBeVisible();
     await expect(page.getByTestId("parent-buy-cta")).toHaveAttribute(
       "href",
       /\/p\/buy-placeholder\?toy=/,

@@ -13,7 +13,6 @@ import {
   resolveFeaturedTier,
 } from "@/lib/featured-tier";
 import type { Audience, CategoryId, DraftToy, Toy } from "@/types/toy";
-import { draftReviewStatus } from "@/lib/proposal";
 
 type Tab = "live" | "review";
 type ViewMode = "list" | "grid";
@@ -38,6 +37,10 @@ type Props = {
   approveBusyId?: string | null;
   editingId?: string | null;
 };
+
+function draftReviewStatus(draft: DraftToy): "proposed" | "approved" {
+  return draft.reviewStatus === "approved" ? "approved" : "proposed";
+}
 
 function ListViewIcon() {
   return (

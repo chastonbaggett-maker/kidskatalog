@@ -10,6 +10,7 @@ import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
+import { isAssociatesBuyHref } from "@/lib/affiliate";
 import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
@@ -175,7 +176,7 @@ export function ParentWishlistView({
                         <ParentBuyButton
                           href={buyUrl}
                           toyId={toy.id}
-                          mode={buyPlaceholder ? "placeholder" : "associates"}
+                          mode={isAssociatesBuyHref(buyUrl) ? "associates" : "placeholder"}
                           className="min-w-[9.5rem] flex-none px-4"
                         />
                         <button
@@ -221,7 +222,12 @@ export function ParentWishlistView({
 
         <div className="shelf-panel shelf-panel--soft">
           <div className="shelf-panel__surface p-5">
-            <AssociatesDisclosure placeholder={buyPlaceholder} />
+            <AssociatesDisclosure
+              placeholder={
+                buyPlaceholder &&
+                !Object.values(resolvedBuyUrls).some((href) => isAssociatesBuyHref(href))
+              }
+            />
           </div>
         </div>
       </div>

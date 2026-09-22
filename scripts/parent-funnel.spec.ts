@@ -118,7 +118,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   expect(buyBody).toMatchObject({
     name: "parent_buy_click",
     toyId: "sky-rocket",
-    mode: "placeholder",
+    mode: "associates",
   });
   expect(JSON.stringify(buyBody)).not.toMatch(/amazon\.com/i);
 

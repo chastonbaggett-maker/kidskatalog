@@ -99,7 +99,10 @@ test("kid shop, toy pages, and catalog have no affiliate or brand-deal leaks", a
   await expect(page.getByText(/Brand partner link/i)).toHaveCount(0);
 });
 
-test("every live catalog id resolves at /p/{id} with Parent Buy placeholder + FTC", async ({
+const ASSOCIATES_BUY =
+  /^https:\/\/www\.amazon\.com\/dp\/[A-Z0-9]{10}\?tag=kidskatalog-20$/;
+
+test("every live catalog id resolves at /p/{id} with tagged Parent Buy + FTC gate", async ({
   request,
 }) => {
   const ids = await allCatalogIds(request);
@@ -111,18 +114,15 @@ test("every live catalog id resolves at /p/{id} with Parent Buy placeholder + FT
     expect(html, id).toContain("parent-birth-year-gate");
     expect(html, id).toMatch(/What(?:'|’|&#x27;)s your birth year/i);
     expect(html, id).not.toContain("Buy on Amazon");
-    expect(html, id).not.toMatch(AFFILIATE_LEAK);
-    expect(html, id).toMatch(/\/p\/buy-placeholder\?toy=/);
 
     const buy = await request.get(`/api/parent/buy-urls?ids=${id}`);
     expect(buy.ok()).toBeTruthy();
     const buyJson = (await buy.json()) as { urls: Record<string, string> };
-    expect(buyJson.urls[id]).toMatch(/\/p\/buy-placeholder\?toy=/);
-    expect(JSON.stringify(buyJson)).not.toMatch(AFFILIATE_LEAK);
+    expect(buyJson.urls[id], id).toMatch(ASSOCIATES_BUY);
   }
 });
 
-test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", async ({
+test("parent Buy opens a kidskatalog-20 Associates URL", async ({
   page,
   request,
 }) => {
@@ -132,29 +132,19 @@ test("parent Buy uses placeholder confirmation, not live tagged Amazon URLs", as
   const sample = pickSample(ids);
 
   for (const id of sample) {
-    const stub = await request.get(`/api/buy-placeholder?toy=${id}`, { maxRedirects: 0 });
-    expect(stub.status()).toBe(302);
-    expect(stub.headers()["location"] || "").toMatch(/buy-placeholder/);
+    const buy = await request.get(`/api/parent/buy-urls?ids=${id}`);
+    const buyJson = (await buy.json()) as { urls: Record<string, string> };
+    expect(buyJson.urls[id]).toMatch(ASSOCIATES_BUY);
 
     await page.goto(`/p/${id}`, { waitUntil: "domcontentloaded" });
     await dismissSplash(page);
     const buyLink = page.getByRole("link", { name: "Buy on Amazon" });
     await expect(buyLink).toBeVisible();
-    await expect(buyLink).toHaveAttribute("href", /\/p\/buy-placeholder\?toy=/);
-    expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
-    await expect(page.getByText(/Associates link goes here when approved/i)).toBeVisible();
+    await expect(buyLink).toHaveAttribute("href", buyJson.urls[id]!);
+    await expect(buyLink).toHaveAttribute("href", /[?&]tag=kidskatalog-20(?:&|$)/);
+    await expect(page.getByText(/Associates link goes here when approved/i)).toHaveCount(0);
     await expect(page.getByText(/Amazon Services LLC Associates Program/i)).toBeVisible();
   }
-
-  const first = sample[0]!;
-  await page.goto(`/p/${first}`, { waitUntil: "domcontentloaded" });
-  await dismissSplash(page);
-  await page.getByRole("link", { name: "Buy on Amazon" }).click();
-  await page.waitForURL(/\/p\/buy-placeholder/);
-  await dismissSplash(page);
-  await expect(page.locator("#buy-placeholder")).toBeAttached();
-  await expect(page.getByText(/Associates link goes here when approved/i)).toBeVisible();
-  expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
 });
 
 test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
@@ -217,15 +207,15 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
 
   const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
   await expect(buyLinks).toHaveCount(sample.length);
-  await expect(page.locator('a[href*="/p/buy-placeholder?toy="]')).toHaveCount(sample.length);
-  expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+  await expect(page.locator('a[href*="tag=kidskatalog-20"]')).toHaveCount(sample.length);
+  await expect(page.locator('a[href*="/p/buy-placeholder?toy="]')).toHaveCount(0);
   for (const id of sample) {
     await expect(page.locator(`a[href="/p/${id}"]`).first()).toBeVisible();
   }
   await expect(page.getByText(/Amazon Services LLC Associates Program/i).first()).toBeVisible();
   await expect(
-    page.getByText(/Buy links are placeholders until Associates is approved/i).first(),
-  ).toBeVisible();
+    page.getByText(/Buy links are placeholders until Associates is approved/i),
+  ).toHaveCount(0);
 
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
@@ -257,7 +247,7 @@ test("wish list accepts multiple real ids", async ({ page, request }) => {
 
   const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
   await expect(buyLinks).toHaveCount(sample.length);
-  expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+  await expect(page.locator('a[href*="tag=kidskatalog-20"]')).toHaveCount(sample.length);
 
   for (const id of sample) {
     await expect(page.locator(`a[href="/p/${id}"]`).first()).toBeVisible();
@@ -292,7 +282,7 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
     await expect(brand).toHaveCount(1);
     await expect(buy).toHaveText("Buy on Amazon");
     await expect(brand).toHaveText("Brand partner link — coming soon");
-    await expect(buy).toHaveAttribute("href", /\/p\/buy-placeholder\?toy=/);
+    await expect(buy).toHaveAttribute("href", ASSOCIATES_BUY);
     await expect(buy).not.toHaveText(/Brand partner/);
     await expect(brand).not.toHaveText(/Amazon/);
     await expect(page.getByRole("link", { name: "Buy on Amazon" })).not.toHaveText(
@@ -301,7 +291,7 @@ test("parent brand-deal surface is not Amazon and stays off kid pages", async ({
     await expect(page.getByText(partner).first()).toBeVisible();
     await expect(page.getByText(/This is a brand partner link/i).first()).toBeVisible();
     await expect(page.getByText(/not Amazon/i).first()).toBeVisible();
-    expect(await page.content()).not.toMatch(AFFILIATE_LEAK);
+    await expect(brand).not.toHaveAttribute("href", /amazon|tag=/i);
   }
 
   await assertSeparatePlaceholderCtas("/p/sky-rocket", /Yoto-style/i);

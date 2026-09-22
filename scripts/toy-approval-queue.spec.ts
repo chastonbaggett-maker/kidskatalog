@@ -98,25 +98,33 @@ test("proposal parser stores kidskatalog-20 and stages as pending", () => {
   expect(isProposalParseError(missingAmazon)).toBeTruthy();
 });
 
-test("Counsel locks: tag= only when LIVE; kid projection stays clean", () => {
+test("Parent Buy always uses kidskatalog-20; kid projection stays clean", () => {
   const toy = sampleToy({ id: "sky-rocket", name: "Sky Rocket" });
   const lock = assertLiveToyPublishable(toy);
   expect(lock.ok).toBeTruthy();
 
   const prevLive = process.env.AMAZON_ASSOCIATES_LIVE;
   const prevTag = process.env.AMAZON_ASSOCIATES_TAG;
+  const tagged = "https://www.amazon.com/dp/B07YNLXJ4L?tag=kidskatalog-20";
   try {
     delete process.env.AMAZON_ASSOCIATES_LIVE;
     delete process.env.AMAZON_ASSOCIATES_TAG;
     const off = resolveParentBuy(toy.id, toy.affiliateUrl);
-    expect(off.mode).toBe("placeholder");
-    expect(off.href).not.toMatch(AFFILIATE_LEAK);
+    expect(off.mode).toBe("associates");
+    expect(off.href).toBe(tagged);
 
-    process.env.AMAZON_ASSOCIATES_LIVE = "true";
-    process.env.AMAZON_ASSOCIATES_TAG = FALLBACK_AFFILIATE_TAG;
-    const on = resolveParentBuy(toy.id, toy.affiliateUrl);
-    expect(on.mode).toBe("associates");
-    expect(on.href).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
+    expect(resolveParentBuy(toy.id, "https://www.amazon.com/dp/B07YNLXJ4L").href).toBe(tagged);
+    expect(
+      resolveParentBuy(toy.id, "https://www.amazon.com/dp/B07YNLXJ4L?tag=other-20").href,
+    ).toBe(tagged);
+
+    const missing = resolveParentBuy(toy.id, undefined);
+    expect(missing.mode).toBe("placeholder");
+    expect(missing.href).not.toMatch(AFFILIATE_LEAK);
+
+    process.env.AMAZON_ASSOCIATES_LIVE = "false";
+    process.env.AMAZON_ASSOCIATES_TAG = "someone-else-20";
+    expect(resolveParentBuy(toy.id, toy.affiliateUrl).href).toBe(tagged);
   } finally {
     if (prevLive === undefined) delete process.env.AMAZON_ASSOCIATES_LIVE;
     else process.env.AMAZON_ASSOCIATES_LIVE = prevLive;
@@ -264,13 +272,12 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     expect(parentPage.ok()).toBeTruthy();
     const parentHtml = await parentPage.text();
     expect(parentHtml).toContain("parent-birth-year-gate");
-    expect(parentHtml).toMatch(/\/p\/buy-placeholder\?toy=/);
-    expect(parentHtml).not.toMatch(AFFILIATE_LEAK);
 
     const buy = await request.get(`/api/parent/buy-urls?ids=${id}`);
     const buyJson = (await buy.json()) as { urls: Record<string, string> };
-    expect(buyJson.urls[id]).toMatch(/\/p\/buy-placeholder\?toy=/);
-    expect(JSON.stringify(buyJson)).not.toMatch(AFFILIATE_LEAK);
+    expect(buyJson.urls[id]).toBe(
+      "https://www.amazon.com/dp/B0KKQUEUE1?tag=kidskatalog-20",
+    );
 
     await seedParentGateUnlock(page);
     await page.goto(`/p/${id}`, { waitUntil: "domcontentloaded" });
@@ -281,7 +288,7 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     await expect(page.getByText(/Amazon Services LLC Associates Program/i)).toBeVisible();
     await expect(page.getByTestId("parent-buy-cta")).toHaveAttribute(
       "href",
-      /\/p\/buy-placeholder\?toy=/,
+      "https://www.amazon.com/dp/B0KKQUEUE1?tag=kidskatalog-20",
     );
     await expect(page.getByTestId("brand-affiliate-cta")).toHaveCount(0);
   } finally {

@@ -19,9 +19,8 @@ export function buildAffiliateUrl(asin: string): string {
 }
 
 /**
- * Parent-Buy storage URL. Always uses `kidskatalog-20` so the flip has a tag
- * ready. Public hrefs still go through `resolveParentBuy()` and only include
- * `tag=` when `AMAZON_ASSOCIATES_LIVE` is on.
+ * Parent-Buy storage URL. Always uses `kidskatalog-20`.
+ * Public Parent Buy hrefs go through `resolveParentBuy()` and use the same tag.
  */
 export function storedParentAffiliateUrl(asin: string): string {
   const clean = asin.trim().toUpperCase();
@@ -38,6 +37,14 @@ export function withStoredAssociatesTag(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** Parent Buy href that already carries the locked Associates tag. */
+export function isAssociatesBuyHref(href: string): boolean {
+  return (
+    /amazon\./i.test(href) &&
+    new RegExp(`[?&]tag=${FALLBACK_AFFILIATE_TAG}(?:&|$)`, "i").test(href)
+  );
 }
 
 export function isAmazonProductUrl(url: string): boolean {

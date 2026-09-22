@@ -1,3 +1,4 @@
+import { FALLBACK_AFFILIATE_TAG, isAssociatesBuyHref } from "@/lib/affiliate";
 import { parseAsin } from "@/lib/amazon-import";
 import { parentBuyPlaceholderPath } from "@/lib/parent-paths";
 
@@ -9,19 +10,15 @@ export type ParentBuyTarget = {
 };
 
 /**
- * Live Associates Special Links stay OFF until Chaston flips this.
- * Swap later: set AMAZON_ASSOCIATES_LIVE=true and AMAZON_ASSOCIATES_TAG.
- * Per-toy `affiliateUrl` is used only when live.
+ * Parent Mode Buy always uses the locked Associates tag.
+ * `AMAZON_ASSOCIATES_LIVE` / `AMAZON_ASSOCIATES_TAG` no longer gate the href.
  */
 export function isAssociatesLive(): boolean {
-  const flag = (process.env.AMAZON_ASSOCIATES_LIVE || "").trim().toLowerCase();
-  if (flag !== "1" && flag !== "true" && flag !== "yes") return false;
-  return Boolean(getAssociatesTag());
+  return true;
 }
 
-export function getAssociatesTag(): string | null {
-  const tag = (process.env.AMAZON_ASSOCIATES_TAG || "").trim();
-  return tag || null;
+export function getAssociatesTag(): string {
+  return FALLBACK_AFFILIATE_TAG;
 }
 
 export function buildSpecialLink(asin: string, tag: string): string {
@@ -46,20 +43,22 @@ function isTaggedOrAmazonBuyHref(href: string): boolean {
   return /[?&]tag=/i.test(href) || /amazon\.[^/]*\/(?:dp|gp\/product)\//i.test(href);
 }
 
-/** Single swap point for Parent Mode Buy. */
+export { isAssociatesBuyHref } from "@/lib/affiliate";
+
+/**
+ * Single Parent Mode Buy href.
+ * Toys with an ASIN always open https://www.amazon.com/dp/{ASIN}?tag=kidskatalog-20.
+ * A missing ASIN stays on the in-app placeholder (no tag to attach).
+ */
 export function resolveParentBuy(
   toyId: string,
   affiliateUrl?: string,
 ): ParentBuyTarget {
-  if (isAssociatesLive()) {
-    const tag = getAssociatesTag();
-    if (tag) {
-      const href = specialLinkFromStored(affiliateUrl, tag);
-      if (href) return { href, mode: "associates" };
-    }
+  const href = specialLinkFromStored(affiliateUrl, FALLBACK_AFFILIATE_TAG);
+  if (href && isAssociatesBuyHref(href)) {
+    return { href, mode: "associates" };
   }
   const placeholder = parentBuyPlaceholderPath(toyId);
-  // Counsel lock: tag=kidskatalog-20 (or any tag=) only when LIVE is on.
   if (isTaggedOrAmazonBuyHref(placeholder)) {
     return { href: `/p/buy-placeholder?toy=${encodeURIComponent(toyId)}`, mode: "placeholder" };
   }

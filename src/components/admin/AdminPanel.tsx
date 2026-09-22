@@ -309,12 +309,6 @@ export function AdminPanel({ open, onClose }: Props) {
           </h2>
         </div>
         <div className="flex gap-2 pb-0.5 sm:pb-0">
-          <a
-            href="/admin/toys"
-            className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-          >
-            Queue
-          </a>
           <button
             type="button"
             onClick={() => void refresh()}

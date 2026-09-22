@@ -1,5 +1,10 @@
-import { hasAffiliateLeak, hasKidCommerceLeak, isAmazonProductUrl } from "@/lib/affiliate";
-import { isAssociatesLive, resolveParentBuy } from "@/lib/associates";
+import {
+  FALLBACK_AFFILIATE_TAG,
+  hasAffiliateLeak,
+  hasKidCommerceLeak,
+  isAmazonProductUrl,
+} from "@/lib/affiliate";
+import { resolveParentBuy } from "@/lib/associates";
 import { resolveBrandDeal } from "@/lib/brand-deals";
 import {
   hasKidCommerceFields,
@@ -23,7 +28,7 @@ export type PublishLockOk = {
 
 /**
  * Counsel hard locks for the Submit Approval publish path.
- * 1) Parent Buy href never carries tag= unless AMAZON_ASSOCIATES_LIVE.
+ * 1) Parent Buy with an ASIN uses tag=kidskatalog-20. Placeholder hrefs stay untagged.
  * 2) Kid projection never includes tag=, affiliateUrl, or Amazon Buy UI fields.
  * 3) Brand-deal CTA stays a separate URL from Amazon Buy.
  */
@@ -49,20 +54,19 @@ export function assertLiveToyPublishable(toy: Toy): PublishLockOk | PublishLockE
   }
 
   const buy = resolveParentBuy(toy.id, toy.affiliateUrl);
-  if (!isAssociatesLive()) {
-    if (buy.mode !== "placeholder") {
-      return { ok: false, error: "Parent Buy must stay on the placeholder while Associates is off" };
+  if (buy.mode === "associates") {
+    if (!buy.href.includes(`tag=${FALLBACK_AFFILIATE_TAG}`)) {
+      return { ok: false, error: "Parent Buy Associates link is missing tag=kidskatalog-20" };
     }
-    if (AFFILIATE_TAG_RE.test(buy.href) || isAmazonProductUrl(buy.href) || AMAZON_DP_RE.test(buy.href)) {
-      return {
-        ok: false,
-        error: "Parent Buy leaked tag= or amazon.com/dp while AMAZON_ASSOCIATES_LIVE is off",
-      };
-    }
-  } else if (buy.mode === "associates") {
-    if (!AFFILIATE_TAG_RE.test(buy.href)) {
-      return { ok: false, error: "Live Associates Buy is missing tag=" };
-    }
+  } else if (
+    AFFILIATE_TAG_RE.test(buy.href) ||
+    isAmazonProductUrl(buy.href) ||
+    AMAZON_DP_RE.test(buy.href)
+  ) {
+    return {
+      ok: false,
+      error: "Parent Buy placeholder leaked tag= or amazon.com/dp",
+    };
   }
 
   const brand = resolveBrandDeal(toy);

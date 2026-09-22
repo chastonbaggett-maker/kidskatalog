@@ -42,9 +42,9 @@ Do this per partner after a signed deal and a **non-Amazon** landing URL. This r
 3. On the toy overlay / admin listing, set `brandAffiliate.partner` (disclosure name), `network` (e.g. `impact`, `cj`, `direct`), and `url`. Leave **`live: false`** first and check `/p/{id}` + `/p/deals`: coming-soon CTA, separate from Buy on Amazon.
 4. Kid Mode check: `/shop`, `/toy/{id}`, `/kart`, `/watch`, `/menu`, and `GET /api/catalog` must omit `brandAffiliate` and must not say “Brand partner link”.
 5. When the URL is real and approved, set **`live: true`** on that toy only. Redeploy if the catalog is baked; Turso/admin saves apply on the next read.
-6. Verify `/p/{id}`: **Buy on Amazon** still goes to the Associates placeholder (until Chaston flips Associates by hand). **Brand partner link** is a second control, `href` is the partner URL, disclosure says **not Amazon**.
+6. Verify `/p/{id}`: **Buy on Amazon** opens `https://www.amazon.com/dp/{ASIN}?tag=kidskatalog-20`. **Brand partner link** is a second control, `href` is the partner URL, disclosure says **not Amazon**.
 7. Verify `/p/deals`: partner card only — no Buy on Amazon on that click.
-8. Do **not** set `AMAZON_ASSOCIATES_LIVE` or `AMAZON_ASSOCIATES_TAG`. See `docs/associates-flip.md` for that separate, later flip.
+8. Do **not** change the locked Associates tag `kidskatalog-20`. See `docs/associates-flip.md`.
 
 Rollback: set `live: false` (or clear `url`). Buy on Amazon is unchanged.
 

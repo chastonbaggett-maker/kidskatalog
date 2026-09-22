@@ -19,6 +19,7 @@ export default function KartPage() {
   const clear = useKartStore((s) => s.clear);
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
+  const [rowsEntered, setRowsEntered] = useState(false);
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -34,6 +35,34 @@ export default function KartPage() {
       })
       .catch(() => setToys([]));
   }, [ids]);
+
+  useEffect(() => {
+    if (toys.length === 0 || rowsEntered) return;
+    const root = document.documentElement;
+    let frame = 0;
+    const play = () => {
+      frame = requestAnimationFrame(() => setRowsEntered(true));
+    };
+    const splash = root.dataset.splash;
+    if (splash === "active" || splash === "exiting") {
+      const fallback = window.setTimeout(play, 1600);
+      const observer = new MutationObserver(() => {
+        if (!root.dataset.splash) {
+          observer.disconnect();
+          window.clearTimeout(fallback);
+          play();
+        }
+      });
+      observer.observe(root, { attributes: true, attributeFilter: ["data-splash"] });
+      return () => {
+        observer.disconnect();
+        window.clearTimeout(fallback);
+        cancelAnimationFrame(frame);
+      };
+    }
+    play();
+    return () => cancelAnimationFrame(frame);
+  }, [toys, rowsEntered]);
 
   return (
     <div
@@ -77,8 +106,18 @@ export default function KartPage() {
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {toys.map((toy) => (
-              <li key={toy.id} className="shelf-panel shelf-panel--soft">
+            {toys.map((toy, index) => (
+              <li
+                key={toy.id}
+                className={`shelf-panel shelf-panel--soft ${
+                  rowsEntered ? "kart-row--enter" : "kart-row--pending"
+                }`}
+                style={
+                  rowsEntered
+                    ? { animationDelay: `${Math.min(index, 8) * 110}ms` }
+                    : undefined
+                }
+              >
                 <div className="shelf-panel__surface flex items-center gap-3 p-3">
                   <Link
                     href={`/toy/${toy.id}`}

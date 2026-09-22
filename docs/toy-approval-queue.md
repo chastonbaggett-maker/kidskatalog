@@ -64,7 +64,7 @@ Same payload works as a single object, an array, or `{ "proposals": [ ... ] }`. 
 | `notes` | Search notes for admins; never shown in Kid Mode |
 | `source` / `source_ref` | Ingest provenance; never shown in Kid Mode |
 
-Stored `affiliateUrl` always uses Associates tag **`kidskatalog-20`** for the later Parent Buy flip. Public Parent Buy still goes through `resolveParentBuy()` and **does not emit `tag=` until `AMAZON_ASSOCIATES_LIVE` is on.**
+Stored `affiliateUrl` always uses Associates tag **`kidskatalog-20`**. Public Parent Buy goes through `resolveParentBuy()` and emits `https://www.amazon.com/dp/{ASIN}?tag=kidskatalog-20` whenever the toy has an ASIN.
 
 The admin **Ingest proposal** form on `/admin/toys` posts to the same path.
 
@@ -121,9 +121,9 @@ Amazon generate / bulk-add still land in this queue as **pending**. They do not 
 ## Counsel publish locks (baked in)
 
 1. Affiliate disclosure is visible next to Buy on every parent `/p/{id}` (placeholder **and** live tag). Test id: `associates-disclosure` inside `parent-buy-cluster`.
-2. `tag=kidskatalog-20` appears on Parent Buy hrefs **only** when `AMAZON_ASSOCIATES_LIVE` is on. Until then Buy stays `/p/buy-placeholder`.
+2. Parent Buy hrefs for toys with an ASIN are `https://www.amazon.com/dp/{ASIN}?tag=kidskatalog-20`. Kid Mode still never receives that URL.
 3. Kid Mode (`/shop`, `/toy/{id}`, `/kart`, `/watch`, `/menu`, `GET /api/catalog`) never gets `tag=`, Amazon Buy, or `amazon.com/dp` Buy UI.
 4. Brand deal is a separate tap from Amazon Buy (existing `BrandDealCta`).
 5. Submit Approval runs `assertLiveToyPublishable()` before insert, so the first published batch stays kid-HTML clean for Patch re-scan.
 
-Do not set `AMAZON_ASSOCIATES_LIVE` or `AMAZON_ASSOCIATES_TAG` from this work. Flip runbook: `docs/associates-flip.md`.
+Parent Buy does not depend on `AMAZON_ASSOCIATES_LIVE` or `AMAZON_ASSOCIATES_TAG`. The tag is locked to `kidskatalog-20`. See `docs/associates-flip.md`.

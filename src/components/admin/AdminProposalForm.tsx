@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { categories } from "@/data/categories";
 import type { CategoryId } from "@/types/toy";
 
@@ -9,6 +9,8 @@ type Props = {
 };
 
 export function AdminProposalForm({ onIngested }: Props) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
   const [name, setName] = useState("");
   const [blurb, setBlurb] = useState("");
   const [category, setCategory] = useState<CategoryId | "">("");
@@ -66,14 +68,43 @@ export function AdminProposalForm({ onIngested }: Props) {
 
   return (
     <section className="admin-panel__section p-4">
-      <h3 className="mb-1 font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
-        Ingest proposal
-      </h3>
-      <p className="mb-3 text-xs font-semibold text-[var(--ink-soft)]">
-        Drops a card into the queue as pending. Approve stages it. Submit
-        Approval is the only publish.
-      </p>
-      <form className="flex flex-col gap-2.5" onSubmit={(e) => void handleSubmit(e)}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 text-left"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <h3 className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
+          Ingest proposal
+        </h3>
+        <span
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--lavender)] text-[var(--ink-soft)] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </button>
+      {open ? (
+        <div id={panelId}>
+          <p className="mb-3 mt-1 text-xs font-semibold text-[var(--ink-soft)]">
+            Drops a card into the queue as pending. Approve stages it. Submit
+            Approval is the only publish.
+          </p>
+          <form className="flex flex-col gap-2.5" onSubmit={(e) => void handleSubmit(e)}>
         <input
           required
           value={name}
@@ -143,8 +174,10 @@ export function AdminProposalForm({ onIngested }: Props) {
           className="rounded-full bg-[var(--purple-deep)] py-2.5 text-sm font-bold text-white disabled:opacity-40"
         >
           {busy ? "Dropping…" : "Drop in queue"}
-        </button>
-      </form>
+          </button>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }

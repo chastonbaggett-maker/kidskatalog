@@ -22,6 +22,7 @@ import {
   releaseDestination,
   smoothToward,
 } from "@/lib/pile-drag-motion";
+import { selectPileMounts, spiralIndex } from "@/lib/pile-cards";
 import { prefersReducedMotion } from "@/lib/pile-transition-utils";
 import { beginRouteChange } from "@/lib/route-change";
 import { FeedCard } from "./FeedCard";
@@ -67,6 +68,12 @@ type Props = {
   filterSeed: number;
   /** Bumped by Randomize / Crazy Mode so the pile reshuffles with the feed. */
   shuffleNonce?: number;
+  /** More catalog pages exist beyond `toys`. */
+  hasMore?: boolean;
+  /** A catalog page is already in flight. */
+  loading?: boolean;
+  /** Ask for the next batch when the view reaches toys that are not loaded. */
+  onNeedMore?: () => void;
 };
 
 type Pan = { x: number; y: number };
@@ -301,27 +308,6 @@ function clampZoom(viewport: HTMLElement, value: number) {
   return Math.min(maxZoom, Math.max(minZoom, value));
 }
 
-/**
- * Ulam-style spiral index from absolute cell coords.
- * (0,0)=0, then right → up → left → down, delaying duplicates near the center.
- */
-function spiralIndex(col: number, row: number): number {
-  if (col === 0 && row === 0) return 0;
-  const layer = Math.max(Math.abs(col), Math.abs(row));
-  const prevMax = (2 * (layer - 1) + 1) ** 2;
-  const t = 2 * layer;
-  if (col === layer && row > -layer) {
-    return prevMax + (row - (1 - layer));
-  }
-  if (row === layer && col < layer) {
-    return prevMax + t + (layer - col) - 1;
-  }
-  if (col === -layer && row < layer) {
-    return prevMax + 2 * t + (layer - row) - 1;
-  }
-  return prevMax + 3 * t + (col + layer) - 1;
-}
-
 function dedupeToys(toys: Toy[]) {
   const seen = new Set<string>();
   const unique: Toy[] = [];
@@ -552,7 +538,7 @@ function computeVisibleWindow(
 }
 
 function toyForCell(col: number, row: number, ordered: Toy[]) {
-  return ordered[spiralIndex(col, row) % ordered.length]!;
+  return ordered[spiralIndex(col, row)];
 }
 
 export function ToyPileGrid({
@@ -560,6 +546,9 @@ export function ToyPileGrid({
   showText,
   filterSeed,
   shuffleNonce = 0,
+  hasMore = false,
+  loading = false,
+  onNeedMore,
 }: Props) {
   const router = useRouter();
   const [colMin, setColMin] = useState(INITIAL_ORIGIN);
@@ -1383,28 +1372,57 @@ export function ToyPileGrid({
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [onWheel]);
 
-  const visibleCells = useMemo(() => {
-    if (ordered.length === 0) return [];
+  const mountPlan = useMemo(() => {
+    if (ordered.length === 0) {
+      return { mounts: [] as Array<{ col: number; row: number }>, needsMore: false };
+    }
     const { c0, c1, r0, r1 } = visibleWindow;
-    if (c1 < c0 || r1 < r0) return [];
-
-    const cells: Array<{ col: number; row: number; toy: Toy; colShift: number }> =
-      [];
+    if (c1 < c0 || r1 < r0) {
+      return { mounts: [] as Array<{ col: number; row: number }>, needsMore: false };
+    }
+    const cells = [];
     for (let row = r0; row <= r1; row++) {
-      for (let col = c0; col <= c1; col++) {
-        const relCol = col - colMin;
-        cells.push({
+      for (let col = c0; col <= c1; col++) cells.push({ col, row });
+    }
+    return selectPileMounts(
+      cells,
+      ordered.length,
+      (c0 + c1) / 2,
+      (r0 + r1) / 2,
+    );
+  }, [ordered.length, visibleWindow]);
+
+  const visibleCells = useMemo(() => {
+    return mountPlan.mounts.flatMap(({ col, row }) => {
+      const toy = toyForCell(col, row, ordered);
+      if (!toy) return [];
+      const relCol = col - colMin;
+      return [
+        {
           col,
           row,
-          toy: toyForCell(col, row, ordered),
+          toy,
           colShift: relCol % 2 === 1 ? 0.5 : 0,
-        });
-      }
-    }
-    return cells;
-  }, [ordered, visibleWindow, colMin]);
+        },
+      ];
+    });
+  }, [mountPlan.mounts, ordered, colMin]);
+
+  useEffect(() => {
+    if (!mountPlan.needsMore || loading || !hasMore || ordered.length === 0) return;
+    onNeedMore?.();
+  }, [hasMore, loading, mountPlan.needsMore, onNeedMore, ordered.length]);
 
   if (ordered.length === 0) {
+    if (loading) {
+      return (
+        <div
+          className="toy-pile-viewport scroll-pad-bottom min-h-0 flex-1"
+          aria-busy="true"
+          aria-label="Loading toys"
+        />
+      );
+    }
     return (
       <div className="toy-pile-empty scroll-pad-bottom flex flex-1 items-center justify-center px-6">
         <div className="shelf-panel w-full max-w-md">

@@ -17,6 +17,7 @@ import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
+import { PILE_CARD_BATCH } from "@/lib/pile-cards";
 import { pingMetrics } from "@/lib/metrics-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import { useCrazyRandomizeLoop } from "@/hooks/useCrazyLightning";
@@ -97,11 +98,21 @@ export function BrowseFeed({ category, initialPage }: Props) {
     loadMore,
   } = catalog;
 
-  // Drain every filter-matching toy into the pile (full catalog when unfiltered).
+  // Pile pages stay small. The grid asks for the next batch only when the
+  // view reaches toys that are not loaded yet.
+  const pileCatalog = useCatalogPage({
+    category,
+    audience,
+    age,
+    q: query,
+    limit: PILE_CARD_BATCH,
+    enabled: pileOn,
+  });
+  const pileIdsRef = useRef<string[]>([]);
+
   useEffect(() => {
-    if (!pileOn || loading || !hasMore) return;
-    void loadMore();
-  }, [pileOn, loading, hasMore, loadMore, displayIds.length]);
+    pileIdsRef.current = pileCatalog.displayIds;
+  }, [pileCatalog.displayIds]);
 
   const isChromePhase = isPileChromePhase(enterPhase);
   const isTransitioning = isPileTransitioning(enterPhase);
@@ -203,10 +214,16 @@ export function BrowseFeed({ category, initialPage }: Props) {
   }, [crazyOn, toggleCrazyMode]);
 
   const handleRandomize = useCallback(() => {
-    replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+    if (useToyPileModeStore.getState().toyPileMode) {
+      pileCatalog.replaceDisplayIds(
+        shuffleWithSeed(pileIdsRef.current, Date.now()),
+      );
+    } else {
+      replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+    }
     // Pile keeps its own spiral order — bump so it reshuffles with the feed.
     setShuffleNonce((n) => n + 1);
-  }, [replaceDisplayIds]);
+  }, [pileCatalog.replaceDisplayIds, replaceDisplayIds]);
 
   const crazyButtonRefs = useMemo(
     () => [filterCrazyBtnRef, shelfCrazyBtnRef],
@@ -271,6 +288,11 @@ export function BrowseFeed({ category, initialPage }: Props) {
     if (isKartEffectBlocked()) return;
     void loadMore();
   }, [loadMore]);
+
+  const handlePileNeedMore = useCallback(() => {
+    if (isKartEffectBlocked()) return;
+    void pileCatalog.loadMore();
+  }, [pileCatalog.loadMore]);
 
   const gridClassName = ["toy-feed-grid", crazyOn ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
@@ -404,10 +426,18 @@ export function BrowseFeed({ category, initialPage }: Props) {
         {pileOn && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
             <ToyPileGrid
-              toys={displayed}
+              toys={pileCatalog.displayed}
               showText={showText}
               filterSeed={filterSeed}
               shuffleNonce={shuffleNonce}
+              hasMore={pileCatalog.hasMore}
+              loading={
+                pileCatalog.loading ||
+                (pileCatalog.displayed.length === 0 &&
+                  pileCatalog.hasMore &&
+                  !pileCatalog.error)
+              }
+              onNeedMore={handlePileNeedMore}
             />
           </div>
         )}

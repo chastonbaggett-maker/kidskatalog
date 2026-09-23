@@ -16,6 +16,13 @@ import {
   featuredTierWeight,
   resolveFeaturedTier,
 } from "@/lib/featured-tier";
+import {
+  dragFollowTau,
+  easeOutCubic,
+  releaseDestination,
+  smoothToward,
+} from "@/lib/pile-drag-motion";
+import { prefersReducedMotion } from "@/lib/pile-transition-utils";
 import { beginRouteChange } from "@/lib/route-change";
 import { FeedCard } from "./FeedCard";
 
@@ -73,6 +80,25 @@ type DragState = {
   originY: number;
   moved: number;
   captured: boolean;
+  /** Where the finger currently says the stage should sit. */
+  targetX: number;
+  targetY: number;
+  prevTargetX: number;
+  prevTargetY: number;
+  capturedAt: number;
+  lastSampleT: number;
+  /** Smoothed finger velocity in px/ms, used for the release coast. */
+  vx: number;
+  vy: number;
+};
+
+type ReleaseGlide = {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  startedAt: number;
+  duration: number;
 };
 
 type StagePoint = { x: number; y: number };
@@ -556,6 +582,9 @@ export function ToyPileGrid({
   const panRef = useRef<Pan>({ x: 0, y: 0 });
   const zoomRef = useRef(1);
   const dragRef = useRef<DragState | null>(null);
+  const releaseRef = useRef<ReleaseGlide | null>(null);
+  const glideRafRef = useRef<number | null>(null);
+  const glideLastTRef = useRef(0);
   const dragMovedRef = useRef(false);
   const hadMultiTouchRef = useRef(false);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
@@ -764,6 +793,22 @@ export function ToyPileGrid({
 
   const shiftPan = useCallback(
     (dx: number, dy: number) => {
+      const drag = dragRef.current;
+      if (drag?.active) {
+        drag.originX += dx;
+        drag.originY += dy;
+        drag.targetX += dx;
+        drag.targetY += dy;
+        drag.prevTargetX += dx;
+        drag.prevTargetY += dy;
+      }
+      const release = releaseRef.current;
+      if (release) {
+        release.fromX += dx;
+        release.fromY += dy;
+        release.toX += dx;
+        release.toY += dy;
+      }
       commitTransform(
         {
           x: panRef.current.x + dx,
@@ -958,8 +1003,20 @@ export function ToyPileGrid({
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
       }
+      if (glideRafRef.current !== null) {
+        cancelAnimationFrame(glideRafRef.current);
+      }
     };
   }, []);
+
+  // Live pan lives on the ref during a drag. Reapply after render so a
+  // visible-window update cannot snap the stage back to a stale pan.
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const { x, y } = panRef.current;
+    stage.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoomRef.current})`;
+  });
 
   const syncPinch = useCallback(() => {
     const viewport = viewportRef.current;
@@ -984,6 +1041,7 @@ export function ToyPileGrid({
 
     if (!pinchRef.current) {
       dragRef.current = null;
+      releaseRef.current = null;
       pinchRef.current = {
         dist,
         zoom: zoomRef.current,
@@ -1003,12 +1061,65 @@ export function ToyPileGrid({
     );
   }, [resolveStageLock, zoomToLockedPoint]);
 
+  const ensureGlide = useCallback(() => {
+    if (glideRafRef.current !== null) return;
+    glideLastTRef.current = performance.now();
+
+    const tick = (now: number) => {
+      const dt = Math.min(34, now - glideLastTRef.current);
+      glideLastTRef.current = now;
+      const drag = dragRef.current;
+
+      if (drag?.active && drag.captured && !prefersReducedMotion()) {
+        const tau = dragFollowTau(now - drag.capturedAt);
+        applyStageTransform(
+          {
+            x: smoothToward(panRef.current.x, drag.targetX, dt, tau),
+            y: smoothToward(panRef.current.y, drag.targetY, dt, tau),
+          },
+          zoomRef.current,
+        );
+        maybeExpand();
+        glideRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const release = releaseRef.current;
+      if (release && !prefersReducedMotion()) {
+        const t = Math.min(1, (now - release.startedAt) / release.duration);
+        const eased = easeOutCubic(t);
+        applyStageTransform(
+          {
+            x: release.fromX + (release.toX - release.fromX) * eased,
+            y: release.fromY + (release.toY - release.fromY) * eased,
+          },
+          zoomRef.current,
+        );
+        maybeExpand();
+        if (t < 1) {
+          glideRafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        releaseRef.current = null;
+        syncTransformState();
+      }
+
+      glideRafRef.current = null;
+    };
+
+    glideRafRef.current = requestAnimationFrame(tick);
+  }, [applyStageTransform, maybeExpand, syncTransformState]);
+
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
       if (target.closest("button")) return;
+      // Keep the browser from starting a native link/image drag, which cuts
+      // the gesture off and makes the pile hitch.
+      e.preventDefault();
 
       dragMovedRef.current = false;
+      releaseRef.current = null;
       wheelLockRef.current = null;
       if (wheelLockTimerRef.current !== null) {
         window.clearTimeout(wheelLockTimerRef.current);
@@ -1028,15 +1139,25 @@ export function ToyPileGrid({
 
       if (e.button !== 0) return;
 
+      const originX = panRef.current.x;
+      const originY = panRef.current.y;
       dragRef.current = {
         active: true,
         pointerId: e.pointerId,
         startX: e.clientX,
         startY: e.clientY,
-        originX: panRef.current.x,
-        originY: panRef.current.y,
+        originX,
+        originY,
         moved: 0,
         captured: false,
+        targetX: originX,
+        targetY: originY,
+        prevTargetX: originX,
+        prevTargetY: originY,
+        capturedAt: 0,
+        lastSampleT: 0,
+        vx: 0,
+        vy: 0,
       };
     },
     [syncPinch],
@@ -1061,23 +1182,51 @@ export function ToyPileGrid({
       drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
       if (drag.moved >= DRAG_CLICK_THRESHOLD_PX) {
         if (!drag.captured) {
+          const now = performance.now();
           drag.captured = true;
+          drag.capturedAt = now;
+          drag.lastSampleT = now;
+          drag.prevTargetX = drag.originX;
+          drag.prevTargetY = drag.originY;
+          drag.targetX = drag.originX;
+          drag.targetY = drag.originY;
+          drag.vx = 0;
+          drag.vy = 0;
+          releaseRef.current = null;
           e.currentTarget.setPointerCapture(e.pointerId);
         }
         dragMovedRef.current = true;
       }
 
       if (!drag.captured) return;
-      applyStageTransform(
-        {
-          x: drag.originX + dx,
-          y: drag.originY + dy,
-        },
-        zoomRef.current,
-      );
-      maybeExpand();
+
+      const nextX = drag.originX + dx;
+      const nextY = drag.originY + dy;
+      if (prefersReducedMotion()) {
+        applyStageTransform({ x: nextX, y: nextY }, zoomRef.current);
+        maybeExpand();
+        return;
+      }
+
+      const now = performance.now();
+      const sampleDt = now - drag.lastSampleT;
+      if (sampleDt > 0 && sampleDt < 100) {
+        const instVx = (nextX - drag.prevTargetX) / sampleDt;
+        const instVy = (nextY - drag.prevTargetY) / sampleDt;
+        drag.vx = drag.vx * 0.55 + instVx * 0.45;
+        drag.vy = drag.vy * 0.55 + instVy * 0.45;
+      } else if (sampleDt >= 100) {
+        drag.vx *= 0.35;
+        drag.vy *= 0.35;
+      }
+      drag.prevTargetX = nextX;
+      drag.prevTargetY = nextY;
+      drag.lastSampleT = now;
+      drag.targetX = nextX;
+      drag.targetY = nextY;
+      ensureGlide();
     },
-    [applyStageTransform, maybeExpand, syncPinch],
+    [applyStageTransform, ensureGlide, maybeExpand, syncPinch],
   );
 
   const endPointer = useCallback(
@@ -1098,8 +1247,42 @@ export function ToyPileGrid({
         ) {
           navigateToToyAtPoint(e.clientX, e.clientY);
         }
+
+        let coast = false;
+        if (drag.captured && !prefersReducedMotion()) {
+          const now = performance.now();
+          const idle = drag.lastSampleT > 0 ? now - drag.lastSampleT : 999;
+          let vx = drag.vx;
+          let vy = drag.vy;
+          if (idle > 48) {
+            const damp = Math.exp(-(idle - 48) / 70);
+            vx *= damp;
+            vy *= damp;
+          }
+          const dest = releaseDestination(
+            panRef.current.x,
+            panRef.current.y,
+            drag.targetX - panRef.current.x,
+            drag.targetY - panRef.current.y,
+            vx,
+            vy,
+          );
+          if (dest.duration > 0) {
+            releaseRef.current = {
+              fromX: panRef.current.x,
+              fromY: panRef.current.y,
+              toX: dest.x,
+              toY: dest.y,
+              startedAt: now,
+              duration: dest.duration,
+            };
+            coast = true;
+          }
+        }
+
         dragRef.current = null;
-        syncTransformState();
+        if (coast) ensureGlide();
+        else syncTransformState();
         maybeExpand();
       }
 
@@ -1111,20 +1294,30 @@ export function ToyPileGrid({
         const remaining = [...pointersRef.current.entries()][0];
         if (remaining) {
           const [id, point] = remaining;
+          const originX = panRef.current.x;
+          const originY = panRef.current.y;
           dragRef.current = {
             active: true,
             pointerId: id,
             startX: point.x,
             startY: point.y,
-            originX: panRef.current.x,
-            originY: panRef.current.y,
+            originX,
+            originY,
             moved: 0,
             captured: false,
+            targetX: originX,
+            targetY: originY,
+            prevTargetX: originX,
+            prevTargetY: originY,
+            capturedAt: 0,
+            lastSampleT: 0,
+            vx: 0,
+            vy: 0,
           };
         }
       }
     },
-    [maybeExpand, navigateToToyAtPoint, syncTransformState],
+    [ensureGlide, maybeExpand, navigateToToyAtPoint, syncTransformState],
   );
 
   const onViewportClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

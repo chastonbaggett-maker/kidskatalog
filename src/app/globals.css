@@ -85,8 +85,14 @@ html[data-accent="both"] {
 }
 
 html {
+  /* Canvas behind the page — home indicator, overscroll, and browser chrome under the nav. */
+  background-color: var(--bg);
   touch-action: manipulation;
   -ms-touch-action: manipulation;
+}
+
+html:has(.app-shell--crazy) {
+  background-color: #18181f;
 }
 
 body {
@@ -2346,7 +2352,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: transparent;
+  /* Safe-area and any strip under the icons stay the shelf color. */
+  background-color: var(--bg);
   border-top-color: transparent;
   box-shadow: none;
 }
@@ -2369,13 +2376,9 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   border-radius: inherit;
   border-top: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  /* Solid frost — backdrop-filter + nav pulse repaints fullscreen on iOS */
-  background-color: rgba(255, 255, 255, 0.94);
-  background-image: linear-gradient(
-    to top,
-    rgba(255, 255, 255, 0.98),
-    rgba(255, 255, 255, 0.88)
-  );
+  /* Same shelf field as the page, including the strip under the icons. */
+  background-color: var(--bg);
+  background-image: none;
   pointer-events: none;
 }
 
@@ -2401,7 +2404,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */
 .bottom-nav--crazy .bottom-nav__frost {
-  background-color: #25252e;
+  background-color: var(--star-field-bg, #18181f);
   background-image: none;
   border-top: 1px solid rgba(255, 229, 102, 0.1);
   box-shadow:

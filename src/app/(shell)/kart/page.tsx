@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
@@ -11,6 +11,8 @@ import {
   crazyModeScrollClass,
 } from "@/lib/crazy-mode-store";
 import { useKartStore } from "@/lib/kart-store";
+import { interestScore, rankIdsByInterest } from "@/lib/toy-interest";
+import { useToyInterestStore } from "@/lib/toy-interest-store";
 import type { Toy } from "@/types/toy";
 
 const KART_PREVIEW_COUNT = 4;
@@ -22,11 +24,31 @@ export default function KartPage() {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const interestById = useToyInterestStore((s) => s.byId);
+  const rankedIds = useMemo(
+    () => rankIdsByInterest(ids, (id) => interestScore(interestById[id])),
+    [ids, interestById],
+  );
+  const interest = useMemo(() => {
+    const scores: Record<string, number> = {};
+    for (const id of rankedIds) {
+      const score = interestScore(interestById[id]);
+      if (score > 0) scores[id] = score;
+    }
+    return scores;
+  }, [interestById, rankedIds]);
+  const rankedToys = useMemo(() => {
+    const byId = new Map(toys.map((toy) => [toy.id, toy]));
+    return rankedIds
+      .map((id) => byId.get(id))
+      .filter((toy): toy is Toy => Boolean(toy));
+  }, [rankedIds, toys]);
+  const hasInterest = Object.keys(interest).length > 0;
   const visibleToys =
-    showAll || toys.length <= KART_PREVIEW_COUNT
-      ? toys
-      : toys.slice(0, KART_PREVIEW_COUNT);
-  const hiddenCount = Math.max(0, toys.length - visibleToys.length);
+    showAll || rankedToys.length <= KART_PREVIEW_COUNT
+      ? rankedToys
+      : rankedToys.slice(0, KART_PREVIEW_COUNT);
+  const hiddenCount = Math.max(0, rankedToys.length - visibleToys.length);
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -84,6 +106,12 @@ export default function KartPage() {
             </div>
           </div>
         ) : (
+          <>
+          {hasInterest ? (
+            <p className="text-sm font-semibold text-[var(--ink-soft)]">
+              Played with most, first.
+            </p>
+          ) : null}
           <ul className="flex flex-col gap-3">
             {visibleToys.map((toy) => (
               <li key={toy.id} className="shelf-panel shelf-panel--soft">
@@ -121,6 +149,7 @@ export default function KartPage() {
               </li>
             ))}
           </ul>
+          </>
         )}
 
         {hiddenCount > 0 && (
@@ -133,7 +162,7 @@ export default function KartPage() {
           </button>
         )}
 
-        <SendToParentForm toys={toys} wishlistIds={ids} />
+        <SendToParentForm toys={rankedToys} wishlistIds={rankedIds} interest={interest} />
       </div>
     </div>
   );

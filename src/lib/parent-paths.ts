@@ -21,18 +21,35 @@ export function parentBuyPlaceholderPath(id: string): string {
   return `/p/buy-placeholder?toy=${encodeURIComponent(id)}#buy-placeholder`;
 }
 
-export function parentWishlistPath(ids?: string[]): string {
+export function parentWishlistPath(
+  ids?: string[],
+  interest?: Record<string, number>,
+): string {
   if (!ids?.length) return "/p";
   const value = ids.map((id) => encodeURIComponent(id)).join(",");
-  return `/p?ids=${value}`;
+  const base = `/p?ids=${value}`;
+  if (!interest) return base;
+  const scored = ids
+    .map((id) => {
+      const score = Math.floor(interest[id] ?? 0);
+      if (score <= 0) return "";
+      return `${encodeURIComponent(id)}:${score}`;
+    })
+    .filter(Boolean);
+  if (scored.length === 0) return base;
+  return `${base}&interest=${scored.join(",")}`;
 }
 
 export function parentToyUrl(id: string, origin: string): string {
   return `${origin.replace(/\/$/, "")}${parentToyPath(id)}`;
 }
 
-export function parentWishlistUrl(ids: string[], origin: string): string {
-  return `${origin.replace(/\/$/, "")}${parentWishlistPath(ids)}`;
+export function parentWishlistUrl(
+  ids: string[],
+  origin: string,
+  interest?: Record<string, number>,
+): string {
+  return `${origin.replace(/\/$/, "")}${parentWishlistPath(ids, interest)}`;
 }
 
 export function parentSignInPath(returnTo?: string): string {
@@ -62,6 +79,23 @@ export function parseSavedListId(raw: string | string[] | undefined): string | n
   const id = (text ?? "").trim();
   if (!/^lst_[a-z0-9]+$/i.test(id)) return null;
   return id;
+}
+
+/** Scores carried on a Kart share link, keyed by toy id. */
+export function parseWishlistInterest(
+  raw: string | string[] | undefined,
+): Record<string, number> {
+  const text = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
+  const scores: Record<string, number> = {};
+  for (const part of text.split(",")) {
+    const splitAt = part.lastIndexOf(":");
+    if (splitAt <= 0) continue;
+    const id = decodeURIComponent(part.slice(0, splitAt)).trim();
+    const score = Number(part.slice(splitAt + 1));
+    if (!id || !Number.isFinite(score) || score <= 0) continue;
+    scores[id] = Math.min(Math.floor(score), 100000);
+  }
+  return scores;
 }
 
 export function parseWishlistIds(raw: string | string[] | undefined): string[] {

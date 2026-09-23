@@ -20,6 +20,8 @@ type Props = {
   buyPlaceholder?: boolean;
   savedListName?: string;
   returnTo?: string;
+  /** Play scores from the kid Kart. Higher ranks first. */
+  interest?: Record<string, number>;
 };
 
 export function ParentWishlistView({
@@ -28,6 +30,7 @@ export function ParentWishlistView({
   buyPlaceholder = true,
   savedListName,
   returnTo = "/p",
+  interest,
 }: Props) {
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
@@ -76,10 +79,18 @@ export function ParentWishlistView({
 
   const toys = useMemo(() => {
     const extraById = new Map(extraToys.map((toy) => [toy.id, toy]));
-    return knownIds
+    const listed = knownIds
       .map((id) => initialById.get(id) ?? extraById.get(id))
       .filter((toy): toy is Toy => Boolean(toy));
-  }, [extraToys, initialById, knownIds]);
+    if (!interest) return listed;
+    return listed
+      .map((toy, index) => ({ toy, index, score: interest[toy.id] ?? 0 }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((row) => row.toy);
+  }, [extraToys, initialById, interest, knownIds]);
+  const rankedForParents = Boolean(
+    interest && Object.values(interest).some((score) => score > 0),
+  );
 
   const sharedFromQuery = initialToys.length > 0;
 
@@ -124,6 +135,12 @@ export function ParentWishlistView({
             </button>
           ) : null}
         </div>
+
+        {rankedForParents ? (
+          <p className="text-sm font-semibold text-[var(--ink-soft)]">
+            Most played with, first.
+          </p>
+        ) : null}
 
         {toys.length === 0 ? (
           <div className="shelf-panel">
@@ -212,6 +229,7 @@ export function ParentWishlistView({
                 </p>
                 <ShareWishlistActions
                   ids={toys.map((toy) => toy.id)}
+                  interest={interest}
                   showOpenLink={false}
                 />
               </div>

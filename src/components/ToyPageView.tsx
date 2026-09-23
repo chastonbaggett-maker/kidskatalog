@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import {
@@ -13,9 +12,8 @@ import type { CatalogPageResult } from "@/lib/catalog-query";
 import { ProductGallery } from "./ProductGallery";
 import { ShelfHeader } from "./ShelfHeader";
 import { MoreToysFeed } from "./MoreToysFeed";
-import { AddToKartButton } from "./AddToKartButton";
+import { ProductKartActions } from "./AddToKartButton";
 import { CrazyModeButton } from "./CrazyModeButton";
-import { useVisualSettled } from "@/hooks/useVisualSettled";
 
 type Props = {
   toy: Toy;
@@ -40,8 +38,6 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
     scrollerRef,
     moreToysRef,
   );
-  const kartGoReady = useVisualSettled(toy.id);
-
   return (
     <div
       className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyOn)}`}
@@ -90,39 +86,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>
 
-              <div className="mt-6 flex max-w-md items-stretch gap-3">
-                <AddToKartButton toyId={toy.id} />
-                <Link
-                  href="/kart"
-                  aria-label="Go to Kart"
-                  className={`kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-[0.98] ${
-                    kartGoReady ? "kart-go-btn--visual-ready" : ""
-                  }`}
-                >
-                  <svg
-                    className="kart-go-arrow shrink-0"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M9.5 5.5 16 12l-6.5 6.5"
-                      stroke="currentColor"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M15 12H6"
-                      stroke="currentColor"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </Link>
-              </div>
+              <ProductKartActions toyId={toy.id} />
 
               <p className="mt-5 text-center text-sm text-[var(--ink-soft)] sm:text-left">
                 No buying here. Save it, then send the Kart to a grown-up.

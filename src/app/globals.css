@@ -1313,22 +1313,22 @@ html[data-accent="both"] .kart-go-btn:hover {
 
 @keyframes kart-swap-giggle {
   0% {
-    transform: rotate(0deg) scale(1);
+    transform: translateX(0) scale(1);
   }
   16% {
-    transform: rotate(-7deg) scale(1.05, 0.94);
+    transform: translateX(-10px) scale(1.04, 0.97);
   }
   34% {
-    transform: rotate(6deg) scale(0.97, 1.05);
+    transform: translateX(9px) scale(0.97, 1.04);
   }
   52% {
-    transform: rotate(-4deg) scale(1.03, 0.98);
+    transform: translateX(-6px) scale(1.02, 0.99);
   }
   72% {
-    transform: rotate(2.5deg) scale(0.99, 1.02);
+    transform: translateX(4px) scale(0.99, 1.01);
   }
   100% {
-    transform: rotate(0deg) scale(1);
+    transform: translateX(0) scale(1);
   }
 }
 

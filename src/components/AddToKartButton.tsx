@@ -139,7 +139,7 @@ export function ProductKartActions({ toyId }: { toyId: string }) {
                 <span>Add to Kart</span>
               </span>
               <span className="kart-swap-glyph kart-swap-glyph--remove" aria-hidden>
-                −
+                <span className="kart-swap-minus" />
               </span>
             </span>
           </button>

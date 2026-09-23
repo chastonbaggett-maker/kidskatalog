@@ -13,12 +13,20 @@ import {
 import { useKartStore } from "@/lib/kart-store";
 import type { Toy } from "@/types/toy";
 
+const KART_PREVIEW_COUNT = 4;
+
 export default function KartPage() {
   const ids = useKartStore((s) => s.ids);
   const remove = useKartStore((s) => s.remove);
   const clear = useKartStore((s) => s.clear);
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
+  const [showAll, setShowAll] = useState(false);
+  const visibleToys =
+    showAll || toys.length <= KART_PREVIEW_COUNT
+      ? toys
+      : toys.slice(0, KART_PREVIEW_COUNT);
+  const hiddenCount = Math.max(0, toys.length - visibleToys.length);
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -77,7 +85,7 @@ export default function KartPage() {
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {toys.map((toy) => (
+            {visibleToys.map((toy) => (
               <li key={toy.id} className="shelf-panel shelf-panel--soft">
                 <div className="shelf-panel__surface flex items-center gap-3 p-3">
                   <Link
@@ -113,6 +121,16 @@ export default function KartPage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="w-full rounded-full bg-[var(--mint)] px-6 py-3 text-base font-bold text-white shadow-md"
+          >
+            See whole list
+          </button>
         )}
 
         <SendToParentForm toys={toys} wishlistIds={ids} />

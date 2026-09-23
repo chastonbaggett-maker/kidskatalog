@@ -1312,6 +1312,11 @@ html[data-accent="both"] .kart-go-btn:hover {
   padding-inline: 0;
 }
 
+.product-kart-add .add-kart-btn__plus {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
 .kart-swap-stack {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

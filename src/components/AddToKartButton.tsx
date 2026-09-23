@@ -113,15 +113,41 @@ export function AddToKartButton({ toyId }: { toyId: string }) {
 
 /** Product page: the add pill and Kart circle trade size when the toy is saved. */
 export function ProductKartActions({ toyId }: { toyId: string }) {
-  const { showInKart, visualReady, pulsing, handleClick, confettiPortal } =
+  const { showInKart, visualReady, handleClick, confettiPortal } =
     useKartToggle(toyId);
+  const [giggling, setGiggling] = useState(false);
+  const settledRef = useRef(false);
+  const giggleTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!visualReady) return;
+    if (!settledRef.current) {
+      settledRef.current = true;
+      return;
+    }
+    setGiggling(true);
+    if (giggleTimerRef.current) window.clearTimeout(giggleTimerRef.current);
+    giggleTimerRef.current = window.setTimeout(() => {
+      setGiggling(false);
+      giggleTimerRef.current = undefined;
+    }, 1700);
+  }, [showInKart, visualReady]);
+
+  useEffect(
+    () => () => {
+      if (giggleTimerRef.current) window.clearTimeout(giggleTimerRef.current);
+    },
+    [],
+  );
 
   return (
     <>
       <div
         className={`product-kart-actions mt-6 ${
           showInKart ? "is-in-kart" : ""
-        } ${visualReady ? "is-visual-ready" : ""}`}
+        } ${visualReady ? "is-visual-ready" : ""} ${
+          giggling ? "is-giggling" : ""
+        }`}
       >
         <div className="product-kart-slot product-kart-slot--add">
           <button
@@ -129,7 +155,7 @@ export function ProductKartActions({ toyId }: { toyId: string }) {
             onClick={handleClick}
             className={`add-kart-btn add-kart-btn--pill product-kart-add h-[3.9rem] min-w-0 rounded-full text-base font-bold shadow-md ${
               visualReady ? "add-kart-btn--visual-ready" : ""
-            } add-kart-btn--ready ${pulsing ? "add-kart-btn--pulse" : ""}`}
+            } add-kart-btn--ready`}
             aria-pressed={showInKart}
             aria-label={showInKart ? "Remove from Kart" : "Add to Kart"}
           >

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
@@ -24,6 +24,7 @@ export default function KartPage() {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
   const interestById = useToyInterestStore((s) => s.byId);
   const rankedIds = useMemo(
     () => rankIdsByInterest(ids, (id) => interestScore(interestById[id])),
@@ -43,7 +44,18 @@ export default function KartPage() {
       .map((id) => byId.get(id))
       .filter((toy): toy is Toy => Boolean(toy));
   }, [rankedIds, toys]);
+  const canFold = rankedToys.length > KART_PREVIEW_COUNT;
   const hasInterest = Object.keys(interest).length > 0;
+
+  const collapseList = () => {
+    setShowAll(false);
+    requestAnimationFrame(() => {
+      const scroller = listRef.current?.closest(".page-scroll");
+      if (scroller instanceof HTMLElement) {
+        scroller.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  };
   const visibleToys =
     showAll || rankedToys.length <= KART_PREVIEW_COUNT
       ? rankedToys
@@ -112,7 +124,20 @@ export default function KartPage() {
               Played with most, first.
             </p>
           ) : null}
-          <ul className="flex flex-col gap-3">
+          {showAll && canFold ? (
+            <div
+              className={`!sticky !top-0 !z-20 -mx-4 -mt-4 px-4 pb-1 pt-4 ${crazyMode ? "bg-[#18181f]" : "bg-[var(--bg)]"}`}
+            >
+              <button
+                type="button"
+                onClick={collapseList}
+                className="w-full rounded-full bg-[var(--lavender)] px-6 py-3 text-base font-bold text-[var(--purple-deep)] shadow-md"
+              >
+                Collapse
+              </button>
+            </div>
+          ) : null}
+          <ul ref={listRef} className="flex flex-col gap-3">
             {visibleToys.map((toy) => (
               <li key={toy.id} className="shelf-panel shelf-panel--soft">
                 <div className="shelf-panel__surface flex items-center gap-3 p-3">

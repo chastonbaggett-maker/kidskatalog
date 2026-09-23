@@ -17,6 +17,8 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
+  /* Bottom nav shelf. The browser home-indicator strip uses this, not the page. */
+  --bottom-shelf: #ffffff;
   /* Unisex header — mint teal with a soft depth shift */
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
   --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
@@ -85,13 +87,18 @@ html[data-accent="both"] {
 }
 
 html {
-  /* Canvas behind the page — home indicator, overscroll, and browser chrome under the nav. */
+  /* Page canvas. The home-indicator strip is the bottom shelf, not the page field. */
   background-color: var(--bg);
+  background-image: linear-gradient(var(--bottom-shelf), var(--bottom-shelf));
+  background-size: 100% env(safe-area-inset-bottom, 0px);
+  background-repeat: no-repeat;
+  background-position: bottom;
   touch-action: manipulation;
   -ms-touch-action: manipulation;
 }
 
 html:has(.app-shell--crazy) {
+  --bottom-shelf: #18181f;
   background-color: #18181f;
 }
 
@@ -2406,8 +2413,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  /* Safe-area and any strip under the icons stay the shelf color. */
-  background-color: var(--bg);
+  /* Safe-area padding under the icons stays the shelf, not the page field. */
+  background-color: var(--bottom-shelf);
   border-top-color: transparent;
   box-shadow: none;
 }
@@ -2430,8 +2437,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   border-radius: inherit;
   border-top: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  /* Same shelf field as the page, including the strip under the icons. */
-  background-color: var(--bg);
+  background-color: var(--bottom-shelf);
   background-image: none;
   pointer-events: none;
 }
@@ -2458,7 +2464,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */
 .bottom-nav--crazy .bottom-nav__frost {
-  background-color: var(--star-field-bg, #18181f);
+  background-color: var(--bottom-shelf, #18181f);
   background-image: none;
   border-top: 1px solid rgba(255, 229, 102, 0.1);
   box-shadow:

@@ -949,6 +949,8 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   /* One paint layer so logo + field fade together. */
   isolation: isolate;
   transform: translateZ(0);
+  --splash-pulse-duration: 3s;
+  --splash-pulse-count: 5;
 }
 
 .app-splash--out {
@@ -994,17 +996,14 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 }
 
 .app-splash--armed .app-splash__pulse--a {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) infinite;
+  animation: app-splash-k-pulse var(--splash-pulse-duration)
+    cubic-bezier(0.15, 0.55, 0.3, 1) var(--splash-pulse-count) forwards;
 }
 
-.app-splash--armed .app-splash__pulse--b {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 0.6s
-    infinite;
-}
-
+.app-splash--armed .app-splash__pulse--b,
 .app-splash--armed .app-splash__pulse--c {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 1.2s
-    infinite;
+  animation: none;
+  opacity: 0;
 }
 
 .app-splash--tap .app-splash__pulse,
@@ -1047,7 +1046,8 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 
 .app-splash--armed .app-splash__logo {
   opacity: 1;
-  animation: app-splash-logo-pulse 1.8s ease-in-out infinite;
+  animation: app-splash-logo-pulse var(--splash-pulse-duration) ease-in-out
+    var(--splash-pulse-count) forwards;
 }
 
 .app-splash--tap .app-splash__logo {

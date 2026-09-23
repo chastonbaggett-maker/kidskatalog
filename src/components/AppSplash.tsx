@@ -5,7 +5,10 @@ import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
 const FADE_IN_MS = 700;
-const AUTO_TAP_MS = 5000;
+/** Matches --splash-pulse-duration (3s) × --splash-pulse-count (5). */
+const PULSE_MS = 3000;
+const PULSE_COUNT = 5;
+const AUTO_TAP_MS = PULSE_MS * PULSE_COUNT;
 const OUT_AFTER_TAP_MS = 420;
 /** Must match `.app-splash--out` animation duration. */
 const FADE_OUT_MS = 850;
@@ -21,7 +24,7 @@ function setSplashState(state: "active" | "exiting" | null) {
 }
 
 /**
- * Cold-open splash: fade in the K, logo-shaped pulse until tap (or auto after 5s),
+ * Cold-open splash: fade in the K, then a slow pulse five times (or until tap),
  * then confetti + burst SFX. Whole-screen background + logo fade out together.
  * Mounts once per full document load; client navigations do not remount it.
  */

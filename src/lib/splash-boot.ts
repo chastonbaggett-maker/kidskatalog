@@ -1,6 +1,6 @@
 /** First-paint splash cover — inline so nav can't flash before CSS/JS. */
 
-export const SPLASH_BG_SOLID = "#000000";
+export const SPLASH_BG_SOLID = "#ffffff";
 export const SPLASH_BG_GRADIENT = "none";
 
 /**

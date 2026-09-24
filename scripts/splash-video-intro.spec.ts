@@ -2,9 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.use({ channel: "chrome" });
 
-test("splash plays part1, holds, then part2 reveals a loaded shop", async ({
-  page,
-}) => {
+test("splash is white + mint and part2 waits for tap", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
 
@@ -14,9 +12,25 @@ test("splash plays part1, holds, then part2 reveals a loaded shop", async ({
     /is-active/,
   );
 
+  // White splash chrome (CSS / boot layer).
+  const splashBg = await splash.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(splashBg).toMatch(/rgb\(\s*255,\s*255,\s*255\s*\)/);
+
   // Wait for part1 to finish and hold on the end frame.
   await expect(splash).toHaveClass(/app-splash--hold/, { timeout: 12_000 });
   await expect(page.getByText("Tap to continue")).toBeVisible();
+  await expect(splash).toHaveAttribute("data-splash-phase", "hold");
+
+  // Part 2 must NOT start on its own while holding.
+  await page.waitForTimeout(1500);
+  await expect(splash).toHaveAttribute("data-splash-phase", "hold");
+  await expect(page.locator(".app-splash__video--part2")).not.toHaveClass(
+    /is-active/,
+  );
+  const part2Paused = await page.locator(".app-splash__video--part2").evaluate(
+    (el) => (el as HTMLVideoElement).paused,
+  );
+  expect(part2Paused).toBe(true);
 
   // Shell should be warm under the overlay once holding + page ready.
   await expect

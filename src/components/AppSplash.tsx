@@ -51,11 +51,17 @@ async function waitForPageReady() {
 export function AppSplash() {
   const part1Ref = useRef<HTMLVideoElement>(null);
   const part2Ref = useRef<HTMLVideoElement>(null);
+  const phaseRef = useRef<SplashPhase>("part1");
   const [phase, setPhase] = useState<SplashPhase>("part1");
   const [pageReady, setPageReady] = useState(false);
   const pageReadyRef = useRef(false);
   const startedPart2Ref = useRef(false);
   const outTimerRef = useRef<number | null>(null);
+
+  const setPhaseSafe = (next: SplashPhase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  };
 
   useEffect(() => {
     setSplashState("active");
@@ -87,11 +93,21 @@ export function AppSplash() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       setSplashState(null);
-      setPhase("done");
+      setPhaseSafe("done");
       return;
     }
 
     const video = part1Ref.current;
+    const part2 = part2Ref.current;
+    // Hard-stop part 2 until an explicit tap while holding.
+    if (part2) {
+      try {
+        part2.pause();
+        part2.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
     if (!video) return;
 
     const playPart1 = async () => {
@@ -101,22 +117,42 @@ export function AppSplash() {
         await video.play();
       } catch {
         // Autoplay blocked — jump to hold so a tap can continue.
-        setPhase("hold");
+        setPhaseSafe("hold");
       }
     };
 
     void playPart1();
   }, []);
 
+  // If part 2 ever starts without the tap gate, pause it again.
+  useEffect(() => {
+    const part2 = part2Ref.current;
+    if (!part2) return;
+
+    const guard = () => {
+      if (startedPart2Ref.current) return;
+      if (phaseRef.current === "part2" || phaseRef.current === "out") return;
+      try {
+        part2.pause();
+        part2.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    };
+
+    part2.addEventListener("play", guard);
+    return () => part2.removeEventListener("play", guard);
+  }, []);
+
   const finishSplash = () => {
     setSplashState(null);
-    setPhase("done");
+    setPhaseSafe("done");
   };
 
   const beginExit = () => {
     const go = () => {
       setSplashState("exiting");
-      setPhase("out");
+      setPhaseSafe("out");
       outTimerRef.current = window.setTimeout(() => {
         finishSplash();
       }, FADE_OUT_MS);
@@ -146,20 +182,22 @@ export function AppSplash() {
         /* ignore seek errors */
       }
     }
-    setPhase("hold");
+    // Never auto-advance into part 2 — only a user tap may start it.
+    setPhaseSafe("hold");
   };
 
   const onPart2Ended = () => {
+    if (!startedPart2Ref.current) return;
     beginExit();
   };
 
   const startPart2 = () => {
     if (startedPart2Ref.current) return;
-    if (phase !== "hold") return;
+    if (phaseRef.current !== "hold") return;
 
     startedPart2Ref.current = true;
     unlockSharedAudio();
-    setPhase("part2");
+    setPhaseSafe("part2");
     if (pageReadyRef.current) setSplashState("holding");
 
     const part1 = part1Ref.current;
@@ -188,13 +226,9 @@ export function AppSplash() {
   };
 
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "out" || phase === "done" || phase === "part2") return;
+    if (phaseRef.current !== "hold") return;
     if (e.button !== 0) return;
-    if (phase === "hold") {
-      startPart2();
-      return;
-    }
-    // During part1: ignore until hold (stick to the designed beat).
+    startPart2();
   };
 
   if (phase === "done") return null;
@@ -205,11 +239,12 @@ export function AppSplash() {
       role="button"
       tabIndex={0}
       aria-label="Tap to start KidsKatalog"
+      data-splash-phase={phase}
       onPointerDown={onSplashPointerDown}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          if (phase === "hold") startPart2();
+          if (phaseRef.current === "hold") startPart2();
         }
       }}
     >
@@ -233,7 +268,7 @@ export function AppSplash() {
         }`}
         src={PART2_SRC}
         playsInline
-        preload="auto"
+        preload="metadata"
         onEnded={onPart2Ended}
         aria-hidden={phase !== "part2" && phase !== "out"}
       />

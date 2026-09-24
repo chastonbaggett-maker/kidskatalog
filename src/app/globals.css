@@ -899,7 +899,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 /* Cold-open splash: video part 1 → hold end frame → tap → part 2 → reveal page. */
 :root {
-  --splash-bg-solid: #000000;
+  --splash-bg-solid: #ffffff;
+  --splash-mint: var(--mint, #3ecfc0);
   --splash-bg: none;
   --splash-fade-ms: 420ms;
 }
@@ -1031,7 +1032,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   height: 100%;
   object-fit: cover;
   object-position: center;
-  background: #000;
+  background: var(--splash-bg-solid);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -1050,8 +1051,9 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   margin: 0;
   padding: 0.55rem 1.1rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--splash-mint) 14%, white);
+  color: var(--ink, #2c2c3a);
+  border: 1px solid color-mix(in srgb, var(--splash-mint) 45%, white);
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 0.95rem;
   font-weight: 600;

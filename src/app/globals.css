@@ -2348,7 +2348,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   color: #fff;
 }
 
-/* Crazy Mode Add to Kart — yellow pill + dark text (beats accent="both" mint outline). */
+/* Crazy Mode Add to Kart — yellow pill + dark text (beats accent="both" solid mint). */
 .product-detail--crazy .add-kart-btn--ready,
 .page-scroll--crazy .add-kart-btn--ready,
 .app-shell--crazy .add-kart-btn--ready,
@@ -3142,14 +3142,15 @@ html[data-standalone="true"] .app-shell {
 
 html[data-accent="both"] .add-kart-btn--ready {
   --pulse-ring: color-mix(in srgb, var(--mint) 70%, white 15%);
-  background: #fff;
-  color: var(--mint);
-  border-color: var(--mint);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 22%, transparent);
+  background: var(--mint);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 35%, transparent);
 }
 
 html[data-accent="both"] .add-kart-btn--ready:hover {
-  background: color-mix(in srgb, var(--mint) 10%, #fff);
+  background: color-mix(in srgb, var(--mint) 88%, black);
+  color: #fff;
 }
 
 /* Remove: mint base layer → blue fill wipes R→L → pop → label swap at peak */

@@ -17,7 +17,7 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
-  /* Bottom nav shelf. The browser home-indicator strip uses this, not the page. */
+  /* Bottom nav shelf card. Safe-area insets stay transparent — do not paint them. */
   --bottom-shelf: #ffffff;
   /* Unisex header — mint teal with a soft depth shift */
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
@@ -87,12 +87,8 @@ html[data-accent="both"] {
 }
 
 html {
-  /* Page canvas. The home-indicator strip is the bottom shelf, not the page field. */
+  /* Page canvas. Top/bottom safe-area insets stay fully transparent. */
   background-color: var(--bg);
-  background-image: linear-gradient(var(--bottom-shelf), var(--bottom-shelf));
-  background-size: 100% env(safe-area-inset-bottom, 0px);
-  background-repeat: no-repeat;
-  background-position: bottom;
   touch-action: manipulation;
   -ms-touch-action: manipulation;
 }
@@ -2584,8 +2580,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  /* Safe-area padding under the icons stays the shelf, not the page field. */
-  background-color: var(--bottom-shelf);
+  /* Safe-area padding under the icons stays transparent; frost paints the shelf card. */
+  background-color: transparent;
   border-top-color: transparent;
   box-shadow: none;
 }
@@ -2666,8 +2662,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 .bottom-nav--pile.is-shelf-raised .bottom-nav__frost {
-  /* Stretch into the nav safe-area padding so the card doesn't leave a gap. */
-  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  /* Stop at the icons/mode row — do not paint the home-indicator safe area. */
+  bottom: 0;
 }
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */

@@ -4,21 +4,16 @@ import { useEffect } from "react";
 import {
   audienceToAccentAttr,
   useAccentStore,
-  type AccentAttr,
 } from "@/lib/accent-store";
 import type { Audience } from "@/types/toy";
 
-/** Solid status-bar / theme-color matching the left edge of --header-grad */
-const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
-  both: "#2bb8a8",
-  boys: "#2f6ae8",
-  girls: "#ef8fb3",
-};
+/** Transparent status bar / theme-color so top safe area shows content through. */
+const TRANSPARENT_THEME = "transparent";
 
 function applyAccent(audience: Audience) {
   const accent = audienceToAccentAttr(audience);
   document.documentElement.dataset.accent = accent;
-  setThemeColor(STATUS_BAR_COLOR[accent]);
+  setThemeColor(TRANSPARENT_THEME);
 }
 
 function setThemeColor(color: string) {
@@ -33,7 +28,7 @@ function setThemeColor(color: string) {
   metas.forEach((meta) => meta.setAttribute("content", color));
 }
 
-/** Keeps <html data-accent> + PWA theme-color in sync site-wide. */
+/** Keeps <html data-accent> + transparent PWA theme-color in sync site-wide. */
 export function AccentSync() {
   const audience = useAccentStore((s) => s.audience);
 

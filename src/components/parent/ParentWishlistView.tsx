@@ -163,7 +163,7 @@ export function ParentWishlistView({
                       <Link
                         href={parentToyPath(toy.id)}
                         prefetch={false}
-                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
+                        className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl"
                       >
                         <ToyPhoto
                           src={toy.image}

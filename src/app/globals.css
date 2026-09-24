@@ -1418,14 +1418,14 @@ html[data-accent="girls"] .kart-go-btn:hover {
 }
 
 html[data-accent="both"] .kart-go-btn {
-  background: var(--mint);
+  background: var(--purple-deep);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 35%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--purple-deep) 35%, transparent);
 }
 
 html[data-accent="both"] .kart-go-btn:hover {
-  background: color-mix(in srgb, var(--mint) 88%, #0f766e);
+  background: color-mix(in srgb, var(--purple-deep) 88%, black);
   color: #fff;
   border-color: transparent;
 }

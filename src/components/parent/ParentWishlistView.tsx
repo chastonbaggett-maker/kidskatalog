@@ -158,8 +158,8 @@ export function ParentWishlistView({
                 parentBuyPlaceholderPath(toy.id);
               return (
                 <li key={toy.id} className="shelf-panel shelf-panel--soft">
-                  <div className="shelf-panel__surface flex items-start gap-3 p-3">
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="shelf-panel__surface flex flex-col gap-2 p-3">
+                    <div className="flex items-start gap-3">
                       <Link
                         href={parentToyPath(toy.id)}
                         prefetch={false}
@@ -173,32 +173,36 @@ export function ParentWishlistView({
                           className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
                         />
                       </Link>
-                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <Link href={parentToyPath(toy.id)} prefetch={false}>
-                          <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
-                            {toy.name}
-                          </p>
-                        </Link>
-                        <p className="min-w-0 text-sm text-[var(--ink-soft)]">
-                          {toy.blurb}
-                        </p>
+                      <div className="flex w-[9.5rem] shrink-0 flex-col gap-2">
+                        <ParentBuyButton
+                          href={buyUrl}
+                          toyId={toy.id}
+                          mode={buyPlaceholder ? "placeholder" : "associates"}
+                          className="w-full flex-none px-3"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => remove(toy.id)}
+                          className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                          aria-label={`Remove ${toy.name}`}
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
-                    <div className="flex w-[9.5rem] shrink-0 flex-col gap-2">
-                      <ParentBuyButton
-                        href={buyUrl}
-                        toyId={toy.id}
-                        mode={buyPlaceholder ? "placeholder" : "associates"}
-                        className="w-full flex-none px-3"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => remove(toy.id)}
-                        className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-                        aria-label={`Remove ${toy.name}`}
+                    <div className="flex min-w-0 flex-nowrap items-baseline gap-x-2">
+                      <Link
+                        href={parentToyPath(toy.id)}
+                        prefetch={false}
+                        className="shrink-0"
                       >
-                        Remove
-                      </button>
+                        <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
+                          {toy.name}
+                        </p>
+                      </Link>
+                      <p className="min-w-0 flex-1 text-sm leading-snug text-[var(--ink-soft)]">
+                        {toy.blurb}
+                      </p>
                     </div>
                   </div>
                 </li>

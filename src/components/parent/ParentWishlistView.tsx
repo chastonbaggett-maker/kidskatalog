@@ -183,7 +183,7 @@ export function ParentWishlistView({
                         <button
                           type="button"
                           onClick={() => remove(toy.id)}
-                          className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                          className="h-[3.9rem] rounded-full bg-[var(--lavender)] px-3 text-base font-bold text-[var(--purple-deep)]"
                           aria-label={`Remove ${toy.name}`}
                         >
                           Remove

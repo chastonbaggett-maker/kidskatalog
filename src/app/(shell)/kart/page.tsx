@@ -17,8 +17,6 @@ import { interestScore, rankIdsByInterest } from "@/lib/toy-interest";
 import { useToyInterestStore } from "@/lib/toy-interest-store";
 import type { Toy } from "@/types/toy";
 
-const KART_PREVIEW_COUNT = 4;
-
 export default function KartPage() {
   const router = useRouter();
   const ids = useKartStore((s) => s.ids);
@@ -26,7 +24,6 @@ export default function KartPage() {
   const clear = useKartStore((s) => s.clear);
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const [toys, setToys] = useState<Toy[]>([]);
-  const [showAll, setShowAll] = useState(false);
   const [rowsEntered, setRowsEntered] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
   const interestById = useToyInterestStore((s) => s.byId);
@@ -52,23 +49,7 @@ export default function KartPage() {
       .map((id) => byId.get(id))
       .filter((toy): toy is Toy => Boolean(toy));
   }, [rankedIds, toys]);
-  const canFold = rankedToys.length > KART_PREVIEW_COUNT;
   const hasInterest = Object.keys(interest).length > 0;
-
-  const collapseList = () => {
-    setShowAll(false);
-    requestAnimationFrame(() => {
-      const scroller = listRef.current?.closest(".page-scroll");
-      if (scroller instanceof HTMLElement) {
-        scroller.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    });
-  };
-  const visibleToys =
-    showAll || rankedToys.length <= KART_PREVIEW_COUNT
-      ? rankedToys
-      : rankedToys.slice(0, KART_PREVIEW_COUNT);
-  const hiddenCount = Math.max(0, rankedToys.length - visibleToys.length);
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -160,85 +141,70 @@ export default function KartPage() {
           </div>
         ) : (
           <>
-          {hasInterest ? (
-            <p className="text-sm font-semibold text-[var(--ink-soft)]">
-              Played with most, first.
-            </p>
-          ) : null}
-          {showAll && canFold ? (
-            <div
-              className={`!sticky !top-0 !z-20 -mx-4 -mt-4 px-4 pb-1 pt-4 ${crazyMode ? "bg-[#18181f]" : "bg-[var(--bg)]"}`}
-            >
-              <button
-                type="button"
-                onClick={collapseList}
-                className="w-full rounded-full bg-[var(--lavender)] px-6 py-3 text-base font-bold text-[var(--purple-deep)] shadow-md"
-              >
-                Collapse
-              </button>
+            {hasInterest ? (
+              <p className="text-sm font-semibold text-[var(--ink-soft)]">
+                Played with most, first.
+              </p>
+            ) : null}
+            <div className="kart-list-scroll">
+              <ul ref={listRef} className="flex flex-col gap-3">
+                {rankedToys.map((toy, index) => (
+                  <li
+                    key={toy.id}
+                    className={`shelf-panel shelf-panel--soft ${
+                      rowsEntered ? "kart-row--enter" : "kart-row--pending"
+                    }`}
+                    style={
+                      rowsEntered
+                        ? { animationDelay: `${Math.min(index, 8) * 110}ms` }
+                        : undefined
+                    }
+                  >
+                    <div className="shelf-panel__surface flex items-center gap-3 p-3">
+                      <Link
+                        href={`/toy/${toy.id}`}
+                        prefetch={false}
+                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
+                      >
+                        <ToyPhoto
+                          src={toy.image}
+                          alt={toy.imageAlt}
+                          loading="lazy"
+                          decoding="async"
+                          className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
+                        />
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/toy/${toy.id}`} prefetch={false}>
+                          <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
+                            {toy.name}
+                          </p>
+                        </Link>
+                        <p className="truncate text-sm text-[var(--ink-soft)]">
+                          {toy.blurb}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => remove(toy.id)}
+                        className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
+                        aria-label={`Remove ${toy.name}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ) : null}
-          <ul ref={listRef} className="flex flex-col gap-3">
-            {visibleToys.map((toy, index) => (
-              <li
-                key={toy.id}
-                className={`shelf-panel shelf-panel--soft ${
-                  rowsEntered ? "kart-row--enter" : "kart-row--pending"
-                }`}
-                style={
-                  rowsEntered
-                    ? { animationDelay: `${Math.min(index, 8) * 110}ms` }
-                    : undefined
-                }
-              >
-                <div className="shelf-panel__surface flex items-center gap-3 p-3">
-                  <Link
-                    href={`/toy/${toy.id}`}
-                    prefetch={false}
-                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
-                  >
-                    <ToyPhoto
-                      src={toy.image}
-                      alt={toy.imageAlt}
-                      loading="lazy"
-                      decoding="async"
-                      className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
-                    />
-                  </Link>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/toy/${toy.id}`} prefetch={false}>
-                      <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
-                        {toy.name}
-                      </p>
-                    </Link>
-                    <p className="truncate text-sm text-[var(--ink-soft)]">{toy.blurb}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => remove(toy.id)}
-                    className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-                    aria-label={`Remove ${toy.name}`}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
           </>
         )}
 
-        {hiddenCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="w-full rounded-full bg-[var(--mint)] px-6 py-3 text-base font-bold text-white shadow-md"
-          >
-            See whole list
-          </button>
-        )}
-
-        <SendToParentForm toys={rankedToys} wishlistIds={rankedIds} interest={interest} />
+        <SendToParentForm
+          toys={rankedToys}
+          wishlistIds={rankedIds}
+          interest={interest}
+        />
       </div>
     </div>
   );

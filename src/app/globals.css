@@ -4163,16 +4163,25 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   position: fixed;
   z-index: 45;
   left: max(0.75rem, env(safe-area-inset-left, 0px));
+  /* Sit above the icon row; slide up with the raised mode shelf. */
   bottom: calc(var(--bottom-nav-offset) + 0.65rem);
   width: auto;
   max-width: min(14.5rem, calc(100vw - 5.5rem));
   height: auto;
   min-height: 2.75rem;
   pointer-events: none;
+  transition: bottom 420ms ease-in-out;
 }
 
-body:has(.app-shell--pile) .site-music-toggle-wrap {
+/* Match bottom-nav__lift: only ride up once the shelf enter is visible. */
+body:has(.bottom-nav.is-shelf-raised.is-enter-visible) .site-music-toggle-wrap {
   bottom: calc(var(--pile-nav-stack-height) + 0.55rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-music-toggle-wrap {
+    transition: none;
+  }
 }
 
 .site-music-player {

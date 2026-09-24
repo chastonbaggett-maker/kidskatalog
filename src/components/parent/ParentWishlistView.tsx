@@ -117,17 +117,8 @@ export function ParentWishlistView({
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
-        <div className="flex items-center justify-between gap-3">
+        <div className="rounded-3xl bg-[var(--lavender)] p-4 text-[var(--purple-deep)]">
           <ParentAuthLinks returnTo={returnTo} tone="page" />
-          {toys.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => clear()}
-              className="shrink-0 text-sm font-bold text-[var(--ink-soft)]"
-            >
-              Clear
-            </button>
-          ) : null}
         </div>
 
         {rankedForParents ? (

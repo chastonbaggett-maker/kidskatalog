@@ -63,7 +63,7 @@ export function ParentAuthLinks({
     ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--mint)] px-6 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
     : linkClass;
   const signupButtonClass = onPage
-    ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--lavender)] px-6 text-base font-bold text-[var(--purple-deep)] transition active:scale-[0.98]"
+    ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-white px-6 text-base font-bold text-[var(--purple-deep)] shadow-sm transition active:scale-[0.98]"
     : linkClass;
 
   const showSaveHint = onPage && me && !me.signedIn;

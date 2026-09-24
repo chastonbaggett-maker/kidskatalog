@@ -103,10 +103,24 @@ test.describe("browser solid / PWA frost + header", () => {
     await page.waitForFunction(
       () => document.documentElement.dataset.accent === "boys",
     );
+    // Safe-area probe remounts with the new solid so Safari can re-tint in sync.
+    await page.waitForFunction(() => {
+      const probe = document.querySelector(".safari-safe-area-tint");
+      if (!probe) return false;
+      const bg = getComputedStyle(probe).backgroundColor;
+      return bg === "rgb(47, 106, 232)";
+    });
     const boys = await readChrome(page);
     expect(boys.accent).toBe("boys");
     expect(boys.headerBgImage).toBe("none");
     expect(boys.headerBgColor).toBe(rgbOfHex("#2f6ae8"));
+    expect(
+      await page.evaluate(
+        () =>
+          getComputedStyle(document.querySelector(".safari-safe-area-tint")!)
+            .backgroundColor,
+      ),
+    ).toBe(rgbOfHex("#2f6ae8"));
 
     await page.screenshot({
       path: path.join(ARTIFACTS, "browser_solid_header_boys.png"),
@@ -117,10 +131,24 @@ test.describe("browser solid / PWA frost + header", () => {
     await page.waitForFunction(
       () => document.documentElement.dataset.accent === "girls",
     );
+    await page.waitForFunction(() => {
+      const probe = document.querySelector(".safari-safe-area-tint");
+      if (!probe) return false;
+      return (
+        getComputedStyle(probe).backgroundColor === "rgb(239, 143, 179)"
+      );
+    });
     const girls = await readChrome(page);
     expect(girls.accent).toBe("girls");
     expect(girls.headerBgImage).toBe("none");
     expect(girls.headerBgColor).toBe(rgbOfHex("#ef8fb3"));
+    expect(
+      await page.evaluate(
+        () =>
+          getComputedStyle(document.querySelector(".safari-safe-area-tint")!)
+            .backgroundColor,
+      ),
+    ).toBe(rgbOfHex("#ef8fb3"));
 
     await page.screenshot({
       path: path.join(ARTIFACTS, "browser_solid_header_girls.png"),

@@ -444,6 +444,25 @@ html:not([data-standalone="true"]) .app-shell--crazy .shelf-header--pile::before
   backdrop-filter: none;
 }
 
+/*
+ * Fixed probe covering the top safe area. Remounted on mode change so Safari
+ * Liquid Glass re-binds its tint in sync with the header (cached until
+ * scroll/layout otherwise).
+ */
+html:not([data-standalone="true"]) .safari-safe-area-tint {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  height: max(3px, env(safe-area-inset-top, 0px));
+  pointer-events: none;
+}
+
+html[data-standalone="true"] .safari-safe-area-tint {
+  display: none;
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;

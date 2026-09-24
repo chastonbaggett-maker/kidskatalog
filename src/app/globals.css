@@ -1312,20 +1312,21 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 @keyframes kart-swap-giggle {
+  /* Rides the flex grow/shrink: soft scale first, then a settling side-tilt. */
   0% {
     transform: translateX(0) scale(1);
   }
-  16% {
-    transform: translateX(-10px) scale(1.04, 0.97);
+  22% {
+    transform: translateX(-3px) scale(1.035);
   }
-  34% {
-    transform: translateX(9px) scale(0.97, 1.04);
+  42% {
+    transform: translateX(7px) scale(0.985, 1.02);
   }
-  52% {
-    transform: translateX(-6px) scale(1.02, 0.99);
+  62% {
+    transform: translateX(-4px) scale(1.015, 0.99);
   }
-  72% {
-    transform: translateX(4px) scale(0.99, 1.01);
+  80% {
+    transform: translateX(2px) scale(1);
   }
   100% {
     transform: translateX(0) scale(1);
@@ -1333,12 +1334,14 @@ html[data-accent="both"] .kart-go-btn:hover {
 }
 
 .product-kart-actions.is-giggling .product-kart-slot {
-  animation: kart-swap-giggle 0.7s ease-in-out 0.62s both;
+  /* Same duration family + easing as the flex morph so it reads as one motion. */
+  animation: kart-swap-giggle 0.92s cubic-bezier(0.22, 1.25, 0.32, 1) both;
   transform-origin: center center;
 }
 
 .product-kart-actions.is-giggling .product-kart-slot--go {
-  animation-delay: 0.7s;
+  /* Tiny lag so the growing pill finishes the wave the shrinking circle started. */
+  animation-delay: 0.05s;
 }
 
 .product-kart-actions .product-kart-add,

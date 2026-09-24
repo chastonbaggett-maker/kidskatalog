@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import {
@@ -16,6 +17,7 @@ import { ProductKartActions } from "./AddToKartButton";
 import { CrazyModeButton } from "./CrazyModeButton";
 import { useToyInterestStore } from "@/lib/toy-interest-store";
 import { INTEREST_MAX_SECONDS_PER_VISIT } from "@/lib/toy-interest";
+import { beginRouteChange } from "@/lib/route-change";
 
 type Props = {
   toy: Toy;
@@ -25,6 +27,7 @@ type Props = {
 };
 
 export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Props) {
+  const router = useRouter();
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const crazyOn = crazyMode;
@@ -34,6 +37,11 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
   const productAreaRef = useRef<HTMLDivElement>(null);
   const moreToysRef = useRef<HTMLElement>(null);
   const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
+
+  const goBackToFeed = useCallback(() => {
+    beginRouteChange();
+    router.push("/shop");
+  }, [router]);
 
   const moreToysCrazyActive = useMoreToysCrazyActive(
     crazyOn,
@@ -77,7 +85,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
       className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyOn)}`}
     >
       <ShelfHeader
-        backHref="/shop"
+        onBack={goBackToFeed}
         trailing={
           crazyOn ? (
             <CrazyModeButton

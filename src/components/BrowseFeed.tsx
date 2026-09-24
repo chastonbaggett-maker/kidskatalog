@@ -21,6 +21,10 @@ import { useCatalogPage } from "@/hooks/useCatalogPage";
 import { PILE_CARD_BATCH } from "@/lib/pile-cards";
 import { pingMetrics } from "@/lib/metrics-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
+import {
+  restoreBrowseScroll,
+  saveBrowseScroll,
+} from "@/lib/browse-scroll";
 import { useCrazyRandomizeLoop } from "@/hooks/useCrazyLightning";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 import { shuffleWithSeed } from "@/lib/shuffle";
@@ -157,10 +161,77 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const blockCompactShelfRef = useRef(false);
   const displayIdsRef = useRef<string[]>([]);
   const prevToyPileModeRef = useRef(false);
+  const browseScrollRestoredRef = useRef(false);
 
   useEffect(() => {
     displayIdsRef.current = displayIds;
   }, [displayIds]);
+
+  useEffect(() => {
+    if (pileOn) {
+      browseScrollRestoredRef.current = false;
+      return;
+    }
+    const scroller = scrollerRef.current;
+    if (!scroller || browseScrollRestoredRef.current) return;
+    if (displayed.length === 0) return;
+
+    let cancelled = false;
+    const attempt = () => {
+      if (cancelled || browseScrollRestoredRef.current) return;
+      if (restoreBrowseScroll(scroller)) {
+        browseScrollRestoredRef.current = true;
+      }
+    };
+
+    attempt();
+    const t1 = window.setTimeout(attempt, 120);
+    const t2 = window.setTimeout(() => {
+      attempt();
+      browseScrollRestoredRef.current = true;
+    }, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [pileOn, displayed.length]);
+
+  useEffect(() => {
+    if (pileOn) return;
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    let frame = 0;
+    const persist = (toyId?: string) => {
+      saveBrowseScroll(scroller.scrollTop, toyId ? { toyId } : undefined);
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        persist();
+      });
+    };
+    const onClickCapture = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>("a[href^='/toy/']");
+      if (!link) return;
+      const href = link.getAttribute("href") ?? "";
+      const toyId = href.split("/toy/")[1]?.split(/[?#]/)[0];
+      persist(toyId || undefined);
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("click", onClickCapture, true);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      scroller.removeEventListener("scroll", onScroll);
+      scroller.removeEventListener("click", onClickCapture, true);
+      persist();
+    };
+  }, [pileOn]);
 
   useEffect(() => {
     const enteringPile = pileOn && !prevToyPileModeRef.current;

@@ -133,7 +133,7 @@ export function ParentWishlistView({
 
         {rankedForParents ? (
           <p className="text-sm font-semibold text-[var(--ink-soft)]">
-            Most played with, first.
+            This list shows the most interacted with ToyCards first.
           </p>
         ) : null}
 

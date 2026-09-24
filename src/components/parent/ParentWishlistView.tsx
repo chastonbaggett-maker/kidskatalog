@@ -117,7 +117,7 @@ export function ParentWishlistView({
           next.delete(toyId);
           return next;
         });
-      }, 380);
+      }, 280);
     },
     [remove],
   );

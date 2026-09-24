@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+/** Keep in sync with `--hold-duration` in globals.css */
 const HOLD_MS = 2000;
 
 type Props = {
@@ -20,7 +21,7 @@ type Props = {
 
 /**
  * Hold exactly 2s to confirm. Lavender fills with purple-deep; release cancels.
- * Uses a wall-clock timeout + CSS transition so duration stays true to 2s.
+ * Wall-clock timeout starts with the CSS fill so both finish together at 2s.
  */
 export function HoldToRemoveButton({
   label,
@@ -31,6 +32,7 @@ export function HoldToRemoveButton({
   const [progress, setProgress] = useState(0);
   const [armed, setArmed] = useState(false);
   const timerRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
   const doneRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -39,6 +41,10 @@ export function HoldToRemoveButton({
     if (timerRef.current != null) {
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   }, []);
 
@@ -62,18 +68,22 @@ export function HoldToRemoveButton({
       clearTimer();
       doneRef.current = false;
       setArmed(true);
-      // Drive CSS transition to full over HOLD_MS.
       setProgress(0);
-      requestAnimationFrame(() => {
-        setProgress(1);
+
+      // Two frames: paint progress=0 with is-holding, then animate to 1 over 2s.
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          setProgress(1);
+          timerRef.current = window.setTimeout(() => {
+            timerRef.current = null;
+            if (doneRef.current) return;
+            doneRef.current = true;
+            setArmed(false);
+            onCompleteRef.current();
+          }, HOLD_MS);
+        });
       });
-      timerRef.current = window.setTimeout(() => {
-        timerRef.current = null;
-        if (doneRef.current) return;
-        doneRef.current = true;
-        setArmed(false);
-        onCompleteRef.current();
-      }, HOLD_MS);
     },
     [clearTimer],
   );
@@ -93,8 +103,14 @@ export function HoldToRemoveButton({
         if (!doneRef.current) stopHold(false);
       }}
       onContextMenu={(e) => e.preventDefault()}
-      style={{ "--hold-progress": String(progress) } as CSSProperties}
+      style={
+        {
+          "--hold-progress": String(progress),
+          "--hold-duration": `${HOLD_MS}ms`,
+        } as CSSProperties
+      }
       data-testid="hold-to-remove"
+      data-hold-ms={HOLD_MS}
       data-hold-progress={progress.toFixed(2)}
     >
       <span className="hold-to-remove__fill" aria-hidden />

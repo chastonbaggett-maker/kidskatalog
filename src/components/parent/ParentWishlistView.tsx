@@ -35,7 +35,6 @@ export function ParentWishlistView({
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
   const remove = useParentWishlistStore((s) => s.remove);
-  const clear = useParentWishlistStore((s) => s.clear);
   const [extraToys, setExtraToys] = useState<Toy[]>([]);
   const [resolvedBuyUrls, setResolvedBuyUrls] = useState<Record<string, string>>(buyUrls);
 

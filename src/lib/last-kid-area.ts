@@ -3,6 +3,15 @@
 export const LAST_KID_AREA_KEY = "kk_last_kid_area";
 export const DEFAULT_KID_AREA = "/shop";
 
+function kidAreaStorage(): Storage | null {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function isKidBrowsePath(pathname: string) {
   return (
     pathname === "/" ||
@@ -13,19 +22,21 @@ export function isKidBrowsePath(pathname: string) {
 }
 
 export function rememberKidArea(pathname: string, search = "") {
-  if (typeof window === "undefined") return;
+  const store = kidAreaStorage();
+  if (!store) return;
   if (!isKidBrowsePath(pathname)) return;
   try {
-    sessionStorage.setItem(LAST_KID_AREA_KEY, `${pathname}${search}`);
+    store.setItem(LAST_KID_AREA_KEY, `${pathname}${search}`);
   } catch {
     /* private mode / blocked storage */
   }
 }
 
 export function readLastKidArea(): string {
-  if (typeof window === "undefined") return DEFAULT_KID_AREA;
+  const store = kidAreaStorage();
+  if (!store) return DEFAULT_KID_AREA;
   try {
-    const value = sessionStorage.getItem(LAST_KID_AREA_KEY);
+    const value = store.getItem(LAST_KID_AREA_KEY);
     if (value && value.startsWith("/") && !value.startsWith("/kart")) {
       return value;
     }

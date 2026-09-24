@@ -45,6 +45,6 @@ test("splash part1 is full-size mint plate with stable color and last-frame hold
   );
   expect(holdBg).toMatch(/rgb\(\s*62,\s*207,\s*192\s*\)/);
 
-  await splash.click();
-  await expect(splash).toHaveClass(/app-splash--part2/, { timeout: 3_000 });
+  // Without a tap, auto-continues after ~5s.
+  await expect(splash).toHaveClass(/app-splash--part2/, { timeout: 7_000 });
 });

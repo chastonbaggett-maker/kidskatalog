@@ -16,6 +16,8 @@ const PART1_END = SPLASH_PART1_END;
 const FADE_OUT_MS = 420;
 /** Pause this far before `ended` so we never seek-back on the last frame. */
 const HOLD_BEFORE_END_S = 0.05;
+/** If the user doesn't tap during hold, continue automatically. */
+const HOLD_AUTO_CONTINUE_MS = 5000;
 
 type SplashPhase = "part1" | "hold" | "part2" | "out" | "done";
 
@@ -99,10 +101,18 @@ export function AppSplash() {
   const pageReadyRef = useRef(false);
   const startedPart2Ref = useRef(false);
   const outTimerRef = useRef<number | null>(null);
+  const holdAutoTimerRef = useRef<number | null>(null);
 
   const setPhaseSafe = (next: SplashPhase) => {
     phaseRef.current = next;
     setPhase(next);
+  };
+
+  const clearHoldAutoTimer = () => {
+    if (holdAutoTimerRef.current != null) {
+      window.clearTimeout(holdAutoTimerRef.current);
+      holdAutoTimerRef.current = null;
+    }
   };
 
   const freezePart1Hold = () => {
@@ -131,6 +141,7 @@ export function AppSplash() {
     });
     return () => {
       cancelled = true;
+      clearHoldAutoTimer();
       if (outTimerRef.current != null) {
         window.clearTimeout(outTimerRef.current);
         outTimerRef.current = null;
@@ -262,6 +273,7 @@ export function AppSplash() {
     if (startedPart2Ref.current) return;
     if (phaseRef.current !== "hold") return;
 
+    clearHoldAutoTimer();
     startedPart2Ref.current = true;
     unlockSharedAudio();
     setPhaseSafe("part2");
@@ -291,6 +303,20 @@ export function AppSplash() {
       }
     })();
   };
+
+  // Hold beat: wait for tap, or auto-continue after 5s.
+  useEffect(() => {
+    if (phase !== "hold") {
+      clearHoldAutoTimer();
+      return;
+    }
+    clearHoldAutoTimer();
+    holdAutoTimerRef.current = window.setTimeout(() => {
+      holdAutoTimerRef.current = null;
+      startPart2();
+    }, HOLD_AUTO_CONTINUE_MS);
+    return () => clearHoldAutoTimer();
+  }, [phase]);
 
   const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (phaseRef.current !== "hold") return;

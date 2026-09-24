@@ -1147,8 +1147,10 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 .app-splash__stage {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -1157,12 +1159,22 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 .app-splash__video {
   position: absolute;
   inset: 0;
+  margin: auto;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center center;
   pointer-events: none;
   user-select: none;
+}
+
+/* Part 1 logo sits slightly low in the 16:9 master — nudge up so it reads centered. */
+.app-splash__poster,
+.app-splash__end-frame,
+.app-splash__video--part1 {
+  object-position: center 46%;
 }
 
 /* White-on-black art: screen blend → black drops out to mint plate. */

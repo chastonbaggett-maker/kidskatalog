@@ -19,7 +19,8 @@ type Props = {
 };
 
 /**
- * Hold 2s to confirm. Lavender base fills with purple-deep; release cancels.
+ * Hold exactly 2s to confirm. Lavender fills with purple-deep; release cancels.
+ * Uses a wall-clock timeout + CSS transition so duration stays true to 2s.
  */
 export function HoldToRemoveButton({
   label,
@@ -29,66 +30,62 @@ export function HoldToRemoveButton({
 }: Props) {
   const [progress, setProgress] = useState(0);
   const [armed, setArmed] = useState(false);
-  const rafRef = useRef<number | null>(null);
-  const startRef = useRef<number | null>(null);
+  const timerRef = useRef<number | null>(null);
   const doneRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  const stopHold = useCallback((completed: boolean) => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    startRef.current = null;
-    setArmed(false);
-    if (!completed) {
-      setProgress(0);
-      doneRef.current = false;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current != null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
   }, []);
 
-  const tick = useCallback((now: number) => {
-    if (startRef.current == null) return;
-    const elapsed = now - startRef.current;
-    const next = Math.min(1, elapsed / HOLD_MS);
-    setProgress(next);
-    if (next >= 1) {
-      if (!doneRef.current) {
-        doneRef.current = true;
-        setArmed(false);
-        onCompleteRef.current();
+  const stopHold = useCallback(
+    (completed: boolean) => {
+      clearTimer();
+      setArmed(false);
+      if (!completed) {
+        setProgress(0);
+        doneRef.current = false;
       }
-      return;
-    }
-    rafRef.current = requestAnimationFrame(tick);
-  }, []);
+    },
+    [clearTimer],
+  );
 
   const startHold = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
       if (event.button != null && event.button !== 0) return;
       if (doneRef.current) return;
       event.currentTarget.setPointerCapture(event.pointerId);
-      startRef.current = performance.now();
+      clearTimer();
+      doneRef.current = false;
       setArmed(true);
+      // Drive CSS transition to full over HOLD_MS.
       setProgress(0);
-      rafRef.current = requestAnimationFrame(tick);
+      requestAnimationFrame(() => {
+        setProgress(1);
+      });
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null;
+        if (doneRef.current) return;
+        doneRef.current = true;
+        setArmed(false);
+        onCompleteRef.current();
+      }, HOLD_MS);
     },
-    [tick],
+    [clearTimer],
   );
 
-  useEffect(() => {
-    return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+  useEffect(() => () => clearTimer(), [clearTimer]);
 
   return (
     <button
       type="button"
       className={`hold-to-remove ${armed ? "is-holding" : ""} ${className}`.trim()}
       aria-label={ariaLabel}
-      title="Hold to remove"
+      title="Hold for 2s to remove"
       onPointerDown={startHold}
       onPointerUp={() => stopHold(doneRef.current)}
       onPointerCancel={() => stopHold(false)}
@@ -101,9 +98,13 @@ export function HoldToRemoveButton({
       data-hold-progress={progress.toFixed(2)}
     >
       <span className="hold-to-remove__fill" aria-hidden />
-      <span className="hold-to-remove__label">{label}</span>
-      <span className="hold-to-remove__label hold-to-remove__label--on-fill" aria-hidden>
-        {label}
+      <span className="hold-to-remove__copy">
+        <span className="hold-to-remove__label">{label}</span>
+        <span className="hold-to-remove__hint">hold for 2s</span>
+      </span>
+      <span className="hold-to-remove__copy hold-to-remove__copy--on-fill" aria-hidden>
+        <span className="hold-to-remove__label">{label}</span>
+        <span className="hold-to-remove__hint">hold for 2s</span>
       </span>
     </button>
   );

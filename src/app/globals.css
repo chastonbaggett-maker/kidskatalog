@@ -202,26 +202,51 @@ select {
   transform: scaleX(var(--hold-progress, 0));
   background: var(--purple-deep);
   pointer-events: none;
+  transition: transform 120ms ease-out;
   will-change: transform;
 }
 
-.hold-to-remove__label {
+.hold-to-remove.is-holding .hold-to-remove__fill {
+  transition: transform 2s linear;
+}
+
+.hold-to-remove__copy {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
   color: var(--purple-deep);
 }
 
-/* White label clipped to the filled region so text stays readable. */
-.hold-to-remove__label--on-fill {
+.hold-to-remove__label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hold-to-remove__hint {
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+
+/* White copy clipped to the filled region so text stays readable. */
+.hold-to-remove__copy--on-fill {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #fff;
   clip-path: inset(0 calc((1 - var(--hold-progress, 0)) * 100%) 0 0);
+  transition: clip-path 120ms ease-out;
   pointer-events: none;
+}
+
+.hold-to-remove.is-holding .hold-to-remove__copy--on-fill {
+  transition: clip-path 2s linear;
 }
 
 .shelf-panel--pop-out {
@@ -247,7 +272,10 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hold-to-remove__fill {
+  .hold-to-remove__fill,
+  .hold-to-remove.is-holding .hold-to-remove__fill,
+  .hold-to-remove__copy--on-fill,
+  .hold-to-remove.is-holding .hold-to-remove__copy--on-fill {
     transition: none;
   }
 

@@ -38,39 +38,43 @@ test("hold Remove 2s fills purple then pops card off list", async ({ page }) => 
 
   const removeBtn = row.getByTestId("hold-to-remove");
   await expect(removeBtn).toBeVisible();
+  await expect(removeBtn.getByText("hold for 2s")).toBeVisible();
 
-  // Tap briefly — must not remove.
   const box = await removeBtn.boundingBox();
   expect(box).toBeTruthy();
   const x = box!.x + box!.width / 2;
   const y = box!.y + box!.height / 2;
 
+  // Tap briefly — must not remove.
   await page.mouse.move(x, y);
   await page.mouse.down();
   await page.waitForTimeout(400);
   await page.mouse.up();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   await expect(row).toBeVisible();
-  await expect(removeBtn).toHaveAttribute("data-hold-progress", "0.00");
+  await expect(removeBtn).not.toHaveClass(/is-holding/);
 
-  // Hold for 2s.
+  // Hold for 2s (wall-clock timeout).
   await page.mouse.move(x, y);
   await page.mouse.down();
+  await expect(removeBtn).toHaveClass(/is-holding/);
 
   await page.waitForTimeout(1000);
-  const mid = parseFloat((await removeBtn.getAttribute("data-hold-progress")) || "0");
-  expect(mid).toBeGreaterThan(0.3);
-  expect(mid).toBeLessThan(0.95);
+  // Mid-hold: CSS transition should show a partial scaleX fill.
+  const midScaleX = await removeBtn.locator(".hold-to-remove__fill").evaluate((el) => {
+    const t = getComputedStyle(el).transform;
+    if (!t || t === "none") return 0;
+    const m = t.match(/matrix\(([^)]+)\)/);
+    if (!m) return 0;
+    return parseFloat(m[1].split(",")[0]!);
+  });
+  expect(midScaleX).toBeGreaterThan(0.25);
+  expect(midScaleX).toBeLessThan(0.9);
 
-  const fillTransform = await removeBtn
-    .locator(".hold-to-remove__fill")
-    .evaluate((el) => getComputedStyle(el).transform);
-  expect(fillTransform).not.toBe("none");
-  expect(fillTransform).not.toMatch(/^matrix\(0(?:\.0+)?,/);
-
-  await page.waitForTimeout(1200);
+  // Complete near 2s total hold.
+  await page.waitForTimeout(1100);
   await page.mouse.up();
 
-  await expect(row).toHaveClass(/shelf-panel--pop-out/, { timeout: 1500 });
+  await expect(row).toHaveClass(/shelf-panel--pop-out/, { timeout: 800 });
   await expect(row).toHaveCount(0, { timeout: 3000 });
 });

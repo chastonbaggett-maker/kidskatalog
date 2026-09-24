@@ -115,22 +115,24 @@ export function ParentWishlistView({
         }
         backHref="/shop"
         logoHref="/p"
-        trailing={<ParentAuthLinks returnTo={returnTo} />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
         <div className="flex items-center justify-between gap-3">
-          <Link
-            href={parentDealsPath()}
-            className="text-sm font-bold text-[var(--blue-deep)]"
-          >
-            Brand deals
-          </Link>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <Link
+              href={parentDealsPath()}
+              className="text-sm font-bold text-[var(--blue-deep)]"
+            >
+              Brand deals
+            </Link>
+            <ParentAuthLinks returnTo={returnTo} tone="page" />
+          </div>
           {toys.length > 0 ? (
             <button
               type="button"
               onClick={() => clear()}
-              className="text-sm font-bold text-[var(--ink-soft)]"
+              className="shrink-0 text-sm font-bold text-[var(--ink-soft)]"
             >
               Clear
             </button>

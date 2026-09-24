@@ -10,7 +10,7 @@ import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
-import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
+import { parentBuyPlaceholderPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
 
@@ -119,15 +119,7 @@ export function ParentWishlistView({
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <Link
-              href={parentDealsPath()}
-              className="text-sm font-bold text-[var(--blue-deep)]"
-            >
-              Brand deals
-            </Link>
-            <ParentAuthLinks returnTo={returnTo} tone="page" />
-          </div>
+          <ParentAuthLinks returnTo={returnTo} tone="page" />
           {toys.length > 0 ? (
             <button
               type="button"

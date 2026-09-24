@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SendToParentForm } from "@/components/SendToParentForm";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
@@ -11,6 +12,7 @@ import {
   crazyModeScrollClass,
 } from "@/lib/crazy-mode-store";
 import { useKartStore } from "@/lib/kart-store";
+import { readLastKidArea } from "@/lib/last-kid-area";
 import { interestScore, rankIdsByInterest } from "@/lib/toy-interest";
 import { useToyInterestStore } from "@/lib/toy-interest-store";
 import type { Toy } from "@/types/toy";
@@ -18,6 +20,7 @@ import type { Toy } from "@/types/toy";
 const KART_PREVIEW_COUNT = 4;
 
 export default function KartPage() {
+  const router = useRouter();
   const ids = useKartStore((s) => s.ids);
   const remove = useKartStore((s) => s.remove);
   const clear = useKartStore((s) => s.clear);
@@ -26,6 +29,10 @@ export default function KartPage() {
   const [showAll, setShowAll] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
   const interestById = useToyInterestStore((s) => s.byId);
+
+  const goBack = useCallback(() => {
+    router.push(readLastKidArea());
+  }, [router]);
   const rankedIds = useMemo(
     () => rankIdsByInterest(ids, (id) => interestScore(interestById[id])),
     [ids, interestById],
@@ -88,6 +95,7 @@ export default function KartPage() {
             ? "Empty — go find toys!"
             : `${toys.length} favorite${toys.length === 1 ? "" : "s"}`
         }
+        onBack={goBack}
       />
 
       <div

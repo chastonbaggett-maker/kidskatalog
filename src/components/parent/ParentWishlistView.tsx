@@ -173,13 +173,13 @@ export function ParentWishlistView({
                           className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
                         />
                       </Link>
-                      <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
                         <Link href={parentToyPath(toy.id)} prefetch={false}>
                           <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
                             {toy.name}
                           </p>
                         </Link>
-                        <p className="mt-1 line-clamp-3 text-sm text-[var(--ink-soft)]">
+                        <p className="min-w-0 flex-1 truncate text-sm text-[var(--ink-soft)]">
                           {toy.blurb}
                         </p>
                       </div>

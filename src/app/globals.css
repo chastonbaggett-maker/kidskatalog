@@ -1119,21 +1119,21 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 .app-splash__hint {
   position: absolute;
   left: 50%;
-  bottom: max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem));
+  bottom: 20%;
   transform: translateX(-50%);
   margin: 0;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  padding: 0;
+  background: none;
+  border: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.55);
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: app-splash-hint-in 0.45s ease both;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
+  animation:
+    app-splash-hint-in 0.45s ease both,
+    app-splash-hint-pulse 2.4s ease-in-out 0.45s infinite;
   pointer-events: none;
   z-index: 5;
 }
@@ -1144,8 +1144,18 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
     transform: translateX(-50%) translateY(8px);
   }
   to {
-    opacity: 1;
+    opacity: 0.85;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes app-splash-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -1165,6 +1175,10 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   .app-splash__video,
   .app-splash__hint {
     animation: none !important;
+  }
+
+  .app-splash__hint {
+    opacity: 0.85;
   }
 
   .app-splash {

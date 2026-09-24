@@ -59,6 +59,9 @@ export function ParentAuthLinks({
   const mutedClass = onPage
     ? "text-sm font-bold text-[var(--ink-soft)]"
     : "text-xs font-bold text-white/80";
+  const loginButtonClass = onPage
+    ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--mint)] px-6 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
+    : linkClass;
 
   return (
     <div
@@ -93,7 +96,7 @@ export function ParentAuthLinks({
         <>
           <Link
             href={parentSignInPath(returnTo)}
-            className={linkClass}
+            className={loginButtonClass}
             data-testid="parent-login-link"
           >
             Log in

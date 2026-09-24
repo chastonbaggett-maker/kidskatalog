@@ -63,14 +63,20 @@ test.describe("safe areas match adjacent chrome", () => {
 
       const html = getComputedStyle(document.documentElement);
       const nav = document.querySelector(".bottom-nav") as HTMLElement | null;
-      if (!nav) return { ok: false as const };
+      const frost = document.querySelector(
+        ".bottom-nav__frost",
+      ) as HTMLElement | null;
+      if (!nav || !frost) return { ok: false as const };
       const navCs = getComputedStyle(nav);
+      const frostCs = getComputedStyle(frost);
       return {
         ok: true as const,
         htmlBgImage: html.backgroundImage,
         htmlBgSize: html.backgroundSize,
         htmlBgPos: html.backgroundPosition,
         navBg: navCs.backgroundColor,
+        frostBg: frostCs.backgroundColor,
+        frostFilter: frostCs.backdropFilter || frostCs.webkitBackdropFilter,
         navPad: navCs.paddingBottom,
       };
     });
@@ -80,7 +86,10 @@ test.describe("safe areas match adjacent chrome", () => {
     // Bottom strip is painted with the shelf color (not left as page field only).
     expect(shelfPaint.htmlBgImage).not.toBe("none");
     expect(shelfPaint.htmlBgImage).toMatch(/rgb|#|linear-gradient/i);
-    expect(shelfPaint.navBg).not.toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)/);
+    // Nav shell is transparent; frost paints frosted glass.
+    expect(shelfPaint.navBg).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/);
+    expect(shelfPaint.frostBg).toMatch(/rgba?\(/);
+    expect(shelfPaint.frostFilter).toMatch(/blur/i);
     expect(parseFloat(shelfPaint.navPad)).toBeGreaterThanOrEqual(34);
 
     // Safari chrome tint probes must exist and track accent / shelf colors.

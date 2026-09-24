@@ -899,13 +899,12 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 /* Cold-open splash: video part 1 → hold end frame → tap → part 2 → reveal page. */
 :root {
-  /* Match encoded part-1 mint exactly (avoids open color shift). */
-  --splash-mint: #3dd0c0;
-  --splash-bg-solid: #3dd0c0;
+  /* Brand mint plate — part 1 video is screened on top so bg never shifts. */
+  --splash-mint: #3ecfc0;
+  --splash-bg-solid: #3ecfc0;
   --splash-bg-part2: #ffffff;
   --splash-bg: none;
   --splash-fade-ms: 420ms;
-  --splash-media-scale: 0.8;
 }
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
@@ -961,7 +960,7 @@ html[data-splash="holding"]::before {
   margin: 0;
   padding: 0;
   border: 0;
-  background-color: #3dd0c0;
+  background-color: #3ecfc0;
   background-image: none;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1006,7 +1005,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   place-items: center;
   pointer-events: auto;
   cursor: default;
-  background-color: #3dd0c0;
+  background-color: #3ecfc0;
   background-image: none;
   opacity: 1;
   visibility: visible;
@@ -1020,6 +1019,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 .app-splash--part2,
 .app-splash--out {
   background-color: #ffffff;
+  isolation: isolate;
 }
 
 .app-splash--hold {
@@ -1033,14 +1033,12 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   cursor: default;
 }
 
-/* Logo / clip stage — 20% smaller, centered on full-bleed mint. */
+/* Full-size stage — mint comes from .app-splash, clips are screened on top. */
 .app-splash__stage {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  transform: scale(var(--splash-media-scale));
-  transform-origin: center center;
   pointer-events: none;
 }
 
@@ -1057,9 +1055,16 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   user-select: none;
 }
 
+/* White-on-black art: screen blend → black drops out to mint plate. */
+.app-splash__poster,
+.app-splash__end-frame,
+.app-splash__video--part1 {
+  mix-blend-mode: screen;
+  background-color: transparent !important;
+}
+
 .app-splash__poster {
   z-index: 3;
-  background-color: #3dd0c0;
   opacity: 0;
   visibility: hidden;
 }
@@ -1071,7 +1076,6 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 
 .app-splash__end-frame {
   z-index: 4;
-  background-color: #3dd0c0;
   opacity: 0;
   visibility: hidden;
 }
@@ -1090,14 +1094,10 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 }
 
 .app-splash__video {
-  background-color: #3dd0c0;
+  background-color: transparent;
   opacity: 0;
   visibility: hidden;
   z-index: 1;
-}
-
-.app-splash__video--part1 {
-  background-color: #3dd0c0 !important;
 }
 
 .app-splash__video--part1.is-active {
@@ -1106,6 +1106,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 }
 
 .app-splash__video--part2 {
+  mix-blend-mode: normal;
   background-color: #ffffff !important;
 }
 

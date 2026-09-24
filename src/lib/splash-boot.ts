@@ -1,20 +1,14 @@
 /** First-paint splash cover — inline so nav can't flash before CSS/JS. */
 
-/**
- * Exact mint from the encoded part-1 frames (yuv → rgb), so CSS / poster /
- * video never shift at the open.
- */
-export const SPLASH_BG_SOLID = "#3dd0c0";
+/** Brand mint — CSS plate is the only background for part 1 (video is screened). */
+export const SPLASH_BG_SOLID = "#3ecfc0";
 export const SPLASH_BG_GRADIENT = "none";
-/** Cache-busted first frame (solid mint — matches video t=0). */
-export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=3";
-/** True last decoded frame — used for the hold freeze (no seek-back). */
-export const SPLASH_PART1_END = "/splash/intro-part-1-mint-end.jpg?v=3";
+export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=4";
+export const SPLASH_PART1_END = "/splash/intro-part-1-mint-end.jpg?v=4";
 
 /**
  * Critical first-paint CSS.
- * ::before sits UNDER .app-splash so the intro video stays visible.
- * Solid mint only (no poster image) so the open doesn't flash a size/color shift.
+ * Solid mint plate only — part-1 video uses mix-blend screen so mint never shifts.
  */
 export const SPLASH_BOOT_STYLE = `
 html[data-splash="active"],html[data-splash="active"] body,

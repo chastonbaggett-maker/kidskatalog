@@ -8,8 +8,8 @@ import {
 } from "@/lib/splash-boot";
 
 /** Cache-busted filenames so stale clips cannot stick in the browser cache. */
-const PART1_SRC = "/splash/intro-part-1-mint.mp4?v=3";
-const PART2_SRC = "/splash/intro-part-2-white.mp4?v=3";
+const PART1_SRC = "/splash/intro-part-1-mint.mp4?v=4";
+const PART2_SRC = "/splash/intro-part-2-white.mp4?v=4";
 const PART1_POSTER = SPLASH_PART1_POSTER;
 const PART1_END = SPLASH_PART1_END;
 /** Soft fade after part 2 so the already-warmed page is underneath. */

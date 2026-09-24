@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { beginRouteChange } from "@/lib/route-change";
@@ -14,6 +15,7 @@ import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { KartNavLink } from "@/components/KartNavLink";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
+import { useShelfRaiseReveal } from "@/hooks/useShelfRaiseReveal";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
@@ -42,6 +44,7 @@ export function BottomNav() {
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const compactShelfRaised = useCompactShelfStore((s) => s.raised);
   const onPileBrowseRoute = isPileBrowseRoute(pathname);
   const revealGateOpen = usePileRevealGate();
   // Raised shelf with mode filters only on browse routes; mode itself stays session-wide.
@@ -50,8 +53,12 @@ export function BottomNav() {
     toyPileMode &&
     enterPhase !== "chrome" &&
     revealGateOpen;
+  const browseCompactShelf =
+    onPileBrowseRoute && compactShelfRaised && !toyPileMode;
+  const shelfRaised = pileNavShelf || browseCompactShelf;
   const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
-  const pileShelfMounted = pileNavShelf;
+  const compactEnterVisible = useShelfRaiseReveal(browseCompactShelf);
+  const shelfEnterVisible = pileNavEnterVisible || compactEnterVisible;
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
@@ -119,7 +126,7 @@ export function BottomNav() {
   const watchActive =
     pathname === "/menu" || pathname.startsWith("/menu/");
 
-  const showFrostFill = !pileNavShelf || pileShelfMounted;
+  const showFrostFill = true;
 
   function pulseNavItem(e: React.PointerEvent<HTMLElement>) {
     const item = e.currentTarget;
@@ -139,9 +146,9 @@ export function BottomNav() {
     <>
       <nav
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileNavShelf ? " bottom-nav--pile bottom-nav-enter" : ""
-        }${pileShelfMounted ? " is-shelf-raised" : ""}${
-          pileNavEnterVisible ? " is-enter-visible" : ""
+          shelfRaised ? " bottom-nav--pile bottom-nav-enter" : ""
+        }${shelfRaised ? " is-shelf-raised" : ""}${
+          shelfEnterVisible ? " is-enter-visible" : ""
         }${crazyMode ? " bottom-nav--crazy" : ""}`}
         style={{ ["--bottom-nav-accent" as string]: accentVar }}
       >
@@ -183,7 +190,7 @@ export function BottomNav() {
             badgeClass={badgeClass}
           />
         </ul>
-        {pileShelfMounted && (
+        {shelfRaised && (
           <div
             ref={registerPileNavModeRow}
             className="bottom-nav__mode-row"

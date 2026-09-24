@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CategoryId, Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
   isPileChromePhase,
@@ -66,6 +67,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
+  const setCompactShelfRaised = useCompactShelfStore((s) => s.setRaised);
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
@@ -303,6 +305,12 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const showCompactShelf =
     !compactShelfBlocked && enterPhase === "idle" && !pileOn && !isChromePhase;
 
+  useEffect(() => {
+    const raised = showCompactShelf && shelfMode === "shown";
+    setCompactShelfRaised(raised);
+    return () => setCompactShelfRaised(false);
+  }, [showCompactShelf, shelfMode, setCompactShelfRaised]);
+
   const filterRowProps = {
     audience,
     onAudienceChange: setAudience,
@@ -465,7 +473,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
         )}
       </div>
       {flashPortal}
-      {pileShelfMounted &&
+      {(pileShelfMounted || (showCompactShelf && shelfMode === "shown")) &&
         pileModeRowTarget &&
         createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>

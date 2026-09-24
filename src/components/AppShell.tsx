@@ -10,6 +10,7 @@ import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
 import { RememberKidArea } from "./RememberKidArea";
 import { useCrazyModeStore } from "@/lib/crazy-mode-store";
+import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useToyPileModeStore } from "@/lib/toy-pile-store";
 import { useRouteChangeLock } from "@/hooks/useRouteChangeLock";
 
@@ -23,11 +24,13 @@ export function AppShell({
   useRouteChangeLock();
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const pileMode = useToyPileModeStore((s) => s.toyPileMode);
+  const compactShelfRaised = useCompactShelfStore((s) => s.raised);
 
   const shellClass = [
     "app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden",
     crazyMode ? "app-shell--crazy" : "",
     pileMode ? "app-shell--pile" : "",
+    compactShelfRaised && !pileMode ? "app-shell--compact-shelf-raised" : "",
   ]
     .filter(Boolean)
     .join(" ");

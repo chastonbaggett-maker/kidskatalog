@@ -2747,6 +2747,11 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   padding-bottom: var(--bottom-nav-offset);
 }
 
+/* Compact browse header is up — give feed room for the raised mode shelf. */
+.app-shell--compact-shelf-raised .scroll-pad-bottom {
+  padding-bottom: var(--pile-nav-stack-height);
+}
+
 /* Middle pane: only this region scrolls; header + bottom nav stay fixed in the shell */
 .page-scroll {
   min-height: 0;

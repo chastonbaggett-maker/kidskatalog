@@ -9,6 +9,7 @@ import { KartFlyBallHost } from "./KartFlyBallHost";
 import { KartNavEffectGuard } from "./KartNavEffectGuard";
 import { MetricsPing } from "./MetricsPing";
 import { RememberKidArea } from "./RememberKidArea";
+import { SafariChromeTint } from "./SafariChromeTint";
 import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useToyPileModeStore } from "@/lib/toy-pile-store";
@@ -37,6 +38,7 @@ export function AppShell({
 
   return (
     <div className={shellClass}>
+      <SafariChromeTint />
       <Suspense fallback={null}>
         <RememberKidArea />
       </Suspense>

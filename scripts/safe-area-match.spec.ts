@@ -83,6 +83,38 @@ test.describe("safe areas match adjacent chrome", () => {
     expect(shelfPaint.navBg).not.toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)/);
     expect(parseFloat(shelfPaint.navPad)).toBeGreaterThanOrEqual(34);
 
+    // Safari chrome tint probes must exist and track accent / shelf colors.
+    const probes = await page.evaluate(() => {
+      const top = document.querySelector(
+        ".safari-chrome-tint--top",
+      ) as HTMLElement | null;
+      const bottom = document.querySelector(
+        ".safari-chrome-tint--bottom",
+      ) as HTMLElement | null;
+      if (!top || !bottom) return { ok: false as const };
+      const topCs = getComputedStyle(top);
+      const bottomCs = getComputedStyle(bottom);
+      return {
+        ok: true as const,
+        topBg: topCs.backgroundColor,
+        bottomBg: bottomCs.backgroundColor,
+        topPos: topCs.position,
+        bottomPos: bottomCs.position,
+        statusVar: getComputedStyle(document.documentElement)
+          .getPropertyValue("--status-bar")
+          .trim(),
+        shelfVar: getComputedStyle(document.documentElement)
+          .getPropertyValue("--bottom-shelf")
+          .trim(),
+      };
+    });
+    expect(probes.ok).toBe(true);
+    if (!probes.ok) return;
+    expect(probes.topPos).toBe("fixed");
+    expect(probes.bottomPos).toBe("fixed");
+    expect(probes.statusVar.toLowerCase()).toBe("#2bb8a8");
+    expect(probes.shelfVar.toLowerCase()).toBe("#ffffff");
+
     // Switch to Boys — theme-color must follow header blue.
     const boysChip = page.getByRole("button", { name: /^Boys$/i }).first();
     if (await boysChip.count()) {

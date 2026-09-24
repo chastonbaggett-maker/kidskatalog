@@ -19,6 +19,8 @@
   --foreground: var(--ink);
   /* Bottom nav shelf. Browser home-indicator / bottom chrome samples this, not the page field. */
   --bottom-shelf: #ffffff;
+  /* Solid status-bar tint (left edge of --header-grad) for Safari edge sampling. */
+  --status-bar: #2bb8a8;
   /* Unisex header — mint teal with a soft depth shift */
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
   --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
@@ -48,6 +50,7 @@ html[data-accent="boys"] {
   --purple: #5b93ff;
   --purple-deep: #3a6fe0;
   --lavender: #e4edff;
+  --status-bar: #2f6ae8;
   --header-grad: linear-gradient(90deg, #2f6ae8 0%, #4e89ff 50%, #7aa8ff 100%);
   --header-grad-alt: linear-gradient(180deg, #7aa8ff 0%, #4e89ff 45%, #2f6ae8 100%);
 }
@@ -61,6 +64,7 @@ html[data-accent="girls"] {
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ffe9f2;
+  --status-bar: #ef8fb3;
   --header-grad: linear-gradient(90deg, #ef8fb3 0%, #f5a9c5 50%, #ffc2d6 100%);
   --header-grad-alt: linear-gradient(180deg, #ffc2d6 0%, #f5a9c5 45%, #e878a8 100%);
 }
@@ -75,6 +79,7 @@ html[data-accent="both"] {
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ebe4f7;
+  --status-bar: #2bb8a8;
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
   --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
 }
@@ -100,6 +105,47 @@ html {
 html:has(.app-shell--crazy) {
   --bottom-shelf: #18181f;
   background-color: #18181f;
+}
+
+/*
+ * Safari 26+ browser chrome tint probes.
+ * theme-color is ignored; Safari samples fixed elements within ~4px of the
+ * top / ~3px of the bottom that have a solid background-color (not images,
+ * not ::before). Keep probes thin and mostly off-screen so users never notice.
+ */
+.safari-chrome-tint {
+  display: none;
+  pointer-events: none;
+  position: fixed;
+  left: 0;
+  width: 100%;
+  min-height: 12px;
+  z-index: 45;
+}
+
+.safari-chrome-tint--top {
+  top: 0;
+  background-color: var(--status-bar);
+}
+
+.safari-chrome-tint--bottom {
+  bottom: -8px;
+  background-color: var(--bottom-shelf);
+}
+
+@supports (-webkit-text-size-adjust: none) and (font: -apple-system-body) and
+  (-webkit-touch-callout: none) {
+  @media (width < 768px) {
+    .safari-chrome-tint {
+      display: block;
+    }
+  }
+}
+
+/* Hide tint probes while splash owns the screen */
+html[data-splash="active"] .safari-chrome-tint,
+html[data-splash="holding"] .safari-chrome-tint {
+  display: none !important;
 }
 
 body {

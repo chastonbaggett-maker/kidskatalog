@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
@@ -21,6 +21,8 @@ const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
 /** Wait longer than a rapid multi-tap before treating tap 1 as "go home". */
 const BRAND_SINGLE_TAP_NAV_MS = 400;
+/** Matches compact shelf / mode-row slide duration. */
+const COMPACT_SHELF_EXIT_MS = 420;
 
 function useViewAccentVar() {
   const audience = useAccentStore((s) => s.audience);
@@ -55,10 +57,25 @@ export function BottomNav() {
     revealGateOpen;
   const browseCompactShelf =
     onPileBrowseRoute && compactShelfRaised && !toyPileMode;
-  const shelfRaised = pileNavShelf || browseCompactShelf;
+  const [compactShelfMounted, setCompactShelfMounted] = useState(false);
   const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
   const compactEnterVisible = useShelfRaiseReveal(browseCompactShelf);
-  const shelfEnterVisible = pileNavEnterVisible || compactEnterVisible;
+
+  useEffect(() => {
+    if (browseCompactShelf) {
+      setCompactShelfMounted(true);
+      return;
+    }
+    if (!compactShelfMounted) return;
+    const timer = window.setTimeout(() => {
+      setCompactShelfMounted(false);
+    }, COMPACT_SHELF_EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [browseCompactShelf, compactShelfMounted]);
+
+  const shelfRaised = pileNavShelf || compactShelfMounted;
+  const shelfEnterVisible =
+    pileNavEnterVisible || (compactShelfMounted && compactEnterVisible);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);

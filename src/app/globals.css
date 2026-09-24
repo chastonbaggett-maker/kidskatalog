@@ -1181,10 +1181,10 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   z-index: 40;
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(0, -12px, 0);
+  transform: translate3d(0, -110%, 0);
   transition:
-    opacity 300ms ease,
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 420ms ease-in-out,
+    transform 420ms ease-in-out;
   will-change: opacity, transform;
 }
 
@@ -1194,12 +1194,14 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   transform: translate3d(0, 0, 0);
 }
 
-/* Exit: stay fixed at top and fade only — no slide into category nav */
+/* Exit: slide back up with the same ease. */
 .browse-shelf-overlay.is-leaving {
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(0, 0, 0);
-  transition: opacity 300ms ease;
+  transform: translate3d(0, -110%, 0);
+  transition:
+    opacity 420ms ease-in-out,
+    transform 420ms ease-in-out;
 }
 
 .browse-feed--crazy .browse-shelf-overlay {
@@ -1510,6 +1512,12 @@ html[data-accent="both"] .kart-go-btn:hover {
   .browse-shelf-overlay,
   .browse-shelf-overlay.is-visible,
   .browse-shelf-overlay.is-leaving {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  .bottom-nav__mode-row,
+  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__mode-row {
     transition: opacity 160ms ease;
     transform: none;
   }
@@ -2429,7 +2437,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   border-radius: 2rem 2rem 0 0;
   padding-bottom: 0;
   overflow: hidden;
-  transition: min-height var(--pile-chrome-duration) ease-in-out;
+  transition: min-height 420ms ease-in-out;
 }
 
 .bottom-nav__frost {
@@ -2540,6 +2548,12 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   overflow: hidden;
   display: flex;
   align-items: center;
+  opacity: 0;
+  transform: translate3d(0, 100%, 0);
+  transition:
+    opacity 420ms ease-in-out,
+    transform 420ms ease-in-out;
+  will-change: opacity, transform;
 }
 
 .bottom-nav__mode-row .filter-row-scroll {
@@ -2558,15 +2572,9 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   gap: 0.5rem;
 }
 
-.bottom-nav--pile.bottom-nav-enter .bottom-nav__mode-row {
-  opacity: 0;
-  transform: none;
-  transition: opacity var(--pile-chrome-duration) ease-in-out;
-}
-
-.bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__mode-row {
+.bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__mode-row {
   opacity: 1;
-  transform: none;
+  transform: translate3d(0, 0, 0);
 }
 
 .bottom-nav--pile.bottom-nav-enter {

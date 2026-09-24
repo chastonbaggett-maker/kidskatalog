@@ -282,7 +282,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
       if (!shelfWantedRef.current && !blockCompactShelfRef.current) {
         setShelfMode("hidden");
       }
-    }, 320);
+    }, 420);
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
@@ -473,7 +473,8 @@ export function BrowseFeed({ category, initialPage }: Props) {
         )}
       </div>
       {flashPortal}
-      {(pileShelfMounted || (showCompactShelf && shelfMode === "shown")) &&
+      {(pileShelfMounted ||
+        (showCompactShelf && shelfMode !== "hidden")) &&
         pileModeRowTarget &&
         createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>

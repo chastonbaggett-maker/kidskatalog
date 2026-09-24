@@ -75,8 +75,8 @@ export default function KartPage() {
       frame = requestAnimationFrame(() => setRowsEntered(true));
     };
     const splash = root.dataset.splash;
-    if (splash === "active" || splash === "exiting") {
-      const fallback = window.setTimeout(play, 1600);
+    if (splash) {
+      const fallback = window.setTimeout(play, 5000);
       const observer = new MutationObserver(() => {
         if (!root.dataset.splash) {
           observer.disconnect();

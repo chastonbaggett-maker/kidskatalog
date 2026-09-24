@@ -1,46 +1,111 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useConfettiBurst, GOLD_CONFETTI } from "@/hooks/useConfettiBurst";
 import { unlockSharedAudio } from "@/lib/shared-audio";
 
-const FADE_IN_MS = 700;
-/** Matches --splash-pulse-duration (3s) × --splash-pulse-count (5). */
-const PULSE_MS = 3000;
-const PULSE_COUNT = 5;
-const AUTO_TAP_MS = PULSE_MS * PULSE_COUNT;
-const OUT_AFTER_TAP_MS = 420;
-/** Must match `.app-splash--out` animation duration. */
-const FADE_OUT_MS = 850;
-const DONE_AFTER_TAP_MS = OUT_AFTER_TAP_MS + FADE_OUT_MS;
+const PART1_SRC = "/splash/intro-part-1.mp4";
+const PART2_SRC = "/splash/intro-part-2.mp4";
+const PART1_POSTER = "/splash/intro-part-1-end.jpg";
+/** Soft fade after part 2 so the already-warmed page is underneath. */
+const FADE_OUT_MS = 420;
 
-type SplashPhase = "in" | "armed" | "tap" | "out" | "done";
+type SplashPhase = "part1" | "hold" | "part2" | "out" | "done";
 
-function setSplashState(state: "active" | "exiting" | null) {
+function setSplashState(state: "active" | "holding" | "exiting" | null) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (state) root.dataset.splash = state;
   else delete root.dataset.splash;
 }
 
+async function waitForPageReady() {
+  if (typeof document === "undefined") return;
+  if (document.readyState !== "complete") {
+    await new Promise<void>((resolve) => {
+      window.addEventListener("load", () => resolve(), { once: true });
+    });
+  }
+  try {
+    if (document.fonts?.ready) await document.fonts.ready;
+  } catch {
+    /* fonts API unavailable */
+  }
+  // Two frames after load so the browse shell can paint under the overlay.
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+  // Nudge the catalog warm so the feed is ready when we cut.
+  try {
+    await fetch("/api/catalog?offset=0&limit=8", { credentials: "same-origin" });
+  } catch {
+    /* offline / slow — still proceed */
+  }
+}
+
 /**
- * Cold-open splash: fade in the K, then a slow pulse five times (or until tap),
- * then confetti + burst SFX. Whole-screen background + logo fade out together.
- * Mounts once per full document load; client navigations do not remount it.
+ * Cold-open splash: play intro part 1, hold the end frame until tap,
+ * play intro part 2, then reveal the already-loaded page underneath.
  */
 export function AppSplash() {
-  const logoRef = useRef<HTMLSpanElement>(null);
-  const [phase, setPhase] = useState<SplashPhase>("in");
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
-  const { fire: fireConfetti, portal: confettiPortal } = useConfettiBurst({
-    portalRoot,
-  });
-  const firedRef = useRef(false);
-  const outTimersRef = useRef<number[]>([]);
+  const part1Ref = useRef<HTMLVideoElement>(null);
+  const part2Ref = useRef<HTMLVideoElement>(null);
+  const [phase, setPhase] = useState<SplashPhase>("part1");
+  const [pageReady, setPageReady] = useState(false);
+  const pageReadyRef = useRef(false);
+  const startedPart2Ref = useRef(false);
+  const outTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setPortalRoot(document.body);
     setSplashState("active");
+    let cancelled = false;
+    void waitForPageReady().then(() => {
+      if (cancelled) return;
+      pageReadyRef.current = true;
+      setPageReady(true);
+    });
+    return () => {
+      cancelled = true;
+      if (outTimerRef.current != null) {
+        window.clearTimeout(outTimerRef.current);
+        outTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Once the page is warm and we're past the opening clip, show the shell
+  // under the splash so the cut lands on a loaded screen.
+  useEffect(() => {
+    if (!pageReady) return;
+    if (phase === "hold" || phase === "part2") {
+      setSplashState("holding");
+    }
+  }, [pageReady, phase]);
+
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setSplashState(null);
+      setPhase("done");
+      return;
+    }
+
+    const video = part1Ref.current;
+    if (!video) return;
+
+    const playPart1 = async () => {
+      try {
+        video.currentTime = 0;
+        video.muted = true;
+        await video.play();
+      } catch {
+        // Autoplay blocked — jump to hold so a tap can continue.
+        setPhase("hold");
+      }
+    };
+
+    void playPart1();
   }, []);
 
   const finishSplash = () => {
@@ -48,91 +113,133 @@ export function AppSplash() {
     setPhase("done");
   };
 
-  const runTap = () => {
-    if (firedRef.current || phase === "done") return;
-    firedRef.current = true;
-
-    // Measure center before phase change so confetti originates on the mark.
-    const rect = logoRef.current?.getBoundingClientRect();
-    const origin = rect
-      ? {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        }
-      : {
-          x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
-        };
-
-    // Unlock + play in the same turn when this came from a real press.
-    unlockSharedAudio();
-    fireConfetti(origin, GOLD_CONFETTI);
-    setPhase("tap");
-
-    outTimersRef.current.push(
-      window.setTimeout(() => {
-        // Reveal nav under the fade so the shelf doesn't pop after splash.
-        setSplashState("exiting");
-        setPhase("out");
-      }, OUT_AFTER_TAP_MS),
-      window.setTimeout(() => {
+  const beginExit = () => {
+    const go = () => {
+      setSplashState("exiting");
+      setPhase("out");
+      outTimerRef.current = window.setTimeout(() => {
         finishSplash();
-      }, DONE_AFTER_TAP_MS),
-    );
+      }, FADE_OUT_MS);
+    };
+    if (pageReadyRef.current) {
+      go();
+      return;
+    }
+    // Part 2 finished before the page warmed — wait, then cut.
+    void waitForPageReady().then(() => {
+      pageReadyRef.current = true;
+      setPageReady(true);
+      go();
+    });
   };
 
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) {
-      finishSplash();
+  const onPart1Ended = () => {
+    const video = part1Ref.current;
+    if (video) {
+      try {
+        // Stick on the last frame until the user taps.
+        video.pause();
+        if (video.duration && Number.isFinite(video.duration)) {
+          video.currentTime = Math.max(0, video.duration - 0.04);
+        }
+      } catch {
+        /* ignore seek errors */
+      }
+    }
+    setPhase("hold");
+  };
+
+  const onPart2Ended = () => {
+    beginExit();
+  };
+
+  const startPart2 = () => {
+    if (startedPart2Ref.current) return;
+    if (phase !== "hold") return;
+
+    startedPart2Ref.current = true;
+    unlockSharedAudio();
+    setPhase("part2");
+    if (pageReadyRef.current) setSplashState("holding");
+
+    const part1 = part1Ref.current;
+    const part2 = part2Ref.current;
+    part1?.pause();
+
+    if (!part2) {
+      beginExit();
       return;
     }
 
-    unlockSharedAudio();
-
-    const armTimer = window.setTimeout(() => setPhase("armed"), FADE_IN_MS);
-    const autoTimer = window.setTimeout(() => runTap(), FADE_IN_MS + AUTO_TAP_MS);
-
-    return () => {
-      window.clearTimeout(armTimer);
-      window.clearTimeout(autoTimer);
-      for (const t of outTimersRef.current) window.clearTimeout(t);
-      outTimersRef.current = [];
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase === "out" || phase === "done" || firedRef.current) return;
-    if (e.button !== 0) return;
-    runTap();
+    void (async () => {
+      try {
+        part2.currentTime = 0;
+        part2.muted = false;
+        await part2.play();
+      } catch {
+        try {
+          part2.muted = true;
+          await part2.play();
+        } catch {
+          beginExit();
+        }
+      }
+    })();
   };
 
-  if (phase === "done") return confettiPortal;
+  const onSplashPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (phase === "out" || phase === "done" || phase === "part2") return;
+    if (e.button !== 0) return;
+    if (phase === "hold") {
+      startPart2();
+      return;
+    }
+    // During part1: ignore until hold (stick to the designed beat).
+  };
+
+  if (phase === "done") return null;
 
   return (
-    <>
-      <div
-        className={`app-splash app-splash--${phase}`}
-        role="button"
-        tabIndex={0}
-        aria-label="Tap to start KidsKatalog"
-        onPointerDown={onSplashPointerDown}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            runTap();
-          }
-        }}
-      >
-        <div className="app-splash__logo-wrap">
-          <span className="app-splash__pulse app-splash__pulse--a" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--b" aria-hidden />
-          <span className="app-splash__pulse app-splash__pulse--c" aria-hidden />
-          <span ref={logoRef} className="app-splash__logo" />
-        </div>
-      </div>
-      {confettiPortal}
-    </>
+    <div
+      className={`app-splash app-splash--video app-splash--${phase}`}
+      role="button"
+      tabIndex={0}
+      aria-label="Tap to start KidsKatalog"
+      onPointerDown={onSplashPointerDown}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (phase === "hold") startPart2();
+        }
+      }}
+    >
+      <video
+        ref={part1Ref}
+        className={`app-splash__video app-splash__video--part1${
+          phase === "part1" || phase === "hold" ? " is-active" : ""
+        }`}
+        src={PART1_SRC}
+        poster={PART1_POSTER}
+        playsInline
+        muted
+        preload="auto"
+        onEnded={onPart1Ended}
+        aria-hidden={phase !== "part1" && phase !== "hold"}
+      />
+      <video
+        ref={part2Ref}
+        className={`app-splash__video app-splash__video--part2${
+          phase === "part2" || phase === "out" ? " is-active" : ""
+        }`}
+        src={PART2_SRC}
+        playsInline
+        preload="auto"
+        onEnded={onPart2Ended}
+        aria-hidden={phase !== "part2" && phase !== "out"}
+      />
+      {phase === "hold" ? (
+        <p className="app-splash__hint">Tap to continue</p>
+      ) : null}
+    </div>
   );
 }

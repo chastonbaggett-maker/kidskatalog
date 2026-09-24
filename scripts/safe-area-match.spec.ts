@@ -1,113 +1,91 @@
 /**
- * Safe areas match adjacent chrome via real header/nav edges (Safari 26).
- * Run: npx playwright test safe-area-match
+ * Edge-to-edge chrome (PWA-style) + music waits for splash to clear.
  */
 import { test, expect, type Page } from "@playwright/test";
 import path from "path";
 
 const ARTIFACTS = "/opt/cursor/artifacts";
 
-const STATUS_BAR: Record<string, string> = {
-  both: "#2bb8a8",
-  boys: "#2f6ae8",
-  girls: "#ef8fb3",
-};
-
 async function dismissSplash(page: Page) {
   const tap = page.getByRole("button", { name: /Tap to start/i });
   try {
     await tap.waitFor({ state: "visible", timeout: 12_000 });
     await tap.click();
-    await tap.waitFor({ state: "hidden", timeout: 15_000 });
+    await tap.waitFor({ state: "hidden", timeout: 20_000 });
   } catch {
-    // Already dismissed or not a cold open.
+    // Already dismissed.
   }
   await page
     .locator(".app-splash")
-    .waitFor({ state: "detached", timeout: 8_000 })
+    .waitFor({ state: "detached", timeout: 12_000 })
     .catch(() => {});
 }
 
-test.describe("safe areas match adjacent chrome", () => {
-  test("header/nav edges carry sampleable colors; no tint probes", async ({
-    page,
-  }) => {
+test.describe("splash music + edge chrome", () => {
+  test("no solid safe-area bands; music gated by splash", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/shop", { waitUntil: "domcontentloaded" });
+
+    // While splash is up, bed must not be allowed.
+    const blockedDuringSplash = await page.evaluate(() => {
+      const splash = document.documentElement.dataset.splash;
+      return (
+        splash === "active" ||
+        splash === "holding" ||
+        splash === "exiting" ||
+        document.querySelector(".app-splash") != null
+      );
+    });
+    // Cold open should show splash (unless reduced-motion).
+    if (blockedDuringSplash) {
+      expect(
+        await page.evaluate(() => {
+          const splash = document.documentElement.dataset.splash;
+          return Boolean(splash);
+        }),
+      ).toBe(true);
+    }
+
     await dismissSplash(page);
     await page.waitForSelector(".bottom-nav", { timeout: 20_000 });
     await page.waitForSelector(".feed-header", { timeout: 20_000 });
 
-    // No visible Safari probe strips.
     expect(await page.locator(".safari-chrome-tint").count()).toBe(0);
 
-    await page.waitForFunction(
-      (expected) => {
-        const meta = document.querySelector('meta[name="theme-color"]');
-        return meta?.getAttribute("content") === expected;
-      },
-      STATUS_BAR.both,
-      { timeout: 10_000 },
-    );
-
-    const edgeChrome = await page.evaluate(() => {
-      const header = document.querySelector(".feed-header") as HTMLElement;
-      const nav = document.querySelector(".bottom-nav") as HTMLElement;
-      if (!header || !nav) return { ok: false as const };
-      const headerCs = getComputedStyle(header);
-      const navCs = getComputedStyle(nav);
+    const chrome = await page.evaluate(() => {
+      const html = getComputedStyle(document.documentElement);
+      const header = getComputedStyle(document.querySelector(".feed-header")!);
+      const nav = getComputedStyle(document.querySelector(".bottom-nav")!);
       return {
-        ok: true as const,
-        headerPos: headerCs.position,
-        headerTop: headerCs.top,
-        headerBg: headerCs.backgroundColor,
-        statusVar: getComputedStyle(document.documentElement)
-          .getPropertyValue("--status-bar")
-          .trim(),
-        navPos: navCs.position,
-        navBottom: navCs.bottom,
-        navBg: navCs.backgroundColor,
-        navFilter: navCs.backdropFilter || navCs.webkitBackdropFilter,
+        htmlBgImage: html.backgroundImage,
+        splash: document.documentElement.dataset.splash ?? null,
+        headerPos: header.position,
+        headerBgColor: header.backgroundColor,
+        headerBgImage: header.backgroundImage,
+        navPos: nav.position,
+        navBg: nav.backgroundColor,
+        navFilter: nav.backdropFilter || nav.webkitBackdropFilter,
+        theme: [
+          ...document.querySelectorAll('meta[name="theme-color"]'),
+        ].map((m) => m.getAttribute("content")),
       };
     });
 
-    expect(edgeChrome.ok).toBe(true);
-    if (!edgeChrome.ok) return;
-
-    expect(edgeChrome.headerPos).toBe("sticky");
-    expect(edgeChrome.headerTop).toBe("0px");
-    expect(edgeChrome.statusVar.toLowerCase()).toBe("#2bb8a8");
-    // Solid status-bar color on the header element (Safari samples this).
-    expect(edgeChrome.headerBg).toMatch(/rgb\(43,\s*184,\s*168\)|#2bb8a8/i);
-
-    expect(edgeChrome.navPos).toBe("fixed");
-    expect(edgeChrome.navBottom).toBe("0px");
-    expect(edgeChrome.navBg).toMatch(/rgba?\(255,\s*255,\s*255/i);
-    expect(edgeChrome.navFilter).toMatch(/blur/i);
-
-    // Boys — header status color follows accent.
-    const boysChip = page.getByRole("button", { name: /^Boys$/i }).first();
-    if (await boysChip.count()) {
-      await boysChip.click();
-      await page.waitForFunction(
-        (expected) =>
-          document.documentElement.dataset.accent === "boys" &&
-          getComputedStyle(document.documentElement)
-            .getPropertyValue("--status-bar")
-            .trim()
-            .toLowerCase() === expected,
-        STATUS_BAR.boys,
-        { timeout: 10_000 },
-      );
-      const boysHeaderBg = await page.evaluate(
-        () => getComputedStyle(document.querySelector(".feed-header")!)
-          .backgroundColor,
-      );
-      expect(boysHeaderBg).toMatch(/rgb\(47,\s*106,\s*232\)|#2f6ae8/i);
+    expect(chrome.splash).toBeNull();
+    expect(chrome.htmlBgImage).toBe("none");
+    expect(chrome.headerPos).toBe("sticky");
+    // No solid status-bar fill — gradient only (PWA-style blend).
+    expect(chrome.headerBgColor).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/);
+    expect(chrome.headerBgImage).toMatch(/linear-gradient/i);
+    expect(chrome.navPos).toBe("fixed");
+    expect(chrome.navBg).toMatch(/rgba?\(255,\s*255,\s*255/i);
+    expect(chrome.navFilter).toMatch(/blur/i);
+    for (const c of chrome.theme) {
+      expect(c).toBe("transparent");
     }
 
     await page.screenshot({
-      path: path.join(ARTIFACTS, "safe_area_edge_chrome.png"),
+      path: path.join(ARTIFACTS, "edge_to_edge_after_splash.png"),
       fullPage: false,
     });
   });

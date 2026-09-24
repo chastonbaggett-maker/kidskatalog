@@ -2,6 +2,8 @@
  * Click tones over background music from the track catalog.
  * Each UI tap plays a one-shot note; bed tracks play through once and
  * advance to the next song (playlist loops, songs do not).
+ *
+ * One shared engine instance — never stack multiple beds.
  */
 
 import {
@@ -27,11 +29,26 @@ const SCALE = [
 /** Melodic contour indices into SCALE (up, skip, down). */
 const PHRASE = [0, 2, 4, 5, 7, 5, 4, 2, 1, 3, 5, 6, 8, 6, 4, 3, 2, 0] as const;
 
+/** Splash (or its exit) still owns the screen — bed must stay silent. */
+export function splashBlocksMusic(): boolean {
+  if (typeof document === "undefined") return false;
+  const splash = document.documentElement.dataset.splash;
+  return splash === "active" || splash === "holding" || splash === "exiting";
+}
+
+let sharedEngine: ClickMelodyEngine | null = null;
+
+export function getClickMelodyEngine(): ClickMelodyEngine {
+  if (!sharedEngine) sharedEngine = new ClickMelodyEngine();
+  return sharedEngine;
+}
+
 export class ClickMelodyEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private bedGain: GainNode | null = null;
   private bedSource: AudioBufferSourceNode | null = null;
+  private bedStartToken = 0;
   private bedBuffers = new Map<string, AudioBuffer>();
   private bedLoads = new Map<string, Promise<AudioBuffer | null>>();
   private trackId = DEFAULT_MUSIC_TRACK_ID;
@@ -59,21 +76,44 @@ export class ClickMelodyEngine {
     return getMusicTrack(this.trackId);
   }
 
-  /** Must run inside a user gesture on iOS — do not await before scheduling. */
-  unlock(): boolean {
+  /**
+   * Unlock Web Audio inside a user gesture.
+   * By default does not start the bed while the splash is up.
+   */
+  unlock(options?: { startBed?: boolean }): boolean {
     const ctx = unlockSharedAudio();
     if (!ctx) return false;
     this.ctx = ctx;
     this.ensureMaster();
     this.unlocked = ctx.state === "running" || ctx.state === "suspended";
-    if (ctx.state === "running" && !this.muted) this.ensureBed();
+    const wantBed = options?.startBed !== false && !splashBlocksMusic();
+    if (ctx.state === "running" && !this.muted && wantBed) this.ensureBed();
     void ctx.resume().then(() => {
-      if (ctx.state === "running") {
-        this.unlocked = true;
-        if (!this.muted) this.ensureBed();
+      if (ctx.state !== "running") return;
+      this.unlocked = true;
+      if (!this.muted && options?.startBed !== false && !splashBlocksMusic()) {
+        this.ensureBed();
       }
     });
     return true;
+  }
+
+  /** Start bed after splash has fully cleared (context already unlocked). */
+  startBedIfAllowed() {
+    if (this.muted || splashBlocksMusic()) return;
+    if (!this.ctx) {
+      const ctx = getSharedAudioContext();
+      if (!ctx || ctx.state === "closed") return;
+      this.ctx = ctx;
+      this.ensureMaster();
+    }
+    if (this.ctx.state === "suspended") {
+      void this.ctx.resume().then(() => {
+        if (!this.muted && !splashBlocksMusic()) this.ensureBed();
+      });
+      return;
+    }
+    this.ensureBed();
   }
 
   setMuted(muted: boolean) {
@@ -84,7 +124,8 @@ export class ClickMelodyEngine {
     this.master.gain.setTargetAtTime(muted ? 0 : MASTER_LEVEL, now, 0.05);
     if (muted) {
       this.fadeBed(0, 0.2);
-    } else {
+      this.stopBedSourceOnly();
+    } else if (!splashBlocksMusic()) {
       this.ensureBed();
       this.fadeBed(BED_LEVEL, 0.4);
     }
@@ -96,12 +137,12 @@ export class ClickMelodyEngine {
     if (next === this.trackId && this.bedSource) return;
     this.trackId = next;
     this.stopBedSourceOnly();
-    if (!this.muted) this.ensureBed();
+    if (!this.muted && !splashBlocksMusic()) this.ensureBed();
   }
 
   /** Play the next one-shot melody note (never echoed into a click loop). */
   note() {
-    if (this.muted) return false;
+    if (this.muted || splashBlocksMusic()) return false;
     if (!this.unlock() || !this.ctx || !this.master) return false;
 
     const degree = PHRASE[this.phrasePos % PHRASE.length]!;
@@ -113,7 +154,14 @@ export class ClickMelodyEngine {
     return true;
   }
 
+  /** Tear down handlers only — keep the singleton bed alive across remounts. */
+  clearHandlers() {
+    this.onNote = null;
+    this.onTrackEnded = null;
+  }
+
   dispose() {
+    this.clearHandlers();
     this.stopBed();
     if (this.master) {
       try {
@@ -125,6 +173,7 @@ export class ClickMelodyEngine {
     this.master = null;
     this.ctx = null;
     this.unlocked = false;
+    if (sharedEngine === this) sharedEngine = null;
   }
 
   private ensureMaster() {
@@ -139,7 +188,7 @@ export class ClickMelodyEngine {
   }
 
   private ensureBed() {
-    if (!this.ctx || !this.master || this.muted) return;
+    if (!this.ctx || !this.master || this.muted || splashBlocksMusic()) return;
     if (this.bedSource && this.bedGain) {
       this.fadeBed(BED_LEVEL, 0.3);
       return;
@@ -148,14 +197,23 @@ export class ClickMelodyEngine {
   }
 
   private async startBedWhenReady(trackId: string) {
-    if (!this.ctx || !this.master || this.muted) return;
+    if (!this.ctx || !this.master || this.muted || splashBlocksMusic()) return;
     if (this.bedSource) return;
 
+    const token = ++this.bedStartToken;
     const track = getMusicTrack(trackId);
     const buffer = await this.loadBedBuffer(track);
-    // Track may have changed while decoding.
+    // Abort if a newer start superseded this load, or splash took over.
+    if (token !== this.bedStartToken) return;
     if (this.trackId !== track.id) return;
-    if (!buffer || !this.ctx || !this.master || this.muted || this.bedSource) {
+    if (
+      !buffer ||
+      !this.ctx ||
+      !this.master ||
+      this.muted ||
+      splashBlocksMusic() ||
+      this.bedSource
+    ) {
       return;
     }
 
@@ -177,7 +235,7 @@ export class ClickMelodyEngine {
     source.onended = () => {
       if (this.bedSource !== source) return;
       this.bedSource = null;
-      if (this.muted) return;
+      if (this.muted || splashBlocksMusic()) return;
       this.onTrackEnded?.();
     };
 
@@ -226,6 +284,7 @@ export class ClickMelodyEngine {
   }
 
   private stopBedSourceOnly() {
+    this.bedStartToken += 1;
     if (this.bedSource) {
       try {
         this.bedSource.onended = null;

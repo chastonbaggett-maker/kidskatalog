@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ClickMelodyEngine } from "@/lib/click-melody-engine";
+import {
+  getClickMelodyEngine,
+  splashBlocksMusic,
+} from "@/lib/click-melody-engine";
 import { useClickMelodyStore } from "@/lib/click-melody-store";
 import { getMusicTrack } from "@/lib/music-tracks";
 
 function isMusicalTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   if (target.closest("[data-click-melody-toggle]")) return false;
+  if (target.closest(".app-splash")) return false;
   return Boolean(
     target.closest(
       'button, a, [role="button"], input[type="button"], input[type="submit"], summary, label',
@@ -34,13 +38,14 @@ const floatTimers = new Map<number, number>();
 /**
  * Mini music player: mute/unmute + next track, with one-shot tap tones
  * over the selected bed song. Songs play once; the playlist loops.
+ * Bed waits until splash is fully gone (same gesture unlocks audio earlier).
  */
 export function ClickMelody() {
   const enabled = useClickMelodyStore((s) => s.enabled);
   const trackId = useClickMelodyStore((s) => s.trackId);
   const setEnabled = useClickMelodyStore((s) => s.setEnabled);
   const nextTrack = useClickMelodyStore((s) => s.nextTrack);
-  const engineRef = useRef<ClickMelodyEngine | null>(null);
+  const engineRef = useRef(getClickMelodyEngine());
   const [mounted, setMounted] = useState(false);
   const [floatNotes, setFloatNotes] = useState<FloatNote[]>([]);
 
@@ -83,7 +88,7 @@ export function ClickMelody() {
 
   useEffect(() => {
     setMounted(true);
-    const engine = new ClickMelodyEngine();
+    const engine = getClickMelodyEngine();
     engineRef.current = engine;
     const state = useClickMelodyStore.getState();
     engine.setTrack(state.trackId);
@@ -92,13 +97,23 @@ export function ClickMelody() {
       spawnFloat();
     });
     engine.setOnTrackEnded(() => {
-      // Advance playlist when a bed finishes; store subscription starts the next.
       useClickMelodyStore.getState().nextTrack();
     });
 
-    const onUnlock = () => {
+    const tryStartAfterSplash = () => {
+      if (splashBlocksMusic()) return;
       if (!useClickMelodyStore.getState().enabled) return;
-      engine.unlock();
+      engine.startBedIfAllowed();
+    };
+
+    const onUnlockGesture = (event: PointerEvent) => {
+      if (!useClickMelodyStore.getState().enabled) return;
+      // During splash: unlock the audio context only — bed waits until splash clears.
+      if (splashBlocksMusic() || (event.target instanceof Element && event.target.closest(".app-splash"))) {
+        engine.unlock({ startBed: false });
+        return;
+      }
+      engine.unlock({ startBed: true });
     };
 
     const onClick = (event: MouseEvent) => {
@@ -118,20 +133,31 @@ export function ClickMelody() {
         for (const t of floatTimers.values()) window.clearTimeout(t);
         floatTimers.clear();
         setFloatNotes([]);
+      } else {
+        tryStartAfterSplash();
       }
     });
 
-    document.addEventListener("pointerdown", onUnlock, true);
+    const splashObserver = new MutationObserver(() => {
+      tryStartAfterSplash();
+    });
+    splashObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-splash"],
+    });
+
+    document.addEventListener("pointerdown", onUnlockGesture, true);
     document.addEventListener("click", onClick, true);
+
+    // Cold open without splash (reduced motion / return visit): allow bed on first gesture only.
+    tryStartAfterSplash();
 
     return () => {
       unsub();
-      document.removeEventListener("pointerdown", onUnlock, true);
+      splashObserver.disconnect();
+      document.removeEventListener("pointerdown", onUnlockGesture, true);
       document.removeEventListener("click", onClick, true);
-      engine.setOnNote(null);
-      engine.setOnTrackEnded(null);
-      engine.dispose();
-      engineRef.current = null;
+      engine.clearHandlers();
       for (const t of floatTimers.values()) window.clearTimeout(t);
       floatTimers.clear();
     };
@@ -186,8 +212,8 @@ export function ClickMelody() {
                 for (const t of floatTimers.values()) window.clearTimeout(t);
                 floatTimers.clear();
                 setFloatNotes([]);
-              } else {
-                engine.unlock();
+              } else if (!splashBlocksMusic()) {
+                engine.unlock({ startBed: true });
               }
             }}
           >
@@ -208,7 +234,11 @@ export function ClickMelody() {
               const engine = engineRef.current;
               nextTrack();
               if (!engine) return;
-              engine.unlock();
+              if (splashBlocksMusic()) {
+                engine.unlock({ startBed: false });
+                return;
+              }
+              engine.unlock({ startBed: true });
               if (useClickMelodyStore.getState().enabled) {
                 engine.setMuted(false);
               }
@@ -233,10 +263,10 @@ function MusicIcon({ muted }: { muted: boolean }) {
         strokeWidth="2.1"
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={muted ? 0.45 : 1}
+        opacity={muted ? 0.35 : 1}
       />
-      <circle cx="7" cy="18" r="2.4" fill="currentColor" opacity={muted ? 0.45 : 1} />
-      <circle cx="17" cy="16" r="2.4" fill="currentColor" opacity={muted ? 0.45 : 1} />
+      <circle cx="7" cy="18" r="2.4" fill="currentColor" opacity={muted ? 0.35 : 1} />
+      <circle cx="17" cy="16" r="2.4" fill="currentColor" opacity={muted ? 0.35 : 1} />
       <path
         d="M4.5 5.5l15 14"
         stroke="currentColor"
@@ -259,8 +289,10 @@ function NextIcon() {
 
 function FloatNoteIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-      <path d="M10 4.2v10.45a3.1 3.1 0 1 1-1.85-2.84V7.05l9-1.7v8.7a3.1 3.1 0 1 1-1.85-2.84V4.95L10 4.2Z" />
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+      <path d="M9 18V6.2l11-2.4V15.2" opacity="0.9" />
+      <circle cx="7.2" cy="18" r="2.3" />
+      <circle cx="17.2" cy="15.2" r="2.3" />
     </svg>
   );
 }

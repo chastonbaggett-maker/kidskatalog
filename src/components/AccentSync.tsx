@@ -4,39 +4,14 @@ import { useEffect } from "react";
 import {
   audienceToAccentAttr,
   useAccentStore,
-  type AccentAttr,
 } from "@/lib/accent-store";
 import type { Audience } from "@/types/toy";
 
-/**
- * Status-bar / theme-color matching the left edge of --header-grad.
- * Safari paints the top safe area from this; it must track Boys/Girls/both.
- */
-const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
-  both: "#2bb8a8",
-  boys: "#2f6ae8",
-  girls: "#ef8fb3",
-};
-
 function applyAccent(audience: Audience) {
-  const accent = audienceToAccentAttr(audience);
-  document.documentElement.dataset.accent = accent;
-  setThemeColor(STATUS_BAR_COLOR[accent]);
+  document.documentElement.dataset.accent = audienceToAccentAttr(audience);
 }
 
-function setThemeColor(color: string) {
-  const metas = document.querySelectorAll('meta[name="theme-color"]');
-  if (metas.length === 0) {
-    const meta = document.createElement("meta");
-    meta.setAttribute("name", "theme-color");
-    meta.setAttribute("content", color);
-    document.head.appendChild(meta);
-    return;
-  }
-  metas.forEach((meta) => meta.setAttribute("content", color));
-}
-
-/** Keeps <html data-accent> + Safari/PWA theme-color in sync site-wide. */
+/** Keeps <html data-accent> in sync so header/nav tokens update site-wide. */
 export function AccentSync() {
   const audience = useAccentStore((s) => s.audience);
 

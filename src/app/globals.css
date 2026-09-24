@@ -92,12 +92,8 @@ html[data-accent="both"] {
 }
 
 html {
-  /* Page canvas. Bottom safe-area strip matches the nav shelf so Safari chrome samples it. */
+  /* Edge-to-edge like installed PWA — no solid safe-area paint bands. */
   background-color: var(--bg);
-  background-image: linear-gradient(var(--bottom-shelf), var(--bottom-shelf));
-  background-size: 100% env(safe-area-inset-bottom, 0px);
-  background-repeat: no-repeat;
-  background-position: bottom;
   touch-action: manipulation;
   -ms-touch-action: manipulation;
 }
@@ -376,8 +372,8 @@ select {
   overflow: hidden;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1.25rem;
-  /* Solid fill Safari can sample when this header is fixed/sticky at the top. */
-  background-color: var(--status-bar);
+  /* Transparent shell — ::before carries the gradient under the status bar (PWA-style). */
+  background-color: transparent;
 }
 
 .shelf-header--rounded::before {
@@ -402,14 +398,14 @@ select {
 }
 
 /*
- * Main browse header — sticky + solid status-bar color so Safari 26 samples
- * the top edge (theme-color is ignored). Gradient stays as background-image.
+ * Browse header — sticky so content stays under the system status bar.
+ * Gradient only (no solid status-bar fill) so top chrome blends like the installed PWA.
  */
 .feed-header {
   position: sticky;
   top: 0;
   z-index: 30;
-  background-color: var(--status-bar);
+  background-color: transparent;
   background-image: var(--header-grad);
 }
 
@@ -2771,7 +2767,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 .app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded {
-  background-color: #ff9a56;
+  background-color: transparent;
 }
 
 .app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded::before {

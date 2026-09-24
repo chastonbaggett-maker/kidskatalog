@@ -291,15 +291,11 @@ export function AppSplash() {
     void (async () => {
       try {
         part2.currentTime = 0;
-        part2.muted = false;
+        // Visual-only — site bed music starts after splash clears (avoids stacked audio).
+        part2.muted = true;
         await part2.play();
       } catch {
-        try {
-          part2.muted = true;
-          await part2.play();
-        } catch {
-          beginExit();
-        }
+        beginExit();
       }
     })();
   };

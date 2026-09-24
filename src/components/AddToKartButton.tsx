@@ -130,7 +130,7 @@ export function ProductKartActions({ toyId }: { toyId: string }) {
     giggleTimerRef.current = window.setTimeout(() => {
       setGiggling(false);
       giggleTimerRef.current = undefined;
-    }, 1100);
+    }, 1250);
   }, [showInKart, visualReady]);
 
   useEffect(

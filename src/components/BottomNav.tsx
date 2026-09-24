@@ -100,11 +100,10 @@ export function BottomNav() {
     if (brandTapCount.current === 1) {
       brandNavTimer.current = window.setTimeout(() => {
         if (brandTapCount.current === 1) {
-          const onHome =
-            pathname === "/" ||
-            pathname.startsWith("/shop") ||
-            pathname.startsWith("/toy");
-          if (!onHome) {
+          const onShopRoot = pathname === "/" || pathname === "/shop";
+          const onCategory = pathname.startsWith("/shop/");
+          // Category browse → clear filter back to all toys; other non-home → go shop.
+          if (onCategory || (!onShopRoot && !pathname.startsWith("/toy"))) {
             beginRouteChange();
             router.push("/shop");
           }

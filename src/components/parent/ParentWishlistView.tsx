@@ -159,19 +159,31 @@ export function ParentWishlistView({
               return (
                 <li key={toy.id} className="shelf-panel shelf-panel--soft">
                   <div className="shelf-panel__surface flex items-start gap-3 p-3">
-                    <Link
-                      href={parentToyPath(toy.id)}
-                      prefetch={false}
-                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
-                    >
-                      <ToyPhoto
-                        src={toy.image}
-                        alt={toy.imageAlt}
-                        loading="lazy"
-                        decoding="async"
-                        className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
-                      />
-                    </Link>
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                      <Link
+                        href={parentToyPath(toy.id)}
+                        prefetch={false}
+                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
+                      >
+                        <ToyPhoto
+                          src={toy.image}
+                          alt={toy.imageAlt}
+                          loading="lazy"
+                          decoding="async"
+                          className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
+                        />
+                      </Link>
+                      <div className="min-w-0">
+                        <Link href={parentToyPath(toy.id)} prefetch={false}>
+                          <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
+                            {toy.name}
+                          </p>
+                        </Link>
+                        <p className="mt-1 line-clamp-3 text-sm text-[var(--ink-soft)]">
+                          {toy.blurb}
+                        </p>
+                      </div>
+                    </div>
                     <div className="flex w-[9.5rem] shrink-0 flex-col gap-2">
                       <ParentBuyButton
                         href={buyUrl}
@@ -187,16 +199,6 @@ export function ParentWishlistView({
                       >
                         Remove
                       </button>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <Link href={parentToyPath(toy.id)} prefetch={false}>
-                        <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
-                          {toy.name}
-                        </p>
-                      </Link>
-                      <p className="mt-1 line-clamp-3 text-sm text-[var(--ink-soft)]">
-                        {toy.blurb}
-                      </p>
                     </div>
                   </div>
                 </li>

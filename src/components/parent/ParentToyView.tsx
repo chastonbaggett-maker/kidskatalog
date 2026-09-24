@@ -10,6 +10,7 @@ import { BrandDealDisclosure } from "@/components/parent/BrandDealDisclosure";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
+import { ParentSignOutFooter } from "@/components/parent/ParentSignOutFooter";
 import { ParentWishlistButton } from "@/components/parent/ParentWishlistButton";
 import type { ResolvedBrandDeal } from "@/lib/brand-deals";
 import { parentDealsPath } from "@/lib/parent-paths";
@@ -114,6 +115,9 @@ export function ParentToyView({
               </p>
             </div>
           </div>
+        </div>
+        <div className="px-4 sm:px-6 lg:px-8">
+          <ParentSignOutFooter />
         </div>
       </div>
     </div>

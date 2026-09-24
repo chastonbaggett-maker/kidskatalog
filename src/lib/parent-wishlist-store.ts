@@ -8,6 +8,8 @@ type ParentWishlistState = {
   add: (id: string) => void;
   remove: (id: string) => void;
   importIds: (ids: string[]) => void;
+  /** Replace the whole list (used when opening a saved kid list). */
+  replaceIds: (ids: string[]) => void;
   clear: () => void;
   has: (id: string) => boolean;
 };
@@ -30,6 +32,16 @@ export const useParentWishlistStore = create<ParentWishlistState>()(
           }
           return { ids };
         }),
+      replaceIds: (incoming) => {
+        const seen = new Set<string>();
+        const ids: string[] = [];
+        for (const id of incoming) {
+          if (!id || seen.has(id)) continue;
+          seen.add(id);
+          ids.push(id);
+        }
+        set({ ids });
+      },
       clear: () => set({ ids: [] }),
       has: (id) => get().ids.includes(id),
     }),

@@ -1,16 +1,20 @@
 /** First-paint splash cover — inline so nav can't flash before CSS/JS. */
 
-/** Mint matches part-1 (pre-tap) so the first paint is the opening clip color. */
-export const SPLASH_BG_SOLID = "#3ecfc0";
+/**
+ * Exact mint from the encoded part-1 frames (yuv → rgb), so CSS / poster /
+ * video never shift at the open.
+ */
+export const SPLASH_BG_SOLID = "#3dd0c0";
 export const SPLASH_BG_GRADIENT = "none";
-/** Cache-busted first frame so cold open never flashes a stale black poster. */
-export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=2";
+/** Cache-busted first frame (solid mint — matches video t=0). */
+export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=3";
+/** True last decoded frame — used for the hold freeze (no seek-back). */
+export const SPLASH_PART1_END = "/splash/intro-part-1-mint-end.jpg?v=3";
 
 /**
  * Critical first-paint CSS.
  * ::before sits UNDER .app-splash so the intro video stays visible.
- * `holding` / `exiting` reveal the shell under the overlay so the cut
- * lands on an already-painted page.
+ * Solid mint only (no poster image) so the open doesn't flash a size/color shift.
  */
 export const SPLASH_BOOT_STYLE = `
 html[data-splash="active"],html[data-splash="active"] body,
@@ -40,8 +44,7 @@ html[data-splash="holding"]::before{
   height:calc(100dvh + 4rem);
   margin:0;padding:0;border:0;
   background-color:${SPLASH_BG_SOLID};
-  background-image:url(${SPLASH_PART1_POSTER});
-  background-size:cover;background-repeat:no-repeat;background-position:center;
+  background-image:none;
   pointer-events:none;
 }
 `.trim();

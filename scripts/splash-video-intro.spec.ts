@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.use({ channel: "chrome" });
 
-test("splash part1 stays mint (never black) and opens on first frame", async ({
+test("splash is 80% scale, mint-stable, and freezes on true last frame", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -11,79 +11,53 @@ test("splash part1 stays mint (never black) and opens on first frame", async ({
   const splash = page.locator(".app-splash");
   await expect(splash).toBeVisible();
 
-  // Sample early paints — none should be near-black.
-  const samples: Array<{ bg: string; phase: string | null; src: string | null }> =
-    [];
-  for (let i = 0; i < 8; i++) {
-    samples.push(
-      await page.evaluate(() => {
-        const el = document.querySelector(".app-splash");
-        const v = document.querySelector(
-          ".app-splash__video--part1",
-        ) as HTMLVideoElement | null;
-        return {
-          bg: el ? getComputedStyle(el).backgroundColor : "none",
-          phase: el?.getAttribute("data-splash-phase") ?? null,
-          src: v?.currentSrc || v?.getAttribute("src") || null,
-        };
-      }),
-    );
-    await page.waitForTimeout(120);
-  }
+  // Mint matches encoded frames (61, 208, 192) — no open color shift to brand mint.
+  const splashBg = await splash.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  expect(splashBg).toMatch(/rgb\(\s*61,\s*208,\s*192\s*\)/);
 
-  for (const s of samples) {
-    expect(s.bg).toMatch(/rgb\(\s*62,\s*207,\s*192\s*\)/);
-    expect(s.bg).not.toMatch(/rgb\(\s*0,\s*0,\s*0\s*\)/);
-  }
-  expect(samples.some((s) => s.src?.includes("intro-part-1-mint"))).toBe(true);
-
-  // Poster or video should not present a black canvas.
-  const canvasCheck = await page.evaluate(async () => {
-    const poster = document.querySelector(
-      ".app-splash__poster",
-    ) as HTMLImageElement | null;
-    const video = document.querySelector(
-      ".app-splash__video--part1",
-    ) as HTMLVideoElement | null;
-    const sample = (el: CanvasImageSource, w: number, h: number) => {
-      const c = document.createElement("canvas");
-      c.width = 8;
-      c.height = 8;
-      const ctx = c.getContext("2d")!;
-      ctx.drawImage(el, 0, 0, w, h, 0, 0, 8, 8);
-      const d = ctx.getImageData(0, 0, 8, 8).data;
-      let min = 255;
-      for (let i = 0; i < d.length; i += 4) {
-        min = Math.min(min, (d[i] + d[i + 1] + d[i + 2]) / 3);
-      }
-      return min;
-    };
-    let posterMin = 255;
-    if (poster && poster.complete && poster.naturalWidth) {
-      posterMin = sample(poster, poster.naturalWidth, poster.naturalHeight);
-    }
-    let videoMin = 255;
-    if (video && video.readyState >= 2 && video.videoWidth) {
-      videoMin = sample(video, video.videoWidth, video.videoHeight);
-    }
-    return { posterMin, videoMin };
+  const stageScale = await page.locator(".app-splash__stage").evaluate((el) => {
+    const t = getComputedStyle(el).transform;
+    // matrix(sx, 0, 0, sy, ...) or matrix3d
+    const m = t.match(/matrix\(([^,]+)/);
+    return m ? Number.parseFloat(m[1]) : 1;
   });
-
-  expect(canvasCheck.posterMin).toBeGreaterThan(80);
-  if (canvasCheck.videoMin < 250) {
-    expect(canvasCheck.videoMin).toBeGreaterThan(80);
-  }
+  expect(stageScale).toBeCloseTo(0.8, 2);
 
   await expect(splash).toHaveClass(/app-splash--hold/, { timeout: 12_000 });
   await expect(page.getByText("Tap to continue")).toBeVisible();
 
-  await page.waitForTimeout(800);
-  await expect(splash).toHaveAttribute("data-splash-phase", "hold");
+  // Hold uses the static true last frame — video must not seek backwards.
+  const holdState = await page.evaluate(() => {
+    const end = document.querySelector(
+      ".app-splash__end-frame",
+    ) as HTMLImageElement | null;
+    const video = document.querySelector(
+      ".app-splash__video--part1",
+    ) as HTMLVideoElement | null;
+    return {
+      endVisible: end?.classList.contains("is-visible") ?? false,
+      endSrc: end?.getAttribute("src") ?? "",
+      paused: video?.paused ?? true,
+      currentTime: video?.currentTime ?? 0,
+      duration: video?.duration ?? 0,
+    };
+  });
+
+  expect(holdState.endVisible).toBe(true);
+  expect(holdState.endSrc).toContain("intro-part-1-mint-end");
+  expect(holdState.paused).toBe(true);
+  // Must be near the end — not jumped back to an earlier keyframe.
+  expect(holdState.currentTime).toBeGreaterThan(holdState.duration - 0.2);
+
+  // Stay frozen (no time regression) while holding.
+  await page.waitForTimeout(400);
+  const laterTime = await page
+    .locator(".app-splash__video--part1")
+    .evaluate((el) => (el as HTMLVideoElement).currentTime);
+  expect(laterTime).toBeGreaterThanOrEqual(holdState.currentTime - 0.01);
 
   await splash.click();
   await expect(splash).toHaveClass(/app-splash--part2/, { timeout: 3_000 });
-  const part2Bg = await splash.evaluate(
-    (el) => getComputedStyle(el).backgroundColor,
-  );
-  expect(part2Bg).toMatch(/rgb\(\s*255,\s*255,\s*255\s*\)/);
 });

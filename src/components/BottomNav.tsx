@@ -169,51 +169,53 @@ export function BottomNav() {
         }${crazyMode ? " bottom-nav--crazy" : ""}`}
         style={{ ["--bottom-nav-accent" as string]: accentVar }}
       >
-        {showFrostFill && (
-          <div className="bottom-nav__frost" aria-hidden="true" />
-        )}
-        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
-          <li>
-            <button
-              type="button"
-              onClick={handleBrandTap}
-              onPointerDown={pulseNavItem}
-              onAnimationEnd={clearNavPulse}
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                homeActive ? "bottom-nav__item--active" : ""
-              }`}
-              aria-label="Home"
-              aria-current={homeActive ? "page" : undefined}
-            >
-              <BrandIcon />
-            </button>
-          </li>
-          <li>
-            <Link
-              href="/menu"
-              onPointerDown={pulseNavItem}
-              onAnimationEnd={clearNavPulse}
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                watchActive ? "bottom-nav__item--active" : ""
-              }`}
-              aria-label="Watch"
-              aria-current={watchActive ? "page" : undefined}
-            >
-              <MenuIcon active={watchActive} />
-            </Link>
-          </li>
-          <KartNavLink
-            active={pathname === "/kart" || pathname.startsWith("/kart/")}
-            badgeClass={badgeClass}
-          />
-        </ul>
-        {shelfRaised && (
-          <div
-            ref={registerPileNavModeRow}
-            className="bottom-nav__mode-row"
-            data-testid="pile-nav-mode-row"
-          />
-        )}
+        <div className="bottom-nav__lift">
+          {showFrostFill && (
+            <div className="bottom-nav__frost" aria-hidden="true" />
+          )}
+          <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
+            <li>
+              <button
+                type="button"
+                onClick={handleBrandTap}
+                onPointerDown={pulseNavItem}
+                onAnimationEnd={clearNavPulse}
+                className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                  homeActive ? "bottom-nav__item--active" : ""
+                }`}
+                aria-label="Home"
+                aria-current={homeActive ? "page" : undefined}
+              >
+                <BrandIcon />
+              </button>
+            </li>
+            <li>
+              <Link
+                href="/menu"
+                onPointerDown={pulseNavItem}
+                onAnimationEnd={clearNavPulse}
+                className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                  watchActive ? "bottom-nav__item--active" : ""
+                }`}
+                aria-label="Watch"
+                aria-current={watchActive ? "page" : undefined}
+              >
+                <MenuIcon active={watchActive} />
+              </Link>
+            </li>
+            <KartNavLink
+              active={pathname === "/kart" || pathname.startsWith("/kart/")}
+              badgeClass={badgeClass}
+            />
+          </ul>
+          {shelfRaised && (
+            <div
+              ref={registerPileNavModeRow}
+              className="bottom-nav__mode-row"
+              data-testid="pile-nav-mode-row"
+            />
+          )}
+        </div>
       </nav>
 
       <AdminPinGate

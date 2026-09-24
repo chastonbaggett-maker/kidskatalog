@@ -1562,11 +1562,9 @@ html[data-accent="both"] .kart-go-btn:hover {
     transform: none;
   }
 
-  .bottom-nav__mode-row,
-  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__mode-row,
-  .bottom-nav--pile.is-shelf-raised .bottom-nav__icons,
-  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__icons {
-    transition: opacity 160ms ease;
+  .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
+    transition: none;
     transform: none;
   }
 
@@ -1909,7 +1907,9 @@ html[data-accent="both"] .kart-go-btn:hover {
     opacity: 1;
   }
 
-  .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost {
+  .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost,
+  .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
     transition: none !important;
     transform: none;
     opacity: 1;
@@ -2485,6 +2485,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   border-radius: 2rem 2rem 0 0;
   padding-bottom: 0;
   overflow: hidden;
+  /* Transparent shell — the frost inside .bottom-nav__lift is the card. */
+  background: transparent;
   transition: min-height 420ms ease-in-out;
 }
 
@@ -2513,11 +2515,39 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 .bottom-nav--pile.is-shelf-raised {
-  display: flex;
-  flex-direction: column;
+  display: block;
   min-height: var(--pile-nav-stack-height);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   transition: min-height 420ms ease-in-out;
+}
+
+/* One lift for frost + icons + mode row so raise/hide stays in lockstep. */
+.bottom-nav__lift {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: inherit;
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__lift {
+  /* Fill the nav content box (min-height includes safe-area padding). */
+  min-height: calc(
+    var(--pile-nav-stack-height) - env(safe-area-inset-bottom, 0px)
+  );
+  transform: translate3d(0, var(--pile-shelf-height), 0);
+  transition: transform 420ms ease-in-out;
+  will-change: transform;
+}
+
+.bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
+  transform: translate3d(0, 0, 0);
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__frost {
+  /* Stretch into the nav safe-area padding so the card doesn't leave a gap. */
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
 }
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */
@@ -2596,12 +2626,6 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   overflow: hidden;
   display: flex;
   align-items: center;
-  opacity: 0;
-  transform: translate3d(0, 100%, 0);
-  transition:
-    opacity 420ms ease-in-out,
-    transform 420ms ease-in-out;
-  will-change: opacity, transform;
 }
 
 .bottom-nav__mode-row .filter-row-scroll {
@@ -2620,25 +2644,9 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   gap: 0.5rem;
 }
 
-.bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__mode-row {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-}
-
 .bottom-nav--pile.bottom-nav-enter {
   opacity: 1;
   transform: none;
-}
-
-/* Icons ride the same 420ms ease-in-out lift as the mode/filter row. */
-.bottom-nav--pile.is-shelf-raised .bottom-nav__icons {
-  transform: translate3d(0, var(--pile-shelf-height), 0);
-  transition: transform 420ms ease-in-out;
-  will-change: transform;
-}
-
-.bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__icons {
-  transform: translate3d(0, 0, 0);
 }
 
 .bottom-nav__icons {
@@ -2796,13 +2804,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   }
 }
 
+/* Frost rides .bottom-nav__lift — no separate fade that leaves the card behind. */
 .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost {
-  opacity: 0;
-  transform: none;
-  transition: opacity var(--pile-chrome-duration) ease-in-out;
-}
-
-.bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__frost {
   opacity: 1;
   transform: none;
 }

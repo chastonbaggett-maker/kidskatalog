@@ -2,54 +2,104 @@ import { test, expect } from "@playwright/test";
 
 test.use({ channel: "chrome" });
 
-test("raised shelf lifts frost, icons, and mode row together", async ({
+test("raised shelf lifts frost, icons, and mode row with ease-in-out", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".page-scroll .feed-card");
 
+  // Ensure we start from the collapsed shelf so the raise animation can run.
+  await page.locator(".page-scroll").first().evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.waitForFunction(() => {
+    const nav = document.querySelector("nav.bottom-nav");
+    return !nav?.classList.contains("is-shelf-raised");
+  }, { timeout: 5_000 });
+
+  // Capture pending → sliding → settled transform samples while raising.
+  await page.evaluate(() => {
+    (window as unknown as { __liftSamples?: string[] }).__liftSamples = [];
+  });
+
   await page.locator(".page-scroll").first().evaluate((el) => {
     el.scrollTop = 900;
   });
 
-  await page.waitForSelector(
-    "nav.bottom-nav.is-shelf-raised.is-enter-visible .bottom-nav__lift",
-    { timeout: 8_000 },
-  );
-
-  const metrics = await page.evaluate(() => {
+  // Wait until pending raised state (translated down, not yet enter-visible).
+  await page.waitForFunction(() => {
     const nav = document.querySelector("nav.bottom-nav");
     const lift = document.querySelector(".bottom-nav__lift");
-    const frost = document.querySelector(".bottom-nav__frost");
-    const icons = document.querySelector(".bottom-nav__icons");
-    const mode = document.querySelector(".bottom-nav__mode-row");
-    if (!nav || !lift || !frost || !icons || !mode) return null;
-    const liftStyle = getComputedStyle(lift);
+    if (!nav || !lift) return false;
+    if (!nav.classList.contains("is-shelf-raised")) return false;
+    if (nav.classList.contains("is-enter-visible")) return false;
+    const t = getComputedStyle(lift).transform;
+    return t.includes("matrix") && t !== "none";
+  }, { timeout: 8_000 });
+
+  const pending = await page.evaluate(() => {
+    const nav = document.querySelector("nav.bottom-nav")!;
+    const lift = document.querySelector(".bottom-nav__lift")!;
     return {
-      navClass: nav.className,
-      liftParentIsNav: lift.parentElement === nav,
-      frostInLift: frost.parentElement === lift,
-      iconsInLift: icons.parentElement === lift,
-      modeInLift: mode.parentElement === lift,
-      liftTransform: liftStyle.transform,
-      liftTransition: liftStyle.transition,
-      iconsTransform: getComputedStyle(icons).transform,
-      modeTransform: getComputedStyle(mode).transform,
+      ready: nav.classList.contains("is-enter-ready"),
+      visible: nav.classList.contains("is-enter-visible"),
+      transform: getComputedStyle(lift).transform,
+      transition: getComputedStyle(lift).transition,
     };
   });
 
-  expect(metrics).not.toBeNull();
-  expect(metrics!.navClass).toContain("is-enter-visible");
-  expect(metrics!.frostInLift).toBe(true);
-  expect(metrics!.iconsInLift).toBe(true);
-  expect(metrics!.modeInLift).toBe(true);
-  expect(metrics!.liftTransform).toMatch(/none|matrix\(1,\s*0,\s*0,\s*1/);
-  expect(metrics!.liftTransition).toContain("transform");
-  expect(metrics!.liftTransition).toContain("0.42s");
-  // Individual rows no longer animate on their own.
-  expect(metrics!.iconsTransform).toMatch(/none|matrix\(1,\s*0,\s*0,\s*1/);
-  expect(metrics!.modeTransform).toMatch(/none|matrix\(1,\s*0,\s*0,\s*1/);
+  // Pending pose must be translated (not identity).
+  expect(pending.visible).toBe(false);
+  expect(pending.transform).toMatch(/matrix/);
+  expect(pending.transform).not.toMatch(/matrix\(1,\s*0,\s*0,\s*1,\s*0,\s*0\)/);
+
+  // Sample mid-animation once enter-visible arms the slide.
+  await page.waitForSelector(
+    "nav.bottom-nav.is-shelf-raised.is-enter-ready.is-enter-visible",
+    { timeout: 5_000 },
+  );
+
+  const mid = await page.evaluate(async () => {
+    const lift = document.querySelector(".bottom-nav__lift")!;
+    const samples: string[] = [];
+    const start = performance.now();
+    while (performance.now() - start < 280) {
+      samples.push(getComputedStyle(lift).transform);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return {
+      samples,
+      transition: getComputedStyle(lift).transition,
+      frostInLift:
+        document.querySelector(".bottom-nav__frost")?.parentElement ===
+        document.querySelector(".bottom-nav__lift"),
+      iconsInLift:
+        document.querySelector(".bottom-nav__icons")?.parentElement ===
+        document.querySelector(".bottom-nav__lift"),
+      modeInLift:
+        document.querySelector(".bottom-nav__mode-row")?.parentElement ===
+        document.querySelector(".bottom-nav__lift"),
+    };
+  });
+
+  expect(mid.frostInLift).toBe(true);
+  expect(mid.iconsInLift).toBe(true);
+  expect(mid.modeInLift).toBe(true);
+  expect(mid.transition).toContain("transform");
+  expect(mid.transition).toMatch(/0\.42s|420ms/);
+  expect(mid.transition).toMatch(/ease-in-out/);
+
+  // At least two distinct transform values during the slide (not a snap).
+  const unique = new Set(mid.samples);
+  expect(unique.size).toBeGreaterThan(1);
+
+  await page.waitForFunction(() => {
+    const lift = document.querySelector(".bottom-nav__lift");
+    if (!lift) return false;
+    const t = getComputedStyle(lift).transform;
+    return t === "none" || /matrix\(1,\s*0,\s*0,\s*1,\s*0,\s*0\)/.test(t);
+  }, { timeout: 3_000 });
 });
 
 test("hiding the shelf slides the lift down before unmount", async ({
@@ -80,11 +130,6 @@ test("hiding the shelf slides the lift down before unmount", async ({
     const transform = getComputedStyle(lift).transform;
     return transform.includes("matrix") && transform !== "none";
   }, { timeout: 3_000 });
-
-  await page.waitForSelector("nav.bottom-nav.is-shelf-raised", {
-    state: "detached",
-    timeout: 3_000,
-  }).catch(() => undefined);
 
   // Settled: mode row gone, raised classes cleared.
   await expect

@@ -130,7 +130,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
   const revealGateOpen = usePileRevealGate();
   const pileHeaderActive = pileOn && !isChromePhase && revealGateOpen;
-  const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
+  const pileHeaderVisible = usePileEnterReveal(pileHeaderActive).visible;
   const pileShelfMounted = pileHeaderActive;
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);

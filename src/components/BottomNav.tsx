@@ -58,8 +58,12 @@ export function BottomNav() {
   const browseCompactShelf =
     onPileBrowseRoute && compactShelfRaised && !toyPileMode;
   const [compactShelfMounted, setCompactShelfMounted] = useState(false);
-  const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
-  const compactEnterVisible = useShelfRaiseReveal(browseCompactShelf);
+  const pileReveal = usePileEnterReveal(pileNavShelf);
+  const pileNavEnterVisible = pileReveal.visible;
+  const pileNavEnterReady = pileReveal.ready;
+  const compactReveal = useShelfRaiseReveal(browseCompactShelf);
+  const compactEnterVisible = compactReveal.visible;
+  const compactEnterReady = compactReveal.ready;
 
   useEffect(() => {
     if (browseCompactShelf) {
@@ -76,6 +80,9 @@ export function BottomNav() {
   const shelfRaised = pileNavShelf || compactShelfMounted;
   const shelfEnterVisible =
     pileNavEnterVisible || (compactShelfMounted && compactEnterVisible);
+  const shelfEnterReady =
+    (pileNavShelf && pileNavEnterReady) ||
+    (compactShelfMounted && compactEnterReady);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
@@ -165,8 +172,10 @@ export function BottomNav() {
         className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
           shelfRaised ? " bottom-nav--pile bottom-nav-enter" : ""
         }${shelfRaised ? " is-shelf-raised" : ""}${
-          shelfEnterVisible ? " is-enter-visible" : ""
-        }${crazyMode ? " bottom-nav--crazy" : ""}`}
+          shelfEnterReady ? " is-enter-ready" : ""
+        }${shelfEnterVisible ? " is-enter-visible" : ""}${
+          crazyMode ? " bottom-nav--crazy" : ""
+        }`}
         style={{ ["--bottom-nav-accent" as string]: accentVar }}
       >
         <div className="bottom-nav__lift">

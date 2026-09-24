@@ -1473,8 +1473,9 @@ html[data-accent="both"] .kart-go-btn:hover {
   }
 
   .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift,
   .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
-    transition: none;
+    transition: none !important;
     transform: none;
   }
 
@@ -1819,6 +1820,7 @@ html[data-accent="both"] .kart-go-btn:hover {
 
   .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost,
   .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift,
   .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
     transition: none !important;
     transform: none;
@@ -2439,6 +2441,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   flex-direction: column;
   width: 100%;
   border-radius: inherit;
+  transform: translate3d(0, 0, 0);
 }
 
 .bottom-nav--pile.is-shelf-raised .bottom-nav__lift {
@@ -2446,9 +2449,15 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   min-height: calc(
     var(--pile-nav-stack-height) - env(safe-area-inset-bottom, 0px)
   );
+  /* Pending pose: mode row sits below the clip; no transition yet. */
   transform: translate3d(0, var(--pile-shelf-height), 0);
-  transition: transform 420ms ease-in-out;
+  transition: none;
   will-change: transform;
+}
+
+/* Arm transition only after the pending pose has painted. */
+.bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift {
+  transition: transform 420ms ease-in-out;
 }
 
 .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {

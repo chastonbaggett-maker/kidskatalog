@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Toy } from "@/types/toy";
 import {
   useCrazyModeStore,
@@ -13,9 +13,11 @@ import type { CatalogPageResult } from "@/lib/catalog-query";
 import { ProductGallery } from "./ProductGallery";
 import { ShelfHeader } from "./ShelfHeader";
 import { MoreToysFeed } from "./MoreToysFeed";
-import { AddToKartButton } from "./AddToKartButton";
+import { ProductKartActions } from "./AddToKartButton";
 import { CrazyModeButton } from "./CrazyModeButton";
-import { useVisualSettled } from "@/hooks/useVisualSettled";
+import { useToyInterestStore } from "@/lib/toy-interest-store";
+import { INTEREST_MAX_SECONDS_PER_VISIT } from "@/lib/toy-interest";
+import { beginRouteChange } from "@/lib/route-change";
 
 type Props = {
   toy: Toy;
@@ -25,6 +27,7 @@ type Props = {
 };
 
 export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Props) {
+  const router = useRouter();
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const crazyOn = crazyMode;
@@ -35,19 +38,54 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
   const moreToysRef = useRef<HTMLElement>(null);
   const shelfCrazyBtnRef = useRef<HTMLButtonElement>(null);
 
+  const goBackToFeed = useCallback(() => {
+    beginRouteChange();
+    router.push("/shop");
+  }, [router]);
+
   const moreToysCrazyActive = useMoreToysCrazyActive(
     crazyOn,
     scrollerRef,
     moreToysRef,
   );
-  const kartGoReady = useVisualSettled(toy.id);
+  const recordOpen = useToyInterestStore((s) => s.recordOpen);
+  const recordPhoto = useToyInterestStore((s) => s.recordPhoto);
+  const recordSeconds = useToyInterestStore((s) => s.recordSeconds);
+  const onViewImage = useCallback(
+    (src: string) => recordPhoto(toy.id, src),
+    [recordPhoto, toy.id],
+  );
+
+  useEffect(() => {
+    recordOpen(toy.id);
+    let pending = 0;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (pending >= INTEREST_MAX_SECONDS_PER_VISIT) return;
+      pending += 1;
+    }, 1000);
+    const flush = () => {
+      if (pending <= 0) return;
+      recordSeconds(toy.id, pending);
+      pending = 0;
+    };
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onHide);
+      flush();
+    };
+  }, [recordOpen, recordSeconds, toy.id]);
 
   return (
     <div
       className={`shelf-page star-field flex min-h-0 flex-1 flex-col ${crazyModeRootClass(crazyOn)}`}
     >
       <ShelfHeader
-        backHref="/shop"
+        onBack={goBackToFeed}
         trailing={
           crazyOn ? (
             <CrazyModeButton
@@ -76,6 +114,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
               videos={toy.videos}
               poster={toy.image}
               alt={toy.imageAlt}
+              onViewImage={onViewImage}
             />
 
             <div className="product-detail__info min-w-0">
@@ -90,39 +129,7 @@ export function ToyPageView({ toy, categoryLabel, gallery, moreInitialPage }: Pr
                 Ages {toy.ageMin}–{toy.ageMax}
               </p>
 
-              <div className="mt-6 flex max-w-md items-stretch gap-3">
-                <AddToKartButton toyId={toy.id} />
-                <Link
-                  href="/kart"
-                  aria-label="Go to Kart"
-                  className={`kart-go-btn inline-flex h-[3.9rem] w-[3.9rem] shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-[0.98] ${
-                    kartGoReady ? "kart-go-btn--visual-ready" : ""
-                  }`}
-                >
-                  <svg
-                    className="kart-go-arrow shrink-0"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M9.5 5.5 16 12l-6.5 6.5"
-                      stroke="currentColor"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M15 12H6"
-                      stroke="currentColor"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </Link>
-              </div>
+              <ProductKartActions toyId={toy.id} />
 
               <p className="mt-5 text-center text-sm text-[var(--ink-soft)] sm:text-left">
                 No buying here. Save it, then send the Kart to a grown-up.

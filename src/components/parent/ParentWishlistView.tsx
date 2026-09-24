@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { HoldToRemoveButton } from "@/components/parent/HoldToRemoveButton";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
-import { parentBuyPlaceholderPath, parentDealsPath, parentToyPath } from "@/lib/parent-paths";
+import { parentBuyPlaceholderPath, parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
 
@@ -20,6 +21,8 @@ type Props = {
   buyPlaceholder?: boolean;
   savedListName?: string;
   returnTo?: string;
+  /** Play scores from the kid Kart. Higher ranks first. */
+  interest?: Record<string, number>;
 };
 
 export function ParentWishlistView({
@@ -28,13 +31,15 @@ export function ParentWishlistView({
   buyPlaceholder = true,
   savedListName,
   returnTo = "/p",
+  interest,
 }: Props) {
   const storedIds = useParentWishlistStore((s) => s.ids);
   const importIds = useParentWishlistStore((s) => s.importIds);
   const remove = useParentWishlistStore((s) => s.remove);
-  const clear = useParentWishlistStore((s) => s.clear);
   const [extraToys, setExtraToys] = useState<Toy[]>([]);
   const [resolvedBuyUrls, setResolvedBuyUrls] = useState<Record<string, string>>(buyUrls);
+  const [poppingIds, setPoppingIds] = useState<Set<string>>(() => new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (initialToys.length === 0) return;
@@ -76,10 +81,46 @@ export function ParentWishlistView({
 
   const toys = useMemo(() => {
     const extraById = new Map(extraToys.map((toy) => [toy.id, toy]));
-    return knownIds
+    const listed = knownIds
       .map((id) => initialById.get(id) ?? extraById.get(id))
-      .filter((toy): toy is Toy => Boolean(toy));
-  }, [extraToys, initialById, knownIds]);
+      .filter((toy): toy is Toy => Boolean(toy))
+      .filter((toy) => !hiddenIds.has(toy.id));
+    if (!interest) return listed;
+    return listed
+      .map((toy, index) => ({ toy, index, score: interest[toy.id] ?? 0 }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((row) => row.toy);
+  }, [extraToys, hiddenIds, initialById, interest, knownIds]);
+  const rankedForParents = Boolean(
+    interest && Object.values(interest).some((score) => score > 0),
+  );
+
+  const beginRemove = useCallback(
+    (toyId: string) => {
+      setPoppingIds((prev) => {
+        if (prev.has(toyId)) return prev;
+        const next = new Set(prev);
+        next.add(toyId);
+        return next;
+      });
+      window.setTimeout(() => {
+        remove(toyId);
+        setHiddenIds((prev) => {
+          if (prev.has(toyId)) return prev;
+          const next = new Set(prev);
+          next.add(toyId);
+          return next;
+        });
+        setPoppingIds((prev) => {
+          if (!prev.has(toyId)) return prev;
+          const next = new Set(prev);
+          next.delete(toyId);
+          return next;
+        });
+      }, 280);
+    },
+    [remove],
+  );
 
   const sharedFromQuery = initialToys.length > 0;
 
@@ -102,28 +143,20 @@ export function ParentWishlistView({
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
+        backHref="/shop"
         logoHref="/p"
-        trailing={<ParentAuthLinks returnTo={returnTo} />}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            href={parentDealsPath()}
-            className="text-sm font-bold text-[var(--blue-deep)]"
-          >
-            Brand deals
-          </Link>
-          {toys.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => clear()}
-              className="text-sm font-bold text-[var(--ink-soft)]"
-            >
-              Clear
-            </button>
-          ) : null}
+        <div className="rounded-3xl bg-[var(--lavender)] p-4 text-[var(--purple-deep)]">
+          <ParentAuthLinks returnTo={returnTo} tone="page" />
         </div>
+
+        {rankedForParents ? (
+          <p className="text-sm font-semibold text-[var(--ink-soft)]">
+            This list shows the most interacted with ToyCards first.
+          </p>
+        ) : null}
 
         {toys.length === 0 ? (
           <div className="shelf-panel">
@@ -144,49 +177,56 @@ export function ParentWishlistView({
                 resolvedBuyUrls[toy.id] ||
                 buyUrls[toy.id] ||
                 parentBuyPlaceholderPath(toy.id);
+              const popping = poppingIds.has(toy.id);
               return (
-                <li key={toy.id} className="shelf-panel shelf-panel--soft">
-                  <div className="shelf-panel__surface flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-                    <Link
-                      href={parentToyPath(toy.id)}
-                      prefetch={false}
-                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
-                    >
-                      <ToyPhoto
-                        src={toy.image}
-                        alt={toy.imageAlt}
-                        loading="lazy"
-                        decoding="async"
-                        className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
-                      />
-                    </Link>
-                    <div className="min-w-0 flex-1">
-                      <Link href={parentToyPath(toy.id)} prefetch={false}>
-                        <p className="font-[family-name:var(--font-display)] text-lg font-bold text-[var(--ink)]">
-                          {toy.name}
-                        </p>
+                <li
+                  key={toy.id}
+                  className={`shelf-panel shelf-panel--soft${popping ? " shelf-panel--pop-out" : ""}`}
+                  data-testid={`parent-wishlist-row-${toy.id}`}
+                >
+                  <div className="shelf-panel__surface flex flex-col gap-2 p-3">
+                    <div className="flex w-full items-start justify-between gap-3">
+                      <Link
+                        href={parentToyPath(toy.id)}
+                        prefetch={false}
+                        className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl"
+                      >
+                        <ToyPhoto
+                          src={toy.image}
+                          alt={toy.imageAlt}
+                          loading="lazy"
+                          decoding="async"
+                          className="kart-row__photo absolute inset-0 h-full w-full object-contain p-1.5"
+                        />
                       </Link>
-                      <p className="truncate text-sm text-[var(--ink-soft)]">
-                        {toy.blurb}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex w-[9.5rem] shrink-0 flex-col gap-2">
                         <ParentBuyButton
                           href={buyUrl}
                           toyId={toy.id}
                           mode={buyPlaceholder ? "placeholder" : "associates"}
-                          className="min-w-[9.5rem] flex-none px-4"
+                          className="w-full flex-none px-3"
                         />
-                        <button
-                          type="button"
-                          onClick={() => remove(toy.id)}
-                          className="rounded-full bg-[var(--lavender)] px-3 py-2 text-sm font-bold text-[var(--purple-deep)]"
-                          aria-label={`Remove ${toy.name}`}
-                        >
-                          Remove
-                        </button>
+                        <HoldToRemoveButton
+                          label="Remove"
+                          ariaLabel={`Remove ${toy.name}`}
+                          onComplete={() => beginRemove(toy.id)}
+                          className="w-full"
+                        />
                       </div>
+                    </div>
+                    <div className="flex min-w-0 flex-nowrap items-baseline gap-x-2">
+                      <Link
+                        href={parentToyPath(toy.id)}
+                        prefetch={false}
+                        className="shrink-0"
+                      >
+                        <p className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight text-[var(--ink)]">
+                          {toy.name}
+                        </p>
+                      </Link>
+                      <p className="min-w-0 flex-1 text-sm leading-snug text-[var(--ink-soft)]">
+                        {toy.blurb}
+                      </p>
                     </div>
                   </div>
                 </li>
@@ -212,6 +252,7 @@ export function ParentWishlistView({
                 </p>
                 <ShareWishlistActions
                   ids={toys.map((toy) => toy.id)}
+                  interest={interest}
                   showOpenLink={false}
                 />
               </div>

@@ -7,9 +7,11 @@ type Props = {
   toys: Toy[];
   /** Kart ids for the share URL — may be ready before toy rows load. */
   wishlistIds?: string[];
+  /** Play scores so the parent list keeps Kart rank. */
+  interest?: Record<string, number>;
 };
 
-export function SendToParentForm({ toys, wishlistIds }: Props) {
+export function SendToParentForm({ toys, wishlistIds, interest }: Props) {
   const ids = wishlistIds ?? toys.map((toy) => toy.id);
 
   return (
@@ -24,7 +26,7 @@ export function SendToParentForm({ toys, wishlistIds }: Props) {
           </p>
         </div>
 
-        <ShareWishlistActions ids={ids} showForParents />
+        <ShareWishlistActions ids={ids} interest={interest} showForParents />
       </div>
     </section>
   );

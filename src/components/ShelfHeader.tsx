@@ -15,6 +15,8 @@ type ShelfHeaderProps = {
   subtitle?: string;
   /** Show back chevron — takes priority over back-to-top */
   backHref?: string;
+  /** History-style back button (used when the return path is computed) */
+  onBack?: () => void;
   /** Taller product-style bar with soft bottom corners */
   rounded?: boolean;
   /** Use alternate gradient (profile) */
@@ -40,6 +42,7 @@ export function ShelfHeader({
   title,
   subtitle,
   backHref,
+  onBack,
   rounded = true,
   altGradient = false,
   className = "",
@@ -48,9 +51,10 @@ export function ShelfHeader({
 }: ShelfHeaderProps) {
   const headerRef = useRef<HTMLElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const showBack = Boolean(onBack || backHref);
 
   useEffect(() => {
-    if (backHref) {
+    if (showBack) {
       setShowBackToTop(false);
       return;
     }
@@ -68,7 +72,7 @@ export function ShelfHeader({
     update();
     scroller.addEventListener("scroll", update, { passive: true });
     return () => scroller.removeEventListener("scroll", update);
-  }, [backHref]);
+  }, [showBack]);
 
   const scrollToTop = useCallback(() => {
     const scroller = findPageScroller(headerRef.current);
@@ -90,7 +94,18 @@ export function ShelfHeader({
   return (
     <header ref={headerRef} className={headerClass}>
       <div className="relative flex min-h-11 items-center justify-center px-3">
-        {backHref ? (
+        {onBack ? (
+          <div className="shelf-back-btn">
+            <button
+              type="button"
+              onClick={onBack}
+              className={cornerBtnClass}
+              aria-label="Back"
+            >
+              <BackChevronIcon />
+            </button>
+          </div>
+        ) : backHref ? (
           <div className="shelf-back-btn">
             <Link href={backHref} className={cornerBtnClass} aria-label="Back">
               <BackChevronIcon />

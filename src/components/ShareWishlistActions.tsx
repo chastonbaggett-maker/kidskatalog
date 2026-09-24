@@ -11,6 +11,8 @@ import { siteOriginFromWindow } from "@/lib/site-url";
 
 type Props = {
   ids: string[];
+  /** Play scores, same order as ids, so parents see the ranking. */
+  interest?: Record<string, number>;
   /** Kid Kart handoff: open /p?ids=… plus a small parent-only entry. */
   showOpenLink?: boolean;
   showForParents?: boolean;
@@ -18,6 +20,7 @@ type Props = {
 
 export function ShareWishlistActions({
   ids,
+  interest,
   showOpenLink = true,
   showForParents = false,
 }: Props) {
@@ -28,13 +31,14 @@ export function ShareWishlistActions({
     setOrigin(siteOriginFromWindow());
   }, []);
 
-  const path = useMemo(() => parentWishlistPath(ids), [ids]);
-  const url = origin ? parentWishlistUrl(ids, origin) : path;
+  const path = useMemo(() => parentWishlistPath(ids, interest), [ids, interest]);
+  const url = origin ? parentWishlistUrl(ids, origin, interest) : path;
 
   async function copyLink() {
-    const full = parentWishlistUrl(ids, siteOriginFromWindow());
     try {
-      await navigator.clipboard.writeText(full);
+      await navigator.clipboard.writeText(
+        parentWishlistUrl(ids, siteOriginFromWindow(), interest),
+      );
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {

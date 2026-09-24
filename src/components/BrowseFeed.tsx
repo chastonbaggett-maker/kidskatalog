@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CategoryId, Toy } from "@/types/toy";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useCrazyModeStore, crazyModeRootClass, crazyModeScrollClass } from "@/lib/crazy-mode-store";
 import {
   isPileChromePhase,
@@ -17,8 +18,14 @@ import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
 import { usePileNavModeRowTarget } from "@/hooks/usePileNavModeRowTarget";
 import { useCatalogPage } from "@/hooks/useCatalogPage";
+import { PILE_CARD_BATCH } from "@/lib/pile-cards";
 import { pingMetrics } from "@/lib/metrics-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
+import {
+  readBrowseScroll,
+  restoreBrowseScroll,
+  saveBrowseScroll,
+} from "@/lib/browse-scroll";
 import { useCrazyRandomizeLoop } from "@/hooks/useCrazyLightning";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
 import { shuffleWithSeed } from "@/lib/shuffle";
@@ -65,6 +72,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
   const setCrazyMode = useCrazyModeStore((s) => s.setCrazyMode);
   const toggleCrazyMode = useCrazyModeStore((s) => s.toggleCrazyMode);
+  const setCompactShelfRaised = useCompactShelfStore((s) => s.setRaised);
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const setToyPileMode = useToyPileModeStore((s) => s.setToyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
@@ -95,13 +103,24 @@ export function BrowseFeed({ category, initialPage }: Props) {
     hasMore,
     loading,
     loadMore,
+    getSeed,
   } = catalog;
 
-  // Drain every filter-matching toy into the pile (full catalog when unfiltered).
+  // Pile pages stay small. The grid asks for the next batch only when the
+  // view reaches toys that are not loaded yet.
+  const pileCatalog = useCatalogPage({
+    category,
+    audience,
+    age,
+    q: query,
+    limit: PILE_CARD_BATCH,
+    enabled: pileOn,
+  });
+  const pileIdsRef = useRef<string[]>([]);
+
   useEffect(() => {
-    if (!pileOn || loading || !hasMore) return;
-    void loadMore();
-  }, [pileOn, loading, hasMore, loadMore, displayIds.length]);
+    pileIdsRef.current = pileCatalog.displayIds;
+  }, [pileCatalog.displayIds]);
 
   const isChromePhase = isPileChromePhase(enterPhase);
   const isTransitioning = isPileTransitioning(enterPhase);
@@ -111,7 +130,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
   const revealGateOpen = usePileRevealGate();
   const pileHeaderActive = pileOn && !isChromePhase && revealGateOpen;
-  const pileHeaderVisible = usePileEnterReveal(pileHeaderActive);
+  const pileHeaderVisible = usePileEnterReveal(pileHeaderActive).visible;
   const pileShelfMounted = pileHeaderActive;
   const pileModeRowTarget = usePileNavModeRowTarget();
   const [chromeExiting, setChromeExiting] = useState(false);
@@ -144,10 +163,124 @@ export function BrowseFeed({ category, initialPage }: Props) {
   const blockCompactShelfRef = useRef(false);
   const displayIdsRef = useRef<string[]>([]);
   const prevToyPileModeRef = useRef(false);
+  const browseScrollRestoredRef = useRef(false);
 
   useEffect(() => {
     displayIdsRef.current = displayIds;
   }, [displayIds]);
+
+  useEffect(() => {
+    if (pileOn) {
+      browseScrollRestoredRef.current = false;
+      return;
+    }
+    const scroller = scrollerRef.current;
+    if (!scroller || browseScrollRestoredRef.current) return;
+    if (displayed.length === 0) return;
+
+    let cancelled = false;
+    const attempt = () => {
+      if (cancelled || browseScrollRestoredRef.current) return;
+      const saved = readBrowseScroll();
+      if (!saved || saved.top <= 0) {
+        browseScrollRestoredRef.current = true;
+        return;
+      }
+
+      if (saved.toyId) {
+        const card = scroller.querySelector<HTMLElement>(
+          `[data-toy-id="${CSS.escape(saved.toyId)}"]`,
+        );
+        if (!card) {
+          // Seed refetch / pagination may still be loading the card.
+          if (hasMore && !loading) void loadMore();
+          return;
+        }
+        const scrollerRect = scroller.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const delta =
+          cardRect.top -
+          scrollerRect.top -
+          scroller.clientHeight / 2 +
+          cardRect.height / 2;
+        scroller.scrollTop += delta;
+        browseScrollRestoredRef.current = true;
+        return;
+      }
+
+      if (restoreBrowseScroll(scroller)) {
+        browseScrollRestoredRef.current = true;
+      }
+    };
+
+    attempt();
+    const t1 = window.setTimeout(attempt, 120);
+    const t2 = window.setTimeout(attempt, 400);
+    const t3 = window.setTimeout(attempt, 900);
+    const t4 = window.setTimeout(() => {
+      if (cancelled || browseScrollRestoredRef.current) return;
+      // Last resort: snap to saved scroll even if the toy card never appeared.
+      restoreBrowseScroll(scroller);
+      browseScrollRestoredRef.current = true;
+    }, 1600);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+      window.clearTimeout(t4);
+    };
+  }, [pileOn, displayed.length, hasMore, loading, loadMore]);
+
+  useEffect(() => {
+    if (pileOn) return;
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    let frame = 0;
+    const persist = (toyId?: string) => {
+      // Avoid clobbering a saved place with a fresh mount's scrollTop 0
+      // before restore runs (Strict Mode remount / first paint).
+      if (
+        !browseScrollRestoredRef.current &&
+        scroller.scrollTop < 8 &&
+        !toyId
+      ) {
+        return;
+      }
+      saveBrowseScroll(scroller.scrollTop, {
+        toyId,
+        seed: getSeed(),
+      });
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        persist();
+      });
+    };
+    const onClickCapture = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>("a[href^='/toy/']");
+      if (!link) return;
+      const href = link.getAttribute("href") ?? "";
+      const toyId = href.split("/toy/")[1]?.split(/[?#]/)[0];
+      browseScrollRestoredRef.current = true;
+      persist(toyId || undefined);
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("click", onClickCapture, true);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      scroller.removeEventListener("scroll", onScroll);
+      scroller.removeEventListener("click", onClickCapture, true);
+      // Do not persist on unmount — Strict Mode remounts would overwrite
+      // the saved place with scrollTop 0 before restore can run.
+    };
+  }, [pileOn, getSeed]);
 
   useEffect(() => {
     const enteringPile = pileOn && !prevToyPileModeRef.current;
@@ -203,10 +336,16 @@ export function BrowseFeed({ category, initialPage }: Props) {
   }, [crazyOn, toggleCrazyMode]);
 
   const handleRandomize = useCallback(() => {
-    replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+    if (useToyPileModeStore.getState().toyPileMode) {
+      pileCatalog.replaceDisplayIds(
+        shuffleWithSeed(pileIdsRef.current, Date.now()),
+      );
+    } else {
+      replaceDisplayIds(shuffleWithSeed(displayIdsRef.current, Date.now()));
+    }
     // Pile keeps its own spiral order — bump so it reshuffles with the feed.
     setShuffleNonce((n) => n + 1);
-  }, [replaceDisplayIds]);
+  }, [pileCatalog.replaceDisplayIds, replaceDisplayIds]);
 
   const crazyButtonRefs = useMemo(
     () => [filterCrazyBtnRef, shelfCrazyBtnRef],
@@ -263,7 +402,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
       if (!shelfWantedRef.current && !blockCompactShelfRef.current) {
         setShelfMode("hidden");
       }
-    }, 320);
+    }, 420);
     return () => window.clearTimeout(t);
   }, [shelfMode]);
 
@@ -271,6 +410,11 @@ export function BrowseFeed({ category, initialPage }: Props) {
     if (isKartEffectBlocked()) return;
     void loadMore();
   }, [loadMore]);
+
+  const handlePileNeedMore = useCallback(() => {
+    if (isKartEffectBlocked()) return;
+    void pileCatalog.loadMore();
+  }, [pileCatalog.loadMore]);
 
   const gridClassName = ["toy-feed-grid", crazyOn ? "toy-feed-grid--crazy" : ""]
     .filter(Boolean)
@@ -280,6 +424,12 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
   const showCompactShelf =
     !compactShelfBlocked && enterPhase === "idle" && !pileOn && !isChromePhase;
+
+  useEffect(() => {
+    const raised = showCompactShelf && shelfMode === "shown";
+    setCompactShelfRaised(raised);
+    return () => setCompactShelfRaised(false);
+  }, [showCompactShelf, shelfMode, setCompactShelfRaised]);
 
   const filterRowProps = {
     audience,
@@ -404,10 +554,18 @@ export function BrowseFeed({ category, initialPage }: Props) {
         {pileOn && (
           <div className="toy-pile-grid-host star-field flex min-h-0 flex-1 flex-col">
             <ToyPileGrid
-              toys={displayed}
+              toys={pileCatalog.displayed}
               showText={showText}
               filterSeed={filterSeed}
               shuffleNonce={shuffleNonce}
+              hasMore={pileCatalog.hasMore}
+              loading={
+                pileCatalog.loading ||
+                (pileCatalog.displayed.length === 0 &&
+                  pileCatalog.hasMore &&
+                  !pileCatalog.error)
+              }
+              onNeedMore={handlePileNeedMore}
             />
           </div>
         )}
@@ -435,7 +593,8 @@ export function BrowseFeed({ category, initialPage }: Props) {
         )}
       </div>
       {flashPortal}
-      {pileShelfMounted &&
+      {(pileShelfMounted ||
+        (showCompactShelf && shelfMode !== "hidden")) &&
         pileModeRowTarget &&
         createPortal(pileModeFilterRow, pileModeRowTarget)}
     </div>

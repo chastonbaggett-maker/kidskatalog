@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminPinGate } from "@/components/admin/AdminPinGate";
 import { useAccentStore } from "@/lib/accent-store";
+import { useCompactShelfStore } from "@/lib/compact-shelf-store";
 import { useCrazyModeStore } from "@/lib/crazy-mode-store";
 import { registerPileNavModeRow } from "@/lib/pile-nav-mode-target";
 import { beginRouteChange } from "@/lib/route-change";
@@ -14,11 +15,14 @@ import { useToyPileModeStore, isPileBrowseRoute } from "@/lib/toy-pile-store";
 import { KartNavLink } from "@/components/KartNavLink";
 import { usePileEnterReveal } from "@/hooks/usePileEnterReveal";
 import { usePileRevealGate } from "@/hooks/usePileRevealGate";
+import { useShelfRaiseReveal } from "@/hooks/useShelfRaiseReveal";
 
 const BRAND_TAP_TARGET = 10;
 const BRAND_TAP_WINDOW_MS = 2500;
 /** Wait longer than a rapid multi-tap before treating tap 1 as "go home". */
 const BRAND_SINGLE_TAP_NAV_MS = 400;
+/** Matches compact shelf / mode-row slide duration. */
+const COMPACT_SHELF_EXIT_MS = 420;
 
 function useViewAccentVar() {
   const audience = useAccentStore((s) => s.audience);
@@ -42,6 +46,7 @@ export function BottomNav() {
   const toyPileMode = useToyPileModeStore((s) => s.toyPileMode);
   const enterPhase = useToyPileModeStore((s) => s.enterPhase);
   const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const compactShelfRaised = useCompactShelfStore((s) => s.raised);
   const onPileBrowseRoute = isPileBrowseRoute(pathname);
   const revealGateOpen = usePileRevealGate();
   // Raised shelf with mode filters only on browse routes; mode itself stays session-wide.
@@ -50,8 +55,34 @@ export function BottomNav() {
     toyPileMode &&
     enterPhase !== "chrome" &&
     revealGateOpen;
-  const pileNavEnterVisible = usePileEnterReveal(pileNavShelf);
-  const pileShelfMounted = pileNavShelf;
+  const browseCompactShelf =
+    onPileBrowseRoute && compactShelfRaised && !toyPileMode;
+  const [compactShelfMounted, setCompactShelfMounted] = useState(false);
+  const pileReveal = usePileEnterReveal(pileNavShelf);
+  const pileNavEnterVisible = pileReveal.visible;
+  const pileNavEnterReady = pileReveal.ready;
+  const compactReveal = useShelfRaiseReveal(browseCompactShelf);
+  const compactEnterVisible = compactReveal.visible;
+  const compactEnterReady = compactReveal.ready;
+
+  useEffect(() => {
+    if (browseCompactShelf) {
+      setCompactShelfMounted(true);
+      return;
+    }
+    if (!compactShelfMounted) return;
+    const timer = window.setTimeout(() => {
+      setCompactShelfMounted(false);
+    }, COMPACT_SHELF_EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [browseCompactShelf, compactShelfMounted]);
+
+  const shelfRaised = pileNavShelf || compactShelfMounted;
+  const shelfEnterVisible =
+    pileNavEnterVisible || (compactShelfMounted && compactEnterVisible);
+  const shelfEnterReady =
+    (pileNavShelf && pileNavEnterReady) ||
+    (compactShelfMounted && compactEnterReady);
   const [pinGateOpen, setPinGateOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const brandTapCount = useRef(0);
@@ -119,7 +150,7 @@ export function BottomNav() {
   const watchActive =
     pathname === "/menu" || pathname.startsWith("/menu/");
 
-  const showFrostFill = !pileNavShelf || pileShelfMounted;
+  const showFrostFill = true;
 
   function pulseNavItem(e: React.PointerEvent<HTMLElement>) {
     const item = e.currentTarget;
@@ -138,58 +169,62 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
-          pileNavShelf ? " bottom-nav--pile bottom-nav-enter" : ""
-        }${pileShelfMounted ? " is-shelf-raised" : ""}${
-          pileNavEnterVisible ? " is-enter-visible" : ""
-        }${crazyMode ? " bottom-nav--crazy" : ""}`}
+        className={`bottom-nav fixed inset-x-0 bottom-0 z-40${
+          shelfRaised ? " bottom-nav--pile bottom-nav-enter" : ""
+        }${shelfRaised ? " is-shelf-raised" : ""}${
+          shelfEnterReady ? " is-enter-ready" : ""
+        }${shelfEnterVisible ? " is-enter-visible" : ""}${
+          crazyMode ? " bottom-nav--crazy" : ""
+        }`}
         style={{ ["--bottom-nav-accent" as string]: accentVar }}
       >
-        {showFrostFill && (
-          <div className="bottom-nav__frost" aria-hidden="true" />
-        )}
-        <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
-          <li>
-            <button
-              type="button"
-              onClick={handleBrandTap}
-              onPointerDown={pulseNavItem}
-              onAnimationEnd={clearNavPulse}
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                homeActive ? "bottom-nav__item--active" : ""
-              }`}
-              aria-label="Home"
-              aria-current={homeActive ? "page" : undefined}
-            >
-              <BrandIcon />
-            </button>
-          </li>
-          <li>
-            <Link
-              href="/menu"
-              onPointerDown={pulseNavItem}
-              onAnimationEnd={clearNavPulse}
-              className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
-                watchActive ? "bottom-nav__item--active" : ""
-              }`}
-              aria-label="Watch"
-              aria-current={watchActive ? "page" : undefined}
-            >
-              <MenuIcon active={watchActive} />
-            </Link>
-          </li>
-          <KartNavLink
-            active={pathname === "/kart" || pathname.startsWith("/kart/")}
-            badgeClass={badgeClass}
-          />
-        </ul>
-        {pileShelfMounted && (
-          <div
-            ref={registerPileNavModeRow}
-            className="bottom-nav__mode-row"
-            data-testid="pile-nav-mode-row"
-          />
-        )}
+        <div className="bottom-nav__lift">
+          {showFrostFill && (
+            <div className="bottom-nav__frost" aria-hidden="true" />
+          )}
+          <ul className="bottom-nav__icons flex items-center justify-around px-2.5 pt-2">
+            <li>
+              <button
+                type="button"
+                onClick={handleBrandTap}
+                onPointerDown={pulseNavItem}
+                onAnimationEnd={clearNavPulse}
+                className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                  homeActive ? "bottom-nav__item--active" : ""
+                }`}
+                aria-label="Home"
+                aria-current={homeActive ? "page" : undefined}
+              >
+                <BrandIcon />
+              </button>
+            </li>
+            <li>
+              <Link
+                href="/menu"
+                onPointerDown={pulseNavItem}
+                onAnimationEnd={clearNavPulse}
+                className={`bottom-nav__item relative flex h-14 w-16 flex-col items-center justify-center ${
+                  watchActive ? "bottom-nav__item--active" : ""
+                }`}
+                aria-label="Watch"
+                aria-current={watchActive ? "page" : undefined}
+              >
+                <MenuIcon active={watchActive} />
+              </Link>
+            </li>
+            <KartNavLink
+              active={pathname === "/kart" || pathname.startsWith("/kart/")}
+              badgeClass={badgeClass}
+            />
+          </ul>
+          {shelfRaised && (
+            <div
+              ref={registerPileNavModeRow}
+              className="bottom-nav__mode-row"
+              data-testid="pile-nav-mode-row"
+            />
+          )}
+        </div>
       </nav>
 
       <AdminPinGate

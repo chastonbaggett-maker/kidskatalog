@@ -17,6 +17,11 @@
   --ink-soft: #7a7a8c;
   --background: var(--bg);
   --foreground: var(--ink);
+  /* Bottom nav shelf. Browser home-indicator / bottom chrome samples this, not the page field. */
+  --bottom-shelf: #ffffff;
+  /* Solid status-bar / header base for the active mode (browser safe-area tint). */
+  --status-bar: #2bb8a8;
+  --header-solid: var(--status-bar);
   /* Unisex header — mint teal with a soft depth shift */
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
   --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
@@ -46,6 +51,7 @@ html[data-accent="boys"] {
   --purple: #5b93ff;
   --purple-deep: #3a6fe0;
   --lavender: #e4edff;
+  --status-bar: #2f6ae8;
   --header-grad: linear-gradient(90deg, #2f6ae8 0%, #4e89ff 50%, #7aa8ff 100%);
   --header-grad-alt: linear-gradient(180deg, #7aa8ff 0%, #4e89ff 45%, #2f6ae8 100%);
 }
@@ -59,6 +65,7 @@ html[data-accent="girls"] {
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ffe9f2;
+  --status-bar: #ef8fb3;
   --header-grad: linear-gradient(90deg, #ef8fb3 0%, #f5a9c5 50%, #ffc2d6 100%);
   --header-grad-alt: linear-gradient(180deg, #ffc2d6 0%, #f5a9c5 45%, #e878a8 100%);
 }
@@ -73,6 +80,7 @@ html[data-accent="both"] {
   --pink: #f5a9c5;
   --pink-deep: #ef8fb3;
   --lavender: #ebe4f7;
+  --status-bar: #2bb8a8;
   --header-grad: linear-gradient(90deg, #2bb8a8 0%, #3ecfc0 48%, #6ee8db 100%);
   --header-grad-alt: linear-gradient(180deg, #6ee8db 0%, #3ecfc0 45%, #2bb8a8 100%);
 }
@@ -85,8 +93,15 @@ html[data-accent="both"] {
 }
 
 html {
+  /* Edge-to-edge like installed PWA — no solid safe-area paint bands. */
+  background-color: var(--bg);
   touch-action: manipulation;
   -ms-touch-action: manipulation;
+}
+
+html:has(.app-shell--crazy) {
+  --bottom-shelf: #18181f;
+  background-color: #18181f;
 }
 
 body {
@@ -159,6 +174,116 @@ select {
   clip-path: inset(0 round var(--shelf-radius));
   outline: none;
   box-shadow: none;
+}
+
+/* Hold-to-remove: lavender base fills with purple-deep over 2s. */
+.hold-to-remove {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.9rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--lavender);
+  padding: 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--purple-deep);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 180ms ease-out, opacity 180ms ease-out;
+}
+
+.hold-to-remove__fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transform-origin: left center;
+  transform: scaleX(var(--hold-progress, 0));
+  background: var(--purple-deep);
+  pointer-events: none;
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+
+.hold-to-remove.is-holding .hold-to-remove__fill {
+  transition: transform var(--hold-duration, 2000ms) linear;
+}
+
+.hold-to-remove__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  color: var(--purple-deep);
+}
+
+.hold-to-remove__label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hold-to-remove__hint {
+  margin-top: 0.12rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  opacity: 0.9;
+}
+
+/* White copy clipped to the filled region so text stays readable. */
+.hold-to-remove__copy--on-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  color: #fff;
+  clip-path: inset(0 calc((1 - var(--hold-progress, 0)) * 100%) 0 0);
+  transition: clip-path 120ms ease-out;
+  pointer-events: none;
+}
+
+.hold-to-remove.is-holding .hold-to-remove__copy--on-fill {
+  transition: clip-path var(--hold-duration, 2000ms) linear;
+}
+
+.shelf-panel--pop-out {
+  animation: shelf-panel-pop-out 360ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+  pointer-events: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+@keyframes shelf-panel-pop-out {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.08) rotate(-1.5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.72) rotate(2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-to-remove__fill,
+  .hold-to-remove.is-holding .hold-to-remove__fill,
+  .hold-to-remove__copy--on-fill,
+  .hold-to-remove.is-holding .hold-to-remove__copy--on-fill {
+    transition: none;
+  }
+
+  .shelf-panel--pop-out {
+    animation-duration: 1ms;
+  }
 }
 
 .menu-pile-card__photo-wrap {
@@ -248,6 +373,8 @@ select {
   overflow: hidden;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1.25rem;
+  /* Transparent shell — ::before carries the gradient under the status bar (PWA-style). */
+  background-color: transparent;
 }
 
 .shelf-header--rounded::before {
@@ -269,6 +396,71 @@ select {
 
 .shelf-header--alt::before {
   background-image: var(--header-grad-alt);
+}
+
+/*
+ * Browse header — sticky under the status bar.
+ * Default / PWA: gradient via background-image (shell stays transparent so
+ * Liquid Glass can stay see-through). Browser overrides below paint a solid
+ * mode color onto the sticky edge so the top safe area matches.
+ */
+.feed-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: transparent;
+  background-image: var(--header-grad);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/*
+ * Browser only: solid mode color on the sticky header (and shelf headers).
+ * Safari samples that background-color for the top safe area / status bar.
+ * Installed PWA keeps the gradient rules above (data-standalone set in kk-boot).
+ */
+html:not([data-standalone="true"]) .feed-header {
+  background-color: var(--header-solid);
+  background-image: none;
+}
+
+html:not([data-standalone="true"]) .shelf-header--rounded,
+html:not([data-standalone="true"]) .browse-feed--toy-pile .shelf-header--pile {
+  background-color: var(--header-solid);
+}
+
+html:not([data-standalone="true"]) .shelf-header--rounded::before,
+html:not([data-standalone="true"]) .shelf-header--alt::before,
+html:not([data-standalone="true"]) .browse-feed--crazy .shelf-header--rounded::before,
+html:not([data-standalone="true"]) .app-shell--crazy .shelf-header--rounded::before,
+html:not([data-standalone="true"]) .app-shell--pile .shelf-header--rounded::before,
+html:not([data-standalone="true"]) .app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded::before,
+html:not([data-standalone="true"]) .browse-feed--toy-pile .shelf-header--pile::before,
+html:not([data-standalone="true"]) .browse-feed--toy-pile.browse-feed--crazy .shelf-header--pile::before,
+html:not([data-standalone="true"]) .app-shell--crazy .shelf-header--pile::before {
+  background-color: var(--header-solid);
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/*
+ * Fixed probe covering the top safe area. Remounted on mode change so Safari
+ * Liquid Glass re-binds its tint in sync with the header (cached until
+ * scroll/layout otherwise).
+ */
+html:not([data-standalone="true"]) .safari-safe-area-tint {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  height: max(3px, env(safe-area-inset-top, 0px));
+  pointer-events: none;
+}
+
+html[data-standalone="true"] .safari-safe-area-tint {
+  display: none;
 }
 
 @keyframes pop-in {
@@ -656,6 +848,41 @@ html.route-changing .bottom-nav__kart-badge--pop {
   z-index: 12;
 }
 
+@keyframes kart-row-in {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.035);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.kart-row--pending {
+  opacity: 0;
+  transform: translateY(40px) scale(0.9);
+}
+
+.kart-row--enter {
+  animation: kart-row-in 0.82s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kart-row--pending {
+    opacity: 1;
+    transform: none;
+  }
+
+  .kart-row--enter {
+    animation: none;
+  }
+}
+
 .thumb-carousel__photo,
 .kart-row__photo {
   position: absolute;
@@ -666,6 +893,17 @@ html.route-changing .bottom-nav__kart-badge--pop {
   max-width: 100%;
   max-height: 100%;
   overflow: clip;
+}
+
+/* Kart favorites — always scrollable; ~3.5 soft panels tall. */
+.kart-list-scroll {
+  max-height: calc(3.5 * 6.5rem + 3 * 0.75rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.15rem;
+  scrollbar-gutter: stable;
 }
 
 .thumb-carousel__photo {
@@ -833,28 +1071,33 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 .logo-glow {
   filter:
-    drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.55))
-    drop-shadow(0 0 18px rgba(209, 124, 255, 0.45));
+    drop-shadow(0 0 2.1px rgba(255, 255, 255, 0.63))
+    drop-shadow(0 0 7px rgba(255, 255, 255, 0.385))
+    drop-shadow(0 0 12.6px rgba(209, 124, 255, 0.315));
 }
 
-/* Cold-open splash: fade in K → logo-shaped pulse → tap/auto → whole screen fades out. */
+/* Cold-open splash: video part 1 → hold end frame → tap → part 2 → reveal page. */
 :root {
+  /* Brand mint plate — part 1 video is screened on top so bg never shifts. */
+  --splash-mint: #3ecfc0;
   --splash-bg-solid: #3ecfc0;
-  --splash-bg: linear-gradient(165deg, #6ee8db 0%, #3ecfc0 42%, #2bb8a8 100%);
-  --splash-fade-ms: 850ms;
+  --splash-bg-part2: #ffffff;
+  --splash-bg: none;
+  --splash-fade-ms: 420ms;
 }
 
 /* Match edges / overscroll / status-bar gaps to the splash while it's up. */
 html[data-splash="active"],
 html[data-splash="active"] body,
+html[data-splash="holding"],
+html[data-splash="holding"] body,
 html[data-splash="exiting"],
 html[data-splash="exiting"] body {
   background-color: var(--splash-bg-solid) !important;
   background-image: none;
 }
 
-/* Nav / shell frost paints before CSS arrives — also mirrored in splash-boot critical CSS. */
+/* Hide shell only on the cold first paint; holding/exiting keep it ready under the video. */
 html[data-splash="active"] .app-shell,
 html[data-splash="active"] .bottom-nav,
 html[data-splash="active"] .bottom-nav__frost,
@@ -865,8 +1108,23 @@ html[data-splash="active"] .bottom-nav__icons {
   pointer-events: none !important;
 }
 
+html[data-splash="holding"] .app-shell,
+html[data-splash="holding"] .bottom-nav,
+html[data-splash="holding"] .bottom-nav__frost,
+html[data-splash="holding"] .bottom-nav__mode-row,
+html[data-splash="holding"] .bottom-nav__icons,
+html[data-splash="exiting"] .app-shell,
+html[data-splash="exiting"] .bottom-nav,
+html[data-splash="exiting"] .bottom-nav__frost,
+html[data-splash="exiting"] .bottom-nav__mode-row,
+html[data-splash="exiting"] .bottom-nav__icons {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 #app-splash-boot,
-html[data-splash="active"]::before {
+html[data-splash="active"]::before,
+html[data-splash="holding"]::before {
   position: fixed;
   top: 0;
   left: 0;
@@ -881,19 +1139,23 @@ html[data-splash="active"]::before {
   margin: 0;
   padding: 0;
   border: 0;
-  background-color: var(--splash-bg-solid);
-  background-image: var(--splash-bg);
+  background-color: #3ecfc0;
+  background-image: none;
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
   pointer-events: none;
 }
 
-html[data-splash="active"]::before {
+html[data-splash="active"]::before,
+html[data-splash="holding"]::before {
   content: "";
 }
 
-html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
+html:not([data-splash="active"]):not([data-splash="holding"]):not(
+    [data-splash="exiting"]
+  )
+  #app-splash-boot {
   display: none !important;
 }
 
@@ -903,7 +1165,6 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   top: 0;
   left: 0;
   right: 0;
-  /* Extra bottom bleed covers home-indicator / short visual-viewport gaps. */
   bottom: 0;
   width: 100%;
   height: 100%;
@@ -915,7 +1176,6 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   min-height: -webkit-fill-available;
   height: calc(100dvh + env(safe-area-inset-bottom, 0px) + 2rem);
   max-height: none;
-  /* Bleed past safe areas so notches / home indicator never show page chrome. */
   margin: 0;
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -923,19 +1183,26 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   display: grid;
   place-items: center;
   pointer-events: auto;
-  cursor: pointer;
-  background-color: var(--splash-bg-solid);
-  background-image: var(--splash-bg);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  cursor: default;
+  background-color: #3ecfc0;
+  background-image: none;
   opacity: 1;
   visibility: visible;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  /* One paint layer so logo + field fade together. */
+  overflow: hidden;
   isolation: isolate;
   transform: translateZ(0);
+}
+
+.app-splash--part2,
+.app-splash--out {
+  background-color: #ffffff;
+  isolation: isolate;
+}
+
+.app-splash--hold {
+  cursor: pointer;
 }
 
 .app-splash--out {
@@ -945,163 +1212,131 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   cursor: default;
 }
 
-.app-splash__logo-wrap {
-  position: relative;
-  display: grid;
-  place-items: center;
-  /* Room for expanding K-shaped pulses without clipping the mark. */
-  width: min(52vw, 12rem);
-  height: min(72vw, 16rem);
-  margin: 0;
-  transform: translateZ(0);
-}
-
-/* Expanding K silhouettes — same mask as the splash mark. */
-.app-splash__pulse {
+/* Full-size stage — mint comes from .app-splash, clips fill the viewport. */
+.app-splash__stage {
   position: absolute;
   inset: 0;
-  margin: auto;
-  width: min(11vw, 3.4rem);
-  height: min(16vw, 5rem);
-  max-height: 22vh;
-  background-color: rgba(255, 255, 255, 0.72);
-  transform: scale(1);
-  transform-origin: center center;
-  opacity: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  -webkit-mask-image: url(/logo-icon.png);
-  mask-image: url(/logo-icon.png);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  will-change: transform, opacity;
 }
 
-.app-splash--armed .app-splash__pulse--a {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) infinite;
-}
-
-.app-splash--armed .app-splash__pulse--b {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 0.6s
-    infinite;
-}
-
-.app-splash--armed .app-splash__pulse--c {
-  animation: app-splash-k-pulse 1.8s cubic-bezier(0.15, 0.55, 0.3, 1) 1.2s
-    infinite;
-}
-
-.app-splash--tap .app-splash__pulse,
-.app-splash--out .app-splash__pulse {
-  animation: none;
-  opacity: 0;
-}
-
-.app-splash__logo {
-  display: block;
-  position: relative;
-  z-index: 1;
-  width: min(11vw, 3.4rem);
-  height: min(16vw, 5rem);
-  max-height: 22vh;
-  opacity: 0;
-  transform: scale(0.9);
-  transform-origin: center center;
+.app-splash__poster,
+.app-splash__end-frame,
+.app-splash__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
   user-select: none;
-  -webkit-user-drag: none;
+}
+
+/* White-on-black art: screen blend → black drops out to mint plate. */
+.app-splash__poster,
+.app-splash__end-frame,
+.app-splash__video--part1 {
+  mix-blend-mode: screen;
+  background-color: transparent !important;
+}
+
+.app-splash__poster {
+  z-index: 3;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.app-splash__poster.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.app-splash__end-frame {
+  z-index: 4;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.app-splash__end-frame.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.app-splash--part2 .app-splash__poster,
+.app-splash--out .app-splash__poster,
+.app-splash--part2 .app-splash__end-frame,
+.app-splash--out .app-splash__end-frame {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.app-splash__video {
+  background-color: transparent;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.app-splash__video--part1.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.app-splash__video--part2 {
+  mix-blend-mode: normal;
+  background-color: #ffffff !important;
+}
+
+.app-splash__video--part2.is-active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+
+.app-splash__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 20%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
+  animation:
+    app-splash-hint-in 0.45s ease both,
+    app-splash-hint-pulse 2.4s ease-in-out 0.45s infinite;
   pointer-events: none;
-  background-color: #fff;
-  border: 0;
-  outline: none;
-  box-shadow: none;
-  /* Mask avoids img + drop-shadow bounding-box artifacts on iOS. */
-  -webkit-mask-image: url(/logo-icon.png);
-  mask-image: url(/logo-icon.png);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+  z-index: 5;
 }
 
-.app-splash--in .app-splash__logo {
-  animation: app-splash-logo-in 0.7s cubic-bezier(0.33, 0.1, 0.25, 1) forwards;
-}
-
-.app-splash--armed .app-splash__logo {
-  opacity: 1;
-  animation: app-splash-logo-pulse 1.8s ease-in-out infinite;
-}
-
-.app-splash--tap .app-splash__logo {
-  opacity: 1;
-  animation: app-splash-logo-tap 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Logo stays fully opaque during exit — parent overlay fades the whole screen. */
-.app-splash--out .app-splash__logo {
-  opacity: 1;
-  transform: scale(1);
-  animation: none;
-}
-
-@keyframes app-splash-logo-in {
-  0% {
+@keyframes app-splash-hint-in {
+  from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: translateX(-50%) translateY(8px);
   }
-  100% {
-    opacity: 1;
-    transform: scale(1);
+  to {
+    opacity: 0.85;
+    transform: translateX(-50%) translateY(0);
   }
 }
 
-@keyframes app-splash-logo-pulse {
+@keyframes app-splash-hint-pulse {
   0%,
   100% {
-    transform: scale(1);
+    opacity: 0.55;
   }
   50% {
-    transform: scale(1.04);
-  }
-}
-
-/* Soft K-shaped ripple expanding from the mark.
-   Starts slightly larger than the solid logo so the ghost K reads
-   immediately (not only the star accents at the edge). */
-@keyframes app-splash-k-pulse {
-  0% {
-    opacity: 0.7;
-    transform: scale(1.22);
-    filter: blur(0);
-  }
-  45% {
-    opacity: 0.35;
-    filter: blur(0.4px);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2.55);
-    filter: blur(1.2px);
-  }
-}
-
-@keyframes app-splash-logo-tap {
-  0% {
     opacity: 1;
-    transform: scale(1);
-  }
-  35% {
-    opacity: 1;
-    transform: scale(0.88);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -1118,9 +1353,13 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
 
 @media (prefers-reduced-motion: reduce) {
   .app-splash,
-  .app-splash__logo,
-  .app-splash__pulse {
+  .app-splash__video,
+  .app-splash__hint {
     animation: none !important;
+  }
+
+  .app-splash__hint {
+    opacity: 0.85;
   }
 
   .app-splash {
@@ -1159,19 +1398,19 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   opacity: 1;
 }
 
-/* Compact shelf overlay — pinned to browse viewport top (not in scroll flow) */
+/* Compact shelf overlay — fixed so Safari samples its edge color for the status bar */
 .browse-shelf-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 40;
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(0, -12px, 0);
+  transform: translate3d(0, -110%, 0);
   transition:
-    opacity 300ms ease,
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 420ms ease-in-out,
+    transform 420ms ease-in-out;
   will-change: opacity, transform;
 }
 
@@ -1181,12 +1420,14 @@ html:not([data-splash="active"]):not([data-splash="exiting"]) #app-splash-boot {
   transform: translate3d(0, 0, 0);
 }
 
-/* Exit: stay fixed at top and fade only — no slide into category nav */
+/* Exit: slide back up with the same ease. */
 .browse-shelf-overlay.is-leaving {
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(0, 0, 0);
-  transition: opacity 300ms ease;
+  transform: translate3d(0, -110%, 0);
+  transition:
+    opacity 420ms ease-in-out,
+    transform 420ms ease-in-out;
 }
 
 .browse-feed--crazy .browse-shelf-overlay {
@@ -1248,16 +1489,214 @@ html[data-accent="girls"] .kart-go-btn:hover {
 }
 
 html[data-accent="both"] .kart-go-btn {
-  background: var(--mint);
-  color: #fff;
+  background: var(--lavender);
+  color: var(--purple-deep);
   border-color: transparent;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 35%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--lavender) 55%, transparent);
 }
 
 html[data-accent="both"] .kart-go-btn:hover {
-  background: color-mix(in srgb, var(--mint) 88%, #0f766e);
-  color: #fff;
+  background: color-mix(in srgb, var(--lavender) 82%, var(--purple-deep));
+  color: var(--purple-deep);
   border-color: transparent;
+}
+
+/* Product row: add pill and Kart circle trade width when the toy is saved.
+   Size lives on the slots so touch rules that freeze .add-kart-btn cannot snap it. */
+.product-kart-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+  height: 3.9rem;
+}
+
+.product-kart-slot {
+  min-width: 0;
+  height: 3.9rem;
+}
+
+.product-kart-slot--add {
+  flex: 1 1 0px;
+}
+
+.product-kart-slot--go {
+  flex: 0 0 3.9rem;
+}
+
+.product-kart-actions.is-visual-ready .product-kart-slot {
+  transition:
+    flex-grow 0.72s cubic-bezier(0.22, 1.25, 0.32, 1),
+    flex-basis 0.72s cubic-bezier(0.22, 1.25, 0.32, 1);
+}
+
+.product-kart-actions.is-in-kart .product-kart-slot--add {
+  flex: 0 0 3.9rem;
+}
+
+.product-kart-actions.is-in-kart .product-kart-slot--go {
+  flex: 1 1 0px;
+}
+
+@keyframes kart-swap-giggle {
+  /* Soft horizontal settle with gentle scale — eased ends, no hard peaks. */
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  18% {
+    transform: translateX(-2px) scale(1.02);
+  }
+  40% {
+    transform: translateX(6px) scale(0.99, 1.015);
+  }
+  65% {
+    transform: translateX(-3px) scale(1.01, 0.995);
+  }
+  85% {
+    transform: translateX(1.5px) scale(1);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+.product-kart-actions.is-giggling .product-kart-slot {
+  animation: kart-swap-giggle 1.05s cubic-bezier(0.45, 0.05, 0.55, 0.95) both;
+  transform-origin: center center;
+}
+
+.product-kart-actions.is-giggling .product-kart-slot--go {
+  /* Tiny lag so the growing pill finishes the wave the shrinking circle started. */
+  animation-delay: 0.05s;
+}
+
+.product-kart-actions .product-kart-add,
+.product-kart-actions .product-kart-go {
+  width: 100%;
+  min-width: 0;
+  height: 3.9rem;
+  padding-inline: 0;
+}
+
+.product-kart-add .add-kart-btn__plus {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.kart-swap-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.kart-swap-glyph {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  min-width: 0;
+  gap: 0.4em;
+  white-space: nowrap;
+}
+
+.kart-swap-glyph--add {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.kart-swap-glyph--remove {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.35rem;
+  height: 1.35rem;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.35) rotate(-70deg);
+}
+
+.kart-swap-minus {
+  display: block;
+  width: 1.15rem;
+  height: 0.2rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.product-kart-actions.is-visual-ready .kart-swap-glyph--add {
+  transition:
+    opacity 0.22s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.product-kart-actions.is-visual-ready .kart-swap-glyph--remove {
+  transition:
+    opacity 0.28s ease 0.16s,
+    transform 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) 0.08s;
+}
+
+.product-kart-actions.is-in-kart .kart-swap-glyph--add {
+  opacity: 0;
+  transform: scale(0.72);
+  transition:
+    opacity 0.16s ease,
+    transform 0.28s ease;
+}
+
+.product-kart-actions.is-in-kart .kart-swap-glyph--remove {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+
+.product-kart-go {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-kart-go__label {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  min-width: 0;
+}
+
+.product-kart-go__label > span {
+  overflow: hidden;
+  white-space: nowrap;
+  padding-right: 0.5rem;
+}
+
+.product-kart-actions.is-visual-ready .product-kart-go__label {
+  transition:
+    grid-template-columns 0.55s cubic-bezier(0.22, 1.2, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.product-kart-actions.is-in-kart .product-kart-go__label {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns 0.6s cubic-bezier(0.22, 1.25, 0.36, 1) 0.08s,
+    opacity 0.35s ease 0.14s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-kart-actions.is-visual-ready .product-kart-slot,
+  .product-kart-actions.is-visual-ready .kart-swap-glyph--add,
+  .product-kart-actions.is-visual-ready .kart-swap-glyph--remove,
+  .product-kart-actions.is-visual-ready .product-kart-go__label,
+  .product-kart-actions.is-in-kart .kart-swap-glyph--add,
+  .product-kart-actions.is-in-kart .product-kart-go__label {
+    transition: none !important;
+  }
+
+  .product-kart-actions.is-giggling .product-kart-slot {
+    animation: none !important;
+  }
 }
 
 @keyframes back-fun-bob {
@@ -1300,6 +1739,13 @@ html[data-accent="both"] .kart-go-btn:hover {
   .browse-shelf-overlay.is-visible,
   .browse-shelf-overlay.is-leaving {
     transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
+    transition: none !important;
     transform: none;
   }
 
@@ -1480,11 +1926,13 @@ html[data-accent="both"] .kart-go-btn:hover {
 .browse-feed--toy-pile {
   --star-field-bg: #f0ebe3;
   --pile-header-grad: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 48%, #ffc107 100%);
+  --header-solid: #ff9a56;
 }
 
 .browse-feed--toy-pile.browse-feed--crazy {
   --star-field-bg: #18181f;
   --star-field-image: var(--crazy-star-field);
+  --header-solid: #141418;
   background-color: var(--star-field-bg);
   background-image: var(--star-field-image);
   background-size: var(--star-field-size);
@@ -1547,8 +1995,19 @@ html[data-accent="both"] .kart-go-btn:hover {
   min-width: calc(100% - 1.5rem);
   margin-inline: 0.75rem;
   border-radius: 2rem;
-  background-color: #fff;
+  /* Browser: solid white; PWA frosts under data-standalone. */
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: 0 10px 28px -10px rgba(255, 120, 80, 0.22);
+}
+
+html[data-standalone="true"] .filter-row-pile-pill {
+  background-color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7);
+  backdrop-filter: blur(20px) saturate(1.7);
 }
 
 .filter-row-scroll--pile {
@@ -1642,7 +2101,10 @@ html[data-accent="both"] .kart-go-btn:hover {
     opacity: 1;
   }
 
-  .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost {
+  .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost,
+  .bottom-nav--pile.is-shelf-raised .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift,
+  .bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
     transition: none !important;
     transform: none;
     opacity: 1;
@@ -1733,6 +2195,24 @@ html[data-accent="both"] .kart-go-btn:hover {
 .toy-pile-card .feed-card__title-slot--stable {
   flex: 0 0 auto;
   box-sizing: border-box;
+}
+
+.toy-pile-card .feed-card__view-btn {
+  width: 5.5rem;
+  height: 5.5rem;
+  background-size: 2.65rem 2.65rem;
+}
+
+.toy-pile-card .feed-card__title-slot {
+  padding-right: 6.4rem;
+}
+
+@media (min-width: 640px) {
+  .toy-pile-card .feed-card__view-btn {
+    width: 6.35rem;
+    height: 6.35rem;
+    background-size: 3.1rem 3.1rem;
+  }
 }
 
 .browse-feed--crazy {
@@ -1952,7 +2432,7 @@ html[data-accent="both"] .kart-go-btn:hover {
   color: #fff;
 }
 
-/* Crazy Mode Add to Kart — yellow pill + dark text (beats accent="both" mint outline). */
+/* Crazy Mode Add to Kart — yellow pill + dark text (beats accent="both" solid mint). */
 .product-detail--crazy .add-kart-btn--ready,
 .page-scroll--crazy .add-kart-btn--ready,
 .app-shell--crazy .add-kart-btn--ready,
@@ -2186,37 +2666,62 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: transparent;
+  /*
+   * Safari 26 samples background-color / backdrop-filter on fixed edge
+   * elements and paints an opaque toolbar tint. Keep the nav shell
+   * transparent so chrome stays glass and shows page content (like most sites).
+   * Frosted look lives on the absolute .bottom-nav__frost child — not sampled.
+   */
+  background-color: transparent;
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-top-color: transparent;
   box-shadow: none;
 }
 
+/* Browser kart landing: same solid white. PWA bumps opacity under frost rules below. */
 .bottom-nav--kart-landing .bottom-nav__frost {
-  background-color: rgba(255, 255, 255, 0.97);
+  background-color: #ffffff;
 }
 
 .bottom-nav--pile {
   border-radius: 2rem 2rem 0 0;
   padding-bottom: 0;
   overflow: hidden;
-  transition: min-height var(--pile-chrome-duration) ease-in-out;
+  background: transparent;
+  transition: min-height 420ms ease-in-out;
 }
 
+/*
+ * Browser: solid white shelf (no frosted glass — Safari samples edge blur badly).
+ * Installed PWA: frosted glass on this absolute child only.
+ */
 .bottom-nav__frost {
   position: absolute;
   inset: 0;
+  /* Fill the home-indicator strip under the icons. */
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   z-index: 0;
   border-radius: inherit;
-  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  /* Solid frost — backdrop-filter + nav pulse repaints fullscreen on iOS */
-  background-color: rgba(255, 255, 255, 0.94);
-  background-image: linear-gradient(
-    to top,
-    rgba(255, 255, 255, 0.98),
-    rgba(255, 255, 255, 0.88)
-  );
+  background-color: #ffffff;
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   pointer-events: none;
+}
+
+html[data-standalone="true"] .bottom-nav__frost {
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  background-color: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+}
+
+html[data-standalone="true"] .bottom-nav--kart-landing .bottom-nav__frost {
+  background-color: rgba(255, 255, 255, 0.78);
 }
 
 .bottom-nav::before {
@@ -2232,25 +2737,78 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 .bottom-nav--pile.is-shelf-raised {
-  display: flex;
-  flex-direction: column;
+  display: block;
   min-height: var(--pile-nav-stack-height);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  transition: min-height var(--pile-chrome-duration) ease-in-out;
+  transition: min-height 420ms ease-in-out;
+}
+
+/* One lift for frost + icons + mode row so raise/hide stays in lockstep. */
+.bottom-nav__lift {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: inherit;
+  transform: translate3d(0, 0, 0);
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__lift {
+  /* Fill the nav content box (min-height includes safe-area padding). */
+  min-height: calc(
+    var(--pile-nav-stack-height) - env(safe-area-inset-bottom, 0px)
+  );
+  /* Pending pose: mode row sits below the clip; no transition yet. */
+  transform: translate3d(0, var(--pile-shelf-height), 0);
+  transition: none;
+  will-change: transform;
+}
+
+/* Arm transition only after the pending pose has painted. */
+.bottom-nav--pile.is-shelf-raised.is-enter-ready .bottom-nav__lift {
+  transition: transform 420ms ease-in-out;
+}
+
+.bottom-nav--pile.is-shelf-raised.is-enter-visible .bottom-nav__lift {
+  transform: translate3d(0, 0, 0);
+}
+
+.bottom-nav--pile.is-shelf-raised .bottom-nav__frost {
+  /* Already extends into safe-area via the base frost rule. */
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
 }
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */
+.bottom-nav--crazy {
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-top-color: transparent;
+  box-shadow: none;
+}
+
 .bottom-nav--crazy .bottom-nav__frost {
-  background-color: #25252e;
+  /* Browser: solid dark shelf */
+  background-color: #18181f;
   background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-top: 1px solid rgba(255, 229, 102, 0.1);
   box-shadow:
     0 -10px 28px -10px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 229, 102, 0.06);
 }
 
+html[data-standalone="true"] .bottom-nav--crazy .bottom-nav__frost {
+  background-color: rgba(24, 24, 31, 0.78);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+}
+
 .bottom-nav--crazy .bottom-nav__mode-row .filter-row-pile-pill {
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 229, 102, 0.14);
 }
 
 /* Site-wide session chrome — header/nav keep mode look outside browse feed */
@@ -2258,6 +2816,7 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   --crazy-star-field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='480' viewBox='0 0 360 480'%3E%3Cg fill='%23ffe566'%3E%3Cpath fill-opacity='0.55' d='M48 62l3.2 6.6 7.3 1.1-5.3 5.1 1.2 7.2L48 78.6 41.6 82l1.2-7.2-5.3-5.1 7.3-1.1L48 62z'/%3E%3Cpath fill-opacity='0.35' d='M72 84l2 4.1 4.5.7-3.3 3.2.8 4.5L72 94.4l-4 2.1.8-4.5-3.3-3.2 4.5-.7L72 84z'/%3E%3Cpath fill-opacity='0.45' d='M58 98l1.5 3.1 3.4.5-2.5 2.4.6 3.4L58 105.8l-3 1.6.6-3.4-2.5-2.4 3.4-.5L58 98z'/%3E%3Cpath fill-opacity='0.4' d='M210 40l2.6 5.4 6 .9-4.3 4.2 1 5.9L210 53.4l-5.3 2.8 1-5.9-4.3-4.2 6-.9L210 40z'/%3E%3Cpath fill-opacity='0.28' d='M232 58l1.7 3.5 3.9.6-2.8 2.7.7 3.8L232 66.5l-3.4 1.8.7-3.8-2.8-2.7 3.9-.6L232 58z'/%3E%3Cpath fill-opacity='0.5' d='M300 190l3.5 7.2 8 1.2-5.8 5.6 1.4 7.9L300 208.1l-7.1 3.7 1.4-7.9-5.8-5.6 8-1.2L300 190z'/%3E%3Cpath fill-opacity='0.32' d='M318 214l2.1 4.3 4.8.7-3.5 3.4.8 4.7L318 224.8l-4.2 2.2.8-4.7-3.5-3.4 4.8-.7L318 214z'/%3E%3Cpath fill-opacity='0.38' d='M120 250l2.4 4.9 5.4.8-3.9 3.8.9 5.4L120 262.3l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L120 250z'/%3E%3Cpath fill-opacity='0.25' d='M138 268l1.4 2.9 3.2.5-2.3 2.2.5 3.1L138 274.4l-2.8 1.5.5-3.1-2.3-2.2 3.2-.5L138 268z'/%3E%3Cpath fill-opacity='0.42' d='M40 340l2.8 5.8 6.4.9-4.6 4.5 1.1 6.3L40 354.2l-5.7 3 1.1-6.3-4.6-4.5 6.4-.9L40 340z'/%3E%3Cpath fill-opacity='0.3' d='M62 358l1.8 3.7 4.1.6-3 2.9.7 4L62 367.2l-3.6 1.9.7-4-3-2.9 4.1-.6L62 358z'/%3E%3Cpath fill-opacity='0.48' d='M260 400l3 6.2 6.8 1-4.9 4.8 1.2 6.8L260 415.2l-6.1 3.2 1.2-6.8-4.9-4.8 6.8-1L260 400z'/%3E%3Cpath fill-opacity='0.22' d='M278 422l1.6 3.3 3.6.5-2.6 2.5.6 3.6L278 429.6l-3.2 1.7.6-3.6-2.6-2.5 3.6-.5L278 422z'/%3E%3Cpath fill-opacity='0.36' d='M180 150l1.9 3.9 4.3.6-3.1 3 .8 4.3L180 159.5l-3.9 2 .8-4.3-3.1-3 4.3-.6L180 150z'/%3E%3C/g%3E%3C/svg%3E");
   --star-field-bg: #18181f;
   --star-field-image: var(--crazy-star-field);
+  --header-solid: #141418;
   --header-grad: linear-gradient(
     90deg,
     #141418 0%,
@@ -2299,6 +2858,15 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
     #ff6b6b 48%,
     #ffc107 100%
   );
+  --header-solid: #ff9a56;
+}
+
+.app-shell--pile.app-shell--crazy {
+  --header-solid: #141418;
+}
+
+.app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded {
+  background-color: transparent;
 }
 
 .app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded::before {
@@ -2324,8 +2892,19 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 .bottom-nav__mode-row .filter-row-pile-pill {
   margin-inline: 0.5rem;
   min-width: calc(100% - 1rem);
-  box-shadow: none;
-  background-color: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 24px -12px rgba(80, 100, 180, 0.18);
+  /* Browser: solid white pill; PWA frosts below. */
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-standalone="true"] .bottom-nav__mode-row .filter-row-pile-pill {
+  background-color: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7);
+  backdrop-filter: blur(20px) saturate(1.7);
 }
 
 .bottom-nav__mode-row .filter-row-pile-pill > .flex {
@@ -2333,24 +2912,9 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   gap: 0.5rem;
 }
 
-.bottom-nav--pile.bottom-nav-enter .bottom-nav__mode-row {
-  opacity: 0;
-  transform: none;
-  transition: opacity var(--pile-chrome-duration) ease-in-out;
-}
-
-.bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__mode-row {
-  opacity: 1;
-  transform: none;
-}
-
 .bottom-nav--pile.bottom-nav-enter {
   opacity: 1;
   transform: none;
-}
-
-.bottom-nav--pile.bottom-nav-enter:not(.is-enter-visible) .bottom-nav__icons {
-  opacity: 1;
 }
 
 .bottom-nav__icons {
@@ -2405,7 +2969,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   top: 50%;
   width: 3.65rem;
   height: 3.65rem;
-  border-radius: 999px;
+  /* Squircle (iOS-like continuous corner) — not a circle. */
+  border-radius: 24%;
   background: var(--bottom-nav-accent, var(--mint));
   transform: translate(-50%, -50%) scale(1);
   pointer-events: none;
@@ -2507,19 +3072,19 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   }
 }
 
+/* Frost rides .bottom-nav__lift — no separate fade that leaves the card behind. */
 .bottom-nav--pile.bottom-nav-enter .bottom-nav__frost {
-  opacity: 0;
-  transform: none;
-  transition: opacity var(--pile-chrome-duration) ease-in-out;
-}
-
-.bottom-nav--pile.bottom-nav-enter.is-enter-visible .bottom-nav__frost {
   opacity: 1;
   transform: none;
 }
 
 .scroll-pad-bottom {
   padding-bottom: var(--bottom-nav-offset);
+}
+
+/* Compact browse header is up — give feed room for the raised mode shelf. */
+.app-shell--compact-shelf-raised .scroll-pad-bottom {
+  padding-bottom: var(--pile-nav-stack-height);
 }
 
 /* Middle pane: only this region scrolls; header + bottom nav stay fixed in the shell */
@@ -2727,14 +3292,15 @@ html[data-standalone="true"] .app-shell {
 
 html[data-accent="both"] .add-kart-btn--ready {
   --pulse-ring: color-mix(in srgb, var(--mint) 70%, white 15%);
-  background: #fff;
-  color: var(--mint);
-  border-color: var(--mint);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 22%, transparent);
+  background: var(--mint);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--mint) 35%, transparent);
 }
 
 html[data-accent="both"] .add-kart-btn--ready:hover {
-  background: color-mix(in srgb, var(--mint) 10%, #fff);
+  background: color-mix(in srgb, var(--mint) 88%, black);
+  color: #fff;
 }
 
 /* Remove: mint base layer → blue fill wipes R→L → pop → label swap at peak */
@@ -3747,16 +4313,25 @@ html[data-kart-effects-reduced="true"] .feed-card__view-btn {
   position: fixed;
   z-index: 45;
   left: max(0.75rem, env(safe-area-inset-left, 0px));
+  /* Sit above the icon row; slide up with the raised mode shelf. */
   bottom: calc(var(--bottom-nav-offset) + 0.65rem);
   width: auto;
   max-width: min(14.5rem, calc(100vw - 5.5rem));
   height: auto;
   min-height: 2.75rem;
   pointer-events: none;
+  transition: bottom 420ms ease-in-out;
 }
 
-body:has(.app-shell--pile) .site-music-toggle-wrap {
+/* Match bottom-nav__lift: only ride up once the shelf enter is visible. */
+body:has(.bottom-nav.is-shelf-raised.is-enter-visible) .site-music-toggle-wrap {
   bottom: calc(var(--pile-nav-stack-height) + 0.55rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-music-toggle-wrap {
+    transition: none;
+  }
 }
 
 .site-music-player {

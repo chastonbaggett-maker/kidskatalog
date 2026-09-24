@@ -7,18 +7,24 @@ import { getParentList } from "@/lib/parent-list-store";
 import {
   parseSavedListId,
   parseWishlistIds,
+  parseWishlistInterest,
   parentSavedListQueryPath,
   parentWishlistPath,
 } from "@/lib/parent-paths";
 import type { Toy } from "@/types/toy";
 
 type Props = {
-  searchParams: Promise<{ ids?: string | string[]; list?: string | string[] }>;
+  searchParams: Promise<{
+    ids?: string | string[];
+    list?: string | string[];
+    interest?: string | string[];
+  }>;
 };
 
 export default async function ParentWishlistPage({ searchParams }: Props) {
   const params = await searchParams;
   const ids = parseWishlistIds(params.ids);
+  const interest = parseWishlistInterest(params.interest);
   const listId = parseSavedListId(params.list);
 
   let toys: Toy[] = [];
@@ -40,7 +46,7 @@ export default async function ParentWishlistPage({ searchParams }: Props) {
   const returnTo = savedListName && listId
     ? parentSavedListQueryPath(listId)
     : ids.length > 0
-      ? parentWishlistPath(ids)
+      ? parentWishlistPath(ids, interest)
       : "/p";
 
   return (
@@ -50,6 +56,7 @@ export default async function ParentWishlistPage({ searchParams }: Props) {
       buyPlaceholder={!isAssociatesLive()}
       savedListName={savedListName}
       returnTo={returnTo}
+      interest={interest}
     />
   );
 }

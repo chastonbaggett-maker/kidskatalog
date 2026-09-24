@@ -31,6 +31,7 @@ export function ProductGallery({
   videos,
   alt,
   poster,
+  onViewImage,
 }: {
   images: string[];
   /** Optional clips shown at the end of the selector. */
@@ -38,6 +39,8 @@ export function ProductGallery({
   alt: string;
   /** Poster frame for video thumbs / paused state. */
   poster?: string;
+  /** Kid toy page: a photo slide they landed on. */
+  onViewImage?: (src: string) => void;
 }) {
   const shots = buildSelectorMedia(images, videos);
   const videoIndex = shots.findIndex((item) => item.kind === "video");
@@ -87,6 +90,12 @@ export function ProductGallery({
       inline: "nearest",
     });
   }, [active]);
+
+  const viewedSrc = current?.kind === "image" ? current.src : "";
+  useEffect(() => {
+    if (!viewedSrc) return;
+    onViewImage?.(viewedSrc);
+  }, [viewedSrc, onViewImage]);
 
   // Hold on the first image, then fade into the ending video slide.
   useEffect(() => {

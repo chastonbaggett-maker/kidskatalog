@@ -1,45 +1,57 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   audienceToAccentAttr,
   useAccentStore,
-  type AccentAttr,
 } from "@/lib/accent-store";
+import { useCrazyModeStore } from "@/lib/crazy-mode-store";
+import { useToyPileModeStore } from "@/lib/toy-pile-store";
+import {
+  readSafariHeaderSolid,
+  scheduleSafariChromeTintNudge,
+} from "@/lib/safari-chrome-tint";
 import type { Audience } from "@/types/toy";
 
-/** Solid status-bar / theme-color matching the left edge of --header-grad */
-const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
-  both: "#2bb8a8",
-  boys: "#2f6ae8",
-  girls: "#ef8fb3",
-};
-
 function applyAccent(audience: Audience) {
-  const accent = audienceToAccentAttr(audience);
-  document.documentElement.dataset.accent = accent;
-  setThemeColor(STATUS_BAR_COLOR[accent]);
+  document.documentElement.dataset.accent = audienceToAccentAttr(audience);
 }
 
-function setThemeColor(color: string) {
-  const metas = document.querySelectorAll('meta[name="theme-color"]');
-  if (metas.length === 0) {
-    const meta = document.createElement("meta");
-    meta.setAttribute("name", "theme-color");
-    meta.setAttribute("content", color);
-    document.head.appendChild(meta);
-    return;
-  }
-  metas.forEach((meta) => meta.setAttribute("content", color));
-}
-
-/** Keeps <html data-accent> + PWA theme-color in sync site-wide. */
+/**
+ * Keeps <html data-accent> in sync and forces Safari 26 to re-sample the
+ * top safe-area tint whenever mode colors change (accent / crazy / pile).
+ *
+ * Remounts a fixed safe-area probe on each change so Safari sees a fresh
+ * edge element + layout, matching header color timing. Hidden in PWA via CSS.
+ */
 export function AccentSync() {
   const audience = useAccentStore((s) => s.audience);
+  const crazyMode = useCrazyModeStore((s) => s.crazyMode);
+  const pileMode = useToyPileModeStore((s) => s.toyPileMode);
+  const [probe, setProbe] = useState<{ key: number; color: string }>({
+    key: 0,
+    color: "#2bb8a8",
+  });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyAccent(audience);
   }, [audience]);
 
-  return null;
+  useLayoutEffect(() => {
+    if (document.documentElement.dataset.standalone === "true") return;
+
+    // App-shell / feed classes for crazy+pile land in this same commit.
+    const color = readSafariHeaderSolid();
+    setProbe((prev) => ({ key: prev.key + 1, color }));
+    scheduleSafariChromeTintNudge();
+  }, [audience, crazyMode, pileMode]);
+
+  return (
+    <div
+      key={probe.key}
+      className="safari-safe-area-tint"
+      style={{ backgroundColor: probe.color }}
+      aria-hidden
+    />
+  );
 }

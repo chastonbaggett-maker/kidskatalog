@@ -76,10 +76,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2bb8a8" },
-    { media: "(prefers-color-scheme: dark)", color: "#2bb8a8" },
-  ],
+  // Let system chrome stay translucent so header/nav draw edge-to-edge (PWA-style).
+  themeColor: "transparent",
   width: "device-width",
   initialScale: 1,
   minimumScale: 1,

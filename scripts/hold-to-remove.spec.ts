@@ -38,7 +38,7 @@ test("hold Remove 2s fills purple then pops card off list", async ({ page }) => 
 
   const removeBtn = row.getByTestId("hold-to-remove");
   await expect(removeBtn).toBeVisible();
-  await expect(removeBtn.getByText("hold for 2s")).toBeVisible();
+  await expect(removeBtn.locator(".hold-to-remove__hint").first()).toBeVisible();
 
   const box = await removeBtn.boundingBox();
   expect(box).toBeTruthy();

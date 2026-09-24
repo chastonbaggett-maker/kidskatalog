@@ -179,7 +179,7 @@ export function ParentWishlistView({
                             {toy.name}
                           </p>
                         </Link>
-                        <p className="min-w-0 flex-1 truncate text-sm text-[var(--ink-soft)]">
+                        <p className="min-w-0 text-sm text-[var(--ink-soft)]">
                           {toy.blurb}
                         </p>
                       </div>

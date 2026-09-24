@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import { ShareWishlistActions } from "@/components/ShareWishlistActions";
 import { AssociatesDisclosure } from "@/components/parent/AssociatesDisclosure";
+import { HoldToRemoveButton } from "@/components/parent/HoldToRemoveButton";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
@@ -37,6 +38,8 @@ export function ParentWishlistView({
   const remove = useParentWishlistStore((s) => s.remove);
   const [extraToys, setExtraToys] = useState<Toy[]>([]);
   const [resolvedBuyUrls, setResolvedBuyUrls] = useState<Record<string, string>>(buyUrls);
+  const [poppingIds, setPoppingIds] = useState<Set<string>>(() => new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (initialToys.length === 0) return;
@@ -80,15 +83,43 @@ export function ParentWishlistView({
     const extraById = new Map(extraToys.map((toy) => [toy.id, toy]));
     const listed = knownIds
       .map((id) => initialById.get(id) ?? extraById.get(id))
-      .filter((toy): toy is Toy => Boolean(toy));
+      .filter((toy): toy is Toy => Boolean(toy))
+      .filter((toy) => !hiddenIds.has(toy.id));
     if (!interest) return listed;
     return listed
       .map((toy, index) => ({ toy, index, score: interest[toy.id] ?? 0 }))
       .sort((a, b) => b.score - a.score || a.index - b.index)
       .map((row) => row.toy);
-  }, [extraToys, initialById, interest, knownIds]);
+  }, [extraToys, hiddenIds, initialById, interest, knownIds]);
   const rankedForParents = Boolean(
     interest && Object.values(interest).some((score) => score > 0),
+  );
+
+  const beginRemove = useCallback(
+    (toyId: string) => {
+      setPoppingIds((prev) => {
+        if (prev.has(toyId)) return prev;
+        const next = new Set(prev);
+        next.add(toyId);
+        return next;
+      });
+      window.setTimeout(() => {
+        remove(toyId);
+        setHiddenIds((prev) => {
+          if (prev.has(toyId)) return prev;
+          const next = new Set(prev);
+          next.add(toyId);
+          return next;
+        });
+        setPoppingIds((prev) => {
+          if (!prev.has(toyId)) return prev;
+          const next = new Set(prev);
+          next.delete(toyId);
+          return next;
+        });
+      }, 320);
+    },
+    [remove],
   );
 
   const sharedFromQuery = initialToys.length > 0;
@@ -146,8 +177,13 @@ export function ParentWishlistView({
                 resolvedBuyUrls[toy.id] ||
                 buyUrls[toy.id] ||
                 parentBuyPlaceholderPath(toy.id);
+              const popping = poppingIds.has(toy.id);
               return (
-                <li key={toy.id} className="shelf-panel shelf-panel--soft">
+                <li
+                  key={toy.id}
+                  className={`shelf-panel shelf-panel--soft${popping ? " shelf-panel--pop-out" : ""}`}
+                  data-testid={`parent-wishlist-row-${toy.id}`}
+                >
                   <div className="shelf-panel__surface flex flex-col gap-2 p-3">
                     <div className="flex w-full items-start justify-between gap-3">
                       <Link
@@ -170,14 +206,12 @@ export function ParentWishlistView({
                           mode={buyPlaceholder ? "placeholder" : "associates"}
                           className="w-full flex-none px-3"
                         />
-                        <button
-                          type="button"
-                          onClick={() => remove(toy.id)}
-                          className="h-[3.9rem] rounded-full bg-[var(--lavender)] px-3 text-base font-bold text-[var(--purple-deep)]"
-                          aria-label={`Remove ${toy.name}`}
-                        >
-                          Remove
-                        </button>
+                        <HoldToRemoveButton
+                          label="Remove"
+                          ariaLabel={`Remove ${toy.name}`}
+                          onComplete={() => beginRemove(toy.id)}
+                          className="w-full"
+                        />
                       </div>
                     </div>
                     <div className="flex min-w-0 flex-nowrap items-baseline gap-x-2">

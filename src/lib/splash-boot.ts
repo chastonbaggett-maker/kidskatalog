@@ -3,8 +3,8 @@
 /** Brand mint — CSS plate is the only background for part 1 (video is screened). */
 export const SPLASH_BG_SOLID = "#3ecfc0";
 export const SPLASH_BG_GRADIENT = "none";
-export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=5";
-export const SPLASH_PART1_END = "/splash/intro-part-1-mint-end.jpg?v=5";
+export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=4";
+export const SPLASH_PART1_END = "/splash/intro-part-1-mint-end.jpg?v=4";
 
 /**
  * Critical first-paint CSS.

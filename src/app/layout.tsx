@@ -76,8 +76,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Transparent so top safe area / status bar shows page content through.
-  themeColor: "transparent",
+  // Default matches unisex header left edge; AccentSync updates on Boys/Girls/both.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2bb8a8" },
+    { media: "(prefers-color-scheme: dark)", color: "#2bb8a8" },
+  ],
   width: "device-width",
   initialScale: 1,
   minimumScale: 1,

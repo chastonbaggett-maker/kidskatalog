@@ -4,16 +4,24 @@ import { useEffect } from "react";
 import {
   audienceToAccentAttr,
   useAccentStore,
+  type AccentAttr,
 } from "@/lib/accent-store";
 import type { Audience } from "@/types/toy";
 
-/** Transparent status bar / theme-color so top safe area shows content through. */
-const TRANSPARENT_THEME = "transparent";
+/**
+ * Status-bar / theme-color matching the left edge of --header-grad.
+ * Safari paints the top safe area from this; it must track Boys/Girls/both.
+ */
+const STATUS_BAR_COLOR: Record<AccentAttr, string> = {
+  both: "#2bb8a8",
+  boys: "#2f6ae8",
+  girls: "#ef8fb3",
+};
 
 function applyAccent(audience: Audience) {
   const accent = audienceToAccentAttr(audience);
   document.documentElement.dataset.accent = accent;
-  setThemeColor(TRANSPARENT_THEME);
+  setThemeColor(STATUS_BAR_COLOR[accent]);
 }
 
 function setThemeColor(color: string) {
@@ -28,7 +36,7 @@ function setThemeColor(color: string) {
   metas.forEach((meta) => meta.setAttribute("content", color));
 }
 
-/** Keeps <html data-accent> + transparent PWA theme-color in sync site-wide. */
+/** Keeps <html data-accent> + Safari/PWA theme-color in sync site-wide. */
 export function AccentSync() {
   const audience = useAccentStore((s) => s.audience);
 

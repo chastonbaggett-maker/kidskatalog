@@ -1,9 +1,9 @@
 /**
- * Transparent Safari chrome (Liquid Glass) + music waits for splash to clear.
+ * Browser vs PWA bottom-nav shelf + music waits for splash.
  *
- * Safari 26 samples background-color / backdrop-filter on fixed/sticky edge
- * elements. Keep those transparent on .bottom-nav / .feed-header; frost lives
- * on absolute .bottom-nav__frost so chrome stays see-through around the search bar.
+ * Browser: solid white shelf (no frosted glass).
+ * Installed PWA (data-standalone): frosted glass on absolute .bottom-nav__frost.
+ * Fixed/sticky edge shells stay transparent so Safari 26 chrome can stay glass.
  */
 import { test, expect, type Page } from "@playwright/test";
 import path from "path";
@@ -25,94 +25,94 @@ async function dismissSplash(page: Page) {
     .catch(() => {});
 }
 
-test.describe("splash music + transparent chrome", () => {
-  test("edge shells stay transparent; frost on absolute child; music gated", async ({
+async function readChrome(page: Page) {
+  return page.evaluate(() => {
+    const backdropFn = (el: CSSStyleDeclaration) =>
+      el.backdropFilter ||
+      (el as CSSStyleDeclaration & { webkitBackdropFilter?: string })
+        .webkitBackdropFilter ||
+      "none";
+    const header = getComputedStyle(document.querySelector(".feed-header")!);
+    const nav = getComputedStyle(document.querySelector(".bottom-nav")!);
+    const frost = getComputedStyle(
+      document.querySelector(".bottom-nav__frost")!,
+    );
+    return {
+      splash: document.documentElement.dataset.splash ?? null,
+      standalone: document.documentElement.dataset.standalone ?? null,
+      headerBgColor: header.backgroundColor,
+      headerFilter: backdropFn(header),
+      navBg: nav.backgroundColor,
+      navFilter: backdropFn(nav),
+      frostPos: frost.position,
+      frostBg: frost.backgroundColor,
+      frostFilter: backdropFn(frost),
+      theme: [
+        ...document.querySelectorAll('meta[name="theme-color"]'),
+      ].map((m) => m.getAttribute("content")),
+    };
+  });
+}
+
+test.describe("browser solid / PWA frost nav shelf", () => {
+  test("browser: solid white frost child; edge shells transparent", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/shop", { waitUntil: "domcontentloaded" });
-
-    // While splash is up, bed must not be allowed.
-    const blockedDuringSplash = await page.evaluate(() => {
-      const splash = document.documentElement.dataset.splash;
-      return (
-        splash === "active" ||
-        splash === "holding" ||
-        splash === "exiting" ||
-        document.querySelector(".app-splash") != null
-      );
-    });
-    // Cold open should show splash (unless reduced-motion).
-    if (blockedDuringSplash) {
-      expect(
-        await page.evaluate(() => {
-          const splash = document.documentElement.dataset.splash;
-          return Boolean(splash);
-        }),
-      ).toBe(true);
-    }
-
     await dismissSplash(page);
-    await page.waitForSelector(".bottom-nav", { timeout: 20_000 });
-    await page.waitForSelector(".feed-header", { timeout: 20_000 });
     await page.waitForSelector(".bottom-nav__frost", { timeout: 20_000 });
 
-    expect(await page.locator(".safari-chrome-tint").count()).toBe(0);
-
-    const chrome = await page.evaluate(() => {
-      const html = getComputedStyle(document.documentElement);
-      const header = getComputedStyle(document.querySelector(".feed-header")!);
-      const nav = getComputedStyle(document.querySelector(".bottom-nav")!);
-      const frost = getComputedStyle(
-        document.querySelector(".bottom-nav__frost")!,
-      );
-      const backdrop = (el: CSSStyleDeclaration) =>
-        el.backdropFilter ||
-        (el as CSSStyleDeclaration & { webkitBackdropFilter?: string })
-          .webkitBackdropFilter ||
-        "none";
-      return {
-        htmlBgImage: html.backgroundImage,
-        splash: document.documentElement.dataset.splash ?? null,
-        headerPos: header.position,
-        headerBgColor: header.backgroundColor,
-        headerBgImage: header.backgroundImage,
-        headerFilter: backdrop(header),
-        navPos: nav.position,
-        navBg: nav.backgroundColor,
-        navFilter: backdrop(nav),
-        frostPos: frost.position,
-        frostBg: frost.backgroundColor,
-        frostFilter: backdrop(frost),
-        theme: [
-          ...document.querySelectorAll('meta[name="theme-color"]'),
-        ].map((m) => m.getAttribute("content")),
-      };
+    // Ensure we are in browser mode (not PWA).
+    await page.evaluate(() => {
+      delete document.documentElement.dataset.standalone;
     });
 
+    const chrome = await readChrome(page);
+
     expect(chrome.splash).toBeNull();
-    expect(chrome.htmlBgImage).toBe("none");
-    expect(chrome.headerPos).toBe("sticky");
-    // No solid / sampled fill on sticky header — gradient image only.
+    expect(chrome.standalone).toBeNull();
     expect(chrome.headerBgColor).toMatch(
       /rgba?\(0,\s*0,\s*0,\s*0\)|transparent/,
     );
-    expect(chrome.headerBgImage).toMatch(/linear-gradient/i);
     expect(chrome.headerFilter).toMatch(/^none$/i);
-    expect(chrome.navPos).toBe("fixed");
-    // Fixed nav shell must stay transparent so Safari chrome stays glass.
     expect(chrome.navBg).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/);
     expect(chrome.navFilter).toMatch(/^none$/i);
-    // Frosted look is on the absolute child — not sampled for toolbar tint.
     expect(chrome.frostPos).toBe("absolute");
-    expect(chrome.frostBg).toMatch(/rgba?\(255,\s*255,\s*255/i);
-    expect(chrome.frostFilter).toMatch(/blur/i);
+    // Solid white — no blur in browser.
+    expect(chrome.frostBg).toMatch(/rgb\(\s*255,\s*255,\s*255\s*\)/);
+    expect(chrome.frostFilter).toMatch(/^none$/i);
     for (const c of chrome.theme) {
       expect(c).toBe("transparent");
     }
 
     await page.screenshot({
-      path: path.join(ARTIFACTS, "transparent_chrome_after_splash.png"),
+      path: path.join(ARTIFACTS, "browser_solid_white_nav.png"),
+      fullPage: false,
+    });
+  });
+
+  test("PWA: frosted glass on absolute frost child", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/shop", { waitUntil: "domcontentloaded" });
+    await dismissSplash(page);
+    await page.waitForSelector(".bottom-nav__frost", { timeout: 20_000 });
+
+    await page.evaluate(() => {
+      document.documentElement.dataset.standalone = "true";
+    });
+
+    const chrome = await readChrome(page);
+
+    expect(chrome.standalone).toBe("true");
+    expect(chrome.navBg).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/);
+    expect(chrome.navFilter).toMatch(/^none$/i);
+    expect(chrome.frostPos).toBe("absolute");
+    expect(chrome.frostBg).toMatch(/rgba?\(255,\s*255,\s*255/i);
+    expect(chrome.frostFilter).toMatch(/blur/i);
+
+    await page.screenshot({
+      path: path.join(ARTIFACTS, "pwa_frosted_nav.png"),
       fullPage: false,
     });
   });

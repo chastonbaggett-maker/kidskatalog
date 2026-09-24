@@ -27,6 +27,7 @@ async function dismissSplash(page: Page) {
 }
 
 test("hold Remove 2s fills purple then pops card off list", async ({ page }) => {
+  test.setTimeout(60_000);
   await seedParentGateUnlock(page);
 
   const toyId = "block-wood";

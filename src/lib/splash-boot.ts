@@ -3,6 +3,8 @@
 /** Mint matches part-1 (pre-tap) so the first paint is the opening clip color. */
 export const SPLASH_BG_SOLID = "#3ecfc0";
 export const SPLASH_BG_GRADIENT = "none";
+/** Cache-busted first frame so cold open never flashes a stale black poster. */
+export const SPLASH_PART1_POSTER = "/splash/intro-part-1-mint-start.jpg?v=2";
 
 /**
  * Critical first-paint CSS.
@@ -38,8 +40,8 @@ html[data-splash="holding"]::before{
   height:calc(100dvh + 4rem);
   margin:0;padding:0;border:0;
   background-color:${SPLASH_BG_SOLID};
-  background-image:none;
-  background-size:100% 100%;background-repeat:no-repeat;background-position:center;
+  background-image:url(${SPLASH_PART1_POSTER});
+  background-size:cover;background-repeat:no-repeat;background-position:center;
   pointer-events:none;
 }
 `.trim();

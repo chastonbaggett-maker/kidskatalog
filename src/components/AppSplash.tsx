@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { unlockSharedAudio } from "@/lib/shared-audio";
+import { SPLASH_PART1_POSTER } from "@/lib/splash-boot";
 
-const PART1_SRC = "/splash/intro-part-1.mp4";
-const PART2_SRC = "/splash/intro-part-2.mp4";
-/** First frame of part 1 — shown immediately while the clip buffers. */
-const PART1_POSTER = "/splash/intro-part-1-start.jpg";
+/** Cache-busted filenames so stale black clips cannot stick in the browser cache. */
+const PART1_SRC = "/splash/intro-part-1-mint.mp4?v=2";
+const PART2_SRC = "/splash/intro-part-2-white.mp4?v=2";
+const PART1_POSTER = SPLASH_PART1_POSTER;
 /** Soft fade after part 2 so the already-warmed page is underneath. */
 const FADE_OUT_MS = 420;
 
@@ -31,13 +32,11 @@ async function waitForPageReady() {
   } catch {
     /* fonts API unavailable */
   }
-  // Two frames after load so the browse shell can paint under the overlay.
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resolve());
     });
   });
-  // Nudge the catalog warm so the feed is ready when we cut.
   try {
     await fetch("/api/catalog?offset=0&limit=8", { credentials: "same-origin" });
   } catch {
@@ -45,7 +44,7 @@ async function waitForPageReady() {
   }
 }
 
-/** Seek to t=0 and resolve once the first frame is painted / ready. */
+/** Seek to t=0 and resolve once the first frame is ready to display. */
 function waitForFirstFrame(video: HTMLVideoElement): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
@@ -76,7 +75,6 @@ function waitForFirstFrame(video: HTMLVideoElement): Promise<void> {
     video.addEventListener("loadeddata", onReady);
     video.addEventListener("seeked", onReady);
     video.addEventListener("canplay", onReady);
-    // Fallback so a stalled decode never blocks forever.
     window.setTimeout(done, 1200);
   });
 }
@@ -91,7 +89,8 @@ export function AppSplash() {
   const phaseRef = useRef<SplashPhase>("part1");
   const [phase, setPhase] = useState<SplashPhase>("part1");
   const [pageReady, setPageReady] = useState(false);
-  const [frameReady, setFrameReady] = useState(false);
+  /** Poster stays on top until video is actually painting frames (avoids black flash). */
+  const [videoPainted, setVideoPainted] = useState(false);
   const pageReadyRef = useRef(false);
   const startedPart2Ref = useRef(false);
   const outTimerRef = useRef<number | null>(null);
@@ -118,8 +117,6 @@ export function AppSplash() {
     };
   }, []);
 
-  // Once the page is warm and we're past the opening clip, show the shell
-  // under the splash so the cut lands on a loaded screen.
   useEffect(() => {
     if (!pageReady) return;
     if (phase === "hold" || phase === "part2") {
@@ -137,7 +134,6 @@ export function AppSplash() {
 
     const video = part1Ref.current;
     const part2 = part2Ref.current;
-    // Hard-stop part 2 until an explicit tap while holding.
     if (part2) {
       try {
         part2.pause();
@@ -149,16 +145,25 @@ export function AppSplash() {
     if (!video) return;
 
     let cancelled = false;
+    const markPainted = () => {
+      if (!cancelled) setVideoPainted(true);
+    };
+
     const playPart1 = async () => {
       video.muted = true;
       await waitForFirstFrame(video);
       if (cancelled) return;
-      setFrameReady(true);
       try {
         video.currentTime = 0;
-        await video.play();
+        const playPromise = video.play();
+        // Reveal video only once playback confirms a painted frame.
+        video.addEventListener("playing", markPainted, { once: true });
+        video.addEventListener("timeupdate", markPainted, { once: true });
+        await playPromise;
+        // Fallback if playing/timeupdate never fire.
+        window.setTimeout(markPainted, 80);
       } catch {
-        // Autoplay blocked — stay on first/hold frame so a tap can continue.
+        markPainted();
         setPhaseSafe("hold");
       }
     };
@@ -166,10 +171,11 @@ export function AppSplash() {
     void playPart1();
     return () => {
       cancelled = true;
+      video.removeEventListener("playing", markPainted);
+      video.removeEventListener("timeupdate", markPainted);
     };
   }, []);
 
-  // If part 2 ever starts without the tap gate, pause it again.
   useEffect(() => {
     const part2 = part2Ref.current;
     if (!part2) return;
@@ -206,7 +212,6 @@ export function AppSplash() {
       go();
       return;
     }
-    // Part 2 finished before the page warmed — wait, then cut.
     void waitForPageReady().then(() => {
       pageReadyRef.current = true;
       setPageReady(true);
@@ -218,7 +223,6 @@ export function AppSplash() {
     const video = part1Ref.current;
     if (video) {
       try {
-        // Stick on the last frame until the user taps.
         video.pause();
         if (video.duration && Number.isFinite(video.duration)) {
           video.currentTime = Math.max(0, video.duration - 0.04);
@@ -227,7 +231,6 @@ export function AppSplash() {
         /* ignore seek errors */
       }
     }
-    // Never auto-advance into part 2 — only a user tap may start it.
     setPhaseSafe("hold");
   };
 
@@ -278,10 +281,15 @@ export function AppSplash() {
 
   if (phase === "done") return null;
 
+  // Keep the mint first-frame poster on top until the video is actually painting
+  // — browsers often flash a black video layer before the first decoded frame.
+  const posterVisible =
+    (phase === "part1" || phase === "hold") && !videoPainted;
+
   return (
     <div
       className={`app-splash app-splash--video app-splash--${phase}${
-        frameReady ? " is-frame-ready" : ""
+        videoPainted ? " is-video-painted" : ""
       }`}
       role="button"
       tabIndex={0}
@@ -295,9 +303,8 @@ export function AppSplash() {
         }
       }}
     >
-      {/* Poster paints first frame immediately; video fades in once decoded at t=0. */}
       <img
-        className="app-splash__poster"
+        className={`app-splash__poster${posterVisible ? " is-visible" : ""}`}
         src={PART1_POSTER}
         alt=""
         aria-hidden="true"
@@ -307,7 +314,7 @@ export function AppSplash() {
         ref={part1Ref}
         className={`app-splash__video app-splash__video--part1${
           phase === "part1" || phase === "hold" ? " is-active" : ""
-        }${frameReady ? " is-frame-ready" : ""}`}
+        }`}
         src={PART1_SRC}
         poster={PART1_POSTER}
         playsInline

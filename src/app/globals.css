@@ -899,8 +899,8 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 /* Cold-open splash: video part 1 → hold end frame → tap → part 2 → reveal page. */
 :root {
-  --splash-mint: var(--mint, #3ecfc0);
-  --splash-bg-solid: var(--splash-mint);
+  --splash-mint: #3ecfc0;
+  --splash-bg-solid: #3ecfc0;
   --splash-bg-part2: #ffffff;
   --splash-bg: none;
   --splash-fade-ms: 420ms;
@@ -959,7 +959,7 @@ html[data-splash="holding"]::before {
   margin: 0;
   padding: 0;
   border: 0;
-  background-color: var(--splash-bg-solid);
+  background-color: #3ecfc0;
   background-image: none;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1004,7 +1004,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   place-items: center;
   pointer-events: auto;
   cursor: default;
-  background-color: var(--splash-mint);
+  background-color: #3ecfc0;
   background-image: none;
   opacity: 1;
   visibility: visible;
@@ -1017,7 +1017,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
 
 .app-splash--part2,
 .app-splash--out {
-  background-color: var(--splash-bg-part2);
+  background-color: #ffffff;
 }
 
 .app-splash--hold {
@@ -1031,7 +1031,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   cursor: default;
 }
 
-/* Instant first-frame paint while part 1 decodes. */
+/* Instant first-frame paint — stays above the video until it paints. */
 .app-splash__poster {
   position: absolute;
   inset: 0;
@@ -1039,15 +1039,23 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   height: 100%;
   object-fit: cover;
   object-position: center;
-  z-index: 0;
+  z-index: 3;
   pointer-events: none;
   user-select: none;
+  background-color: #3ecfc0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.app-splash__poster.is-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .app-splash--part2 .app-splash__poster,
 .app-splash--out .app-splash__poster {
-  opacity: 0;
-  visibility: hidden;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .app-splash__video {
@@ -1057,26 +1065,30 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   height: 100%;
   object-fit: cover;
   object-position: center;
-  background: transparent;
+  background-color: #3ecfc0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   z-index: 1;
 }
 
+.app-splash__video--part1 {
+  background-color: #3ecfc0 !important;
+}
+
 .app-splash__video--part1.is-active {
-  /* Keep poster visible until the decoded first frame is ready. */
-  opacity: 0;
+  opacity: 1;
   visibility: visible;
 }
 
-.app-splash__video--part1.is-active.is-frame-ready {
-  opacity: 1;
+.app-splash__video--part2 {
+  background-color: #ffffff !important;
 }
 
 .app-splash__video--part2.is-active {
   opacity: 1;
   visibility: visible;
+  z-index: 2;
 }
 
 .app-splash__hint {
@@ -1098,7 +1110,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   -webkit-backdrop-filter: blur(8px);
   animation: app-splash-hint-in 0.45s ease both;
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
 }
 
 @keyframes app-splash-hint-in {

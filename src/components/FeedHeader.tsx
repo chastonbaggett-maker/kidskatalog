@@ -200,7 +200,7 @@ export function FeedHeader({
       : "Search toys";
 
   return (
-    <header className="feed-header bg-[image:var(--header-grad)] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)] sm:px-5 lg:px-6">
+    <header className="feed-header px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-[0_8px_24px_-12px_rgba(80,100,180,0.55)] sm:px-5 lg:px-6">
       <div className="feed-header__row flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
         <div className="flex shrink-0 justify-center sm:justify-start">
           <Logo light href="/shop" size={110} />

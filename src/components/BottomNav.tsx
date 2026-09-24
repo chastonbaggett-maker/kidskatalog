@@ -169,7 +169,7 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className={`bottom-nav absolute inset-x-0 bottom-0 z-40${
+        className={`bottom-nav fixed inset-x-0 bottom-0 z-40${
           shelfRaised ? " bottom-nav--pile bottom-nav-enter" : ""
         }${shelfRaised ? " is-shelf-raised" : ""}${
           shelfEnterReady ? " is-enter-ready" : ""

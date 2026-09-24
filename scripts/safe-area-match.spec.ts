@@ -1,5 +1,5 @@
 /**
- * Safe areas match adjacent chrome: top = header accent, bottom = nav shelf.
+ * Safe areas match adjacent chrome via real header/nav edges (Safari 26).
  * Run: npx playwright test safe-area-match
  */
 import { test, expect, type Page } from "@playwright/test";
@@ -29,15 +29,18 @@ async function dismissSplash(page: Page) {
 }
 
 test.describe("safe areas match adjacent chrome", () => {
-  test("theme-color tracks header accent; bottom strip uses shelf", async ({
+  test("header/nav edges carry sampleable colors; no tint probes", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/shop", { waitUntil: "domcontentloaded" });
     await dismissSplash(page);
     await page.waitForSelector(".bottom-nav", { timeout: 20_000 });
+    await page.waitForSelector(".feed-header", { timeout: 20_000 });
 
-    // Default / both — mint header left edge
+    // No visible Safari probe strips.
+    expect(await page.locator(".safari-chrome-tint").count()).toBe(0);
+
     await page.waitForFunction(
       (expected) => {
         const meta = document.querySelector('meta[name="theme-color"]');
@@ -47,131 +50,64 @@ test.describe("safe areas match adjacent chrome", () => {
       { timeout: 10_000 },
     );
 
-    const bothTheme = await page.evaluate(() =>
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.getAttribute("content"),
-    );
-    expect(bothTheme).toBe(STATUS_BAR.both);
-
-    const shelfPaint = await page.evaluate(() => {
-      const style = document.createElement("style");
-      style.textContent = `
-        .bottom-nav { padding-bottom: 34px !important; }
-      `;
-      document.head.appendChild(style);
-
-      const html = getComputedStyle(document.documentElement);
-      const nav = document.querySelector(".bottom-nav") as HTMLElement | null;
-      const frost = document.querySelector(
-        ".bottom-nav__frost",
-      ) as HTMLElement | null;
-      if (!nav || !frost) return { ok: false as const };
+    const edgeChrome = await page.evaluate(() => {
+      const header = document.querySelector(".feed-header") as HTMLElement;
+      const nav = document.querySelector(".bottom-nav") as HTMLElement;
+      if (!header || !nav) return { ok: false as const };
+      const headerCs = getComputedStyle(header);
       const navCs = getComputedStyle(nav);
-      const frostCs = getComputedStyle(frost);
       return {
         ok: true as const,
-        htmlBgImage: html.backgroundImage,
-        htmlBgSize: html.backgroundSize,
-        htmlBgPos: html.backgroundPosition,
-        navBg: navCs.backgroundColor,
-        frostBg: frostCs.backgroundColor,
-        frostFilter: frostCs.backdropFilter || frostCs.webkitBackdropFilter,
-        navPad: navCs.paddingBottom,
-      };
-    });
-
-    expect(shelfPaint.ok).toBe(true);
-    if (!shelfPaint.ok) return;
-    // Bottom strip is painted with the shelf color (not left as page field only).
-    expect(shelfPaint.htmlBgImage).not.toBe("none");
-    expect(shelfPaint.htmlBgImage).toMatch(/rgb|#|linear-gradient/i);
-    // Nav shell is transparent; frost paints frosted glass.
-    expect(shelfPaint.navBg).toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/);
-    expect(shelfPaint.frostBg).toMatch(/rgba?\(/);
-    expect(shelfPaint.frostFilter).toMatch(/blur/i);
-    expect(parseFloat(shelfPaint.navPad)).toBeGreaterThanOrEqual(34);
-
-    // Safari chrome tint probes must exist and track accent / shelf colors.
-    const probes = await page.evaluate(() => {
-      const top = document.querySelector(
-        ".safari-chrome-tint--top",
-      ) as HTMLElement | null;
-      const bottom = document.querySelector(
-        ".safari-chrome-tint--bottom",
-      ) as HTMLElement | null;
-      if (!top || !bottom) return { ok: false as const };
-      const topCs = getComputedStyle(top);
-      const bottomCs = getComputedStyle(bottom);
-      return {
-        ok: true as const,
-        topBg: topCs.backgroundColor,
-        bottomBg: bottomCs.backgroundColor,
-        topPos: topCs.position,
-        bottomPos: bottomCs.position,
+        headerPos: headerCs.position,
+        headerTop: headerCs.top,
+        headerBg: headerCs.backgroundColor,
         statusVar: getComputedStyle(document.documentElement)
           .getPropertyValue("--status-bar")
           .trim(),
-        shelfVar: getComputedStyle(document.documentElement)
-          .getPropertyValue("--bottom-shelf")
-          .trim(),
+        navPos: navCs.position,
+        navBottom: navCs.bottom,
+        navBg: navCs.backgroundColor,
+        navFilter: navCs.backdropFilter || navCs.webkitBackdropFilter,
       };
     });
-    expect(probes.ok).toBe(true);
-    if (!probes.ok) return;
-    expect(probes.topPos).toBe("fixed");
-    expect(probes.bottomPos).toBe("fixed");
-    expect(probes.statusVar.toLowerCase()).toBe("#2bb8a8");
-    expect(probes.shelfVar.toLowerCase()).toBe("#ffffff");
 
-    // Switch to Boys — theme-color must follow header blue.
+    expect(edgeChrome.ok).toBe(true);
+    if (!edgeChrome.ok) return;
+
+    expect(edgeChrome.headerPos).toBe("sticky");
+    expect(edgeChrome.headerTop).toBe("0px");
+    expect(edgeChrome.statusVar.toLowerCase()).toBe("#2bb8a8");
+    // Solid status-bar color on the header element (Safari samples this).
+    expect(edgeChrome.headerBg).toMatch(/rgb\(43,\s*184,\s*168\)|#2bb8a8/i);
+
+    expect(edgeChrome.navPos).toBe("fixed");
+    expect(edgeChrome.navBottom).toBe("0px");
+    expect(edgeChrome.navBg).toMatch(/rgba?\(255,\s*255,\s*255/i);
+    expect(edgeChrome.navFilter).toMatch(/blur/i);
+
+    // Boys — header status color follows accent.
     const boysChip = page.getByRole("button", { name: /^Boys$/i }).first();
     if (await boysChip.count()) {
       await boysChip.click();
       await page.waitForFunction(
-        (expected) => {
-          const meta = document.querySelector('meta[name="theme-color"]');
-          const accent = document.documentElement.dataset.accent;
-          return (
-            meta?.getAttribute("content") === expected && accent === "boys"
-          );
-        },
+        (expected) =>
+          document.documentElement.dataset.accent === "boys" &&
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--status-bar")
+            .trim()
+            .toLowerCase() === expected,
         STATUS_BAR.boys,
         { timeout: 10_000 },
       );
-      const boysTheme = await page.evaluate(() =>
-        document
-          .querySelector('meta[name="theme-color"]')
-          ?.getAttribute("content"),
+      const boysHeaderBg = await page.evaluate(
+        () => getComputedStyle(document.querySelector(".feed-header")!)
+          .backgroundColor,
       );
-      expect(boysTheme).toBe(STATUS_BAR.boys);
-    }
-
-    // Switch to Girls — theme-color must follow header pink.
-    const girlsChip = page.getByRole("button", { name: /^Girls$/i }).first();
-    if (await girlsChip.count()) {
-      await girlsChip.click();
-      await page.waitForFunction(
-        (expected) => {
-          const meta = document.querySelector('meta[name="theme-color"]');
-          const accent = document.documentElement.dataset.accent;
-          return (
-            meta?.getAttribute("content") === expected && accent === "girls"
-          );
-        },
-        STATUS_BAR.girls,
-        { timeout: 10_000 },
-      );
-      const girlsTheme = await page.evaluate(() =>
-        document
-          .querySelector('meta[name="theme-color"]')
-          ?.getAttribute("content"),
-      );
-      expect(girlsTheme).toBe(STATUS_BAR.girls);
+      expect(boysHeaderBg).toMatch(/rgb\(47,\s*106,\s*232\)|#2f6ae8/i);
     }
 
     await page.screenshot({
-      path: path.join(ARTIFACTS, "safe_area_match_chrome.png"),
+      path: path.join(ARTIFACTS, "safe_area_edge_chrome.png"),
       fullPage: false,
     });
   });

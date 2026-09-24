@@ -107,47 +107,6 @@ html:has(.app-shell--crazy) {
   background-color: #18181f;
 }
 
-/*
- * Safari 26+ browser chrome tint probes.
- * theme-color is ignored; Safari samples fixed elements within ~4px of the
- * top / ~3px of the bottom that have a solid background-color (not images,
- * not ::before). Keep probes thin and mostly off-screen so users never notice.
- */
-.safari-chrome-tint {
-  display: none;
-  pointer-events: none;
-  position: fixed;
-  left: 0;
-  width: 100%;
-  min-height: 12px;
-  z-index: 45;
-}
-
-.safari-chrome-tint--top {
-  top: 0;
-  background-color: var(--status-bar);
-}
-
-.safari-chrome-tint--bottom {
-  bottom: -8px;
-  background-color: var(--bottom-shelf);
-}
-
-@supports (-webkit-text-size-adjust: none) and (font: -apple-system-body) and
-  (-webkit-touch-callout: none) {
-  @media (width < 768px) {
-    .safari-chrome-tint {
-      display: block;
-    }
-  }
-}
-
-/* Hide tint probes while splash owns the screen */
-html[data-splash="active"] .safari-chrome-tint,
-html[data-splash="holding"] .safari-chrome-tint {
-  display: none !important;
-}
-
 body {
   background: var(--bg);
   color: var(--foreground);
@@ -417,6 +376,8 @@ select {
   overflow: hidden;
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: 1.25rem;
+  /* Solid fill Safari can sample when this header is fixed/sticky at the top. */
+  background-color: var(--status-bar);
 }
 
 .shelf-header--rounded::before {
@@ -438,6 +399,18 @@ select {
 
 .shelf-header--alt::before {
   background-image: var(--header-grad-alt);
+}
+
+/*
+ * Main browse header — sticky + solid status-bar color so Safari 26 samples
+ * the top edge (theme-color is ignored). Gradient stays as background-image.
+ */
+.feed-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--status-bar);
+  background-image: var(--header-grad);
 }
 
 @keyframes pop-in {
@@ -1375,9 +1348,9 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   opacity: 1;
 }
 
-/* Compact shelf overlay — pinned to browse viewport top (not in scroll flow) */
+/* Compact shelf overlay — fixed so Safari samples its edge color for the status bar */
 .browse-shelf-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -2633,38 +2606,44 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   z-index: 40;
   border-radius: 2rem 2rem 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  /* Transparent shell — frost layer paints the frosted-glass shelf. */
-  background-color: transparent;
-  border-top-color: transparent;
-  box-shadow: none;
+  /*
+   * Frosted glass on the nav itself (not a child). Safari 26 samples
+   * background-color + backdrop-filter on fixed/sticky edge elements only.
+   */
+  background-color: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
+}
+
+.bottom-nav--kart-landing {
+  background-color: rgba(255, 255, 255, 0.78);
 }
 
 .bottom-nav--kart-landing .bottom-nav__frost {
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: transparent;
 }
 
 .bottom-nav--pile {
   border-radius: 2rem 2rem 0 0;
   padding-bottom: 0;
   overflow: hidden;
-  /* Transparent shell — the frost inside .bottom-nav__lift is the card. */
-  background: transparent;
   transition: min-height 420ms ease-in-out;
 }
 
 .bottom-nav__frost {
   position: absolute;
   inset: 0;
-  /* Fill the home-indicator strip under the icons with the same frosted glass. */
+  /* Fill the home-indicator strip under the icons. */
   bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   z-index: 0;
   border-radius: inherit;
-  border-top: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 -8px 24px -12px rgba(80, 100, 180, 0.28);
-  background-color: rgba(255, 255, 255, 0.55);
+  /* Parent nav owns the frosted fill so Safari can sample it. */
+  background-color: transparent;
   background-image: none;
-  -webkit-backdrop-filter: blur(28px) saturate(1.8);
-  backdrop-filter: blur(28px) saturate(1.8);
+  border-top: none;
+  box-shadow: none;
   pointer-events: none;
 }
 
@@ -2673,11 +2652,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 .bottom-nav--pile:not(.is-shelf-raised) {
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-top-color: transparent;
-  box-shadow: none;
+  /* Keep frosted shelf even when pile mode is on but shelf is collapsed. */
+  border-top-color: rgba(255, 255, 255, 0.55);
 }
 
 .bottom-nav--pile.is-shelf-raised {
@@ -2724,15 +2700,21 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
 }
 
 /* Crazy chrome on bottom nav — persists across pages while crazy is on */
-.bottom-nav--crazy .bottom-nav__frost {
-  background-color: rgba(24, 24, 31, 0.72);
-  background-image: none;
+.bottom-nav--crazy {
+  background-color: rgba(24, 24, 31, 0.78);
   -webkit-backdrop-filter: blur(28px) saturate(1.4);
   backdrop-filter: blur(28px) saturate(1.4);
   border-top: 1px solid rgba(255, 229, 102, 0.1);
   box-shadow:
     0 -10px 28px -10px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 229, 102, 0.06);
+}
+
+.bottom-nav--crazy .bottom-nav__frost {
+  background-color: transparent;
+  background-image: none;
+  border-top: none;
+  box-shadow: none;
 }
 
 .bottom-nav--crazy .bottom-nav__mode-row .filter-row-pile-pill {
@@ -2786,6 +2768,10 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
     #ff6b6b 48%,
     #ffc107 100%
   );
+}
+
+.app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded {
+  background-color: #ff9a56;
 }
 
 .app-shell--pile:not(.app-shell--crazy) .shelf-header--rounded::before {

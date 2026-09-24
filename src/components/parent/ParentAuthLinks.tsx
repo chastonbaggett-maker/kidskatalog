@@ -63,7 +63,7 @@ export function ParentAuthLinks({
     ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--mint)] px-6 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
     : linkClass;
   const signupButtonClass = onPage
-    ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-white px-6 text-base font-bold text-[var(--purple-deep)] shadow-sm transition active:scale-[0.98]"
+    ? "text-base font-bold text-[var(--purple-deep)] underline-offset-2 hover:underline"
     : linkClass;
 
   const showSaveHint = onPage && me && !me.signedIn;
@@ -119,7 +119,7 @@ export function ParentAuthLinks({
       </div>
       {showSaveHint ? (
         <p
-          className="max-w-[18rem] text-sm font-semibold text-[var(--ink-soft)]"
+          className="max-w-[20rem] text-sm font-semibold text-[var(--purple-deep)]"
           data-testid="parent-save-account-hint"
         >
           Must have an account to save this list, otherwise it may get lost.

@@ -62,6 +62,9 @@ export function ParentAuthLinks({
   const loginButtonClass = onPage
     ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--mint)] px-6 text-base font-bold text-white shadow-md transition active:scale-[0.98]"
     : linkClass;
+  const signupButtonClass = onPage
+    ? "inline-flex h-[3.9rem] items-center justify-center rounded-full bg-[var(--lavender)] px-6 text-base font-bold text-[var(--purple-deep)] transition active:scale-[0.98]"
+    : linkClass;
 
   return (
     <div
@@ -103,7 +106,7 @@ export function ParentAuthLinks({
           </Link>
           <Link
             href={parentSignUpPath(returnTo)}
-            className={linkClass}
+            className={signupButtonClass}
             data-testid="parent-signup-link"
           >
             Sign up

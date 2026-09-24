@@ -208,23 +208,20 @@ select {
 .hold-to-remove__label {
   position: relative;
   z-index: 1;
-  mix-blend-mode: normal;
+  color: var(--purple-deep);
 }
 
-/* Keep label readable as fill grows: white over the filled portion. */
-.hold-to-remove.is-holding .hold-to-remove__label,
-.hold-to-remove[data-hold-progress="1.00"] .hold-to-remove__label {
-  color: var(--purple-deep);
-  background: linear-gradient(
-    90deg,
-    #fff 0%,
-    #fff calc(var(--hold-progress, 0) * 100%),
-    var(--purple-deep) calc(var(--hold-progress, 0) * 100%),
-    var(--purple-deep) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* White label clipped to the filled region so text stays readable. */
+.hold-to-remove__label--on-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  clip-path: inset(0 calc((1 - var(--hold-progress, 0)) * 100%) 0 0);
+  pointer-events: none;
 }
 
 .shelf-panel--pop-out {

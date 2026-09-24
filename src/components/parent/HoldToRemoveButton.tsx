@@ -102,6 +102,9 @@ export function HoldToRemoveButton({
     >
       <span className="hold-to-remove__fill" aria-hidden />
       <span className="hold-to-remove__label">{label}</span>
+      <span className="hold-to-remove__label hold-to-remove__label--on-fill" aria-hidden>
+        {label}
+      </span>
     </button>
   );
 }

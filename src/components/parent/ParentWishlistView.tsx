@@ -113,6 +113,7 @@ export function ParentWishlistView({
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
+        backHref="/shop"
         logoHref="/p"
         trailing={<ParentAuthLinks returnTo={returnTo} />}
       />

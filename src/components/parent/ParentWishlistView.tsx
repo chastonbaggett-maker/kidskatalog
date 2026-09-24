@@ -159,7 +159,7 @@ export function ParentWishlistView({
               return (
                 <li key={toy.id} className="shelf-panel shelf-panel--soft">
                   <div className="shelf-panel__surface flex flex-col gap-2 p-3">
-                    <div className="flex items-start gap-3">
+                    <div className="flex w-full items-start justify-between gap-3">
                       <Link
                         href={parentToyPath(toy.id)}
                         prefetch={false}

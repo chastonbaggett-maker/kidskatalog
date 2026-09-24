@@ -1,6 +1,7 @@
 /** First-paint splash cover — inline so nav can't flash before CSS/JS. */
 
-export const SPLASH_BG_SOLID = "#ffffff";
+/** Mint matches part-1 (pre-tap) so the first paint is the opening clip color. */
+export const SPLASH_BG_SOLID = "#3ecfc0";
 export const SPLASH_BG_GRADIENT = "none";
 
 /**

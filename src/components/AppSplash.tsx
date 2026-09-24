@@ -5,7 +5,8 @@ import { unlockSharedAudio } from "@/lib/shared-audio";
 
 const PART1_SRC = "/splash/intro-part-1.mp4";
 const PART2_SRC = "/splash/intro-part-2.mp4";
-const PART1_POSTER = "/splash/intro-part-1-end.jpg";
+/** First frame of part 1 — shown immediately while the clip buffers. */
+const PART1_POSTER = "/splash/intro-part-1-start.jpg";
 /** Soft fade after part 2 so the already-warmed page is underneath. */
 const FADE_OUT_MS = 420;
 
@@ -44,6 +45,42 @@ async function waitForPageReady() {
   }
 }
 
+/** Seek to t=0 and resolve once the first frame is painted / ready. */
+function waitForFirstFrame(video: HTMLVideoElement): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("seeked", onReady);
+      video.removeEventListener("canplay", onReady);
+      resolve();
+    };
+    const onReady = () => {
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) done();
+    };
+
+    try {
+      video.pause();
+      if (video.currentTime !== 0) video.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.currentTime === 0) {
+      done();
+      return;
+    }
+
+    video.addEventListener("loadeddata", onReady);
+    video.addEventListener("seeked", onReady);
+    video.addEventListener("canplay", onReady);
+    // Fallback so a stalled decode never blocks forever.
+    window.setTimeout(done, 1200);
+  });
+}
+
 /**
  * Cold-open splash: play intro part 1, hold the end frame until tap,
  * play intro part 2, then reveal the already-loaded page underneath.
@@ -54,6 +91,7 @@ export function AppSplash() {
   const phaseRef = useRef<SplashPhase>("part1");
   const [phase, setPhase] = useState<SplashPhase>("part1");
   const [pageReady, setPageReady] = useState(false);
+  const [frameReady, setFrameReady] = useState(false);
   const pageReadyRef = useRef(false);
   const startedPart2Ref = useRef(false);
   const outTimerRef = useRef<number | null>(null);
@@ -110,18 +148,25 @@ export function AppSplash() {
     }
     if (!video) return;
 
+    let cancelled = false;
     const playPart1 = async () => {
+      video.muted = true;
+      await waitForFirstFrame(video);
+      if (cancelled) return;
+      setFrameReady(true);
       try {
         video.currentTime = 0;
-        video.muted = true;
         await video.play();
       } catch {
-        // Autoplay blocked — jump to hold so a tap can continue.
+        // Autoplay blocked — stay on first/hold frame so a tap can continue.
         setPhaseSafe("hold");
       }
     };
 
     void playPart1();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // If part 2 ever starts without the tap gate, pause it again.
@@ -235,7 +280,9 @@ export function AppSplash() {
 
   return (
     <div
-      className={`app-splash app-splash--video app-splash--${phase}`}
+      className={`app-splash app-splash--video app-splash--${phase}${
+        frameReady ? " is-frame-ready" : ""
+      }`}
       role="button"
       tabIndex={0}
       aria-label="Tap to start KidsKatalog"
@@ -248,16 +295,33 @@ export function AppSplash() {
         }
       }}
     >
+      {/* Poster paints first frame immediately; video fades in once decoded at t=0. */}
+      <img
+        className="app-splash__poster"
+        src={PART1_POSTER}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
       <video
         ref={part1Ref}
         className={`app-splash__video app-splash__video--part1${
           phase === "part1" || phase === "hold" ? " is-active" : ""
-        }`}
+        }${frameReady ? " is-frame-ready" : ""}`}
         src={PART1_SRC}
         poster={PART1_POSTER}
         playsInline
         muted
         preload="auto"
+        onLoadedData={() => {
+          const v = part1Ref.current;
+          if (!v) return;
+          try {
+            if (v.currentTime !== 0) v.currentTime = 0;
+          } catch {
+            /* ignore */
+          }
+        }}
         onEnded={onPart1Ended}
         aria-hidden={phase !== "part1" && phase !== "hold"}
       />

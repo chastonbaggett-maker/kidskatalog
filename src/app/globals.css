@@ -899,8 +899,9 @@ html.route-changing .bottom-nav__kart-badge--pop {
 
 /* Cold-open splash: video part 1 → hold end frame → tap → part 2 → reveal page. */
 :root {
-  --splash-bg-solid: #ffffff;
   --splash-mint: var(--mint, #3ecfc0);
+  --splash-bg-solid: var(--splash-mint);
+  --splash-bg-part2: #ffffff;
   --splash-bg: none;
   --splash-fade-ms: 420ms;
 }
@@ -1003,7 +1004,7 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   place-items: center;
   pointer-events: auto;
   cursor: default;
-  background-color: var(--splash-bg-solid);
+  background-color: var(--splash-mint);
   background-image: none;
   opacity: 1;
   visibility: visible;
@@ -1012,6 +1013,11 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   overflow: hidden;
   isolation: isolate;
   transform: translateZ(0);
+}
+
+.app-splash--part2,
+.app-splash--out {
+  background-color: var(--splash-bg-part2);
 }
 
 .app-splash--hold {
@@ -1025,6 +1031,25 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   cursor: default;
 }
 
+/* Instant first-frame paint while part 1 decodes. */
+.app-splash__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-splash--part2 .app-splash__poster,
+.app-splash--out .app-splash__poster {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .app-splash__video {
   position: absolute;
   inset: 0;
@@ -1032,13 +1057,24 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   height: 100%;
   object-fit: cover;
   object-position: center;
-  background: var(--splash-bg-solid);
+  background: transparent;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  z-index: 1;
 }
 
-.app-splash__video.is-active {
+.app-splash__video--part1.is-active {
+  /* Keep poster visible until the decoded first frame is ready. */
+  opacity: 0;
+  visibility: visible;
+}
+
+.app-splash__video--part1.is-active.is-frame-ready {
+  opacity: 1;
+}
+
+.app-splash__video--part2.is-active {
   opacity: 1;
   visibility: visible;
 }
@@ -1051,9 +1087,9 @@ html:not([data-splash="active"]):not([data-splash="holding"]):not(
   margin: 0;
   padding: 0.55rem 1.1rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--splash-mint) 14%, white);
-  color: var(--ink, #2c2c3a);
-  border: 1px solid color-mix(in srgb, var(--splash-mint) 45%, white);
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.55);
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 0.95rem;
   font-weight: 600;

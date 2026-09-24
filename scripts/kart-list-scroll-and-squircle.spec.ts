@@ -60,5 +60,5 @@ test("active bottom-nav bubble uses a squircle radius", async ({ page }) => {
     .locator(".bottom-nav__item--active")
     .evaluate((el) => getComputedStyle(el, "::before").borderRadius);
   expect(radius).not.toMatch(/9999?px|50%/);
-  expect(radius).toMatch(/32%/);
+  expect(radius).toMatch(/24%/);
 });

@@ -2693,8 +2693,8 @@ html[data-accent="both"] .app-shell--crazy .add-kart-btn--ready:hover,
   top: 50%;
   width: 3.65rem;
   height: 3.65rem;
-  /* Squircle — soft continuous corner, not a circle pill. */
-  border-radius: 32%;
+  /* Squircle (iOS-like continuous corner) — not a circle. */
+  border-radius: 24%;
   background: var(--bottom-nav-accent, var(--mint));
   transform: translate(-50%, -50%) scale(1);
   pointer-events: none;

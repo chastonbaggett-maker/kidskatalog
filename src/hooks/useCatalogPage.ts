@@ -8,6 +8,7 @@ import {
   type CatalogPageResult,
 } from "@/lib/catalog-query";
 import { isKartEffectBlocked } from "@/lib/kart-effect-guard";
+import { readBrowseSeed, writeBrowseSeed } from "@/lib/browse-scroll";
 
 const DEFAULT_LIMIT = 20;
 
@@ -74,7 +75,7 @@ export function useCatalogPage({
   const displayIdsRef = useRef<string[]>(
     initialPage?.toys.map((t) => t.id) ?? [],
   );
-  const seededKeyRef = useRef<string | null>(initialPage ? filtersKey : null);
+  const prevFiltersKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     displayIdsRef.current = displayIds;
@@ -119,6 +120,7 @@ export function useCatalogPage({
         if (typeof data.seed === "number" && Number.isFinite(data.seed)) {
           seedRef.current = data.seed >>> 0;
         }
+        writeBrowseSeed(filtersKey, seedRef.current);
 
         mergeToys(data.toys);
         setTotal(data.total);
@@ -153,19 +155,40 @@ export function useCatalogPage({
         }
       }
     },
-    [enabled, limit, mergeToys],
+    [enabled, filtersKey, limit, mergeToys],
   );
 
   useEffect(() => {
     if (!enabled) return;
 
-    if (seededKeyRef.current === filtersKey) {
-      seededKeyRef.current = null;
+    const prevKey = prevFiltersKeyRef.current;
+    const filtersChanged = prevKey != null && prevKey !== filtersKey;
+    prevFiltersKeyRef.current = filtersKey;
+
+    if (!filtersChanged) {
+      // First paint for this filter set (including remount after a toy).
+      // Prefer the session shuffle so back-navigation keeps the same cards.
+      const sessionSeed = readBrowseSeed(filtersKey);
+      if (sessionSeed != null && sessionSeed !== seedRef.current) {
+        seedRef.current = sessionSeed;
+        loadingRef.current = false;
+        setToyMap(new Map());
+        displayIdsRef.current = [];
+        setDisplayIds([]);
+        setTotal(0);
+        setHasMore(true);
+        void fetchPage(0, true);
+        return;
+      }
+      writeBrowseSeed(filtersKey, seedRef.current);
       return;
     }
 
-    // New filter set => new shuffle order for this visit.
-    seedRef.current = freshSeed();
+    // New filter set => new shuffle order for this visit —
+    // unless a pending browse restore still owns a seed.
+    const restoreSeed = readBrowseSeed(filtersKey);
+    seedRef.current = restoreSeed ?? freshSeed();
+    writeBrowseSeed(filtersKey, seedRef.current);
     loadingRef.current = false;
     setToyMap(new Map());
     displayIdsRef.current = [];
@@ -208,6 +231,8 @@ export function useCatalogPage({
     loading,
     error,
     loadMore,
+    seed: seedRef.current,
+    getSeed: () => seedRef.current,
     refetch: () => fetchPage(0, true),
   };
 }

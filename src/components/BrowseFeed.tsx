@@ -22,6 +22,7 @@ import { PILE_CARD_BATCH } from "@/lib/pile-cards";
 import { pingMetrics } from "@/lib/metrics-client";
 import type { CatalogPageResult } from "@/lib/catalog-query";
 import {
+  readBrowseScroll,
   restoreBrowseScroll,
   saveBrowseScroll,
 } from "@/lib/browse-scroll";
@@ -102,6 +103,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
     hasMore,
     loading,
     loadMore,
+    getSeed,
   } = catalog;
 
   // Pile pages stay small. The grid asks for the next batch only when the
@@ -179,6 +181,33 @@ export function BrowseFeed({ category, initialPage }: Props) {
     let cancelled = false;
     const attempt = () => {
       if (cancelled || browseScrollRestoredRef.current) return;
+      const saved = readBrowseScroll();
+      if (!saved || saved.top <= 0) {
+        browseScrollRestoredRef.current = true;
+        return;
+      }
+
+      if (saved.toyId) {
+        const card = scroller.querySelector<HTMLElement>(
+          `[data-toy-id="${CSS.escape(saved.toyId)}"]`,
+        );
+        if (!card) {
+          // Seed refetch / pagination may still be loading the card.
+          if (hasMore && !loading) void loadMore();
+          return;
+        }
+        const scrollerRect = scroller.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const delta =
+          cardRect.top -
+          scrollerRect.top -
+          scroller.clientHeight / 2 +
+          cardRect.height / 2;
+        scroller.scrollTop += delta;
+        browseScrollRestoredRef.current = true;
+        return;
+      }
+
       if (restoreBrowseScroll(scroller)) {
         browseScrollRestoredRef.current = true;
       }
@@ -186,16 +215,22 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
     attempt();
     const t1 = window.setTimeout(attempt, 120);
-    const t2 = window.setTimeout(() => {
-      attempt();
+    const t2 = window.setTimeout(attempt, 400);
+    const t3 = window.setTimeout(attempt, 900);
+    const t4 = window.setTimeout(() => {
+      if (cancelled || browseScrollRestoredRef.current) return;
+      // Last resort: snap to saved scroll even if the toy card never appeared.
+      restoreBrowseScroll(scroller);
       browseScrollRestoredRef.current = true;
-    }, 500);
+    }, 1600);
     return () => {
       cancelled = true;
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      window.clearTimeout(t3);
+      window.clearTimeout(t4);
     };
-  }, [pileOn, displayed.length]);
+  }, [pileOn, displayed.length, hasMore, loading, loadMore]);
 
   useEffect(() => {
     if (pileOn) return;
@@ -204,7 +239,19 @@ export function BrowseFeed({ category, initialPage }: Props) {
 
     let frame = 0;
     const persist = (toyId?: string) => {
-      saveBrowseScroll(scroller.scrollTop, toyId ? { toyId } : undefined);
+      // Avoid clobbering a saved place with a fresh mount's scrollTop 0
+      // before restore runs (Strict Mode remount / first paint).
+      if (
+        !browseScrollRestoredRef.current &&
+        scroller.scrollTop < 8 &&
+        !toyId
+      ) {
+        return;
+      }
+      saveBrowseScroll(scroller.scrollTop, {
+        toyId,
+        seed: getSeed(),
+      });
     };
     const onScroll = () => {
       if (frame) return;
@@ -220,6 +267,7 @@ export function BrowseFeed({ category, initialPage }: Props) {
       if (!link) return;
       const href = link.getAttribute("href") ?? "";
       const toyId = href.split("/toy/")[1]?.split(/[?#]/)[0];
+      browseScrollRestoredRef.current = true;
       persist(toyId || undefined);
     };
 
@@ -229,9 +277,10 @@ export function BrowseFeed({ category, initialPage }: Props) {
       if (frame) cancelAnimationFrame(frame);
       scroller.removeEventListener("scroll", onScroll);
       scroller.removeEventListener("click", onClickCapture, true);
-      persist();
+      // Do not persist on unmount — Strict Mode remounts would overwrite
+      // the saved place with scrollTop 0 before restore can run.
     };
-  }, [pileOn]);
+  }, [pileOn, getSeed]);
 
   useEffect(() => {
     const enteringPile = pileOn && !prevToyPileModeRef.current;

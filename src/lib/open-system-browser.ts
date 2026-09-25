@@ -22,7 +22,7 @@ export function openSystemBrowser(
     return;
   }
 
-  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  const opened = window.open(url, "_blank", "noopener");
   if (opened) {
     event?.preventDefault();
     opened.opener = null;

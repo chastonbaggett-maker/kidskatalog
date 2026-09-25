@@ -1,8 +1,17 @@
 /** Resolve the public site origin for parent share links. */
 
-export const DEFAULT_SITE_ORIGIN = "https://kidskatalog.vercel.app";
+export const CANONICAL_SITE_ORIGIN = "https://kidskatalog.com";
+export const DEFAULT_SITE_ORIGIN = CANONICAL_SITE_ORIGIN;
 
-/** Apex/www custom host is not live — never put it in parent share links. */
+/** Old hosts that must not be written into new parent share links. */
+const LEGACY_PUBLIC_HOSTS = new Set([
+  "www.kidskatalog.com",
+  "kidskatalog.vercel.app",
+  "kidskatalog.app",
+  "www.kidskatalog.app",
+]);
+
+/** Apex/www .app host is not the public site. */
 const UNCONFIGURED_HOSTS = new Set(["kidskatalog.app", "www.kidskatalog.app"]);
 
 function hostnameOf(raw: string): string | null {
@@ -21,18 +30,21 @@ export function isUnconfiguredCustomHost(raw: string | null | undefined): boolea
 }
 
 /**
- * Normalize an origin. Rewrites unconfigured kidskatalog.app to the working
- * vercel.app host. `NEXT_PUBLIC_SITE_URL` is the override once DNS is real.
+ * Normalize an origin. Rewrites www, the production vercel.app host, and the
+ * unconfigured .app hosts to https://kidskatalog.com. Preview *.vercel.app
+ * hosts are left alone.
  */
 export function canonicalizeSiteOrigin(raw?: string | null): string {
   if (!raw || !raw.trim()) return DEFAULT_SITE_ORIGIN;
   const trimmed = raw.trim().replace(/\/$/, "");
-  if (isUnconfiguredCustomHost(trimmed)) return DEFAULT_SITE_ORIGIN;
   const withProto = trimmed.includes("://") ? trimmed : `https://${trimmed}`;
   try {
     const url = new URL(withProto);
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       return DEFAULT_SITE_ORIGIN;
+    }
+    if (LEGACY_PUBLIC_HOSTS.has(url.hostname.toLowerCase())) {
+      return CANONICAL_SITE_ORIGIN;
     }
     return `${url.protocol}//${url.host}`;
   } catch {

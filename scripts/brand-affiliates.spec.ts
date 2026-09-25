@@ -120,4 +120,12 @@ test("kid surfaces strip brandAffiliate", () => {
   expect(hasKidCommerceFields(kid)).toBeFalsy();
   expect(hasKidCommerceLeak(kid)).toBeFalsy();
   expect(hasKidCommerceFields(parent)).toBeTruthy();
+  expect(hasKidCommerceLeak({ price: 19.99 })).toBeTruthy();
+  expect(hasKidCommerceLeak({ listPrice: "12.00" })).toBeTruthy();
+  expect(hasKidCommerceLeak("On sale for $8")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://www.amazon.com/dp/B0BBRGJTD7?tag=kidskatalog-20")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://www.amazon.com/s?k=toys")).toBeTruthy();
+  expect(hasKidCommerceLeak("Buy on Amazon")).toBeTruthy();
+  expect(hasKidCommerceLeak({ name: "Sky Rocket", blurb: "Launches up." })).toBeFalsy();
+  expect(hasKidCommerceLeak("https://m.media-amazon.com/images/I/demo.jpg")).toBeFalsy();
 });

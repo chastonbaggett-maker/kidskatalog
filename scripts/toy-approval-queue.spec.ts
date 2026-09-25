@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
-import { FALLBACK_AFFILIATE_TAG, storedParentAffiliateUrl } from "../src/lib/affiliate";
+import { storedParentAffiliateUrl } from "../src/lib/affiliate";
 import { parseAsin, parseBulkAmazonInputs } from "../src/lib/amazon-asin";
 import { resolveParentBuy } from "../src/lib/associates";
 import {
@@ -10,7 +10,6 @@ import {
 import { assertLiveToyPublishable, htmlLooksKidClean, kidJsonLooksClean } from "../src/lib/publish-locks";
 import { toKidToy } from "../src/lib/kid-surface";
 import { resolveBrandDeal } from "../src/lib/brand-deals";
-import { seedParentGateUnlock } from "./parent-gate";
 import type { Toy } from "../src/types/toy";
 
 async function dismissSplash(page: Page) {
@@ -42,7 +41,7 @@ function sampleToy(partial: Partial<Toy> & Pick<Toy, "id" | "name">): Toy {
   };
 }
 
-test("proposal parser stores kidskatalog-20 and stages as pending", () => {
+test("proposal parser stores a tag-free dp URL and stages as pending", () => {
   const parsed = parseProposalInput(
     {
       name: "Mag Tiles",
@@ -60,7 +59,8 @@ test("proposal parser stores kidskatalog-20 and stages as pending", () => {
   if (isProposalParseError(parsed)) return;
   expect(parsed.reviewStatus).toBe("pending");
   expect(parsed.asin).toBe("B07YNLXJ4L");
-  expect(parsed.affiliateUrl).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
+  expect(parsed.affiliateUrl).toBe("https://www.amazon.com/dp/B07YNLXJ4L");
+  expect(parsed.affiliateUrl).not.toContain("tag=");
   expect(parsed.ageMin).toBe(4);
   expect(parsed.ageMax).toBe(8);
   expect(parsed.source).toBe("chief");
@@ -98,28 +98,24 @@ test("proposal parser stores kidskatalog-20 and stages as pending", () => {
   expect(isProposalParseError(missingAmazon)).toBeTruthy();
 });
 
-test("Counsel locks: tag= only when LIVE; kid projection stays clean", () => {
+test("Counsel locks: tag= only from AMAZON_ASSOCIATES_TAG; kid projection stays clean", () => {
   const toy = sampleToy({ id: "sky-rocket", name: "Sky Rocket" });
-  const lock = assertLiveToyPublishable(toy);
-  expect(lock.ok).toBeTruthy();
-
-  const prevLive = process.env.AMAZON_ASSOCIATES_LIVE;
   const prevTag = process.env.AMAZON_ASSOCIATES_TAG;
   try {
-    delete process.env.AMAZON_ASSOCIATES_LIVE;
     delete process.env.AMAZON_ASSOCIATES_TAG;
     const off = resolveParentBuy(toy.id, toy.affiliateUrl);
-    expect(off.mode).toBe("placeholder");
-    expect(off.href).not.toMatch(AFFILIATE_LEAK);
+    expect(off.mode).toBe("associates");
+    expect(off.href).toBe("https://www.amazon.com/dp/B07YNLXJ4L");
+    expect(off.href).not.toMatch(/[?&]tag=/i);
+    expect(assertLiveToyPublishable(toy).ok).toBeTruthy();
 
-    process.env.AMAZON_ASSOCIATES_LIVE = "true";
-    process.env.AMAZON_ASSOCIATES_TAG = FALLBACK_AFFILIATE_TAG;
+    process.env.AMAZON_ASSOCIATES_TAG = "shelf-test-20";
     const on = resolveParentBuy(toy.id, toy.affiliateUrl);
     expect(on.mode).toBe("associates");
-    expect(on.href).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
+    expect(on.href).toBe("https://www.amazon.com/dp/B07YNLXJ4L?tag=shelf-test-20");
+    expect(on.href).not.toBe(toy.affiliateUrl);
+    expect(assertLiveToyPublishable(toy).ok).toBeTruthy();
   } finally {
-    if (prevLive === undefined) delete process.env.AMAZON_ASSOCIATES_LIVE;
-    else process.env.AMAZON_ASSOCIATES_LIVE = prevLive;
     if (prevTag === undefined) delete process.env.AMAZON_ASSOCIATES_TAG;
     else process.env.AMAZON_ASSOCIATES_TAG = prevTag;
   }
@@ -205,7 +201,10 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     };
     expect(ingested.proposals[0]?.id).toBe(id);
     expect(ingested.proposals[0]?.reviewStatus).toBe("pending");
-    expect(ingested.proposals[0]?.affiliateUrl).toContain(`tag=${FALLBACK_AFFILIATE_TAG}`);
+    expect(ingested.proposals[0]?.affiliateUrl).toBe(
+      "https://www.amazon.com/dp/B0KKQUEUE1",
+    );
+    expect(ingested.proposals[0]?.affiliateUrl).not.toContain("tag=");
 
     const pending = await request.get("/api/admin/toy-proposals?status=pending");
     const pendingJson = (await pending.json()) as { proposals: Array<{ id: string }> };
@@ -263,25 +262,34 @@ test("ingest → approve stages only → Submit Approval publishes; kid HTML sta
     const parentPage = await request.get(`/p/${id}`);
     expect(parentPage.ok()).toBeTruthy();
     const parentHtml = await parentPage.text();
-    expect(parentHtml).toContain("parent-birth-year-gate");
-    expect(parentHtml).toMatch(/\/p\/buy-placeholder\?toy=/);
-    expect(parentHtml).not.toMatch(AFFILIATE_LEAK);
+    expect(parentHtml).not.toContain("parent-birth-year-gate");
+    expect(parentHtml).toContain("As an Amazon Associate I earn from qualifying purchases.");
+    expect(parentHtml).toContain('rel="sponsored noopener"');
+    expect(parentHtml).toMatch(
+      /https:\/\/www\.amazon\.com\/dp\/B0KKQUEUE1\?tag=[^"'&\s]+/,
+    );
+    expect(parentHtml).not.toMatch(/buy-placeholder|not approved/i);
 
     const buy = await request.get(`/api/parent/buy-urls?ids=${id}`);
     const buyJson = (await buy.json()) as { urls: Record<string, string> };
-    expect(buyJson.urls[id]).toMatch(/\/p\/buy-placeholder\?toy=/);
-    expect(JSON.stringify(buyJson)).not.toMatch(AFFILIATE_LEAK);
+    expect(buyJson.urls[id]).toMatch(
+      /https:\/\/www\.amazon\.com\/dp\/B0KKQUEUE1\?tag=[^"'&\s]+/,
+    );
 
-    await seedParentGateUnlock(page);
     await page.goto(`/p/${id}`, { waitUntil: "domcontentloaded" });
     await dismissSplash(page);
     await expect(page.getByTestId("parent-buy-cluster")).toBeVisible();
     await expect(page.getByTestId("parent-buy-cta")).toBeVisible();
-    await expect(page.getByTestId("associates-disclosure")).toBeVisible();
-    await expect(page.getByText(/Amazon Services LLC Associates Program/i)).toBeVisible();
+    await expect(page.getByTestId("associates-disclosure").first()).toBeVisible();
+    await expect(page.getByText(/Amazon Services LLC Associates Program/i).first()).toBeVisible();
+    await expect(page.getByText(/As an Amazon Associate I earn from qualifying purchases/i).first()).toBeVisible();
     await expect(page.getByTestId("parent-buy-cta")).toHaveAttribute(
       "href",
-      /\/p\/buy-placeholder\?toy=/,
+      /https:\/\/www\.amazon\.com\/dp\/B0KKQUEUE1\?tag=/,
+    );
+    await expect(page.getByTestId("parent-buy-cta")).toHaveAttribute(
+      "rel",
+      "sponsored noopener",
     );
     await expect(page.getByTestId("brand-affiliate-cta")).toHaveCount(0);
   } finally {

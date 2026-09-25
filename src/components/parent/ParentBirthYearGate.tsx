@@ -7,10 +7,17 @@ import {
   persistParentGateUnlock,
   readParentGateUnlocked,
 } from "@/lib/parent-birth-year";
+import { persistParentMode } from "@/lib/site-mode";
 
 const ERROR_TEXT = "Enter a birth year between 1901 and 2008.";
 
-export function ParentBirthYearGate({ children }: { children: ReactNode }) {
+export function ParentBirthYearGate({
+  children,
+  returnTo = "/p",
+}: {
+  children?: ReactNode;
+  returnTo?: string;
+}) {
   const [ready, setReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [year, setYear] = useState("");
@@ -28,9 +35,11 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
       return;
     }
     persistParentGateUnlock();
+    persistParentMode();
     setError("");
     setYear("");
     setUnlocked(true);
+    window.location.assign(returnTo);
   }
 
   if (!ready || !unlocked) {

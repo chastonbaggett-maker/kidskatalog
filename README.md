@@ -10,7 +10,7 @@ A kid-friendly virtual toy catalog — browse, save favorites to a **Kart**, and
 - Toy detail pages with one-tap **Add to Kart**
 - Persistent Kart (saved in the browser)
 - **Send to Mom or Dad** — copy/open a `/p?ids=` wish list (link only, no PDF)
-- **Parent Mode** (`/p/{id}` and `/p?ids=…`) — wish list + Buy placeholder (Associates Special Links stay off until approved)
+- **Parent Mode** (`/` and `/p/{id}`) — wish list and server-rendered Amazon Buy links. Kid Mode stays commerce-free.
 - **Approval queue** (`/admin/toys`, PIN) — ingest proposed toy cards, Approve / Reject, **Submit Approval** to publish. See [`docs/toy-approval-queue.md`](./docs/toy-approval-queue.md)
 - **Parent sign up / log in** — save wish lists and reopen them from **My lists**
 - **Brand deals** (`/p/deals`) — parent-only partner CTAs, not Amazon (see `docs/brand-deals.md` and `docs/brand-affiliates.md`; outreach templates in `docs/brand-outreach.md`)
@@ -30,12 +30,11 @@ Copy `.env.example` to `.env.local` and fill in:
 
 | Variable | Purpose |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | Canonical origin for parent share links (default `https://kidskatalog.vercel.app`) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical origin for parent share links (default `https://kidskatalog.com`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Optional Clerk for Parent Mode. Password sign-up works until these are set. See `docs/parent-auth.md` |
 | `PARENT_SESSION_SECRET` | HMAC for password parent sessions (falls back to `ADMIN_SESSION_SECRET`) |
 | `ADMIN_INGEST_KEY` | Optional Bearer token for proposal ingest, listing, pending `name` / `blurb` / `images` edits, and reject. Approve and Submit Approval stay PIN-only. `ADMIN_API_KEY` is the fallback name for the same secret |
-| `AMAZON_ASSOCIATES_LIVE` / `AMAZON_ASSOCIATES_TAG` | Off until Associates is approved — see `docs/associates-flip.md` |
-| `NEXT_PUBLIC_AFFILIATE_TAG` | Stored import tag only; never shown on kid surfaces |
+| `AMAZON_ASSOCIATES_TAG` | Tracking id for parent Buy links. No code fallback. See `docs/associates-flip.md` |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Catalog, metrics, parent accounts, and saved lists |
 
 ## Stack

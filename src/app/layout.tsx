@@ -31,6 +31,8 @@ const script = Caveat({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kidskatalog.com"),
+  referrer: "strict-origin-when-cross-origin",
   applicationName: APP_NAME,
   title: {
     default: APP_DEFAULT_TITLE,

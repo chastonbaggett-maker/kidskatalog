@@ -1,7 +1,4 @@
-import {
-  FALLBACK_AFFILIATE_TAG,
-  storedParentAffiliateUrl,
-} from "@/lib/affiliate";
+import { storedParentAffiliateUrl } from "@/lib/affiliate";
 import { parseAsin } from "@/lib/amazon-import";
 import {
   isStagedDraft,
@@ -16,7 +13,6 @@ import type {
   DraftToy,
 } from "@/types/toy";
 
-export { FALLBACK_AFFILIATE_TAG };
 export { isStagedDraft, normalizeQueueStatus };
 export { MAX_TOY_PROPOSAL_BATCH } from "@/lib/queue-status";
 

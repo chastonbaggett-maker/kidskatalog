@@ -11,7 +11,7 @@ function isExternalBuy(href: string): boolean {
 export function ParentBuyButton({
   href,
   toyId,
-  mode = "placeholder",
+  mode = "associates",
   className = "",
 }: {
   href: string;
@@ -25,7 +25,7 @@ export function ParentBuyButton({
     <a
       href={href}
       target={external ? "_blank" : undefined}
-      rel={external ? "noopener noreferrer sponsored" : undefined}
+      rel={external ? "sponsored noopener" : undefined}
       onClick={(event) => {
         trackParentFunnel({
           name: "parent_buy_click",

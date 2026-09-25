@@ -16,24 +16,30 @@ async function dismissSplash(page: Page) {
   }
 }
 
-test("canonicalizeSiteOrigin never ships the dead kidskatalog.app host", () => {
-  expect(DEFAULT_SITE_ORIGIN).toBe("https://kidskatalog.vercel.app");
+test("canonicalizeSiteOrigin uses kidskatalog.com and leaves preview hosts", () => {
+  expect(DEFAULT_SITE_ORIGIN).toBe("https://kidskatalog.com");
   expect(isUnconfiguredCustomHost("kidskatalog.app")).toBeTruthy();
   expect(isUnconfiguredCustomHost("https://www.kidskatalog.app/p")).toBeTruthy();
   expect(isUnconfiguredCustomHost("https://kidskatalog.vercel.app")).toBeFalsy();
   expect(canonicalizeSiteOrigin("https://kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
   expect(canonicalizeSiteOrigin("kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
   expect(canonicalizeSiteOrigin("https://www.kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
+  expect(canonicalizeSiteOrigin("https://www.kidskatalog.com")).toBe(
+    "https://kidskatalog.com",
+  );
   expect(canonicalizeSiteOrigin("https://kidskatalog.vercel.app")).toBe(
-    "https://kidskatalog.vercel.app",
+    "https://kidskatalog.com",
   );
   expect(canonicalizeSiteOrigin("https://kidskatalog.vercel.app/")).toBe(
-    "https://kidskatalog.vercel.app",
+    "https://kidskatalog.com",
   );
   expect(canonicalizeSiteOrigin("http://localhost:3456")).toBe("http://localhost:3456");
   expect(canonicalizeSiteOrigin("https://preview.vercel.app")).toBe(
     "https://preview.vercel.app",
   );
+  expect(
+    canonicalizeSiteOrigin("https://kidskatalog-git-cursor-parent.vercel.app"),
+  ).toBe("https://kidskatalog-git-cursor-parent.vercel.app");
 });
 
 test("Kart wish-list share URL uses a live host, not kidskatalog.app", async ({

@@ -1,7 +1,6 @@
 /** Parent Mode routes — safe to import from client or server. */
 
 export const PARENT_RESERVED_IDS = [
-  "buy-placeholder",
   "deals",
   "sign-in",
   "sign-up",
@@ -14,11 +13,6 @@ export function parentToyPath(id: string): string {
 
 export function parentDealsPath(): string {
   return "/p/deals";
-}
-
-/** Stub Buy target until Associates is approved. */
-export function parentBuyPlaceholderPath(id: string): string {
-  return `/p/buy-placeholder?toy=${encodeURIComponent(id)}#buy-placeholder`;
 }
 
 export function parentWishlistPath(

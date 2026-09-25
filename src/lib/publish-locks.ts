@@ -1,5 +1,6 @@
 import { hasAffiliateLeak, hasKidCommerceLeak, isAmazonProductUrl } from "@/lib/affiliate";
-import { isAssociatesLive, resolveParentBuy } from "@/lib/associates";
+import { buildSpecialLink, getAssociatesTag, resolveParentBuy } from "@/lib/associates";
+import { parseAsin } from "@/lib/amazon-asin";
 import { resolveBrandDeal } from "@/lib/brand-deals";
 import {
   hasKidCommerceFields,
@@ -23,9 +24,10 @@ export type PublishLockOk = {
 
 /**
  * Counsel hard locks for the Submit Approval publish path.
- * 1) Parent Buy href never carries tag= unless AMAZON_ASSOCIATES_LIVE.
- * 2) Kid projection never includes tag=, affiliateUrl, or Amazon Buy UI fields.
+ * 1) Parent Buy href is rebuilt from ASIN + AMAZON_ASSOCIATES_TAG (never a stored URL).
+ * 2) Kid projection never includes tag=, affiliateUrl, prices, or Amazon Buy UI fields.
  * 3) Brand-deal CTA stays a separate URL from Amazon Buy.
+ * Submit Approval stays a human PIN session. This lock does not auto-publish.
  */
 export function assertLiveToyPublishable(toy: Toy): PublishLockOk | PublishLockError {
   if (!toy.id || !toy.name) {
@@ -49,20 +51,17 @@ export function assertLiveToyPublishable(toy: Toy): PublishLockOk | PublishLockE
   }
 
   const buy = resolveParentBuy(toy.id, toy.affiliateUrl);
-  if (!isAssociatesLive()) {
-    if (buy.mode !== "placeholder") {
-      return { ok: false, error: "Parent Buy must stay on the placeholder while Associates is off" };
-    }
-    if (AFFILIATE_TAG_RE.test(buy.href) || isAmazonProductUrl(buy.href) || AMAZON_DP_RE.test(buy.href)) {
-      return {
-        ok: false,
-        error: "Parent Buy leaked tag= or amazon.com/dp while AMAZON_ASSOCIATES_LIVE is off",
-      };
-    }
-  } else if (buy.mode === "associates") {
-    if (!AFFILIATE_TAG_RE.test(buy.href)) {
-      return { ok: false, error: "Live Associates Buy is missing tag=" };
-    }
+  const asin = parseAsin(toy.affiliateUrl || "");
+  if (!asin) {
+    return { ok: false, error: "Parent Buy is missing an ASIN" };
+  }
+  const tag = getAssociatesTag();
+  const expected = tag ? buildSpecialLink(asin, tag) : `https://www.amazon.com/dp/${asin}`;
+  if (buy.href !== expected) {
+    return { ok: false, error: "Parent Buy must be rebuilt from ASIN and AMAZON_ASSOCIATES_TAG" };
+  }
+  if (!tag && AFFILIATE_TAG_RE.test(buy.href)) {
+    return { ok: false, error: "Parent Buy included tag= without AMAZON_ASSOCIATES_TAG" };
   }
 
   const brand = resolveBrandDeal(toy);
@@ -86,6 +85,8 @@ export function kidJsonLooksClean(value: unknown): boolean {
 
 export function htmlLooksKidClean(html: string): boolean {
   if (AFFILIATE_TAG_RE.test(html) || AMAZON_DP_RE.test(html)) return false;
+  if (/https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)/i.test(html)) return false;
+  if (/\$\d+\.\d{2}/.test(html)) return false;
   if (/Buy on Amazon/i.test(html)) return false;
   if (/Brand partner link/i.test(html)) return false;
   return true;

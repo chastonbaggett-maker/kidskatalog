@@ -1,10 +1,8 @@
 import type { Toy } from "@/types/toy";
 
-/** Demo catalog — affiliate tag is a placeholder; set NEXT_PUBLIC_AFFILIATE_TAG in env */
-const tag = process.env.NEXT_PUBLIC_AFFILIATE_TAG || "kidskatalog-20";
-
+/** Seed dp URLs. The public Associates tag is applied at render time. */
 function amazon(asin: string) {
-  return `https://www.amazon.com/dp/${asin}?tag=${tag}`;
+  return `https://www.amazon.com/dp/${asin}`;
 }
 
 export const toys: Toy[] = [

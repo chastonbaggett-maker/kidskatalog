@@ -19,9 +19,20 @@ const withPWA = withPWAInit({
   },
 });
 
+const REFERRER_POLICY = "strict-origin-when-cross-origin";
+
 const nextConfig: NextConfig = {
   // next-pwa uses webpack; keep an empty turbopack config for Next 16
   turbopack: {},
+  async headers() {
+    const referrer = [
+      { key: "Referrer-Policy", value: REFERRER_POLICY },
+    ];
+    return [
+      { source: "/", headers: referrer },
+      { source: "/:path*", headers: referrer },
+    ];
+  },
   serverExternalPackages: ["@libsql/client", "libsql"],
   // Allow Cursor browser / VM chrome / tunnel hosts in dev HMR
   allowedDevOrigins: [

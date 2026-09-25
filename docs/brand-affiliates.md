@@ -13,7 +13,7 @@ KidsKatalog may earn from Amazon Associates **or** from a brand network. It must
 - Separate clicks only. Never one button, never one `href`, never Amazon Product Advertising Content on a partner card.
 - A toy can have both programs listed. The parent chooses which link to open.
 
-If a partner URL is Amazon (`dp` / `tag=` / amazon host), the brand CTA stays a placeholder.
+If a partner URL is Amazon (`dp` / `tag=` / amazon host), the brand CTA stays **coming soon**.
 
 ## Data field
 
@@ -42,9 +42,9 @@ Do this per partner after a signed deal and a **non-Amazon** landing URL. This r
 3. On the toy overlay / admin listing, set `brandAffiliate.partner` (disclosure name), `network` (e.g. `impact`, `cj`, `direct`), and `url`. Leave **`live: false`** first and check `/p/{id}` + `/p/deals`: coming-soon CTA, separate from Buy on Amazon.
 4. Kid Mode check: `/shop`, `/toy/{id}`, `/kart`, `/watch`, `/menu`, and `GET /api/catalog` must omit `brandAffiliate` and must not say “Brand partner link”.
 5. When the URL is real and approved, set **`live: true`** on that toy only. Redeploy if the catalog is baked; Turso/admin saves apply on the next read.
-6. Verify `/p/{id}`: **Buy on Amazon** still goes to the Associates placeholder (until Chaston flips Associates by hand). **Brand partner link** is a second control, `href` is the partner URL, disclosure says **not Amazon**.
+6. Verify `/p/{id}`: **Buy on Amazon** is a tagged `amazon.com/dp/{ASIN}` link from `AMAZON_ASSOCIATES_TAG`. **Brand partner link** is a second control, `href` is the partner URL, disclosure says **not Amazon**.
 7. Verify `/p/deals`: partner card only — no Buy on Amazon on that click.
-8. Do **not** set `AMAZON_ASSOCIATES_LIVE` or `AMAZON_ASSOCIATES_TAG`. See `docs/associates-flip.md` for that separate, later flip.
+8. Do **not** use brand-deal setup to change `AMAZON_ASSOCIATES_TAG`. Buy links already read that env var. See `docs/associates-flip.md`.
 
 Rollback: set `live: false` (or clear `url`). Buy on Amazon is unchanged.
 
@@ -64,7 +64,7 @@ Demo UI labels today: **Yoto-style** on `sky-rocket`, **KiwiCo-style** on `roar-
 
 | Surface | Brand CTA | Amazon Buy |
 |---|---|---|
-| `/p/{id}` | Yes, if overlay/fields set | Yes (placeholder until Associates) |
+| `/p/{id}` | Yes, if overlay/fields set | Yes (tagged Associates link) |
 | `/p/deals` | Yes | No |
 | Kid shop / toy / kart / watch | No | No |
 

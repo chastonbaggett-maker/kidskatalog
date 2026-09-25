@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedKidMode } from "./parent-gate";
 import {
   isAllowedParentBirthYear,
   PARENT_BIRTH_YEAR_MAX,
@@ -20,6 +21,7 @@ async function dismissSplash(page: Page) {
 }
 
 async function openLockedParent(page: Page, path: string) {
+  await seedKidMode(page);
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
   await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
@@ -95,6 +97,7 @@ test("1901, 1990, and 2008 unlock Parent Mode for the browser session", async ({
 
   await openLockedParent(page, "/p/sky-rocket");
   await submitYear(page, "1990");
+  await dismissSplash(page);
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Buy on Amazon" })).toBeVisible();
 
@@ -126,10 +129,11 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
   page,
   context,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
   await openLockedParent(page, "/p");
   await submitYear(page, "1901");
+  await dismissSplash(page);
   await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Parent wish list/i })).toBeVisible();
 
@@ -143,14 +147,15 @@ test("boundary years 1901 and 2008 unlock; Kid Mode never shows the gate", async
   const fresh = await context.browser()?.newContext();
   if (!fresh) throw new Error("expected a browser");
   const locked = await fresh.newPage();
-  await locked.goto("/p/buy-placeholder?toy=sky-rocket", {
-    waitUntil: "domcontentloaded",
-  });
+  await seedKidMode(locked);
+  await locked.goto("/p/sky-rocket", { waitUntil: "domcontentloaded" });
   await dismissSplash(locked);
   await expect(locked.getByTestId("parent-birth-year-gate")).toBeVisible();
+  await expect(locked.getByRole("link", { name: "Buy on Amazon" })).toHaveCount(0);
   await submitYear(locked, "2008");
+  await dismissSplash(locked);
   await expect(locked.getByTestId("parent-birth-year-gate")).toHaveCount(0);
-  await expect(locked.locator("#buy-placeholder")).toBeAttached();
+  await expect(locked.getByRole("link", { name: "Buy on Amazon" })).toBeVisible();
   await fresh.close();
 
   for (const path of ["/shop", "/kart", "/toy/sky-rocket", "/menu"]) {

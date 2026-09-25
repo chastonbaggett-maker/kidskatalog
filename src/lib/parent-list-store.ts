@@ -128,10 +128,10 @@ export async function getParentList(
 
 export async function createParentList(
   ownerId: string,
-  input: { name?: string; toyIds: unknown },
+  input: { name?: string; toyIds: unknown; allowEmpty?: boolean },
 ): Promise<SavedParentList> {
   const toyIds = sanitizeToyIds(input.toyIds);
-  if (toyIds.length === 0) {
+  if (toyIds.length === 0 && !input.allowEmpty) {
     throw new Error("Pick at least one toy to save");
   }
 
@@ -183,6 +183,7 @@ export async function updateParentList(
   id: string,
   ownerId: string,
   patch: { name?: string; toyIds?: unknown },
+  options?: { allowEmpty?: boolean },
 ): Promise<SavedParentList | null> {
   const existing = await getParentList(id, ownerId);
   if (!existing) return null;
@@ -195,7 +196,7 @@ export async function updateParentList(
       patch.toyIds !== undefined ? sanitizeToyIds(patch.toyIds) : existing.toyIds,
     updatedAt: new Date().toISOString(),
   };
-  if (next.toyIds.length === 0) {
+  if (next.toyIds.length === 0 && !options?.allowEmpty) {
     throw new Error("Pick at least one toy to save");
   }
 

@@ -13,15 +13,21 @@ export default function PrivacyPage() {
   return (
     <div className="app-shell relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <div className="shelf-page star-field flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ShelfHeader title="Privacy" subtitle="Parent Mode" logoHref="/" backHref="/" />
+        <ShelfHeader
+          title="Privacy"
+          subtitle="For parents"
+          logoHref="/"
+          backHref="/"
+          trailing={null}
+        />
         <div className="page-scroll star-field min-h-0 flex-1 px-4 py-6 scroll-pad-bottom">
           <article className="mx-auto flex w-full max-w-xl flex-col gap-4 text-base text-[var(--ink)]">
             <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold">
               Privacy
             </h1>
             <p>
-              KidsKatalog is a toy catalog. Kid Mode is for browsing. Parent Mode is
-              where grown-ups see Amazon buy links.
+              KidsKatalog is a toy catalog for parents. Kid Mode is a separate site
+              for browsing. This site is where grown-ups see Amazon buy links.
             </p>
             <p>
               Kid Mode does not show prices, buy buttons, or ads. It does not load
@@ -33,8 +39,9 @@ export default function PrivacyPage() {
             </p>
             <AssociatesDisclosure />
             <p>
-              Leaving Kid Mode asks for a birth year on this device. That year is not
-              saved. We keep only a session pass flag.
+              Unpairing a Kid Mode device asks for a birth year on that device. That
+              year is not saved. We keep only a session pass flag. Pairing stores
+              an opaque device credential, not a child&apos;s name or email.
             </p>
             <p>We do not sell personal information.</p>
             <p>

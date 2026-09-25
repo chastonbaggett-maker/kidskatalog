@@ -13,10 +13,12 @@ const ERROR_TEXT = "Enter the year you were born.";
 
 export function ParentBirthYearGate({
   children,
-  returnTo = "/p",
+  returnTo = "/shop",
+  afterUnlock = "redirect",
 }: {
   children?: ReactNode;
   returnTo?: string;
+  afterUnlock?: "redirect" | "children";
 }) {
   const [ready, setReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -35,11 +37,11 @@ export function ParentBirthYearGate({
       return;
     }
     persistParentGateUnlock();
-    persistParentMode();
+    if (afterUnlock === "redirect") persistParentMode();
     setError("");
     setYear("");
     setUnlocked(true);
-    window.location.assign(returnTo);
+    if (afterUnlock === "redirect") window.location.assign(returnTo);
   }
 
   if (!ready || !unlocked) {
@@ -49,10 +51,11 @@ export function ParentBirthYearGate({
         data-testid="parent-birth-year-gate"
       >
         <ShelfHeader
-          title="Parent Mode"
-          subtitle="Grown-ups only"
+          title="Grown-ups only"
+          subtitle="Birth year stays on this screen"
           backHref="/shop"
           logoHref="/shop"
+          trailing={null}
         />
         <div className="page-scroll star-field min-h-0 flex-1 px-4 py-4 scroll-pad-bottom">
           <div className="mx-auto w-full max-w-md">

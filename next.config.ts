@@ -9,8 +9,8 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: false,
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
-  // `/` is Parent or Kid depending on the cookie. Do not precache or
-  // NetworkFirst-cache that document in the service worker.
+  // `/` is the parent catalog or the kids shop, depending on deployment.
+  // Do not precache or NetworkFirst-cache that document in the service worker.
   cacheStartUrl: false,
   dynamicStartUrl: false,
   extendDefaultRuntimeCaching: true,
@@ -63,6 +63,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "localhost",
     "127.0.0.1",
+    "kids.localhost",
     "*.trycloudflare.com",
   ],
   images: {

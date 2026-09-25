@@ -6,11 +6,15 @@ import { StandaloneClass } from "@/components/StandaloneClass";
 import { SPLASH_BOOT_STYLE } from "@/lib/splash-boot";
 import "./globals.css";
 
-const APP_NAME = "KidsKatalog";
-const APP_DEFAULT_TITLE = "KidsKatalog — Browse toys. Build a Kart.";
+const KIDS_BUILD = process.env.SITE_MODE === "kids";
+const APP_NAME = KIDS_BUILD ? "KidsKatalog Kids" : "KidsKatalog";
+const APP_DEFAULT_TITLE = KIDS_BUILD
+  ? "KidsKatalog Kids"
+  : "KidsKatalog — Browse toys. Build a Kart.";
 const APP_TITLE_TEMPLATE = "%s · KidsKatalog";
-const APP_DESCRIPTION =
-  "A kid-friendly virtual toy catalog. Browse, save favorites to a Kart, and send mom or dad a Parent Mode wish list link.";
+const APP_DESCRIPTION = KIDS_BUILD
+  ? "Browse toys and build a Kart."
+  : "A parent catalog of toys with Amazon buy links. As an Amazon Associate I earn from qualifying purchases.";
 
 const display = Fredoka({
   variable: "--font-display",
@@ -34,6 +38,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://kidskatalog.com"),
   referrer: "strict-origin-when-cross-origin",
   applicationName: APP_NAME,
+  robots: KIDS_BUILD ? { index: false, follow: false } : undefined,
   title: {
     default: APP_DEFAULT_TITLE,
     template: APP_TITLE_TEMPLATE,

@@ -39,6 +39,37 @@ export function kidHomeRewrite(pathname: string, mode: string | undefined): bool
   return pathname === "/" && mode === SITE_MODE_KID;
 }
 
+const KIDS_SURFACE_PREFIXES = [
+  "/shop",
+  "/toy",
+  "/kart",
+  "/menu",
+  "/profile",
+  "/enter-kid",
+  "/leave-kid-mode",
+  "/offline",
+  "/pair",
+  "/unpair",
+];
+
+const PARENT_SURFACE_PREFIXES = ["/p", "/privacy", "/claim", "/kid-mode", "/admin"];
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/** Old kid routes that the parent site sends to the kids deployment. */
+export function isKidsSurfacePath(pathname: string): boolean {
+  return KIDS_SURFACE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+/** Parent account, claim, privacy, and admin routes. Printed /p/{id} stays here. */
+export function isParentSurfacePath(pathname: string): boolean {
+  if (pathname === "/api/parent" || pathname.startsWith("/api/parent/")) return true;
+  if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) return true;
+  return PARENT_SURFACE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
 export function parentGateRewrite(
   pathname: string,
   mode: string | undefined,

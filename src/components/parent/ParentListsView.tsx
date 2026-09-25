@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { KidModeSetup } from "@/components/parent/KidModeSetup";
 import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import {
@@ -24,35 +25,39 @@ export function ParentListsView() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/parent/auth/me")
-      .then((res) => res.json())
-      .then((me: { signedIn?: boolean }) => {
+
+    async function load() {
+      try {
+        const meRes = await fetch("/api/parent/auth/me");
+        const me = (await meRes.json()) as { signedIn?: boolean };
         if (cancelled) return;
         setSignedIn(Boolean(me.signedIn));
         if (!me.signedIn) {
           setLists([]);
           return;
         }
-        return fetch("/api/parent/lists");
-      })
-      .then((res) => (res ? res.json() : null))
-      .then((data: { lists?: SavedList[]; error?: string } | null) => {
-        if (cancelled || !data) return;
+        const res = await fetch("/api/parent/lists");
+        const data = (await res.json()) as { lists?: SavedList[]; error?: string };
+        if (cancelled) return;
         if (data.error) {
           setError(data.error);
           setLists([]);
           return;
         }
         setLists(data.lists ?? []);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setError("Could not load lists");
           setLists([]);
         }
-      });
+      }
+    }
+
+    void load();
+    const timer = window.setInterval(() => void load(), 4000);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -73,6 +78,7 @@ export function ParentListsView() {
         trailing={<ParentAuthLinks returnTo="/p/lists" />}
       />
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
+        {signedIn ? <KidModeSetup /> : null}
         {signedIn === false ? (
           <div className="shelf-panel">
             <div className="shelf-panel__surface px-6 py-14 text-center">

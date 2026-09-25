@@ -5,15 +5,17 @@ import { ParentCatalogLanding } from "@/components/parent/ParentCatalogLanding";
 import { parseAsin } from "@/lib/amazon-asin";
 import { buildSpecialLink, getAssociatesTag } from "@/lib/associates";
 import { getCatalogToys } from "@/lib/catalog-store";
-import { getSiteMode } from "@/lib/site-mode-server";
+import { getDeploymentMode } from "@/lib/deployment-server";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  if ((await getSiteMode()) === "kid") {
+  if ((await getDeploymentMode()) === "kids") {
     return {
-      title: { absolute: "KidsKatalog — Browse toys. Build a Kart." },
-      robots: { index: false, follow: true },
+      title: { absolute: "KidsKatalog Kids" },
+      description: "Browse toys and build a Kart.",
+      robots: { index: false, follow: false },
+      applicationName: "KidsKatalog Kids",
     };
   }
   return {
@@ -25,8 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  // Absent cookie is Parent. Only an explicit kk_mode=kid cookie renders Kid Mode.
-  if ((await getSiteMode()) === "kid") {
+  if ((await getDeploymentMode()) === "kids") {
     return (
       <AppShell>
         <ShopPage />

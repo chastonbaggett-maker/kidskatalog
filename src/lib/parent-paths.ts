@@ -108,7 +108,8 @@ export function parseWishlistIds(raw: string | string[] | undefined): string[] {
 export function parentReturnPath(raw: string | string[] | undefined): string {
   const text = Array.isArray(raw) ? raw[0] : raw;
   const path = (text ?? "").trim();
+  if (path.startsWith("//") || path.includes("://") || path.includes("\\")) return "/p";
+  if (path === "/claim" || /^\/claim\/[A-Z2-9]{4,16}$/i.test(path)) return path;
   if (!path.startsWith("/p")) return "/p";
-  if (path.startsWith("//") || path.includes("://")) return "/p";
   return path;
 }

@@ -44,7 +44,7 @@ export function InstallPrompt() {
       <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[1.5rem] bg-white/95 p-3 shadow-[0_12px_40px_-16px_rgba(60,70,120,0.55)] ring-1 ring-black/5 backdrop-blur-md">
         <div className="min-w-0 flex-1">
           <p className="font-[family-name:var(--font-display)] text-base font-bold text-[var(--ink)]">
-            Install KidsKatalog
+            KidsKatalog Kids
           </p>
           <p className="text-sm text-[var(--ink-soft)]">
             Add to your home screen for quick toy browsing.

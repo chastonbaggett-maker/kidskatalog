@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SendToParentForm } from "@/components/SendToParentForm";
+import { GrownupHandoff } from "@/components/kids/GrownupHandoff";
 import { ShelfHeader } from "@/components/ShelfHeader";
 import { ToyPhoto } from "@/components/ToyPhoto";
 import {
@@ -200,11 +200,7 @@ export default function KartPage() {
           </>
         )}
 
-        <SendToParentForm
-          toys={rankedToys}
-          wishlistIds={rankedIds}
-          interest={interest}
-        />
+        <GrownupHandoff />
       </div>
     </div>
   );

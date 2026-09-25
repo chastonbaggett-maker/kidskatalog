@@ -19,7 +19,8 @@ export type StoreKey =
   | "metrics"
   | "drafts"
   | "parent-accounts"
-  | "parent-lists";
+  | "parent-lists"
+  | "device-pairs";
 
 const FILE_NAMES: Record<StoreKey, string> = {
   catalog: "catalog.json",
@@ -28,6 +29,7 @@ const FILE_NAMES: Record<StoreKey, string> = {
   drafts: "drafts.json",
   "parent-accounts": "parent-accounts.json",
   "parent-lists": "parent-lists.json",
+  "device-pairs": "device-pairs.json",
 };
 
 const BLOB_PATHS: Record<StoreKey, string> = {
@@ -37,6 +39,7 @@ const BLOB_PATHS: Record<StoreKey, string> = {
   drafts: "kidskatalog/drafts.json",
   "parent-accounts": "kidskatalog/parent-accounts.json",
   "parent-lists": "kidskatalog/parent-lists.json",
+  "device-pairs": "kidskatalog/device-pairs.json",
 };
 
 function isDevLocalStore(): boolean {

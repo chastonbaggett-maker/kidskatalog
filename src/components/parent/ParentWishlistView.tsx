@@ -141,8 +141,9 @@ export function ParentWishlistView({
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
-        backHref="/shop"
+        backHref="/"
         logoHref="/p"
+        trailing={null}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">

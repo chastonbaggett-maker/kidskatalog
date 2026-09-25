@@ -1,46 +1,65 @@
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { isClerkServerConfigured } from "@/lib/clerk-config";
-import { PARENT_GATE_COOKIE } from "@/lib/parent-birth-year";
+import {
+  externalRedirect,
+  hostnameOnly,
+  kidsOrigin,
+  parentOrigin,
+  resolveDeploymentMode,
+} from "@/lib/deployment";
 import {
   canonicalOriginForHost,
-  hostnameOnly,
+  isKidsSurfacePath,
+  isParentSurfacePath,
   legacyPlaceholderDestination,
-  parentGateRewrite,
 } from "@/lib/request-routing";
-import { SITE_MODE_COOKIE } from "@/lib/site-mode";
 
 const REFERRER_POLICY = "strict-origin-when-cross-origin";
 const HOME_CACHE_CONTROL = "private, no-store, max-age=0, must-revalidate";
 const HOME_VARY =
   "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Cookie";
 
-function withReferrer(response: NextResponse, pathname: string) {
+function deploymentHost(request: NextRequest): string {
+  // On Vercel the platform sets x-forwarded-host. In dev, Host is the name
+  // the browser used (localhost vs kids.localhost). nextUrl can be 0.0.0.0.
+  if (process.env.VERCEL) {
+    return hostnameOnly(
+      request.headers.get("x-forwarded-host") || request.headers.get("host"),
+    );
+  }
+  return hostnameOnly(request.headers.get("host"));
+}
+
+function withReferrer(
+  response: NextResponse,
+  pathname: string,
+  mode: "parent" | "kids",
+) {
   response.headers.set("Referrer-Policy", REFERRER_POLICY);
-  // `/` HTML depends on the Kid Mode cookie. Never share that response across visitors.
+  if (mode === "kids") {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  // `/` is deployment-specific. Never share that document from a public cache.
   if (pathname === "/") {
     response.headers.set("Cache-Control", HOME_CACHE_CONTROL);
     response.headers.set("Vary", HOME_VARY);
-    response.headers.set("X-KidsKatalog-Home", "cookie");
+    response.headers.set("X-KidsKatalog-Home", mode);
   }
   return response;
 }
 
-function publicHost(request: NextRequest): string {
-  return hostnameOnly(
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const forwarded = hostnameOnly(
     request.headers.get("x-forwarded-host") || request.headers.get("host"),
   );
-}
-
-export async function proxy(request: NextRequest, event: NextFetchEvent) {
-  const host = publicHost(request);
-  const canonical = canonicalOriginForHost(host);
+  const canonical = canonicalOriginForHost(forwarded);
   if (canonical) {
     const dest = new URL(
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
       canonical,
     );
-    return withReferrer(NextResponse.redirect(dest, 301), request.nextUrl.pathname);
+    return withReferrer(NextResponse.redirect(dest, 301), request.nextUrl.pathname, "parent");
   }
 
   const placeholder = legacyPlaceholderDestination(
@@ -51,37 +70,57 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     return withReferrer(
       NextResponse.redirect(new URL(placeholder, request.url), 301),
       request.nextUrl.pathname,
+      "parent",
     );
   }
 
-  const mode = request.cookies.get(SITE_MODE_COOKIE)?.value;
-  const gate = request.cookies.get(PARENT_GATE_COOKIE)?.value;
+  const host = deploymentHost(request);
+  const mode = resolveDeploymentMode({ host });
   const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
 
-  // Do not rewrite `/` to the static `/shop` document. That response was
-  // publicly cached without Vary: Cookie and could be served to a fresh visit.
-  if (parentGateRewrite(pathname, mode, gate)) {
-    const nextPath = `${pathname}${request.nextUrl.search}`;
-    const url = request.nextUrl.clone();
-    url.pathname = "/leave-kid-mode";
-    url.search = "";
-    url.searchParams.set("next", nextPath);
-    return withReferrer(NextResponse.rewrite(url), pathname);
+  // The parent deployment never renders Kid Mode, including when kk_mode is set.
+  if (mode === "parent" && isKidsSurfacePath(pathname)) {
+    const dest =
+      externalRedirect(host, kidsOrigin(), pathname, search) ||
+      new URL("/kid-mode", request.url);
+    return withReferrer(NextResponse.redirect(dest, 302), pathname, mode);
+  }
+
+  if (mode === "parent" && (pathname === "/api/kids" || pathname.startsWith("/api/kids/"))) {
+    return withReferrer(
+      NextResponse.json({ error: "Not found" }, { status: 404 }),
+      pathname,
+      mode,
+    );
+  }
+
+  if (mode === "kids" && isParentSurfacePath(pathname)) {
+    const dest = externalRedirect(host, parentOrigin(), pathname, search);
+    if (dest) {
+      return withReferrer(NextResponse.redirect(dest, 302), pathname, mode);
+    }
+    return withReferrer(
+      NextResponse.json({ error: "Not found" }, { status: 404 }),
+      pathname,
+      mode,
+    );
   }
 
   const parentClerk =
-    pathname === "/p" ||
-    pathname.startsWith("/p/") ||
-    pathname.startsWith("/api/parent/");
+    mode === "parent" &&
+    (pathname === "/p" ||
+      pathname.startsWith("/p/") ||
+      pathname.startsWith("/api/parent/"));
 
   if (parentClerk && isClerkServerConfigured()) {
     const { clerkMiddleware } = await import("@clerk/nextjs/server");
     const result = await clerkMiddleware()(request, event);
-    if (result instanceof NextResponse) return withReferrer(result, pathname);
+    if (result instanceof NextResponse) return withReferrer(result, pathname, mode);
     return result;
   }
 
-  return withReferrer(NextResponse.next(), pathname);
+  return withReferrer(NextResponse.next(), pathname, mode);
 }
 
 export const config = {

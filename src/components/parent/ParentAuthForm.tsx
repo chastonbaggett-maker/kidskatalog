@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { parentReturnPath } from "@/lib/parent-paths";
 
 type Mode = "signin" | "signup";
 
@@ -36,7 +37,7 @@ export function ParentAuthForm({
       if (!res.ok) {
         throw new Error(data.error || "Could not continue");
       }
-      window.location.assign(returnTo.startsWith("/p") ? returnTo : "/p");
+      window.location.assign(parentReturnPath(returnTo));
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Could not continue");

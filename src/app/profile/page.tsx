@@ -18,10 +18,15 @@ export default function ProfilePage() {
                 How it works
               </h2>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                Tap + to save toys. Open Kart. Send the list to a grown-up.
+                Tap + to save toys. Open Kart. Show a grown-up the code.
               </p>
             </div>
           </div>
+          <p className="text-center">
+            <a href="/leave-kid-mode" className="text-sm font-bold text-[var(--ink-soft)]">
+              Unpair this device
+            </a>
+          </p>
         </div>
       </div>
     </AppShell>

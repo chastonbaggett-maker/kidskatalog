@@ -1,7 +1,7 @@
 /**
- * Device mode cookie. Absent or "parent" is Parent Mode.
- * "kid" keeps `/` and parent routes in Kid Mode until the birth-year gate.
- * The year is never stored. The gate flag stays a session cookie.
+ * Legacy device cookie. The parent site ignores it.
+ * Kid Mode is a separate deployment. Unpair still uses the birth-year
+ * session flag and never stores the year.
  */
 
 export const SITE_MODE_COOKIE = "kk_mode";

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { getAffiliateTag, hasKidCommerceLeak, storedParentAffiliateUrl } from "../src/lib/affiliate";
+import { hostSelectsKids, resolveDeploymentMode } from "../src/lib/deployment";
 import { resolveParentBuy } from "../src/lib/associates";
 import { kidNameTileSrc, toKidToy, toParentToy } from "../src/lib/kid-surface";
 import type { Toy } from "../src/types/toy";
@@ -7,6 +8,8 @@ import {
   canonicalOriginForHost,
   kidHomeRewrite,
   legacyPlaceholderDestination,
+  isKidsSurfacePath,
+  isParentSurfacePath,
   parentGateRewrite,
   safeParentReturnPath,
 } from "../src/lib/request-routing";
@@ -65,6 +68,26 @@ test("kid mode rewrite rules", () => {
   expect(parentGateRewrite("/api/parent/buy-urls", "kid", undefined)).toBeFalsy();
   expect(safeParentReturnPath("/p/sky-rocket?ids=a")).toBe("/p/sky-rocket?ids=a");
   expect(safeParentReturnPath("https://evil.example")).toBe("/");
+});
+
+test("deployment mode keeps kidskatalog.com on the parent site", () => {
+  expect(hostSelectsKids("kidskatalog.com")).toBeFalsy();
+  expect(hostSelectsKids("www.kidskatalog.com")).toBeFalsy();
+  expect(hostSelectsKids("kidskatalog-abc.vercel.app")).toBeFalsy();
+  expect(hostSelectsKids("kidskatalog.app")).toBeTruthy();
+  expect(hostSelectsKids("www.kidskatalog.app")).toBeTruthy();
+  expect(hostSelectsKids("kids.localhost")).toBeTruthy();
+  expect(hostSelectsKids("kids-preview.vercel.app")).toBeTruthy();
+  expect(resolveDeploymentMode({ siteMode: "parent", host: "kidskatalog.app" })).toBe("parent");
+  expect(resolveDeploymentMode({ siteMode: "kids", host: "kidskatalog.com" })).toBe("kids");
+  expect(resolveDeploymentMode({ siteMode: "", host: "localhost" })).toBe("parent");
+  expect(resolveDeploymentMode({ siteMode: "", host: "kids.localhost:3456" })).toBe("kids");
+  expect(isKidsSurfacePath("/shop")).toBeTruthy();
+  expect(isKidsSurfacePath("/toy/sky-rocket")).toBeTruthy();
+  expect(isKidsSurfacePath("/p/sky-rocket")).toBeFalsy();
+  expect(isParentSurfacePath("/p/sky-rocket")).toBeTruthy();
+  expect(isParentSurfacePath("/claim/ABCD2345")).toBeTruthy();
+  expect(isParentSurfacePath("/shop")).toBeFalsy();
 });
 
 test("hasKidCommerceLeak flags prices, trackers, and Amazon media hosts", () => {

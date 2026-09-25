@@ -114,8 +114,11 @@ test("parent home lists every live toy with a tagged Buy link; Kid Mode cookie s
   expect(links.length).toBe(ids.length);
   expect(html).toContain(DISCLOSURE);
   expect(html.indexOf('data-testid="associates-disclosure"')).toBeLessThan(
-    html.indexOf('data-testid="kid-mode-cta"'),
+    html.indexOf('data-testid="parent-buy-cta"'),
   );
+  expect(html).not.toContain('data-testid="kid-mode-cta"');
+  expect(html).not.toContain('data-testid="kid-shop"');
+  expect(html).toContain('data-testid="kid-mode-link"');
   expect(html).toContain('href="/privacy"');
   const privacy = await request.get("/privacy");
   expect(privacy.ok()).toBeTruthy();
@@ -137,15 +140,17 @@ test("parent home lists every live toy with a tagged Buy link; Kid Mode cookie s
     expect(cache).not.toMatch(/\bpublic\b/i);
     expect(cache).not.toMatch(/s-maxage/i);
     expect(cache).toMatch(/no-store|no-cache/i);
-    expect(headers["x-kidskatalog-home"] || "").toBe("cookie");
+    expect(headers["x-kidskatalog-home"] || "").toBe("parent");
   }
   homeCache(home);
 
   const kidHome = await request.get("/", { headers: { cookie: "kk_mode=kid" } });
   expect(kidHome.ok()).toBeTruthy();
   const kidHtml = await kidHome.text();
-  expect(kidHtml).not.toMatch(KID_COMMERCE_HTML);
-  expect(kidHtml).not.toContain("Buy on Amazon");
+  expect(kidHtml).toContain("Buy on Amazon");
+  expect(kidHtml).toContain(DISCLOSURE);
+  expect(kidHtml).not.toContain('data-testid="kid-shop"');
+  expect(kidHtml).not.toContain('data-testid="kid-mode-cta"');
   homeCache(kidHome);
 
   const fresh = await request.get("/");
@@ -154,7 +159,16 @@ test("parent home lists every live toy with a tagged Buy link; Kid Mode cookie s
   expect(freshHtml).toContain(">Kid Mode<");
   expect(freshHtml).toContain("Buy on Amazon");
   expect(freshHtml).not.toContain("data:image/svg+xml");
+  expect(freshHtml).not.toContain('data-testid="kid-shop"');
   homeCache(fresh);
+
+  const kidsHome = await request.get("http://kids.localhost:3456/");
+  expect(kidsHome.ok()).toBeTruthy();
+  const kidsHtml = await kidsHome.text();
+  expect(kidsHtml).not.toMatch(KID_COMMERCE_HTML);
+  expect(kidsHtml).toContain('data-testid="kid-shop"');
+  expect(kidsHome.headers()["x-robots-tag"] || "").toMatch(/noindex/i);
+  expect(kidsHome.headers()["x-kidskatalog-home"] || "").toBe("kids");
 
   const kidShop = await request.get("/shop", { headers: { cookie: "kk_mode=kid" } });
   expect(kidShop.ok()).toBeTruthy();
@@ -261,18 +275,15 @@ test("parent Buy is a tagged Amazon anchor and old placeholder URLs redirect", a
   expect(missing.headers()["location"] || "").toMatch(/\/$/);
 });
 
-test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
+test("kart handoff is a grown-up claim code with no commerce", async ({
   page,
   request,
-  context,
 }) => {
   test.setTimeout(90_000);
   const ids = await allCatalogIds(request);
   const sample = pickSample(ids).slice(0, Math.min(3, ids.length));
   expect(sample.length).toBeGreaterThan(1);
-  const expectedPath = `/p?ids=${sample.map((id) => encodeURIComponent(id)).join(",")}`;
 
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.addInitScript((seedIds: string[]) => {
     localStorage.setItem(
       "kidskatalog-kart",
@@ -291,39 +302,16 @@ test("kart builds a shareable multi-toy wish list URL for Parent Mode", async ({
   await expect(page.getByLabel(/Parent email/i)).toHaveCount(0);
   await expect(page.getByTestId("parent-signup-link")).toHaveCount(0);
 
-  const shareUrl = page.getByTestId("wishlist-share-url");
-  await expect(shareUrl).toBeVisible();
-  await expect(shareUrl).toHaveValue(new RegExp(`${expectedPath.replace("?", "\\?")}$`));
-
-  const openParent = page.getByTestId("open-parent-wishlist");
-  await expect(openParent).toHaveAttribute("href", expectedPath);
-
-  await page.getByTestId("copy-wishlist-link").click();
-  await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
-  try {
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toMatch(new RegExp(`${expectedPath.replace("?", "\\?")}$`));
-  } catch {
-    // Clipboard read can be blocked; the generated URL field is the source of truth.
-  }
-
-  await expect(page.getByTestId("for-parents-entry")).toHaveAttribute("href", "/p/deals");
-
-  await openParent.click();
-  await page.waitForURL((url) => url.pathname === "/p" && url.searchParams.get("ids") === sample.join(","));
-  await dismissSplash(page);
-
-  await expect(page.getByTestId("parent-birth-year-gate")).toHaveCount(0);
-  const buyLinks = page.getByRole("link", { name: "Buy on Amazon" });
-  await expect(buyLinks).toHaveCount(sample.length);
-  await expect(buyLinks.first()).toHaveAttribute("href", TAGGED_BUY);
-  await expect(buyLinks.first()).toHaveAttribute("rel", "sponsored noopener");
-  expect(await page.content()).toContain(DISCLOSURE);
-  expect(await page.content()).not.toMatch(/buy-placeholder|not approved/i);
-  for (const id of sample) {
-    await expect(page.locator(`a[href="/p/${id}"]`).first()).toBeVisible();
-  }
-  await expect(page.getByText(/Amazon Services LLC Associates Program/i).first()).toBeVisible();
+  await page.getByTestId("show-grownup").click();
+  const handoff = page.getByTestId("handoff-link");
+  await expect(handoff).toBeVisible();
+  const handoffUrl = await handoff.getAttribute("href");
+  expect(handoffUrl || "").toMatch(/\/claim\/[A-Z2-9]+$/);
+  expect(handoffUrl || "").not.toMatch(/amazon\.com|kidskatalog\.app/i);
+  expect(await page.getByTestId("handoff-code").textContent()).toMatch(/^[A-Z2-9]{8}$/);
+  await expect(page.getByTestId("wishlist-share-url")).toHaveCount(0);
+  await expect(page.getByTestId("open-parent-wishlist")).toHaveCount(0);
+  await expect(page.locator("a[href*='amazon.com']")).toHaveCount(0);
 
   await page.goto("/shop", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);

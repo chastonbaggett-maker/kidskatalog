@@ -9,6 +9,11 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: false,
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
+  // `/` is the parent catalog or the kids shop, depending on deployment.
+  // Do not precache or NetworkFirst-cache that document in the service worker.
+  cacheStartUrl: false,
+  dynamicStartUrl: false,
+  extendDefaultRuntimeCaching: true,
   fallbacks: {
     document: "/offline",
   },
@@ -16,17 +21,49 @@ const withPWA = withPWAInit({
     disableDevLogs: true,
     skipWaiting: true,
     clientsClaim: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url }: { url: URL }) => url.pathname === "/",
+        handler: "NetworkOnly",
+      },
+    ],
   },
 });
+
+const REFERRER_POLICY = "strict-origin-when-cross-origin";
 
 const nextConfig: NextConfig = {
   // next-pwa uses webpack; keep an empty turbopack config for Next 16
   turbopack: {},
+  async headers() {
+    const referrer = [
+      { key: "Referrer-Policy", value: REFERRER_POLICY },
+    ];
+    return [
+      {
+        source: "/",
+        headers: [
+          ...referrer,
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0, must-revalidate",
+          },
+          {
+            key: "Vary",
+            value:
+              "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Cookie",
+          },
+        ],
+      },
+      { source: "/:path*", headers: referrer },
+    ];
+  },
   serverExternalPackages: ["@libsql/client", "libsql"],
   // Allow Cursor browser / VM chrome / tunnel hosts in dev HMR
   allowedDevOrigins: [
     "localhost",
     "127.0.0.1",
+    "kids.localhost",
     "*.trycloudflare.com",
   ],
   images: {

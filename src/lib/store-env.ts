@@ -39,3 +39,11 @@ export function missingProductionStoreMessage(): string {
     "(recommended) or BLOB_READ_WRITE_TOKEN in Vercel environment variables."
   );
 }
+
+/** Thrown when a shared document cannot be read or written. */
+export class StoreUnavailableError extends Error {
+  constructor() {
+    super("Service not ready");
+    this.name = "StoreUnavailableError";
+  }
+}

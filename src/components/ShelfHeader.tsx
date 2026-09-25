@@ -125,7 +125,7 @@ export function ShelfHeader({
         ) : null}
 
         <Logo variant="icon" light glow href={logoHref} size={44} />
-        {trailing ?? <ShelfCrazyTrailing />}
+        {trailing === undefined ? <ShelfCrazyTrailing /> : trailing}
       </div>
 
       {title ? (

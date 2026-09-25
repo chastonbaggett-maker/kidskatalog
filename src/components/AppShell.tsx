@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Suspense } from "react";
+import { DeviceKartSync } from "@/components/kids/DeviceKartSync";
 import { BottomNav } from "./BottomNav";
 import { ClickMelody } from "./ClickMelody";
 import { InstallPrompt } from "./InstallPrompt";
@@ -42,6 +43,7 @@ export function AppShell({
       </Suspense>
       <KartNavEffectGuard />
       <MetricsPing />
+      <DeviceKartSync />
       <div className="star-field flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       {!hideNav && <BottomNav />}
       {/* Stable host for fly-ball + confetti (keeps effects off document.body) */}

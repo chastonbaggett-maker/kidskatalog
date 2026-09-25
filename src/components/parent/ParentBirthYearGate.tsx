@@ -7,10 +7,19 @@ import {
   persistParentGateUnlock,
   readParentGateUnlocked,
 } from "@/lib/parent-birth-year";
+import { persistParentMode } from "@/lib/site-mode";
 
-const ERROR_TEXT = "Enter a birth year between 1901 and 2008.";
+const ERROR_TEXT = "Enter the year you were born.";
 
-export function ParentBirthYearGate({ children }: { children: ReactNode }) {
+export function ParentBirthYearGate({
+  children,
+  returnTo = "/shop",
+  afterUnlock = "redirect",
+}: {
+  children?: ReactNode;
+  returnTo?: string;
+  afterUnlock?: "redirect" | "children";
+}) {
   const [ready, setReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [year, setYear] = useState("");
@@ -28,9 +37,11 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
       return;
     }
     persistParentGateUnlock();
+    if (afterUnlock === "redirect") persistParentMode();
     setError("");
     setYear("");
     setUnlocked(true);
+    if (afterUnlock === "redirect") window.location.assign(returnTo);
   }
 
   if (!ready || !unlocked) {
@@ -40,10 +51,11 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
         data-testid="parent-birth-year-gate"
       >
         <ShelfHeader
-          title="Parent Mode"
-          subtitle="Grown-ups only"
+          title="Grown-ups only"
+          subtitle="Birth year stays on this screen"
           backHref="/shop"
           logoHref="/shop"
+          trailing={null}
         />
         <div className="page-scroll star-field min-h-0 flex-1 px-4 py-4 scroll-pad-bottom">
           <div className="mx-auto w-full max-w-md">
@@ -69,7 +81,8 @@ export function ParentBirthYearGate({ children }: { children: ReactNode }) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoComplete="bday-year"
+                    autoComplete="off"
+                    name="parent-gate"
                     maxLength={4}
                     value={year}
                     onChange={(event) => {

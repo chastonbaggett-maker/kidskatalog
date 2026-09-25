@@ -37,6 +37,7 @@ yarn-error.log*
 # parent account/list JSON written in local dev (Turso in production)
 /data/parent-accounts.json
 /data/parent-lists.json
+/data/device-pairs.json
 
 # vercel
 .vercel

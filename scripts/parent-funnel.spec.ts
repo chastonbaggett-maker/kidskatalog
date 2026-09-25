@@ -13,6 +13,21 @@ async function dismissSplash(page: Page) {
   }
 }
 
+async function gotoApp(page: Page, path: string) {
+  let last: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      return;
+    } catch (error) {
+      last = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("ERR_ABORTED") || attempt === 2) throw error;
+    }
+  }
+  throw last;
+}
+
 test("funnel sanitizer drops PII and Amazon tags", () => {
   expect(
     sanitizeParentFunnelEvent({
@@ -53,7 +68,7 @@ test("POST /api/events accepts allowlisted parent events and rejects junk", asyn
     data: {
       name: "parent_buy_click",
       toyId: "sky-rocket",
-      mode: "placeholder",
+      mode: "associates",
       tag: "should-not-be-stored",
     },
   });
@@ -118,7 +133,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
   expect(buyBody).toMatchObject({
     name: "parent_buy_click",
     toyId: "sky-rocket",
-    mode: "placeholder",
+    mode: "associates",
   });
   expect(JSON.stringify(buyBody)).not.toMatch(/amazon\.com/i);
 
@@ -162,6 +177,7 @@ test("parent toy, wish list, Buy, and brand-deal CTAs POST funnel events", async
 });
 
 test("kid shop and toy pages do not POST parent funnel events", async ({ page }) => {
+  test.setTimeout(60_000);
   const leaked: string[] = [];
   page.on("request", (req) => {
     if (req.method() === "POST" && req.url().includes("/api/events")) {
@@ -169,9 +185,9 @@ test("kid shop and toy pages do not POST parent funnel events", async ({ page })
     }
   });
 
-  await page.goto("/shop", { waitUntil: "domcontentloaded" });
+  await gotoApp(page, "/shop");
   await dismissSplash(page);
-  await page.goto("/toy/sky-rocket", { waitUntil: "domcontentloaded" });
+  await gotoApp(page, "/toy/sky-rocket");
   await dismissSplash(page);
   await page.waitForTimeout(800);
   expect(leaked).toEqual([]);

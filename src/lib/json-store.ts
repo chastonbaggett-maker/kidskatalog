@@ -4,6 +4,8 @@ import path from "path";
 import {
   blobConfigured,
   missingProductionStoreMessage,
+  productionStoreConfigured,
+  StoreUnavailableError,
   tursoConfigured,
 } from "@/lib/store-env";
 
@@ -19,7 +21,8 @@ export type StoreKey =
   | "metrics"
   | "drafts"
   | "parent-accounts"
-  | "parent-lists";
+  | "parent-lists"
+  | "device-pairs";
 
 const FILE_NAMES: Record<StoreKey, string> = {
   catalog: "catalog.json",
@@ -28,6 +31,7 @@ const FILE_NAMES: Record<StoreKey, string> = {
   drafts: "drafts.json",
   "parent-accounts": "parent-accounts.json",
   "parent-lists": "parent-lists.json",
+  "device-pairs": "device-pairs.json",
 };
 
 const BLOB_PATHS: Record<StoreKey, string> = {
@@ -37,6 +41,7 @@ const BLOB_PATHS: Record<StoreKey, string> = {
   drafts: "kidskatalog/drafts.json",
   "parent-accounts": "kidskatalog/parent-accounts.json",
   "parent-lists": "kidskatalog/parent-lists.json",
+  "device-pairs": "kidskatalog/device-pairs.json",
 };
 
 function isDevLocalStore(): boolean {
@@ -144,7 +149,16 @@ async function seedBlobFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
   return seed;
 }
 
-export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
+export async function readStore<T>(
+  key: StoreKey,
+  fallback: T,
+  options?: { required?: boolean },
+): Promise<T> {
+  const required = options?.required === true;
+  if (required && !isDevLocalStore() && !productionStoreConfigured()) {
+    throw new StoreUnavailableError();
+  }
+
   if (tursoConfigured()) {
     try {
       const stored = await readTurso<T>(key);
@@ -152,6 +166,7 @@ export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
       return seedTursoFromLocal(key, fallback);
     } catch (error) {
       console.error(`Turso read failed for ${key}`, error);
+      if (required && !isDevLocalStore()) throw new StoreUnavailableError();
     }
   }
 

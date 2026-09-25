@@ -547,7 +547,7 @@ export function AdminToyForm({
               rows={8}
               disabled={bulkBusy}
               placeholder={
-                "https://www.amazon.com/dp/B0...?tag=kidskatalog-20\nhttps://amzn.to/...\n(or bare ASINs, one per line)"
+                "https://www.amazon.com/dp/B0...\nhttps://amzn.to/...\n(or bare ASINs, one per line)"
               }
               className="rounded-2xl bg-[var(--lavender)] px-4 py-3 text-sm outline-none ring-2 ring-transparent focus:ring-[var(--purple)] disabled:opacity-60"
             />

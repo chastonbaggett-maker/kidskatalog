@@ -60,11 +60,11 @@ Same payload works as a single object, an array, or `{ "proposals": [ ... ] }`. 
 | `age` | `"8-12"`, `"5+"`, `8`, or `{ "min": 4, "max": 8 }` |
 | `category` | `dinos` `plush` `cars` `blocks` `outside` `games` `stem` `pretend` (aliases like `dinosaur` work) |
 | `asin` **or** `amazon_url` | Required. Bare ASIN or Amazon `/dp/` URL |
-| `affiliate_url` | Optional proposed affiliate link; stored Parent Buy URL always uses tag `kidskatalog-20` |
+| `affiliate_url` | Optional. Stored Parent Buy URL is a tag-free `/dp/{ASIN}` link. The public tag is applied at render time. |
 | `notes` | Search notes for admins; never shown in Kid Mode |
 | `source` / `source_ref` | Ingest provenance; never shown in Kid Mode |
 
-Stored `affiliateUrl` always uses Associates tag **`kidskatalog-20`** for the later Parent Buy flip. Public Parent Buy still goes through `resolveParentBuy()` and **does not emit `tag=` until `AMAZON_ASSOCIATES_LIVE` is on.**
+Stored `affiliateUrl` is a tag-free Amazon `/dp/{ASIN}` URL. Public Parent Buy goes through `resolveParentBuy()`, which rebuilds `https://www.amazon.com/dp/{ASIN}?tag=` from `AMAZON_ASSOCIATES_TAG` at render time.
 
 The admin **Ingest proposal** form on `/admin/toys` posts to the same path.
 
@@ -120,10 +120,10 @@ Amazon generate / bulk-add still land in this queue as **pending**. They do not 
 
 ## Counsel publish locks (baked in)
 
-1. Affiliate disclosure is visible next to Buy on every parent `/p/{id}` (placeholder **and** live tag). Test id: `associates-disclosure` inside `parent-buy-cluster`.
-2. `tag=kidskatalog-20` appears on Parent Buy hrefs **only** when `AMAZON_ASSOCIATES_LIVE` is on. Until then Buy stays `/p/buy-placeholder`.
+1. Affiliate disclosure is visible next to Buy on every parent `/p/{id}`. Test id: `associates-disclosure` inside `parent-buy-cluster`.
+2. Parent Buy hrefs use `AMAZON_ASSOCIATES_TAG` only. There is no placeholder Buy page.
 3. Kid Mode (`/shop`, `/toy/{id}`, `/kart`, `/watch`, `/menu`, `GET /api/catalog`) never gets `tag=`, Amazon Buy, or `amazon.com/dp` Buy UI.
 4. Brand deal is a separate tap from Amazon Buy (existing `BrandDealCta`).
 5. Submit Approval runs `assertLiveToyPublishable()` before insert, so the first published batch stays kid-HTML clean for Patch re-scan.
 
-Do not set `AMAZON_ASSOCIATES_LIVE` or `AMAZON_ASSOCIATES_TAG` from this work. Flip runbook: `docs/associates-flip.md`.
+Submit Approval stays human-only. Buy URL rules: `docs/associates-flip.md`.

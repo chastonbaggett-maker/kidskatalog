@@ -37,7 +37,6 @@ export default async function ParentToyPage({ params }: Props) {
       categoryLabel={cat?.label ?? "Toy"}
       gallery={gallery}
       buyUrl={buy.href}
-      buyPlaceholder={buy.mode === "placeholder"}
       brandDeal={resolveBrandDeal(toy)}
     />
   );

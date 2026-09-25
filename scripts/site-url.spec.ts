@@ -16,31 +16,35 @@ async function dismissSplash(page: Page) {
   }
 }
 
-test("canonicalizeSiteOrigin never ships the dead kidskatalog.app host", () => {
-  expect(DEFAULT_SITE_ORIGIN).toBe("https://kidskatalog.vercel.app");
+test("canonicalizeSiteOrigin uses kidskatalog.com and leaves preview hosts", () => {
+  expect(DEFAULT_SITE_ORIGIN).toBe("https://kidskatalog.com");
   expect(isUnconfiguredCustomHost("kidskatalog.app")).toBeTruthy();
   expect(isUnconfiguredCustomHost("https://www.kidskatalog.app/p")).toBeTruthy();
   expect(isUnconfiguredCustomHost("https://kidskatalog.vercel.app")).toBeFalsy();
   expect(canonicalizeSiteOrigin("https://kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
   expect(canonicalizeSiteOrigin("kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
   expect(canonicalizeSiteOrigin("https://www.kidskatalog.app")).toBe(DEFAULT_SITE_ORIGIN);
+  expect(canonicalizeSiteOrigin("https://www.kidskatalog.com")).toBe(
+    "https://kidskatalog.com",
+  );
   expect(canonicalizeSiteOrigin("https://kidskatalog.vercel.app")).toBe(
-    "https://kidskatalog.vercel.app",
+    "https://kidskatalog.com",
   );
   expect(canonicalizeSiteOrigin("https://kidskatalog.vercel.app/")).toBe(
-    "https://kidskatalog.vercel.app",
+    "https://kidskatalog.com",
   );
   expect(canonicalizeSiteOrigin("http://localhost:3456")).toBe("http://localhost:3456");
   expect(canonicalizeSiteOrigin("https://preview.vercel.app")).toBe(
     "https://preview.vercel.app",
   );
+  expect(
+    canonicalizeSiteOrigin("https://kidskatalog-git-cursor-parent.vercel.app"),
+  ).toBe("https://kidskatalog-git-cursor-parent.vercel.app");
 });
 
-test("Kart wish-list share URL uses a live host, not kidskatalog.app", async ({
+test("Kart handoff points at the parent claim page, not kidskatalog.app", async ({
   page,
-  context,
 }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.addInitScript(() => {
     localStorage.setItem(
       "kidskatalog-kart",
@@ -49,10 +53,12 @@ test("Kart wish-list share URL uses a live host, not kidskatalog.app", async ({
   });
   await page.goto("/kart", { waitUntil: "domcontentloaded" });
   await dismissSplash(page);
-  const shareUrl = page.getByTestId("wishlist-share-url");
-  await expect(shareUrl).toBeVisible();
-  const value = await shareUrl.inputValue();
-  expect(value).toContain("/p?ids=sky-rocket");
+  await page.getByTestId("show-grownup").click();
+  const handoff = page.getByTestId("handoff-link");
+  await expect(handoff).toBeVisible();
+  const value = (await handoff.getAttribute("href")) || "";
+  expect(value).toContain("/claim/");
   expect(value).not.toContain("://kidskatalog.app");
   expect(value).not.toContain("://www.kidskatalog.app");
+  expect(value).not.toMatch(/amazon\.com/i);
 });

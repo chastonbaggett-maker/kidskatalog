@@ -1,16 +1,10 @@
-import { getAffiliateTag } from "@/lib/affiliate";
+export { buildAffiliateUrl } from "@/lib/affiliate";
 export {
   cleanAmazonToken,
   isShortAmazonLink,
   parseAsin,
   parseBulkAmazonInputs,
 } from "@/lib/amazon-asin";
-
-const AFFILIATE_TAG = getAffiliateTag();
-
-export function buildAffiliateUrl(asin: string): string {
-  return `https://www.amazon.com/dp/${asin}?tag=${AFFILIATE_TAG}`;
-}
 
 export async function downloadToyImage(imageUrl: string, slug: string): Promise<string> {
   const res = await fetch(imageUrl, { cache: "no-store" });

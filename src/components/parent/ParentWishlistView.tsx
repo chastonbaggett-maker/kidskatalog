@@ -11,14 +11,13 @@ import { ParentAuthLinks } from "@/components/parent/ParentAuthLinks";
 import { ParentBuyButton } from "@/components/parent/ParentBuyButton";
 import { ParentFunnelPing } from "@/components/parent/ParentFunnelPing";
 import { ParentSaveList } from "@/components/parent/ParentSaveList";
-import { parentBuyPlaceholderPath, parentToyPath } from "@/lib/parent-paths";
+import { parentToyPath } from "@/lib/parent-paths";
 import { useParentWishlistStore } from "@/lib/parent-wishlist-store";
 import type { Toy } from "@/types/toy";
 
 type Props = {
   initialToys: Toy[];
   buyUrls: Record<string, string>;
-  buyPlaceholder?: boolean;
   savedListName?: string;
   returnTo?: string;
   /** Play scores from the kid Kart. Higher ranks first. */
@@ -28,7 +27,6 @@ type Props = {
 export function ParentWishlistView({
   initialToys,
   buyUrls,
-  buyPlaceholder = true,
   savedListName,
   returnTo = "/p",
   interest,
@@ -143,8 +141,9 @@ export function ParentWishlistView({
               ? `${savedListName} · ${toys.length} toy${toys.length === 1 ? "" : "s"}`
               : `${toys.length} toy${toys.length === 1 ? "" : "s"}`
         }
-        backHref="/shop"
+        backHref="/"
         logoHref="/p"
+        trailing={null}
       />
 
       <div className="page-scroll star-field min-h-0 flex-1 space-y-4 px-4 py-4 scroll-pad-bottom">
@@ -173,10 +172,7 @@ export function ParentWishlistView({
         ) : (
           <ul className="flex flex-col gap-3">
             {toys.map((toy) => {
-              const buyUrl =
-                resolvedBuyUrls[toy.id] ||
-                buyUrls[toy.id] ||
-                parentBuyPlaceholderPath(toy.id);
+              const buyUrl = resolvedBuyUrls[toy.id] || buyUrls[toy.id] || "";
               const popping = poppingIds.has(toy.id);
               return (
                 <li
@@ -200,12 +196,14 @@ export function ParentWishlistView({
                         />
                       </Link>
                       <div className="flex w-[9.5rem] shrink-0 flex-col gap-2">
-                        <ParentBuyButton
-                          href={buyUrl}
-                          toyId={toy.id}
-                          mode={buyPlaceholder ? "placeholder" : "associates"}
-                          className="w-full flex-none px-3"
-                        />
+                        {buyUrl ? (
+                          <ParentBuyButton
+                            href={buyUrl}
+                            toyId={toy.id}
+                            mode="associates"
+                            className="w-full flex-none px-3"
+                          />
+                        ) : null}
                         <HoldToRemoveButton
                           label="Remove"
                           ariaLabel={`Remove ${toy.name}`}
@@ -262,7 +260,7 @@ export function ParentWishlistView({
 
         <div className="shelf-panel shelf-panel--soft">
           <div className="shelf-panel__surface p-5">
-            <AssociatesDisclosure placeholder={buyPlaceholder} />
+            <AssociatesDisclosure />
           </div>
         </div>
       </div>

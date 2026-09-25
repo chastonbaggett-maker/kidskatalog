@@ -49,5 +49,5 @@ export function persistParentGateUnlock(): void {
   } catch {
     // Cookie still covers this browser session.
   }
-  document.cookie = `${PARENT_GATE_COOKIE}=${PARENT_GATE_UNLOCKED_FLAG}; path=/p; SameSite=Lax`;
+  document.cookie = `${PARENT_GATE_COOKIE}=${PARENT_GATE_UNLOCKED_FLAG}; path=/; SameSite=Lax`;
 }

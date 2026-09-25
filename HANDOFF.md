@@ -32,8 +32,8 @@ Then in Vercel: promote / redeploy commit `27bdd5cbff949b84dd3d87812eb61657e49ad
 ## Money path (after this handoff ships)
 
 - Kids: shop / toy / kart / watch — **no** Amazon `tag=` or product buy URLs.
-- Parents: `/p/{id}` and `/p?ids=…` — Buy opens a **placeholder** confirmation (`/p/buy-placeholder?toy=ID#buy-placeholder`) until Associates is approved.
-- Flip later (no redesign): set `AMAZON_ASSOCIATES_LIVE=true` and `AMAZON_ASSOCIATES_TAG`, plus per-toy `affiliateUrl`. `resolveParentBuy()` is the only swap. Runbook: `docs/associates-flip.md`. Do not set those env vars until Associates is approved.
+- Parents: `/` and `/p/{id}` — Buy is a server-rendered `https://www.amazon.com/dp/{ASIN}?tag=` link. The tag is `AMAZON_ASSOCIATES_TAG` only (no hard-coded fallback). Runbook: `docs/associates-flip.md`.
+- Kid Mode (`kk_mode=kid`) rewrites `/` to the shop and gates `/p` with the birth-year check. Entering Parent Mode needs no gate.
 - Print/QRs/share point at Parent Mode pages, not Amazon. Share origin is `NEXT_PUBLIC_SITE_URL` or `https://kidskatalog.vercel.app` — never the unconfigured `kidskatalog.app` host. Kart share is the `/p?ids=` link only (copy + Open Parent Mode). **No PDF / email-PDF.**
 - Parent funnel (views / Buy / wish list / brand-deal clicks): `POST /api/events`, how to read it in `docs/parent-funnel.md`.
 - Kart **Send to Mom or Dad** builds a shareable `/p?ids=id1,id2` wish list (copy + Open Parent Mode). Small **For parents** entry → `/p/deals`. Not kid-primary.

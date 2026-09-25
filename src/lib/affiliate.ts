@@ -1,39 +1,79 @@
 /**
  * Amazon Associates helpers. Import from server / admin / parent code only.
  * Kid-facing catalog payloads must go through `toKidToy` so `tag=` never ships.
+ *
+ * The public tag comes only from AMAZON_ASSOCIATES_TAG. There is no hard-coded
+ * fallback. Stored dp URLs may still exist; render paths rebuild from ASIN + tag.
  */
 
-/** Stored on catalog/drafts for the later Associates flip. Never emitted on kid surfaces. */
-export const FALLBACK_AFFILIATE_TAG = "kidskatalog-20";
+const PRICE_KEY = /^(price|prices|listprice|saleprice|priceamount)$/i;
+const PRICE_TEXT = /\$\s?\d/;
+const AMAZON_STORE_URL = /https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)/i;
 
-export function getAffiliateTag(): string {
+function hostIs(host: string, name: string): boolean {
+  return host === name || host.endsWith(`.${name}`);
+}
+
+/** Amazon CDNs, YouTube, analytics, tag managers, pixels, and Clerk. */
+export function kidHostBlocked(host: string): boolean {
+  const name = host.toLowerCase().replace(/\.$/, "");
   return (
-    process.env.AFFILIATE_TAG ||
-    process.env.NEXT_PUBLIC_AFFILIATE_TAG ||
-    FALLBACK_AFFILIATE_TAG
+    hostIs(name, "amazon.com") ||
+    hostIs(name, "media-amazon.com") ||
+    hostIs(name, "ssl-images-amazon.com") ||
+    hostIs(name, "images-amazon.com") ||
+    hostIs(name, "youtube.com") ||
+    hostIs(name, "youtu.be") ||
+    hostIs(name, "youtube-nocookie.com") ||
+    hostIs(name, "ytimg.com") ||
+    hostIs(name, "googletagmanager.com") ||
+    hostIs(name, "google-analytics.com") ||
+    hostIs(name, "googleadservices.com") ||
+    hostIs(name, "doubleclick.net") ||
+    hostIs(name, "facebook.net") ||
+    hostIs(name, "facebook.com") ||
+    hostIs(name, "clerk.com") ||
+    hostIs(name, "clerk.dev") ||
+    name.includes(".clerk.")
   );
 }
 
-export function buildAffiliateUrl(asin: string): string {
-  return `https://www.amazon.com/dp/${asin}?tag=${getAffiliateTag()}`;
+export function isKidBlockedAsset(value: string): boolean {
+  const found = value.match(/(?:https?:)?\/\/[^\s"'<>\\]+/gi);
+  if (!found) return false;
+  return found.some((raw) => {
+    const withProtocol = raw.startsWith("//") ? `https:${raw}` : raw;
+    try {
+      return kidHostBlocked(new URL(withProtocol).hostname);
+    } catch {
+      return false;
+    }
+  });
 }
 
-/**
- * Parent-Buy storage URL. Always uses `kidskatalog-20` so the flip has a tag
- * ready. Public hrefs still go through `resolveParentBuy()` and only include
- * `tag=` when `AMAZON_ASSOCIATES_LIVE` is on.
- */
+export function getAffiliateTag(): string {
+  return (process.env.AMAZON_ASSOCIATES_TAG || "").trim();
+}
+
+export function buildAffiliateUrl(asin: string): string {
+  const clean = asin.trim().toUpperCase();
+  const tag = getAffiliateTag();
+  if (!tag) return `https://www.amazon.com/dp/${clean}`;
+  return `https://www.amazon.com/dp/${clean}?tag=${encodeURIComponent(tag)}`;
+}
+
+/** Stored parent URL. No tracking id — Buy hrefs are built at render time. */
 export function storedParentAffiliateUrl(asin: string): string {
   const clean = asin.trim().toUpperCase();
-  return `https://www.amazon.com/dp/${clean}?tag=${FALLBACK_AFFILIATE_TAG}`;
+  return `https://www.amazon.com/dp/${clean}`;
 }
 
-/** Rewrite a proposed Amazon link to the stored Associates tag. */
+/** Strip any tag from a stored Amazon link so it is not rendered as a Buy href. */
 export function withStoredAssociatesTag(url: string): string {
   try {
     const parsed = new URL(url);
     if (!parsed.hostname.includes("amazon.")) return url;
-    parsed.searchParams.set("tag", FALLBACK_AFFILIATE_TAG);
+    parsed.searchParams.delete("tag");
     return parsed.toString();
   } catch {
     return url;
@@ -64,11 +104,23 @@ export function hasAffiliateLeak(value: unknown): boolean {
   return false;
 }
 
-/** Kid HTML/JSON must not ship Amazon PAC or brand-deal commerce. */
+function hasPriceKey(record: Record<string, unknown>): boolean {
+  return Object.entries(record).some(([key, nested]) => {
+    if (!PRICE_KEY.test(key)) return false;
+    return nested !== undefined && nested !== null && nested !== "";
+  });
+}
+
+/** Kid HTML/JSON must not ship Amazon PAC, prices, or brand-deal commerce. */
 export function hasKidCommerceLeak(value: unknown): boolean {
   if (hasAffiliateLeak(value)) return true;
   if (typeof value === "string") {
-    return /brandDeal|brandAffiliate|Brand partner link|Buy on Amazon/i.test(value);
+    return (
+      /brandDeal|brandAffiliate|Brand partner link|Buy on Amazon/i.test(value) ||
+      PRICE_TEXT.test(value) ||
+      AMAZON_STORE_URL.test(value) ||
+      isKidBlockedAsset(value)
+    );
   }
   if (Array.isArray(value)) return value.some(hasKidCommerceLeak);
   if (value && typeof value === "object") {
@@ -81,6 +133,7 @@ export function hasKidCommerceLeak(value: unknown): boolean {
     ) {
       return true;
     }
+    if (hasPriceKey(record)) return true;
     return Object.values(record).some(hasKidCommerceLeak);
   }
   return false;

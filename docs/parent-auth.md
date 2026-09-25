@@ -9,7 +9,7 @@ Email + password parent accounts. Sessions are an HttpOnly cookie (`kk_parent_se
 | Surface | Auth |
 |---|---|
 | `/p?ids=` one-shot share | None. Anyone with the link can open it. |
-| `/p/{id}` Buy placeholder | None |
+| `/p/{id}` Buy on Amazon | None |
 | Save list / My lists / `/p?list=` / `/p/lists/{id}` | Signed-in owner only |
 
 ## Clerk (preferred when keys exist)

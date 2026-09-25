@@ -1,7 +1,6 @@
 /** Parent Mode routes — safe to import from client or server. */
 
 export const PARENT_RESERVED_IDS = [
-  "buy-placeholder",
   "deals",
   "sign-in",
   "sign-up",
@@ -14,11 +13,6 @@ export function parentToyPath(id: string): string {
 
 export function parentDealsPath(): string {
   return "/p/deals";
-}
-
-/** Stub Buy target until Associates is approved. */
-export function parentBuyPlaceholderPath(id: string): string {
-  return `/p/buy-placeholder?toy=${encodeURIComponent(id)}#buy-placeholder`;
 }
 
 export function parentWishlistPath(
@@ -114,7 +108,8 @@ export function parseWishlistIds(raw: string | string[] | undefined): string[] {
 export function parentReturnPath(raw: string | string[] | undefined): string {
   const text = Array.isArray(raw) ? raw[0] : raw;
   const path = (text ?? "").trim();
+  if (path.startsWith("//") || path.includes("://") || path.includes("\\")) return "/p";
+  if (path === "/claim" || /^\/claim\/[A-Z2-9]{4,16}$/i.test(path)) return path;
   if (!path.startsWith("/p")) return "/p";
-  if (path.startsWith("//") || path.includes("://")) return "/p";
   return path;
 }

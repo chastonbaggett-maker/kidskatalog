@@ -9,7 +9,7 @@ There is no Vercel Analytics package in this app. Parent funnel uses the same fi
 | Event | When | Payload |
 |---|---|---|
 | `parent_toy_view` | Parent `/p/{id}` mounts | `{ name, toyId }` |
-| `parent_buy_click` | **Buy on Amazon** (placeholder or live Special Link) | `{ name, toyId, mode: "placeholder" \| "associates" }` |
+| `parent_buy_click` | **Buy on Amazon** (tagged Special Link) | `{ name, toyId, mode: "associates" }` |
 | `parent_wishlist_view` | Shared wish list `/p?ids=` mounts with at least one toy | `{ name, toyCount }` |
 | `parent_brand_deal_click` | Brand-deal CTA on `/p/deals` or `/p/{id}` | `{ name, toyId, source: "deals" \| "toy" }` |
 
@@ -20,7 +20,7 @@ Empty `/p` (no `ids`) does **not** count as a wish-list view. Coming-soon brand 
 ### 1. Totals (fastest)
 
 ```bash
-curl -sS https://kidskatalog.vercel.app/api/events
+curl -sS https://kidskatalog.com/api/events
 ```
 
 Example:
@@ -43,7 +43,7 @@ Funnel read:
 
 1. **Wish list in** → `parent_wishlist_view`
 2. **Toy page in** → `parent_toy_view`
-3. **Intent to buy** → `parent_buy_click` (split placeholder vs Associates)
+3. **Intent to buy** → `parent_buy_click` (`mode: "associates"`)
 4. **Brand-deal intent** → `parent_brand_deal_click` (not Amazon)
 
 Admin → Metrics also shows the same Parent funnel cards (from `/api/admin/metrics`).
@@ -55,7 +55,7 @@ Counts live in the existing metrics store (Turso / Blob in production; memory-on
 Each accepted POST logs one JSON line:
 
 ```
-[parent-funnel] {"name":"parent_buy_click","toyId":"sky-rocket","mode":"placeholder"}
+[parent-funnel] {"name":"parent_buy_click","toyId":"sky-rocket","mode":"associates"}
 ```
 
 In Vercel: Project → **Logs** → Runtime → filter `parent-funnel`. Use this when you need toy ids. The log line is the same allowlist as the POST body (no `tag=`, no Amazon URL).

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { getAffiliateTag, hasKidCommerceLeak, storedParentAffiliateUrl } from "../src/lib/affiliate";
 import { resolveParentBuy } from "../src/lib/associates";
-import { toKidToy, toParentToy } from "../src/lib/kid-surface";
+import { kidNameTileSrc, toKidToy, toParentToy } from "../src/lib/kid-surface";
 import type { Toy } from "../src/types/toy";
 import {
   canonicalOriginForHost,
@@ -106,7 +106,14 @@ test("hasKidCommerceLeak flags prices, trackers, and Amazon media hosts", () => 
   } as Toy & { price: number; rating: number; reviewCount: number };
   const kid = toKidToy(amazonToy);
   expect(JSON.stringify(kid)).not.toMatch(/media-amazon|ssl-images-amazon|youtube|tag=/i);
-  expect(kid.image.startsWith("/categories/")).toBeTruthy();
+  expect(kid.image.startsWith("data:image/svg+xml,")).toBeTruthy();
+  expect(decodeURIComponent(kid.image)).toContain("Dino Drill");
+  expect(decodeURIComponent(kid.image)).toContain("#4A90E2");
+  expect(decodeURIComponent(kid.image)).not.toContain("/categories/");
+  const other = kidNameTileSrc("Sound Putty", "pretend");
+  expect(other).not.toBe(kid.image);
+  expect(decodeURIComponent(other)).toContain("Sound Putty");
+  expect(decodeURIComponent(other)).toContain("#EF8FB3");
   expect(kid.videos).toBeUndefined();
   expect(hasKidCommerceLeak(kid)).toBeFalsy();
 

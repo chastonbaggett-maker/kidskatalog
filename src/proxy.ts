@@ -5,16 +5,24 @@ import { PARENT_GATE_COOKIE } from "@/lib/parent-birth-year";
 import {
   canonicalOriginForHost,
   hostnameOnly,
-  kidHomeRewrite,
   legacyPlaceholderDestination,
   parentGateRewrite,
 } from "@/lib/request-routing";
 import { SITE_MODE_COOKIE } from "@/lib/site-mode";
 
 const REFERRER_POLICY = "strict-origin-when-cross-origin";
+const HOME_CACHE_CONTROL = "private, no-store, max-age=0, must-revalidate";
+const HOME_VARY =
+  "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Cookie";
 
-function withReferrer(response: NextResponse) {
+function withReferrer(response: NextResponse, pathname: string) {
   response.headers.set("Referrer-Policy", REFERRER_POLICY);
+  // `/` HTML depends on the Kid Mode cookie. Never share that response across visitors.
+  if (pathname === "/") {
+    response.headers.set("Cache-Control", HOME_CACHE_CONTROL);
+    response.headers.set("Vary", HOME_VARY);
+    response.headers.set("X-KidsKatalog-Home", "cookie");
+  }
   return response;
 }
 
@@ -32,7 +40,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
       canonical,
     );
-    return withReferrer(NextResponse.redirect(dest, 301));
+    return withReferrer(NextResponse.redirect(dest, 301), request.nextUrl.pathname);
   }
 
   const placeholder = legacyPlaceholderDestination(
@@ -40,26 +48,25 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     request.nextUrl.searchParams.get("toy"),
   );
   if (placeholder) {
-    return withReferrer(NextResponse.redirect(new URL(placeholder, request.url), 301));
+    return withReferrer(
+      NextResponse.redirect(new URL(placeholder, request.url), 301),
+      request.nextUrl.pathname,
+    );
   }
 
   const mode = request.cookies.get(SITE_MODE_COOKIE)?.value;
   const gate = request.cookies.get(PARENT_GATE_COOKIE)?.value;
   const pathname = request.nextUrl.pathname;
 
-  if (kidHomeRewrite(pathname, mode)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/shop";
-    return withReferrer(NextResponse.rewrite(url));
-  }
-
+  // Do not rewrite `/` to the static `/shop` document. That response was
+  // publicly cached without Vary: Cookie and could be served to a fresh visit.
   if (parentGateRewrite(pathname, mode, gate)) {
     const nextPath = `${pathname}${request.nextUrl.search}`;
     const url = request.nextUrl.clone();
     url.pathname = "/leave-kid-mode";
     url.search = "";
     url.searchParams.set("next", nextPath);
-    return withReferrer(NextResponse.rewrite(url));
+    return withReferrer(NextResponse.rewrite(url), pathname);
   }
 
   const parentClerk =
@@ -70,11 +77,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   if (parentClerk && isClerkServerConfigured()) {
     const { clerkMiddleware } = await import("@clerk/nextjs/server");
     const result = await clerkMiddleware()(request, event);
-    if (result instanceof NextResponse) return withReferrer(result);
+    if (result instanceof NextResponse) return withReferrer(result, pathname);
     return result;
   }
 
-  return withReferrer(NextResponse.next());
+  return withReferrer(NextResponse.next(), pathname);
 }
 
 export const config = {

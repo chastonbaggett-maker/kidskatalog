@@ -9,6 +9,11 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: false,
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
+  // `/` is Parent or Kid depending on the cookie. Do not precache or
+  // NetworkFirst-cache that document in the service worker.
+  cacheStartUrl: false,
+  dynamicStartUrl: false,
+  extendDefaultRuntimeCaching: true,
   fallbacks: {
     document: "/offline",
   },
@@ -16,6 +21,12 @@ const withPWA = withPWAInit({
     disableDevLogs: true,
     skipWaiting: true,
     clientsClaim: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url }: { url: URL }) => url.pathname === "/",
+        handler: "NetworkOnly",
+      },
+    ],
   },
 });
 
@@ -29,7 +40,21 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: REFERRER_POLICY },
     ];
     return [
-      { source: "/", headers: referrer },
+      {
+        source: "/",
+        headers: [
+          ...referrer,
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0, must-revalidate",
+          },
+          {
+            key: "Vary",
+            value:
+              "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Cookie",
+          },
+        ],
+      },
       { source: "/:path*", headers: referrer },
     ];
   },

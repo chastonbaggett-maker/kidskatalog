@@ -129,9 +129,32 @@ test("parent home lists every live toy with a tagged Buy link; Kid Mode cookie s
   expect(html).not.toContain("noreferrer");
   expect(html).not.toContain("parent-birth-year-gate");
 
+  function homeCache(res: { headers: () => Record<string, string> }) {
+    const headers = res.headers();
+    const cache = headers["cache-control"] || "";
+    // Dev emits no-cache; production dynamic HTML emits private, no-store.
+    // Either way `/` must not be a public shared cache.
+    expect(cache).not.toMatch(/\bpublic\b/i);
+    expect(cache).not.toMatch(/s-maxage/i);
+    expect(cache).toMatch(/no-store|no-cache/i);
+    expect(headers["x-kidskatalog-home"] || "").toBe("cookie");
+  }
+  homeCache(home);
+
   const kidHome = await request.get("/", { headers: { cookie: "kk_mode=kid" } });
   expect(kidHome.ok()).toBeTruthy();
-  expect(await kidHome.text()).not.toMatch(KID_COMMERCE_HTML);
+  const kidHtml = await kidHome.text();
+  expect(kidHtml).not.toMatch(KID_COMMERCE_HTML);
+  expect(kidHtml).not.toContain("Buy on Amazon");
+  homeCache(kidHome);
+
+  const fresh = await request.get("/");
+  expect(fresh.ok()).toBeTruthy();
+  const freshHtml = await fresh.text();
+  expect(freshHtml).toContain(">Kid Mode<");
+  expect(freshHtml).toContain("Buy on Amazon");
+  expect(freshHtml).not.toContain("data:image/svg+xml");
+  homeCache(fresh);
 
   const kidShop = await request.get("/shop", { headers: { cookie: "kk_mode=kid" } });
   expect(kidShop.ok()).toBeTruthy();

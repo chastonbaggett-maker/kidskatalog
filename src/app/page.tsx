@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import ShopPage from "@/app/(shell)/shop/page";
+import { AppShell } from "@/components/AppShell";
 import { ParentCatalogLanding } from "@/components/parent/ParentCatalogLanding";
 import { parseAsin } from "@/lib/amazon-asin";
 import { buildSpecialLink, getAssociatesTag } from "@/lib/associates";
@@ -8,16 +9,29 @@ import { getSiteMode } from "@/lib/site-mode-server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: { absolute: "KidsKatalog — Parent catalog" },
-  description:
-    "Parent catalog of KidsKatalog toys with Amazon buy links. As an Amazon Associate I earn from qualifying purchases.",
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getSiteMode()) === "kid") {
+    return {
+      title: { absolute: "KidsKatalog — Browse toys. Build a Kart." },
+      robots: { index: false, follow: true },
+    };
+  }
+  return {
+    title: { absolute: "KidsKatalog — Parent catalog" },
+    description:
+      "Parent catalog of KidsKatalog toys with Amazon buy links. As an Amazon Associate I earn from qualifying purchases.",
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function Home() {
+  // Absent cookie is Parent. Only an explicit kk_mode=kid cookie renders Kid Mode.
   if ((await getSiteMode()) === "kid") {
-    redirect("/shop");
+    return (
+      <AppShell>
+        <ShopPage />
+      </AppShell>
+    );
   }
 
   const tag = getAssociatesTag();

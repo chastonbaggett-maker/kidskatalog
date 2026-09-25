@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KID_TRY_AGAIN, readKidJson } from "@/lib/kid-fetch";
 import { useKartStore } from "@/lib/kart-store";
 
 type Handoff = {
@@ -24,14 +25,20 @@ export function GrownupHandoff() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toyIds: ids }),
       });
-      const data = (await res.json()) as Handoff & { error?: string };
-      if (!res.ok || !data.code || !data.url || !data.svg) {
-        throw new Error(data.error || "Could not make a code");
+      const parsed = await readKidJson<Handoff & { error?: string }>(res);
+      if (!parsed.ok || !parsed.data.code || !parsed.data.url || !parsed.data.svg) {
+        setHandoff(null);
+        setError(KID_TRY_AGAIN);
+        return;
       }
-      setHandoff({ code: data.code, url: data.url, svg: data.svg });
-    } catch (err) {
+      setHandoff({
+        code: parsed.data.code,
+        url: parsed.data.url,
+        svg: parsed.data.svg,
+      });
+    } catch {
       setHandoff(null);
-      setError(err instanceof Error ? err.message : "Could not make a code");
+      setError(KID_TRY_AGAIN);
     } finally {
       setPending(false);
     }

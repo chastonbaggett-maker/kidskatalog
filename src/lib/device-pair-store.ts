@@ -1,7 +1,13 @@
 import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { readStore, writeStore } from "@/lib/json-store";
+import { pairStoreMissing } from "@/lib/pair-store-status";
 import { parentOrigin, kidsOrigin } from "@/lib/deployment";
+import {
+  blobConfigured,
+  StoreUnavailableError,
+  tursoConfigured,
+} from "@/lib/store-env";
 import {
   createParentList,
   getParentList,
@@ -130,14 +136,47 @@ export function readDeviceCookie(req: Request): string | undefined {
   return undefined;
 }
 
+function storeIsMissing(): boolean {
+  return pairStoreMissing({
+    nodeEnv: process.env.NODE_ENV,
+    tursoConfigured: tursoConfigured(),
+    blobConfigured: blobConfigured(),
+  });
+}
+
 async function load(): Promise<DevicePairStore> {
-  const data = await readStore("device-pairs", EMPTY);
+  if (storeIsMissing()) throw new StoreUnavailableError();
+  let data: DevicePairStore;
+  try {
+    data = await readStore("device-pairs", EMPTY, {
+      required: process.env.NODE_ENV !== "development",
+    });
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) throw error;
+    if (process.env.NODE_ENV !== "development") throw new StoreUnavailableError();
+    throw error;
+  }
   return {
     version: 1,
     tokens: Array.isArray(data.tokens) ? data.tokens : [],
     devices: Array.isArray(data.devices) ? data.devices : [],
     handoffs: Array.isArray(data.handoffs) ? data.handoffs : [],
   };
+}
+
+async function save(data: DevicePairStore): Promise<void> {
+  try {
+    if (storeIsMissing()) throw new StoreUnavailableError();
+    await writeStore("device-pairs", data);
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) throw error;
+    if (process.env.NODE_ENV !== "development") throw new StoreUnavailableError();
+    throw error;
+  }
+}
+
+function unavailableResult(): { ok: false; error: string; status: 503 } {
+  return { ok: false, error: "Service not ready", status: 503 };
 }
 
 function publicDevice(device: PairedDevice) {
@@ -166,7 +205,7 @@ export async function createPairToken(ownerId: string): Promise<{
     const data = await load();
     data.tokens.push(row);
     data.tokens = data.tokens.filter((item) => Date.parse(item.expiresAt) > now).slice(-100);
-    await writeStore("device-pairs", data);
+    await save(data);
   });
   const url = pairUrl(token);
   return { token, url, svg: await qrSvg(url) };
@@ -185,7 +224,7 @@ export async function unpairOwnerDevice(ownerId: string, deviceId: string): Prom
     const device = data.devices.find((item) => item.id === deviceId && item.ownerId === ownerId);
     if (!device || device.unpairedAt) return false;
     device.unpairedAt = new Date().toISOString();
-    await writeStore("device-pairs", data);
+    await save(data);
     return true;
   });
 }
@@ -203,18 +242,36 @@ async function findActiveDevice(secret: string | undefined): Promise<PairedDevic
 
 export async function pairDevice(token: string): Promise<
   | { ok: true; secret: string; deviceId: string }
-  | { ok: false; error: string }
+  | { ok: false; error: string; status: 400 | 503 }
 > {
-  if (!TOKEN_RE.test(token)) return { ok: false, error: "This link is not valid." };
+  // Look up the shared store before deciding the token is bad. With no Turso
+  // or Blob, load() used to return an empty document and every fresh parent
+  // token looked invalid.
+  if (storeIsMissing()) return unavailableResult();
+  try {
+    return await pairDeviceStored(token);
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) return unavailableResult();
+    throw error;
+  }
+}
+
+async function pairDeviceStored(token: string): Promise<
+  | { ok: true; secret: string; deviceId: string }
+  | { ok: false; error: string; status: 400 | 503 }
+> {
+  if (!TOKEN_RE.test(token)) {
+    return { ok: false, error: "This link is not valid.", status: 400 };
+  }
   return serialized(async () => {
     const data = await load();
     const row = data.tokens.find((item) => item.token === token);
     if (!row || Date.parse(row.expiresAt) < Date.now()) {
-      return { ok: false, error: "This link is not valid." };
+      return { ok: false, error: "This link is not valid.", status: 400 };
     }
     const owned = data.devices.filter((device) => device.ownerId === row.ownerId && !device.unpairedAt);
     if (owned.length >= MAX_DEVICES) {
-      return { ok: false, error: "This grown-up already has enough devices." };
+      return { ok: false, error: "This grown-up already has enough devices.", status: 400 };
     }
     const list = await createParentList(row.ownerId, {
       name: "Paired device",
@@ -231,7 +288,7 @@ export async function pairDevice(token: string): Promise<
       unpairedAt: null,
     };
     data.devices.push(device);
-    await writeStore("device-pairs", data);
+    await save(data);
     return { ok: true, secret, deviceId: device.id };
   });
 }
@@ -244,16 +301,28 @@ export async function deviceSession(secret: string | undefined): Promise<{ paire
 export async function syncDeviceKart(
   secret: string | undefined,
   toyIds: unknown,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string; status: 401 | 503 }> {
   const ids = sanitizeToyIds(toyIds);
+  try {
+    return await syncDeviceKartStored(secret, ids);
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) return unavailableResult();
+    throw error;
+  }
+}
+
+async function syncDeviceKartStored(
+  secret: string | undefined,
+  ids: string[],
+): Promise<{ ok: true } | { ok: false; error: string; status: 401 | 503 }> {
   return serialized(async () => {
     const data = await load();
-    if (!secret) return { ok: false, error: "This device is not paired." };
+    if (!secret) return { ok: false, error: "This device is not paired.", status: 401 };
     const digest = hashSecret(secret);
     const device = data.devices.find(
       (item) => !item.unpairedAt && hashesEqual(item.secretHash, digest),
     );
-    if (!device) return { ok: false, error: "This device is not paired." };
+    if (!device) return { ok: false, error: "This device is not paired.", status: 401 };
     const existing = await getParentList(device.listId, device.ownerId);
     if (!existing) {
       const created = await createParentList(device.ownerId, {
@@ -262,7 +331,7 @@ export async function syncDeviceKart(
         allowEmpty: true,
       });
       device.listId = created.id;
-      await writeStore("device-pairs", data);
+      await save(data);
       return { ok: true };
     }
     await updateParentList(
@@ -277,10 +346,24 @@ export async function syncDeviceKart(
 
 export async function createHandoff(toyIds: unknown): Promise<
   | { ok: true; code: string; url: string; svg: string }
-  | { ok: false; error: string }
+  | { ok: false; error: string; status: 400 | 503 }
 > {
   const ids = sanitizeToyIds(toyIds);
-  if (ids.length === 0) return { ok: false, error: "Add a toy to the Kart first." };
+  if (ids.length === 0) {
+    return { ok: false, error: "Add a toy to the Kart first.", status: 400 };
+  }
+  try {
+    return await createHandoffStored(ids);
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) return unavailableResult();
+    throw error;
+  }
+}
+
+async function createHandoffStored(ids: string[]): Promise<
+  | { ok: true; code: string; url: string; svg: string }
+  | { ok: false; error: string; status: 400 | 503 }
+> {
   const code = await serialized(async () => {
     const data = await load();
     let next = newCode();
@@ -298,7 +381,7 @@ export async function createHandoff(toyIds: unknown): Promise<
     });
     const fresh = data.handoffs.filter((item) => Date.parse(item.expiresAt) > now);
     data.handoffs = fresh.slice(-200);
-    await writeStore("device-pairs", data);
+    await save(data);
     return next;
   });
   const url = claimUrl(code);
@@ -325,7 +408,7 @@ export async function claimHandoff(ownerId: string, rawCode: string) {
     });
     handoff.claimedAt = new Date().toISOString();
     handoff.claimedBy = ownerId;
-    await writeStore("device-pairs", data);
+    await save(data);
     return { ok: true as const, list };
   });
 }
@@ -340,7 +423,7 @@ export async function unpairDeviceSecret(secret: string | undefined): Promise<bo
     );
     if (!device) return false;
     device.unpairedAt = new Date().toISOString();
-    await writeStore("device-pairs", data);
+    await save(data);
     return true;
   });
 }

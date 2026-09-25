@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { readKidJson } from "@/lib/kid-fetch";
 import { useKartStore } from "@/lib/kart-store";
 
 /** While a device is paired, Kart adds and removes update the grown-up's list. */
@@ -15,7 +16,9 @@ export function DeviceKartSync() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toyIds: state.ids }),
-      }).catch(() => undefined);
+      })
+        .then((res) => readKidJson(res))
+        .catch(() => undefined);
     });
   }, []);
   return null;

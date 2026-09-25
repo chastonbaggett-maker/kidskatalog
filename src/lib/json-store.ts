@@ -4,6 +4,8 @@ import path from "path";
 import {
   blobConfigured,
   missingProductionStoreMessage,
+  productionStoreConfigured,
+  StoreUnavailableError,
   tursoConfigured,
 } from "@/lib/store-env";
 
@@ -147,7 +149,16 @@ async function seedBlobFromLocal<T>(key: StoreKey, fallback: T): Promise<T> {
   return seed;
 }
 
-export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
+export async function readStore<T>(
+  key: StoreKey,
+  fallback: T,
+  options?: { required?: boolean },
+): Promise<T> {
+  const required = options?.required === true;
+  if (required && !isDevLocalStore() && !productionStoreConfigured()) {
+    throw new StoreUnavailableError();
+  }
+
   if (tursoConfigured()) {
     try {
       const stored = await readTurso<T>(key);
@@ -155,6 +166,7 @@ export async function readStore<T>(key: StoreKey, fallback: T): Promise<T> {
       return seedTursoFromLocal(key, fallback);
     } catch (error) {
       console.error(`Turso read failed for ${key}`, error);
+      if (required && !isDevLocalStore()) throw new StoreUnavailableError();
     }
   }
 

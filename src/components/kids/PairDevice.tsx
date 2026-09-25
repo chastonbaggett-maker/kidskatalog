@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KID_TRY_AGAIN, readKidJson } from "@/lib/kid-fetch";
 import { useKartStore } from "@/lib/kart-store";
 
 export function PairDevice({ token }: { token: string }) {
@@ -16,18 +17,23 @@ export function PairDevice({ token }: { token: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error || "Could not connect");
+      const parsed = await readKidJson<{ paired?: boolean }>(res);
+      if (!parsed.ok || !parsed.data.paired) {
+        setStatus("error");
+        setMessage(KID_TRY_AGAIN);
+        return;
+      }
       const ids = useKartStore.getState().ids;
-      await fetch("/api/kids/kart", {
+      const kart = await fetch("/api/kids/kart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toyIds: ids }),
-      }).catch(() => undefined);
+      });
+      await readKidJson(kart);
       setStatus("done");
-    } catch (error) {
+    } catch {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Could not connect");
+      setMessage(KID_TRY_AGAIN);
     }
   }
 

@@ -9,7 +9,7 @@ import {
 } from "@/lib/parent-birth-year";
 import { persistParentMode } from "@/lib/site-mode";
 
-const ERROR_TEXT = "Enter a birth year between 1901 and 2008.";
+const ERROR_TEXT = "Enter the year you were born.";
 
 export function ParentBirthYearGate({
   children,
@@ -78,7 +78,8 @@ export function ParentBirthYearGate({
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoComplete="bday-year"
+                    autoComplete="off"
+                    name="parent-gate"
                     maxLength={4}
                     value={year}
                     onChange={(event) => {

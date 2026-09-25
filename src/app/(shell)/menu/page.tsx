@@ -7,8 +7,8 @@ import { toKidToys } from "@/lib/kid-surface";
 import type { Toy } from "@/types/toy";
 
 export default async function WatchPage() {
-  const all = await getCatalogToys();
-  const toys = toKidToys(filterCatalogToys(all, { hasVideo: true })) as Toy[];
+  const all = toKidToys(await getCatalogToys()) as Toy[];
+  const toys = filterCatalogToys(all, { hasVideo: true });
 
   return (
     <WatchPageShell>

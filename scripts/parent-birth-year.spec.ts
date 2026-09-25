@@ -26,6 +26,8 @@ async function openLockedParent(page: Page, path: string) {
   await dismissSplash(page);
   await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
   await expect(page.getByRole("heading", { name: /What'?s your birth year\?/i })).toBeVisible();
+  await expect(page.getByTestId("parent-birth-year")).toHaveValue("");
+  await expect(page.getByTestId("parent-birth-year-gate")).not.toContainText(/1901|2008/);
 }
 
 async function submitYear(page: Page, year: string) {
@@ -74,8 +76,9 @@ test("deep links stay locked for empty, junk, and out-of-range years", async ({
 
   await page.getByTestId("parent-birth-year-submit").click();
   await expect(page.getByTestId("parent-birth-year-error")).toHaveText(
-    /1901 and 2008/i,
+    /year you were born/i,
   );
+  await expect(page.getByTestId("parent-birth-year-error")).not.toContainText(/1901|2008/);
   await expect(page.getByTestId("parent-birth-year-gate")).toBeVisible();
 
   for (const value of ["abc", "19", "1899", "2009"]) {

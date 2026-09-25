@@ -10,6 +10,47 @@ const PRICE_KEY = /^(price|prices|listprice|saleprice|priceamount)$/i;
 const PRICE_TEXT = /\$\s?\d/;
 const AMAZON_STORE_URL = /https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)/i;
 
+function hostIs(host: string, name: string): boolean {
+  return host === name || host.endsWith(`.${name}`);
+}
+
+/** Amazon CDNs, YouTube, analytics, tag managers, pixels, and Clerk. */
+export function kidHostBlocked(host: string): boolean {
+  const name = host.toLowerCase().replace(/\.$/, "");
+  return (
+    hostIs(name, "amazon.com") ||
+    hostIs(name, "media-amazon.com") ||
+    hostIs(name, "ssl-images-amazon.com") ||
+    hostIs(name, "images-amazon.com") ||
+    hostIs(name, "youtube.com") ||
+    hostIs(name, "youtu.be") ||
+    hostIs(name, "youtube-nocookie.com") ||
+    hostIs(name, "ytimg.com") ||
+    hostIs(name, "googletagmanager.com") ||
+    hostIs(name, "google-analytics.com") ||
+    hostIs(name, "googleadservices.com") ||
+    hostIs(name, "doubleclick.net") ||
+    hostIs(name, "facebook.net") ||
+    hostIs(name, "facebook.com") ||
+    hostIs(name, "clerk.com") ||
+    hostIs(name, "clerk.dev") ||
+    name.includes(".clerk.")
+  );
+}
+
+export function isKidBlockedAsset(value: string): boolean {
+  const found = value.match(/(?:https?:)?\/\/[^\s"'<>\\]+/gi);
+  if (!found) return false;
+  return found.some((raw) => {
+    const withProtocol = raw.startsWith("//") ? `https:${raw}` : raw;
+    try {
+      return kidHostBlocked(new URL(withProtocol).hostname);
+    } catch {
+      return false;
+    }
+  });
+}
+
 export function getAffiliateTag(): string {
   return (process.env.AMAZON_ASSOCIATES_TAG || "").trim();
 }
@@ -77,7 +118,8 @@ export function hasKidCommerceLeak(value: unknown): boolean {
     return (
       /brandDeal|brandAffiliate|Brand partner link|Buy on Amazon/i.test(value) ||
       PRICE_TEXT.test(value) ||
-      AMAZON_STORE_URL.test(value)
+      AMAZON_STORE_URL.test(value) ||
+      isKidBlockedAsset(value)
     );
   }
   if (Array.isArray(value)) return value.some(hasKidCommerceLeak);

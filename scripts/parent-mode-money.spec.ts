@@ -23,7 +23,8 @@ const AFFILIATE_LEAK = /[?&]tag=|amazon\.[^"'<\s]+\/(?:dp|gp\/product)\//i;
 const TAGGED_BUY = /https:\/\/www\.amazon\.com\/dp\/[A-Z0-9]{10}\?tag=[^"'<\s]+/;
 const DISCLOSURE = "As an Amazon Associate I earn from qualifying purchases.";
 const KID_COMMERCE_HTML =
-  /[?&]tag=|https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)|Buy on Amazon|brandDealUrl|brandAffiliate|Brand partner link|\$\d+\.\d{2}/i;
+  /[?&]tag=|https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)|media-amazon\.com|ssl-images-amazon\.com|images-amazon\.com|youtube\.com|youtu\.be|googletagmanager\.com|google-analytics\.com|clerk\.com|doubleclick\.net|facebook\.net|Buy on Amazon|brandDealUrl|brandAffiliate|Brand partner link|\$\d+\.\d{2}/i;
+const PARENT_PRICE_RATING = /\$\d+\.\d{2}|\bout of 5\b|customer reviews|star rating/i;
 
 const SAMPLE_IDS = ["sky-rocket", "roar-rex", "mag-train", "glow-bow", "hair-gem", "ocean-rescue"];
 
@@ -112,6 +113,17 @@ test("parent home lists every live toy with a tagged Buy link; Kid Mode cookie s
   const links = html.match(/href="https:\/\/www\.amazon\.com\/dp\/[A-Z0-9]{10}\?tag=[^"]+"/g) || [];
   expect(links.length).toBe(ids.length);
   expect(html).toContain(DISCLOSURE);
+  expect(html.indexOf('data-testid="associates-disclosure"')).toBeLessThan(
+    html.indexOf('data-testid="kid-mode-cta"'),
+  );
+  expect(html).toContain('href="/privacy"');
+  const privacy = await request.get("/privacy");
+  expect(privacy.ok()).toBeTruthy();
+  const privacyHtml = await privacy.text();
+  expect(privacyHtml).toContain("Privacy");
+  expect(privacyHtml).toContain(DISCLOSURE);
+  expect(privacyHtml).not.toContain("Buy on Amazon");
+  expect(html).not.toMatch(PARENT_PRICE_RATING);
   expect(html).toContain(">Kid Mode<");
   expect(html).toContain('rel="sponsored noopener"');
   expect(html).not.toContain("noreferrer");
@@ -184,6 +196,7 @@ test("every live catalog id resolves at /p/{id} with a tagged Buy anchor + discl
     expect(html, id).toContain('rel="sponsored noopener"');
     expect(html, id).toMatch(TAGGED_BUY);
     expect(html, id).not.toMatch(/buy-placeholder|not approved/i);
+    expect(html, id).not.toMatch(PARENT_PRICE_RATING);
 
     const buy = await request.get(`/api/parent/buy-urls?ids=${id}`);
     expect(buy.ok()).toBeTruthy();

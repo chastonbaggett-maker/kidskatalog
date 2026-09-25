@@ -21,6 +21,7 @@ export function ParentCatalogLanding({ cards }: { cards: ParentCatalogCard[] }) 
         />
         <div className="page-scroll star-field min-h-0 flex-1 px-4 py-6 scroll-pad-bottom">
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
+            <AssociatesDisclosure className="max-w-xl text-center" />
             <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold text-[var(--ink)]">
               KidsKatalog
             </h1>
@@ -34,7 +35,6 @@ export function ParentCatalogLanding({ cards }: { cards: ParentCatalogCard[] }) 
             >
               Kid Mode
             </a>
-            <AssociatesDisclosure className="max-w-xl text-center" />
           </div>
 
           <ul className="mx-auto mt-8 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2">
@@ -78,9 +78,12 @@ export function ParentCatalogLanding({ cards }: { cards: ParentCatalogCard[] }) 
 
           <footer
             data-testid="parent-footer"
-            className="mx-auto mt-10 w-full max-w-3xl border-t border-white/40 pt-6"
+            className="mx-auto mt-10 flex w-full max-w-3xl flex-col items-center gap-3 border-t border-white/40 pt-6"
           >
             <AssociatesDisclosure className="text-center" />
+            <a href="/privacy" className="text-sm font-bold text-[var(--blue-deep)]">
+              Privacy
+            </a>
           </footer>
         </div>
       </div>

@@ -7,7 +7,7 @@ import {
 } from "@/lib/catalog-query";
 import { toKidCatalogPage, toKidToys } from "@/lib/kid-surface";
 import { kidJsonLooksClean } from "@/lib/publish-locks";
-import type { Audience, CategoryId } from "@/types/toy";
+import type { Audience, CategoryId, Toy } from "@/types/toy";
 
 function parseFilters(req: NextRequest): CatalogFilters {
   const category = req.nextUrl.searchParams.get("category") ?? undefined;
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
   const randomCount = Number(req.nextUrl.searchParams.get("random") ?? "0");
   const filters = parseFilters(req);
-  const all = await getCatalogToys();
+  const all = toKidToys(await getCatalogToys()) as Toy[];
 
   if (randomCount > 0) {
     const seed = Number(req.nextUrl.searchParams.get("seed") ?? "1");

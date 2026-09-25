@@ -127,5 +127,6 @@ test("kid surfaces strip brandAffiliate", () => {
   expect(hasKidCommerceLeak("https://www.amazon.com/s?k=toys")).toBeTruthy();
   expect(hasKidCommerceLeak("Buy on Amazon")).toBeTruthy();
   expect(hasKidCommerceLeak({ name: "Sky Rocket", blurb: "Launches up." })).toBeFalsy();
-  expect(hasKidCommerceLeak("https://m.media-amazon.com/images/I/demo.jpg")).toBeFalsy();
+  expect(hasKidCommerceLeak("https://m.media-amazon.com/images/I/demo.jpg")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://images-eu.ssl-images-amazon.com/images/I/demo.jpg")).toBeTruthy();
 });

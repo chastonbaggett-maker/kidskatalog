@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { getAffiliateTag, hasKidCommerceLeak, storedParentAffiliateUrl } from "../src/lib/affiliate";
 import { resolveParentBuy } from "../src/lib/associates";
+import { toKidToy, toParentToy } from "../src/lib/kid-surface";
+import type { Toy } from "../src/types/toy";
 import {
   canonicalOriginForHost,
   kidHomeRewrite,
@@ -65,9 +67,52 @@ test("kid mode rewrite rules", () => {
   expect(safeParentReturnPath("https://evil.example")).toBe("/");
 });
 
-test("hasKidCommerceLeak flags prices and amazon.com store URLs", () => {
+test("hasKidCommerceLeak flags prices, trackers, and Amazon media hosts", () => {
   expect(hasKidCommerceLeak({ price: 4 })).toBeTruthy();
   expect(hasKidCommerceLeak("$9.99")).toBeTruthy();
   expect(hasKidCommerceLeak("https://amazon.com/dp/B000000000")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://m.media-amazon.com/images/I/demo.jpg")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://images-na.ssl-images-amazon.com/images/I/demo.jpg")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://www.youtube.com/embed/abc")).toBeTruthy();
+  expect(hasKidCommerceLeak("https://www.googletagmanager.com/gtm.js")).toBeTruthy();
+  expect(
+    hasKidCommerceLeak("https://happy-pony-1.clerk.accounts.dev/npm/@clerk/clerk-js"),
+  ).toBeTruthy();
   expect(hasKidCommerceLeak({ blurb: "Soft plush." })).toBeFalsy();
+  expect(hasKidCommerceLeak("https://d5xuirxyqsqf5ctq.public.blob.vercel-storage.com/toy.jpg")).toBeFalsy();
+
+  const amazonToy = {
+    id: "dino-drill",
+    name: "Dino Drill",
+    category: "dinos",
+    audience: "all",
+    blurb: "Dig in the sand.",
+    image: "https://m.media-amazon.com/images/I/81.jpg",
+    images: [
+      "https://m.media-amazon.com/images/I/81.jpg",
+      "https://images-na.ssl-images-amazon.com/images/I/82.jpg",
+    ],
+    videos: [
+      "https://m.media-amazon.com/images/S/vse/clip.m3u8",
+      "https://www.youtube.com/watch?v=abc",
+    ],
+    imageAlt: "Dino drill",
+    ageMin: 3,
+    ageMax: 8,
+    color: "#27AE60",
+    price: 19.99,
+    rating: 4.5,
+    reviewCount: 1200,
+  } as Toy & { price: number; rating: number; reviewCount: number };
+  const kid = toKidToy(amazonToy);
+  expect(JSON.stringify(kid)).not.toMatch(/media-amazon|ssl-images-amazon|youtube|tag=/i);
+  expect(kid.image.startsWith("/categories/")).toBeTruthy();
+  expect(kid.videos).toBeUndefined();
+  expect(hasKidCommerceLeak(kid)).toBeFalsy();
+
+  const parent = toParentToy(amazonToy);
+  expect(parent.blurb).toBe("Dig in the sand.");
+  expect(parent).not.toHaveProperty("price");
+  expect(parent).not.toHaveProperty("rating");
+  expect(parent).not.toHaveProperty("reviewCount");
 });

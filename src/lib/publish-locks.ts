@@ -1,4 +1,9 @@
-import { hasAffiliateLeak, hasKidCommerceLeak, isAmazonProductUrl } from "@/lib/affiliate";
+import {
+  hasAffiliateLeak,
+  hasKidCommerceLeak,
+  isAmazonProductUrl,
+  isKidBlockedAsset,
+} from "@/lib/affiliate";
 import { buildSpecialLink, getAssociatesTag, resolveParentBuy } from "@/lib/associates";
 import { parseAsin } from "@/lib/amazon-asin";
 import { resolveBrandDeal } from "@/lib/brand-deals";
@@ -86,6 +91,7 @@ export function kidJsonLooksClean(value: unknown): boolean {
 export function htmlLooksKidClean(html: string): boolean {
   if (AFFILIATE_TAG_RE.test(html) || AMAZON_DP_RE.test(html)) return false;
   if (/https?:\/\/(?:www\.)?amazon\.com(?:[/?#]|$)/i.test(html)) return false;
+  if (isKidBlockedAsset(html)) return false;
   if (/\$\d+\.\d{2}/.test(html)) return false;
   if (/Buy on Amazon/i.test(html)) return false;
   if (/Brand partner link/i.test(html)) return false;
